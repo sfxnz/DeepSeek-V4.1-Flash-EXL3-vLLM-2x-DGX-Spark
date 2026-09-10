@@ -146,6 +146,7 @@ class QuantizeFastTests(unittest.TestCase):
         self.assertIn("ext.decode", src)
         self.assertIn("passes: int = 2", src)
         self.assertIn("del idxs", src)
+        self.assertIn("os.chmod(out_path, 0o644)", src)
         self.assertNotIn(
             "del wf, wr, tiles, encoded, trellis, idxs",
             src,

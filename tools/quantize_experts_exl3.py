@@ -473,6 +473,7 @@ def convert_shards(
             tmp.unlink()
         save_file(tensors, str(tmp))
         tmp.rename(out_path)
+        os.chmod(out_path, 0o644)
         print(f"wrote {out_path} tensors={len(tensors)}", flush=True)
         del tensors
 
