@@ -1,0 +1,92 @@
+# Source of truth. Edit here, then `python3 kit/render.py`.
+model:
+  id: &model sfxnz/DeepSeek-V4.1-Flash-EXL3
+  revision: &revision 2.0bpw-mcg
+  served_name: &served_name deepseek-ai/DeepSeek-V4.1-Flash
+  family: DeepSeek-V4.1-Flash
+  params: 552B backbone / 8B prefill / 16B decode, plus 196B Engram
+  quant: EXL3 2.0 bpw routed experts, source MXFP8/MXFP4 elsewhere, Engram on NVMe
+
+image:
+  base: vllm/vllm-openai:deepseekv41-flash-0909
+  digest: sha256:d84a123255b822fc22508635218000187221794f59c0694c33b0650d1e377d58
+  local_tag: &image dsv41-flash-exl3-sm121
+  build: docker/Dockerfile
+
+engine:
+  name: vllm
+  version: dsv41-flash-0909 + vllm-exl3 + Engram-on-disk
+
+hardware:
+  shape: 2x DGX Spark (GB10)
+  nnodes: &nnodes 2
+  tp: &tp 2
+
+serve:
+  env:
+    MODEL: *model
+    SERVED_NAME: *served_name
+    IMAGE: *image
+    CONTAINER_NAME: dsv41-flash-exl3
+    PORT: 8000
+    MASTER_PORT: 29524
+    HEAD_IP: 10.100.8.1
+    WORKER_HOST: spark2
+    IFACE: enp1s0f1np1
+    HCA: rocep1s0f1
+    TP: *tp
+    NNODES: *nnodes
+    MAX_MODEL_LEN: 1048576
+    MAX_NUM_SEQS: 2
+    UTIL: 0.75
+    KV_CACHE_DTYPE: fp8
+    KV_CACHE_MEMORY: 4294967296
+    BLOCK_SIZE: 256
+    NUM_SPECULATIVE_TOKENS: 5
+    SPEC: dspark
+    LOAD_FORMAT: auto
+    QUANTIZATION: exl3
+    DSV41_ENGRAM_DISK: 1
+    LANGUAGE_MODEL_ONLY: 1
+    MAX_NUM_BATCHED_TOKENS: 2048
+    FORCE_UNSAFE_CTX: 0
+    FORCE_UNSAFE_ENGRAM: 0
+    FORCE_UNSAFE_QUANT: 0
+    ENFORCE_EAGER: 0
+    HF_CACHE: $HOME/.cache/huggingface
+    SNAPSHOT_SHA: *revision
+    SKIP_DOWNLOAD: 0
+    ORCHESTRATE: auto
+    EXTRA_ARGS: ""
+
+readme:
+  defaults:
+    - Image: "`{IMAGE}`"
+    - Model: "`{MODEL}` revision `{SNAPSHOT_SHA}`"
+    - "`--tensor-parallel-size` / `--nnodes`": "{TP} / {NNODES}"
+    - "`--max-model-len`": "{MAX_MODEL_LEN}"
+    - "`--max-num-seqs`": "{MAX_NUM_SEQS}"
+    - "`--max-num-batched-tokens`": "{MAX_NUM_BATCHED_TOKENS}"
+    - "`--kv-cache-dtype`": "`{KV_CACHE_DTYPE}`"
+    - "`--kv-cache-memory`": "`{KV_CACHE_MEMORY}`"
+    - "`--quantization`": "`{QUANTIZATION}`"
+    - Engram: "disk (`DSV41_ENGRAM_DISK={DSV41_ENGRAM_DISK}`)"
+    - "`--block-size`": "{BLOCK_SIZE}"
+    - Speculative: "DSpark-{NUM_SPECULATIVE_TOKENS} (`SPEC={SPEC}`)"
+    - Tokenizers / tools / reasoning: "`deepseek_v41`"
+    - Default thinking: "`thinking=false`, `reasoning_effort=low`"
+    - API: "`http://<head>:{PORT}/v1`"
+    - Container: "`{CONTAINER_NAME}`"
+    - Master port: "{MASTER_PORT}"
+
+measured:
+  decode:
+    conditions: streamed greedy, thinking off, 200 completion tokens; not frozen yet
+    units: {decode: tok/s per stream (median), aggregate: tok/s, ttft_p50: s}
+    rows:
+      - {phase: prose, concurrency: 1, decode: "—", aggregate: "—", ttft_p50: "—", evidence: null}
+
+links:
+  model: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash
+  base_image: https://hub.docker.com/r/vllm/vllm-openai
+  repo: https://github.com/sfxnz/DeepSeek-V4.1-Flash-EXL3-vLLM-2x-DGX-Spark
