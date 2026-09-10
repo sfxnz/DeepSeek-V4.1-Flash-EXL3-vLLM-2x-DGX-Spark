@@ -52,7 +52,7 @@ docker build -f docker/Dockerfile -t dsv41-flash-exl3-sm121 docker
 ## Weights
 
 1. Download the official snapshot (`dba1be0a40aa45a94ad051997016db3960a90277`). The two Engram shards are ~95 GiB each and need `hf_xet` (`HF_HUB_DISABLE_XET` must be unset).
-2. Assemble the EXL3 pack with `python3 tools/quantize_experts_exl3.py` inside the recipe image (GPU, exclusive). Uncalibrated 2.0 bpw MCG is about 5.3 s/expert on one GB10 (~33 h per 20 expert shards). Split across the two Sparks:
+2. Assemble the EXL3 pack with `python3 tools/quantize_experts_exl3.py` inside the recipe image (GPU, exclusive). This recipe uses `--greedy --beam 16` (~0.85 s/expert, ~1.15 w/s on GB10, ~5.5 h per 20 expert shards). Omit `--greedy` for tail-biting Viterbi (~4.1 s/expert). Split across the two Sparks:
 
 ```bash
 # non-expert shards (vision / DSpark / Engram): hardlinks, no GPU
@@ -60,11 +60,11 @@ python3 tools/quantize_experts_exl3.py --link-only
 
 # spark1: expert shards 3-22
 docker exec dsv41-quant python3 -u /recipe/tools/quantize_experts_exl3.py \
-  --allow-partial --batch 8 --only-files $(python3 -c "print(' '.join(f'model-{i:05d}-of-00048.safetensors' for i in range(3,23)))")
+  --allow-partial --batch 8 --greedy --beam 16 --only-files $(python3 -c "print(' '.join(f'model-{i:05d}-of-00048.safetensors' for i in range(3,23)))")
 
 # spark2: expert shards 23-42
 docker exec dsv41-quant python3 -u /recipe/tools/quantize_experts_exl3.py \
-  --allow-partial --batch 8 --only-files $(python3 -c "print(' '.join(f'model-{i:05d}-of-00048.safetensors' for i in range(23,43)))")
+  --allow-partial --batch 8 --greedy --beam 16 --only-files $(python3 -c "print(' '.join(f'model-{i:05d}-of-00048.safetensors' for i in range(23,43)))")
 ```
 
 3. Merge the two node outputs and copy the pack to spark2:

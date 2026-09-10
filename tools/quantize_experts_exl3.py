@@ -174,12 +174,87 @@ def _pack_one(out: dict) -> dict:
     return packed
 
 
-def _quantize_fast(weights: list, bits: int, device: str, h_cache: dict) -> list[dict]:
-    """All-tiles Viterbi, no LDLQ strip walk and no global-scale search.
+def _quantize_greedy_tiles(
+    tiles, bits: int, device: str, passes: int = 2, beam: int = 1
+):
+    """Greedy / beam K-bit sliding-window encode. tiles: (N, 256) float32.
+
+    Each step tries 2**K next symbols per surviving path, keeps min-MSE via
+    exllamav3_ext.decode (same MCG mapping as inference). beam=1 is pure
+    greedy (4 vs 16384 Viterbi states at K=2). pack_trellis stores only the
+    low K bits and unpack is tail-biting, so later passes start from the wrap
+    state implied by the previous pass.
+    """
+    import torch
+    from exllamav3.ext import exllamav3_ext as ext
+
+    n, l = tiles.shape
+    assert l == 256
+    beam = max(1, int(beam))
+    n_sym = 1 << bits
+    wrap = (1 << (16 - bits)) - 1
+    rng_n = torch.arange(n, device=device)
+    start = torch.zeros(n, dtype=torch.int32, device=device)
+    encoded = torch.empty(n, l, dtype=torch.int32, device=device)
+    if beam == 1:
+        ks = torch.arange(n_sym, device=device, dtype=torch.int32).unsqueeze(1)
+        dec = torch.empty(n_sym, n, dtype=torch.float32, device=device)
+        state = start
+        for _ in range(max(1, int(passes))):
+            for i in range(l):
+                cands = ((state.unsqueeze(0) << bits) | ks) & 0xFFFF
+                ext.decode(cands.to(torch.int16), dec, True, False)
+                best = (dec - tiles[:, i]).square().argmin(dim=0)
+                state = cands[best, rng_n]
+                encoded[:, i] = state
+            start = encoded[:, -1] & wrap
+            state = start
+        return encoded.to(torch.int16)
+
+    ks = torch.arange(n_sym, device=device, dtype=torch.int32).view(n_sym, 1, 1)
+    for _ in range(max(1, int(passes))):
+        state = torch.zeros(beam, n, dtype=torch.int32, device=device)
+        state[0] = start
+        score = torch.full((beam, n), 1e30, dtype=torch.float32, device=device)
+        score[0] = 0
+        parent = torch.zeros(l, beam, n, dtype=torch.int32, device=device)
+        chosen = torch.zeros(l, beam, n, dtype=torch.int32, device=device)
+        for i in range(l):
+            cands = ((state.unsqueeze(0) << bits) | ks) & 0xFFFF
+            flat = cands.reshape(n_sym * beam, n)
+            dec = torch.empty(n_sym * beam, n, dtype=torch.float32, device=device)
+            ext.decode(flat.to(torch.int16), dec, True, False)
+            total = score.unsqueeze(0) + (dec - tiles[:, i]).square().view(
+                n_sym, beam, n
+            )
+            vals, pos = total.reshape(n_sym * beam, n).topk(beam, dim=0, largest=False)
+            score = vals
+            parent[i] = pos % beam
+            gather_n = rng_n.unsqueeze(0).expand(beam, n)
+            state = flat[pos, gather_n]
+            chosen[i] = state
+        cur = score.argmin(dim=0)
+        for i in range(l - 1, -1, -1):
+            encoded[:, i] = chosen[i, cur, rng_n]
+            cur = parent[i, cur, rng_n]
+        start = encoded[:, -1] & wrap
+    return encoded.to(torch.int16)
+
+
+def _quantize_fast(
+    weights: list,
+    bits: int,
+    device: str,
+    h_cache: dict,
+    greedy: bool = False,
+    beam: int = 1,
+) -> list[dict]:
+    """All-tiles encode, no LDLQ strip walk and no global-scale search.
 
     Identity-Hessian LDLQ walks 320 K-tiles per matrix (~5.3 s/expert on GB10).
     Uncalibrated fallback plus skip_g_scale keeps the MCG trellis the inference
-    kernel expects, without the per-strip compensation GEMMs.
+    kernel expects, without the per-strip compensation GEMMs. greedy=True uses
+    a 2**K sliding-window search instead of tail-biting Viterbi.
     """
     import torch
     from exllamav3.modules.quant.exl3_lib.quantize import (
@@ -217,11 +292,17 @@ def _quantize_fast(weights: list, bits: int, device: str, h_cache: dict) -> list
             .contiguous()
         )
         tiles = tiles[:, perm]
-        idxs = []
-        for i in range(0, tiles.shape[0], chunk):
-            _qw, qi = quantize_tiles(tiles[i : i + chunk], qa)
-            idxs.append(qi)
-        encoded = torch.cat(idxs, 0).view(tiles_k, tiles_n, 256)
+        if greedy:
+            encoded = _quantize_greedy_tiles(
+                tiles, bits, device, beam=beam
+            ).view(tiles_k, tiles_n, 256)
+        else:
+            idxs = []
+            for i in range(0, tiles.shape[0], chunk):
+                _qw, qi = quantize_tiles(tiles[i : i + chunk], qa)
+                idxs.append(qi)
+            encoded = torch.cat(idxs, 0).view(tiles_k, tiles_n, 256)
+            del idxs
         trellis = pack_trellis(encoded, qa)
         packed_list.append(
             {
@@ -231,12 +312,18 @@ def _quantize_fast(weights: list, bits: int, device: str, h_cache: dict) -> list
                 "mcg": torch.tensor(codebook_mcg_mult, dtype=torch.uint32).view(torch.int).cpu(),
             }
         )
-        del wf, wr, tiles, encoded, trellis, idxs
+        del wf, wr, tiles, encoded, trellis
     return packed_list
 
 
 def _quantize_group(
-    weights: list, bits: int, device: str, h_cache: dict, fast: bool = True
+    weights: list,
+    bits: int,
+    device: str,
+    h_cache: dict,
+    fast: bool = True,
+    greedy: bool = False,
+    beam: int = 1,
 ) -> list[dict]:
     """weights: CPU/GPU float32 (in, out), same shape. Returns packed dicts."""
     from exllamav3.modules.quant.exl3_lib.quantize import (
@@ -247,7 +334,9 @@ def _quantize_group(
     if not weights:
         return []
     if fast:
-        return _quantize_fast(weights, bits, device, h_cache)
+        return _quantize_fast(
+            weights, bits, device, h_cache, greedy=greedy, beam=beam
+        )
     in_features = int(weights[0].shape[0])
     h_data = _identity_h(in_features, device, h_cache)
     qargs = [quant_args_for(bits, device) for _ in weights]
@@ -281,6 +370,8 @@ def convert_shards(
     allow_partial: bool,
     only_files: set[str] | None = None,
     fast: bool = True,
+    greedy: bool = False,
+    beam: int = 1,
 ) -> int:
     from safetensors.torch import safe_open, save_file
 
@@ -353,7 +444,15 @@ def convert_shards(
                         scale = fh.get_tensor(sname)
                         ws.append(_dequant_t(w, scale, device))
                         stems.append(wname[: -len(".weight")])
-                    packed_list = _quantize_group(ws, bits, device, h_cache, fast=fast)
+                    packed_list = _quantize_group(
+                        ws,
+                        bits,
+                        device,
+                        h_cache,
+                        fast=fast,
+                        greedy=greedy,
+                        beam=beam,
+                    )
                     del ws
                     for stem, packed in zip(stems, packed_list):
                         for suf, val in packed.items():
@@ -418,6 +517,17 @@ def main() -> int:
         action="store_true",
         help="Use identity-Hessian LDLQ instead of the default all-tiles fallback.",
     )
+    ap.add_argument(
+        "--greedy",
+        action="store_true",
+        help="Greedy/beam K-bit sliding-window encode instead of tail-biting Viterbi.",
+    )
+    ap.add_argument(
+        "--beam",
+        type=int,
+        default=16,
+        help="Beam width for --greedy (1 = pure greedy). Ignored without --greedy.",
+    )
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument(
         "--link-only",
@@ -444,7 +554,10 @@ def main() -> int:
     idx = _load_index(args.src)
     expert = [n for n in idx["weight_map"] if is_routed_expert_tensor(n)]
     weights = [n for n in expert if is_routed_expert_weight(n)]
-    print(f"routed expert tensors={len(expert)} weights={len(weights)} bits={args.bits}")
+    print(
+        f"routed expert tensors={len(expert)} weights={len(weights)} "
+        f"bits={args.bits} greedy={args.greedy} beam={args.beam if args.greedy else 0}"
+    )
     print(f"wrote {args.dst / 'config.json'}")
     if args.dry_run:
         return 0
@@ -477,6 +590,8 @@ def main() -> int:
         args.allow_partial,
         only,
         fast=not args.ldlq,
+        greedy=args.greedy,
+        beam=args.beam if args.greedy else 1,
     )
 
 

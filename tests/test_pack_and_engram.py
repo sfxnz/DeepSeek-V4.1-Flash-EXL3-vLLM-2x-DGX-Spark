@@ -141,7 +141,16 @@ class QuantizeFastTests(unittest.TestCase):
         self.assertIn("def _quantize_fast", src)
         self.assertIn("skip_g_scale=True", src)
         self.assertIn("fast=not args.ldlq", src)
-        self.assertTrue(q.convert_shards.__defaults__[-1] is True)
+        self.assertIn("greedy=args.greedy", src)
+        self.assertIn("beam=args.beam if args.greedy else 1", src)
+        self.assertIn("ext.decode", src)
+        self.assertIn("passes: int = 2", src)
+        self.assertIn("del idxs", src)
+        self.assertNotIn(
+            "del wf, wr, tiles, encoded, trellis, idxs",
+            src,
+        )
+        self.assertEqual(q.convert_shards.__defaults__[-3:], (True, False, 1))
 
 
 class RebuildIndexTests(unittest.TestCase):
