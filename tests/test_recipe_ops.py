@@ -134,6 +134,7 @@ class RecipeOpsTests(unittest.TestCase):
             "deepseek_v4_sparse_mla_attention_warmup",
             _read("docker/patch/sitecustomize.py"),
         )
+        self.assertIn("compile_or_warm_up_model", _read("docker/patch/sitecustomize.py"))
         self.assertIn("libcusparse-dev-13-0", df)
         self.assertIn("VLLM_EXL3_NO_CUDA=1", df)
         self.assertIn("exl3_moe", df)

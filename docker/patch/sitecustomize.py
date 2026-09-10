@@ -46,3 +46,11 @@ try:
     _kw.kernel_warmup = lambda worker: None
 except Exception:
     pass
+
+try:
+    from vllm.v1.worker.gpu_worker import Worker
+    from vllm.v1.worker.worker_base import CompilationTimes
+
+    Worker.compile_or_warm_up_model = lambda self: CompilationTimes(0.0, 0.0)
+except Exception:
+    pass
