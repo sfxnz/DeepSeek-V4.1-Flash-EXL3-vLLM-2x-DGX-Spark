@@ -130,6 +130,10 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("sitecustomize.py", df)
         self.assertIn('ENTRYPOINT ["vllm", "serve"]', df)
         self.assertIn("load_general_plugins", _read("docker/patch/sitecustomize.py"))
+        self.assertIn(
+            "deepseek_v4_sparse_mla_attention_warmup",
+            _read("docker/patch/sitecustomize.py"),
+        )
         self.assertIn("libcusparse-dev-13-0", df)
         self.assertIn("VLLM_EXL3_NO_CUDA=1", df)
         self.assertIn("exl3_moe", df)

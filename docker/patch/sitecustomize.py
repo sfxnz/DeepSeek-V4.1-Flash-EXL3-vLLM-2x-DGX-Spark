@@ -36,3 +36,12 @@ try:
     Exl3Config.from_config = _exl3_from_config_with_block_size
 except Exception:
     pass
+
+# DSv4 sparse-MLA mixed warmup still dummy-forwards through DeepGEMM paged-MQA
+# (block_kv must be 32 or 64) after autotune is disabled. Skip that warmup.
+try:
+    import vllm.model_executor.warmup.kernel_warmup as _kw
+
+    _kw.deepseek_v4_sparse_mla_attention_warmup = lambda worker: None
+except Exception:
+    pass
