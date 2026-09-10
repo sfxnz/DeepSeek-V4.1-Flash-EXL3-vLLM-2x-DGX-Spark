@@ -205,6 +205,8 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("--tool-call-parser deepseek_v41", run)
         self.assertIn("--reasoning-parser deepseek_v41", run)
         self.assertIn('"thinking":false', run)
+        self.assertIn('VLLM_PLUGINS=vllm_exl3', run)
+        self.assertIn("--quantization", run)
 
 
 if __name__ == "__main__":
