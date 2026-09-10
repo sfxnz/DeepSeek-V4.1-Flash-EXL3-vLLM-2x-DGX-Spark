@@ -47,6 +47,9 @@ def build_quantization_config(
         "codebook": codebook,
         "mtp_experts": "source",
         "mtp_experts_start_layer": BACKBONE_LAYERS,
+        # Copied onto Exl3Config so DSV4.1's scale mapper uses MXFP8
+        # ``weight_scale`` (not block-FP8 ``weight_scale_inv``).
+        "weight_block_size": [32, 32],
         # Not bf16_as_stored: attention/shared-expert tensors stay official
         # MXFP8 (ue8m0, 32x32). vllm-exl3 delegates those to DeepseekV4FP8Config.
         "non_routed_quantization": {

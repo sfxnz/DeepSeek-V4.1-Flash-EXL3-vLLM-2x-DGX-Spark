@@ -39,6 +39,7 @@ class PackMetaTests(unittest.TestCase):
         self.assertEqual(cfg["non_routed_quantization"]["weight_block_size"], [32, 32])
         self.assertEqual(cfg["non_routed_quantization"]["scale_fmt"], "ue8m0")
         self.assertEqual(cfg["non_routed_quantization"]["expert_dtype"], "fp4")
+        self.assertEqual(cfg["weight_block_size"], [32, 32])
 
     def test_apply_pack_config_keeps_nested_text_config(self) -> None:
         src = {
