@@ -298,7 +298,9 @@ start_local() {
     --ulimit memlock=-1:-1 \
     "${vol_args[@]}" \
     "${env_args[@]}" \
+    --entrypoint vllm \
     "$IMAGE" \
+    serve \
     "$serve_model" \
     --tensor-parallel-size "$TP" \
     --nnodes "$NNODES" \

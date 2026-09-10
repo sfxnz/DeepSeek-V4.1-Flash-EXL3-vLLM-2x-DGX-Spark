@@ -127,6 +127,7 @@ class RecipeOpsTests(unittest.TestCase):
         df = _read("docker/Dockerfile")
         self.assertIn("EXLLAMAV3_REF=5be886578ec80324c2c715269387be2058724b6e", df)
         self.assertIn("patch_exllamav3_aarch64.py", df)
+        self.assertIn('ENTRYPOINT ["vllm", "serve"]', df)
         self.assertIn("libcusparse-dev-13-0", df)
         self.assertIn("VLLM_EXL3_NO_CUDA=1", df)
         self.assertIn("exl3_moe", df)
@@ -207,6 +208,9 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn('"thinking":false', run)
         self.assertIn('VLLM_PLUGINS=vllm_exl3', run)
         self.assertIn("--quantization", run)
+        self.assertIn("--entrypoint vllm", run)
+        serve_idx = run.find("--entrypoint vllm")
+        self.assertIn("serve", run[serve_idx : serve_idx + 400])
 
 
 if __name__ == "__main__":

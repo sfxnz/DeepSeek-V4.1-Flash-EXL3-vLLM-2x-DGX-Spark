@@ -29,3 +29,4 @@ RUN apt-get update \
 
 ENV VLLM_PLUGINS=vllm_exl3
 ENV DSV41_ENGRAM_DISK=1
+ENTRYPOINT ["vllm", "serve"]
