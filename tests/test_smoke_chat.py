@@ -64,6 +64,7 @@ class SmokeChatTests(unittest.TestCase):
                 )
         finally:
             httpd.shutdown()
+            httpd.server_close()
 
     def test_cli_fails_on_empty_thinking_content(self) -> None:
         httpd, url = _serve({"choices": [{"message": {"content": "   "}}]})
@@ -78,3 +79,4 @@ class SmokeChatTests(unittest.TestCase):
             self.assertIn("empty content", proc.stderr)
         finally:
             httpd.shutdown()
+            httpd.server_close()
