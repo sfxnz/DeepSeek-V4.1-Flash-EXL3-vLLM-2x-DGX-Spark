@@ -135,6 +135,11 @@ class RecipeOpsTests(unittest.TestCase):
             _read("docker/patch/sitecustomize.py"),
         )
         self.assertIn("compile_or_warm_up_model", _read("docker/patch/sitecustomize.py"))
+        site = _read("docker/patch/sitecustomize.py")
+        self.assertIn("coerce_swa_block_size", site)
+        self.assertIn("DeepseekV41Config", site)
+        self.assertIn("from sm120_page import", site)
+        self.assertTrue((ROOT / "docker/patch/sm120_page.py").is_file())
         self.assertIn("libcusparse-dev-13-0", df)
         self.assertIn("VLLM_EXL3_NO_CUDA=1", df)
         self.assertIn("exl3_moe", df)

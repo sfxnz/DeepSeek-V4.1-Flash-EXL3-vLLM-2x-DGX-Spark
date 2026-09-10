@@ -6,6 +6,11 @@ except ImportError:
 else:
     apport_python_hook.install()
 
+import sys
+
+if "/opt/dsv41-patch" not in sys.path:
+    sys.path.insert(0, "/opt/dsv41-patch")
+
 # Load vLLM general plugins in every process (API, EngineCore, workers).
 # VLLM_PLUGINS=vllm_exl3 is not enough on this image: EngineCore can resolve
 # --quantization exl3 before load_general_plugins() runs.
@@ -52,5 +57,51 @@ try:
     from vllm.v1.worker.worker_base import CompilationTimes
 
     Worker.compile_or_warm_up_model = lambda self: CompilationTimes(0.0, 0.0)
+except Exception:
+    pass
+
+# FlashInfer SM120 DSV4 decode is compiled only for page_block_size=64.
+# Upstream V4.1 hardcodes SWA pages to 32 (DeepGEMM paged-MQA).
+try:
+    from sm120_page import coerce_swa_block_size
+    from vllm.v1.attention.backends.mla.sparse_swa import DeepseekV4SWACache
+
+    _swa_init = DeepseekV4SWACache.__init__
+
+    def _swa_init_sm120_page(self, *args, **kwargs):
+        if "block_size" in kwargs:
+            kwargs["block_size"] = coerce_swa_block_size(kwargs["block_size"])
+        elif len(args) >= 7:
+            args = list(args)
+            args[6] = coerce_swa_block_size(args[6])
+            args = tuple(args)
+        return _swa_init(self, *args, **kwargs)
+
+    DeepseekV4SWACache.__init__ = _swa_init_sm120_page
+except Exception:
+    pass
+
+# --language-model-only still flattens vision_n_layers onto hf_config, so SWA
+# prefill index rows widen to window+1024=1152. SM120 DSV4 decode topk is
+# {128,192,256,512,1024}. This image is text-only.
+try:
+    from vllm.transformers_utils.configs.deepseek_v41 import DeepseekV41Config
+
+    _v41_cfg_init = DeepseekV41Config.__init__
+
+    def _v41_cfg_init_text_only(self, *args, **kwargs):
+        from sm120_page import text_only_vision_n_layers
+
+        _v41_cfg_init(self, *args, **kwargs)
+        self.vision_n_layers = text_only_vision_n_layers(
+            getattr(self, "vision_n_layers", 0), True
+        )
+        if self.vision_n_layers == 0:
+            self.vision_max_n_token = 0
+            self.is_mm_prefix_lm = False
+            self.mm_prefix_clamp_sliding_window = False
+            self.mm_prefix_span_leading_pad_modulus = 0
+
+    DeepseekV41Config.__init__ = _v41_cfg_init_text_only
 except Exception:
     pass
