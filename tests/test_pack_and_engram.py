@@ -60,6 +60,69 @@ class PackMetaTests(unittest.TestCase):
         self.assertFalse(self.meta.is_routed_expert_tensor("mtp.layers.0.ffn.experts.0.w1.weight"))
 
 
+class CheckExl3ShardTests(unittest.TestCase):
+    def test_rejects_leftover_mxfp4_expert_weights(self) -> None:
+        chk = _load("tools/check_exl3_shard.py", "check_exl3_shard")
+        with tempfile.TemporaryDirectory() as d:
+            hdr = {
+                "layers.6.ffn.experts.0.w1.weight": {
+                    "dtype": "U8",
+                    "shape": [2, 2],
+                    "data_offsets": [0, 4],
+                },
+                "__metadata__": {"format": "pt"},
+            }
+            hb = json.dumps(hdr).encode()
+            hb += b" " * ((8 - len(hb) % 8) % 8)
+            shard = Path(d) / "model-00003-of-00048.safetensors"
+            with shard.open("wb") as fh:
+                fh.write(struct.pack("<Q", len(hb)))
+                fh.write(hb)
+                fh.write(b"\x00" * 4)
+            probs = chk.check_shard(shard)
+            self.assertTrue(any("leftover" in p for p in probs))
+
+    def test_accepts_trellis_expert_shard(self) -> None:
+        chk = _load("tools/check_exl3_shard.py", "check_exl3_shard")
+        with tempfile.TemporaryDirectory() as d:
+            hdr = {
+                "layers.6.ffn.experts.0.w1.trellis": {
+                    "dtype": "I16",
+                    "shape": [2, 2, 32],
+                    "data_offsets": [0, 256],
+                },
+                "layers.6.ffn.experts.0.w1.suh": {
+                    "dtype": "F16",
+                    "shape": [32],
+                    "data_offsets": [256, 320],
+                },
+                "layers.6.ffn.experts.0.w1.svh": {
+                    "dtype": "F16",
+                    "shape": [32],
+                    "data_offsets": [320, 384],
+                },
+                "layers.6.ffn.experts.0.w1.mcg": {
+                    "dtype": "I32",
+                    "shape": [],
+                    "data_offsets": [384, 388],
+                },
+                "layers.6.ffn.gate.weight": {
+                    "dtype": "BF16",
+                    "shape": [2, 2],
+                    "data_offsets": [388, 396],
+                },
+                "__metadata__": {"format": "pt"},
+            }
+            hb = json.dumps(hdr).encode()
+            hb += b" " * ((8 - len(hb) % 8) % 8)
+            shard = Path(d) / "model-00003-of-00048.safetensors"
+            with shard.open("wb") as fh:
+                fh.write(struct.pack("<Q", len(hb)))
+                fh.write(hb)
+                fh.write(b"\x00" * 396)
+            self.assertEqual(chk.check_shard(shard), [])
+
+
 class AssemblePackTests(unittest.TestCase):
     def test_assemble_pulls_spark2_shards_and_rebuilds_index(self) -> None:
         src = (ROOT / "tools/assemble_pack.sh").read_text()
