@@ -26,8 +26,19 @@ def prefill_swa_topk(window_size: int, max_image_tokens: int) -> int:
     return int(window_size) + int(max_image_tokens)
 
 
+def text_only_max_image_tokens(max_image_tokens: int, language_model_only: bool) -> int:
+    """Collapse SWA prefill index width without dropping VL gate params.
+
+    Zeroing ``vision_n_layers`` skips ``gate.bias_vl`` and KeyErrors on load.
+    ``vision_max_n_token=0`` is enough for FlashInfer DSV4 decode topk=128.
+    """
+    if language_model_only:
+        return 0
+    return int(max_image_tokens)
+
+
 def text_only_vision_n_layers(vision_n_layers: int, language_model_only: bool) -> int:
-    """`--language-model-only` must not leave vision_n_layers > 0 on hf_config."""
+    """Do not apply this to hf_config: VL checkpoints need vision_n_layers>0."""
     if language_model_only:
         return 0
     return int(vision_n_layers)

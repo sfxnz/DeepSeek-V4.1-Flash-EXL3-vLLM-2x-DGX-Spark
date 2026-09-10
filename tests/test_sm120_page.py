@@ -44,9 +44,22 @@ class Sm120PageTests(unittest.TestCase):
         self.assertEqual(topk, 128)
         self.assertIn(topk, self.mod.FLASHINFER_DSV4_DECODE_TOPK)
 
-    def test_language_model_only_zeros_vision_layers(self) -> None:
-        self.assertEqual(self.mod.text_only_vision_n_layers(24, True), 0)
-        self.assertEqual(self.mod.text_only_vision_n_layers(24, False), 24)
+    def test_language_model_only_zeros_max_image_tokens_not_layers(self) -> None:
+        self.assertEqual(self.mod.text_only_max_image_tokens(1024, True), 0)
+        self.assertEqual(self.mod.text_only_max_image_tokens(1024, False), 1024)
+        topk = self.mod.prefill_swa_topk(
+            self.mod.V41_SLIDING_WINDOW,
+            self.mod.text_only_max_image_tokens(
+                self.mod.V41_VISION_MAX_IMAGE_TOKENS, True
+            ),
+        )
+        self.assertIn(topk, self.mod.FLASHINFER_DSV4_DECODE_TOPK)
+
+    def test_sitecustomize_does_not_zero_vision_n_layers(self) -> None:
+        site = (ROOT / "docker/patch/sitecustomize.py").read_text()
+        self.assertIn("text_only_max_image_tokens", site)
+        self.assertIn("vision_max_n_token", site)
+        self.assertNotIn("self.vision_n_layers =", site)
 
 
 if __name__ == "__main__":

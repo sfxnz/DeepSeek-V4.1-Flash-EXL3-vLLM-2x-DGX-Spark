@@ -81,26 +81,21 @@ try:
 except Exception:
     pass
 
-# --language-model-only still flattens vision_n_layers onto hf_config, so SWA
-# prefill index rows widen to window+1024=1152. SM120 DSV4 decode topk is
-# {128,192,256,512,1024}. This image is text-only.
+# --language-model-only still flattens vision_max_n_token onto hf_config, so
+# SWA prefill index rows widen to window+1024=1152. SM120 DSV4 decode topk is
+# {128,192,256,512,1024}. Do not zero vision_n_layers: VL checkpoints ship
+# gate.bias_vl and load_weights KeyErrors without that param.
 try:
+    from sm120_page import text_only_max_image_tokens
     from vllm.transformers_utils.configs.deepseek_v41 import DeepseekV41Config
 
     _v41_cfg_init = DeepseekV41Config.__init__
 
     def _v41_cfg_init_text_only(self, *args, **kwargs):
-        from sm120_page import text_only_vision_n_layers
-
         _v41_cfg_init(self, *args, **kwargs)
-        self.vision_n_layers = text_only_vision_n_layers(
-            getattr(self, "vision_n_layers", 0), True
+        self.vision_max_n_token = text_only_max_image_tokens(
+            getattr(self, "vision_max_n_token", 0), True
         )
-        if self.vision_n_layers == 0:
-            self.vision_max_n_token = 0
-            self.is_mm_prefix_lm = False
-            self.mm_prefix_clamp_sliding_window = False
-            self.mm_prefix_span_leading_pad_modulus = 0
 
     DeepseekV41Config.__init__ = _v41_cfg_init_text_only
 except Exception:
