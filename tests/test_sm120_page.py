@@ -21,6 +21,12 @@ class Sm120PageTests(unittest.TestCase):
     def setUp(self) -> None:
         self.mod = _load()
 
+    def test_indexer_kernel_page_is_deepgemm_legal(self) -> None:
+        sizes = self.mod.indexer_kernel_block_sizes()
+        self.assertEqual(sizes, (64,))
+        for size in sizes:
+            self.assertIn(size, (32, 64))
+
     def test_coerce_upstream_swa_32_to_flashinfer_64(self) -> None:
         self.assertEqual(
             self.mod.coerce_swa_block_size(self.mod.UPSTREAM_V41_SWA_PAGE_BLOCK_SIZE),
@@ -60,6 +66,8 @@ class Sm120PageTests(unittest.TestCase):
         self.assertIn("text_only_max_image_tokens", site)
         self.assertIn("vision_max_n_token", site)
         self.assertNotIn("self.vision_n_layers =", site)
+        self.assertIn("DeepseekV4IndexerBackend", site)
+        self.assertIn("indexer_kernel_block_sizes", site)
 
 
 if __name__ == "__main__":

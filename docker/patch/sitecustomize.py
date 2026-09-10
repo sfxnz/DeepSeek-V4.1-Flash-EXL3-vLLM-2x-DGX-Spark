@@ -81,6 +81,18 @@ try:
 except Exception:
     pass
 
+# Indexer decode metadata feeds DeepGEMM paged-MQA, which asserts
+# block_kv in {32, 64}. Upstream V4 indexer reports 128 on SM12.
+try:
+    from sm120_page import indexer_kernel_block_sizes
+    from vllm.v1.attention.backends.mla.indexer import DeepseekV4IndexerBackend
+
+    DeepseekV4IndexerBackend.get_supported_kernel_block_sizes = staticmethod(
+        lambda: list(indexer_kernel_block_sizes())
+    )
+except Exception:
+    pass
+
 # --language-model-only still flattens vision_max_n_token onto hf_config, so
 # SWA prefill index rows widen to window+1024=1152. SM120 DSV4 decode topk is
 # {128,192,256,512,1024}. Do not zero vision_n_layers: VL checkpoints ship

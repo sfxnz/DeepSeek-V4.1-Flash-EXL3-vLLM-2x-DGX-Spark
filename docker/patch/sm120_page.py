@@ -14,6 +14,11 @@ V41_SLIDING_WINDOW = 128
 V41_VISION_MAX_IMAGE_TOKENS = 1024
 
 
+def indexer_kernel_block_sizes() -> tuple[int, ...]:
+    """DeepGEMM paged-MQA logits only accept block_kv in {32, 64}."""
+    return (FLASHINFER_DSV4_PAGE_BLOCK_SIZE,)
+
+
 def coerce_swa_block_size(block_size: int) -> int:
     """Map the V4.1 SWA page of 32 onto the SM120 DSV4 decode page of 64."""
     if int(block_size) == UPSTREAM_V41_SWA_PAGE_BLOCK_SIZE:
