@@ -7,6 +7,7 @@ import json
 import sys
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 
 def post(url: str, body: dict) -> dict:
@@ -41,6 +42,12 @@ def main() -> int:
     ap.add_argument("--model", default="deepseek-ai/DeepSeek-V4.1-Flash")
     ap.add_argument("--prompt", default="What is 17*19? Return only the integer.")
     ap.add_argument("--max-tokens", type=int, default=32)
+    ap.add_argument(
+        "--json-out",
+        type=Path,
+        default=None,
+        help="Write the raw chat-completion JSON body here.",
+    )
     args = ap.parse_args()
     body = {
         "model": args.model,
@@ -51,6 +58,8 @@ def main() -> int:
     }
     payload = post(args.url, body)
     text = content_of(payload)
+    if args.json_out is not None:
+        args.json_out.write_text(json.dumps(payload) + "\n")
     print(text)
     return 0
 
