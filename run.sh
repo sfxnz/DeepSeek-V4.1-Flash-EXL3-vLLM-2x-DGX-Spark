@@ -262,6 +262,11 @@ start_local() {
   else
     eager_args+=(--compilation-config "$COMPILATION_CONFIG")
   fi
+  # FlashInfer SM120 sparse-MLA autotune feeds DeepGEMM paged-MQA which
+  # asserts block_kv in {32, 64}; skip that warmup on this pack.
+  local kernel_args=(
+    --kernel-config '{"enable_flashinfer_autotune":false,"enable_jit_warmup":false}'
+  )
 
   local vol_args=(-v "${HF_CACHE}:${HF_HOME_IN_CONTAINER}")
   local batched_args=()
@@ -316,6 +321,7 @@ start_local() {
     --max-num-seqs "$MAX_NUM_SEQS" \
     "${batched_args[@]}" \
     "${eager_args[@]}" \
+    "${kernel_args[@]}" \
     --block-size "$BLOCK_SIZE" \
     --quantization "$QUANTIZATION" \
     "${spec_args[@]}" \

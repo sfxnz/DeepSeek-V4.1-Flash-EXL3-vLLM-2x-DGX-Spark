@@ -214,6 +214,9 @@ class RecipeOpsTests(unittest.TestCase):
         serve_idx = run.find("--entrypoint vllm")
         self.assertIn("serve", run[serve_idx : serve_idx + 400])
         self.assertIn('BLOCK_SIZE="${BLOCK_SIZE:-128}"', run)
+        self.assertIn('ENFORCE_EAGER="${ENFORCE_EAGER:-1}"', run)
+        self.assertIn("enable_flashinfer_autotune", run)
+        self.assertIn("enable_jit_warmup", run)
 
 
 if __name__ == "__main__":
