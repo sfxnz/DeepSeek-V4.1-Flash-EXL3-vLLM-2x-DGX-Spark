@@ -127,6 +127,7 @@ class AssemblePackTests(unittest.TestCase):
     def test_assemble_pulls_spark2_shards_and_rebuilds_index(self) -> None:
         src = (ROOT / "tools/assemble_pack.sh").read_text()
         self.assertIn("rebuild_index.py", src)
+        self.assertIn("chmod a+w", src)
         self.assertIn("seq 23 42", src)
         self.assertIn('quant_method")=="exl3"', src)
         self.assertIn('WORKER:-10.100.8.2', src)

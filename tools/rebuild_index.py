@@ -23,7 +23,10 @@ def rebuild(dst: Path) -> dict[str, str]:
         for name in tensor_names(shard):
             weight_map[name] = shard.name
     idx = {"metadata": {"total_size": 0}, "weight_map": weight_map}
-    (dst / "model.safetensors.index.json").write_text(json.dumps(idx, indent=2) + "\n")
+    path = dst / "model.safetensors.index.json"
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(idx, indent=2) + "\n")
+    tmp.replace(path)
     return weight_map
 
 
