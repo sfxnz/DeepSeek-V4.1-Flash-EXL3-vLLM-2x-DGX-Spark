@@ -213,7 +213,8 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("--entrypoint vllm", run)
         serve_idx = run.find("--entrypoint vllm")
         self.assertIn("serve", run[serve_idx : serve_idx + 400])
-        self.assertIn('BLOCK_SIZE="${BLOCK_SIZE:-64}"', run)
+        self.assertIn('BLOCK_SIZE="${BLOCK_SIZE:-128}"', run)
+        self.assertIn("VLLM_KV_CACHE_LAYOUT=LBNHC", run)
 
 
 if __name__ == "__main__":
