@@ -17,8 +17,8 @@ list="$(mktemp)"
 for i in $(seq 23 42); do
   printf 'model-%05d-of-00048.safetensors\n' "$i"
 done >"$list"
-rsync -a --partial --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' \
-  --files-from="$list" "$WORKER:$DST/" "$DST/"
+RSYNC=(rsync -rltD --partial --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new')
+"${RSYNC[@]}" --files-from="$list" "$WORKER:$DST/" "$DST/"
 rm -f "$list"
 
 missing=()
@@ -42,6 +42,5 @@ fi
 
 log "push pack to $WORKER"
 ssh -o StrictHostKeyChecking=accept-new "$WORKER" "mkdir -p '$DST'"
-rsync -a --partial --info=progress2 -e 'ssh -o StrictHostKeyChecking=accept-new' \
-  "$DST/" "$WORKER:$DST/"
+"${RSYNC[@]}" "$DST/" "$WORKER:$DST/"
 log "assembled $DST"

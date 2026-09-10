@@ -67,7 +67,8 @@ class AssemblePackTests(unittest.TestCase):
         self.assertIn("seq 23 42", src)
         self.assertIn('quant_method")=="exl3"', src)
         self.assertIn('WORKER:-10.100.8.2', src)
-        self.assertIn("rsync -a", src)
+        self.assertIn("rsync -rltD", src)
+        self.assertNotIn("chgrp", src)
 
 
 class QuantizeFastTests(unittest.TestCase):
