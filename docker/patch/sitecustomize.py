@@ -81,15 +81,20 @@ try:
 except Exception:
     pass
 
-# Indexer decode metadata feeds DeepGEMM paged-MQA, which asserts
-# block_kv in {32, 64}. Upstream V4 indexer reports 128 on SM12.
+# Indexer + compressed MLA share a packed KV group, so they must agree.
+# DeepGEMM paged-MQA asserts block_kv in {32, 64}; FlashInfer DSV4 decode
+# wants page 64. Upstream reports 128 on SM12, which then has no common size
+# if only the indexer is pinned to 64.
 try:
     from sm120_page import indexer_kernel_block_sizes
+    from vllm.models.deepseek_v4_1.nvidia.flashinfer_sparse import (
+        DeepseekV4FlashInferMLASparseBackend,
+    )
     from vllm.v1.attention.backends.mla.indexer import DeepseekV4IndexerBackend
 
-    DeepseekV4IndexerBackend.get_supported_kernel_block_sizes = staticmethod(
-        lambda: list(indexer_kernel_block_sizes())
-    )
+    _kbs = staticmethod(lambda: list(indexer_kernel_block_sizes()))
+    DeepseekV4IndexerBackend.get_supported_kernel_block_sizes = _kbs
+    DeepseekV4FlashInferMLASparseBackend.get_supported_kernel_block_sizes = _kbs
 except Exception:
     pass
 

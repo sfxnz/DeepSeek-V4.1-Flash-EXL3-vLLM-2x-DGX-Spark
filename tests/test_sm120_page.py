@@ -67,6 +67,7 @@ class Sm120PageTests(unittest.TestCase):
         self.assertIn("vision_max_n_token", site)
         self.assertNotIn("self.vision_n_layers =", site)
         self.assertIn("DeepseekV4IndexerBackend", site)
+        self.assertIn("DeepseekV4FlashInferMLASparseBackend", site)
         self.assertIn("indexer_kernel_block_sizes", site)
 
 
