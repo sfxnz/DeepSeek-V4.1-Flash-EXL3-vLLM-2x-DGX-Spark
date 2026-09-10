@@ -173,7 +173,7 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("exceeds 2", proc.stderr)
 
     def test_validate_only_refuses_spec_tokens_not_divisible_by_5(self) -> None:
-        proc = _run_sh(NUM_SPECULATIVE_TOKENS="3")
+        proc = _run_sh(SPEC="dspark", NUM_SPECULATIVE_TOKENS="3")
         self.assertNotEqual(proc.returncode, 0)
         self.assertIn("not divisible by 5", proc.stderr)
 
@@ -217,7 +217,8 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("--entrypoint vllm", run)
         serve_idx = run.find("--entrypoint vllm")
         self.assertIn("serve", run[serve_idx : serve_idx + 400])
-        self.assertIn('BLOCK_SIZE="${BLOCK_SIZE:-128}"', run)
+        self.assertIn('BLOCK_SIZE="${BLOCK_SIZE:-64}"', run)
+        self.assertIn('SPEC="${SPEC:-none}"', run)
         self.assertIn('ENFORCE_EAGER="${ENFORCE_EAGER:-1}"', run)
         self.assertIn("enable_flashinfer_autotune", run)
         self.assertIn("enable_jit_warmup", run)

@@ -25,8 +25,8 @@ Not frozen yet. Smoke is `python3 smoke_chat.py` with thinking off.
 | `--kv-cache-memory` | `4294967296` |
 | `--quantization` | `exl3` |
 | Engram | disk (`DSV41_ENGRAM_DISK=1`) |
-| `--block-size` | 128 |
-| Speculative | DSpark-5 (`SPEC=dspark`) |
+| `--block-size` | 64 |
+| Speculative | DSpark-5 (`SPEC=none`) |
 | Tokenizers / tools / reasoning | `deepseek_v41` |
 | Default thinking | `thinking=false`, `reasoning_effort=low` |
 | API | `http://<head>:8000/v1` |

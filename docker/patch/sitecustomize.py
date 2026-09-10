@@ -43,5 +43,6 @@ try:
     import vllm.model_executor.warmup.kernel_warmup as _kw
 
     _kw.deepseek_v4_sparse_mla_attention_warmup = lambda worker: None
+    _kw.kernel_warmup = lambda worker: None
 except Exception:
     pass
