@@ -141,7 +141,103 @@ def _dequant_t(weight, scale, device: str):
     return dequant_mxfp4(weight, scale).float().t().contiguous()
 
 
-def _quantize_group(weights: list, bits: int, device: str, h_cache: dict) -> list[dict]:
+def _meta_h(in_features: int, device: str, cache: dict):
+    """Uncalibrated Hessian on the meta device → q_fallback (no LDLQ walk)."""
+    import torch
+
+    key = ("meta", in_features, device)
+    hit = cache.get(key)
+    if hit is not None:
+        hit["finalized"] = False
+        return hit
+    dev = torch.device(device)
+    h = {
+        "H": torch.empty(in_features, in_features, device="meta"),
+        "device": dev,
+        "finalized": False,
+        "count": 0,
+        "first_key": f"expert.in{in_features}",
+        "num_total": 0,
+        "inf_nan": torch.zeros(2, dtype=torch.long, device=dev),
+        "L": None,
+        "q_fallback": True,
+    }
+    cache[key] = h
+    return h
+
+
+def _pack_one(out: dict) -> dict:
+    packed = {}
+    for key in ("trellis", "suh", "svh", "mcg"):
+        if key in out:
+            packed[key] = out[key].detach().cpu()
+    return packed
+
+
+def _quantize_fast(weights: list, bits: int, device: str, h_cache: dict) -> list[dict]:
+    """All-tiles Viterbi, no LDLQ strip walk and no global-scale search.
+
+    Identity-Hessian LDLQ walks 320 K-tiles per matrix (~5.3 s/expert on GB10).
+    Uncalibrated fallback plus skip_g_scale keeps the MCG trellis the inference
+    kernel expects, without the per-strip compensation GEMMs.
+    """
+    import torch
+    from exllamav3.modules.quant.exl3_lib.quantize import (
+        codebook_mcg_mult,
+        finalize_capture_H,
+        pack_trellis,
+        quantize_tiles,
+        regularize,
+        tensor_core_perm,
+    )
+
+    if not weights:
+        return []
+    dev = torch.device(device)
+    qa = quant_args_for(bits, device)
+    perm = tensor_core_perm(dev)
+    packed_list = []
+    chunk = 256
+    for w in weights:
+        wf = w.to(dev, dtype=torch.float32, non_blocking=True).contiguous()
+        in_f = int(wf.shape[0])
+        h_data = _meta_h(in_f, device, h_cache)
+        q_fallback, _H, _L, su, H_diag = finalize_capture_H(h_data, qa, False)
+        su = su.to(dev)
+        sv = (torch.randn(wf.shape[1], device=dev).sign() + 1e-5).sign().float().unsqueeze(0)
+        _aos, wr, _gs, su, sv = regularize(
+            wf, su, sv, dict(qa), False, H_diag, None, skip_g_scale=True, q_fallback=q_fallback
+        )
+        k, n = wr.shape
+        tiles_k, tiles_n = k // 16, n // 16
+        tiles = (
+            wr.reshape(tiles_k, 16, tiles_n, 16)
+            .permute(0, 2, 1, 3)
+            .reshape(tiles_k * tiles_n, 256)
+            .contiguous()
+        )
+        tiles = tiles[:, perm]
+        idxs = []
+        for i in range(0, tiles.shape[0], chunk):
+            _qw, qi = quantize_tiles(tiles[i : i + chunk], qa)
+            idxs.append(qi)
+        encoded = torch.cat(idxs, 0).view(tiles_k, tiles_n, 256)
+        trellis = pack_trellis(encoded, qa)
+        packed_list.append(
+            {
+                "trellis": trellis.detach().cpu(),
+                "suh": su.flatten().contiguous().to(dtype=torch.half).cpu(),
+                "svh": sv.flatten().contiguous().to(dtype=torch.half).cpu(),
+                "mcg": torch.tensor(codebook_mcg_mult, dtype=torch.uint32).view(torch.int).cpu(),
+            }
+        )
+        del wf, wr, tiles, encoded, trellis, idxs
+    return packed_list
+
+
+def _quantize_group(
+    weights: list, bits: int, device: str, h_cache: dict, fast: bool = True
+) -> list[dict]:
     """weights: CPU/GPU float32 (in, out), same shape. Returns packed dicts."""
     from exllamav3.modules.quant.exl3_lib.quantize import (
         quantize_exl3,
@@ -150,6 +246,8 @@ def _quantize_group(weights: list, bits: int, device: str, h_cache: dict) -> lis
 
     if not weights:
         return []
+    if fast:
+        return _quantize_fast(weights, bits, device, h_cache)
     in_features = int(weights[0].shape[0])
     h_data = _identity_h(in_features, device, h_cache)
     qargs = [quant_args_for(bits, device) for _ in weights]
@@ -163,22 +261,14 @@ def _quantize_group(weights: list, bits: int, device: str, h_cache: dict) -> lis
             verbose=False,
             swap_to_device=__import__("torch").device(device),
         )
-        packed = {}
-        for key in ("trellis", "suh", "svh", "mcg"):
-            if key in out:
-                packed[key] = out[key].detach().cpu()
-        return [packed]
+        return [_pack_one(out)]
     results = quantize_exl3_batch(weights, h_list, qargs, verbose=False)
     packed_list = []
     for item in results:
         if item is None:
             raise RuntimeError("quantize_exl3_batch returned None")
         _err, out = item
-        packed = {}
-        for key in ("trellis", "suh", "svh", "mcg"):
-            if key in out:
-                packed[key] = out[key].detach().cpu()
-        packed_list.append(packed)
+        packed_list.append(_pack_one(out))
     return packed_list
 
 
@@ -190,6 +280,7 @@ def convert_shards(
     batch: int,
     allow_partial: bool,
     only_files: set[str] | None = None,
+    fast: bool = True,
 ) -> int:
     from safetensors.torch import safe_open, save_file
 
@@ -262,7 +353,7 @@ def convert_shards(
                         scale = fh.get_tensor(sname)
                         ws.append(_dequant_t(w, scale, device))
                         stems.append(wname[: -len(".weight")])
-                    packed_list = _quantize_group(ws, bits, device, h_cache)
+                    packed_list = _quantize_group(ws, bits, device, h_cache, fast=fast)
                     del ws
                     for stem, packed in zip(stems, packed_list):
                         for suf, val in packed.items():
@@ -322,6 +413,11 @@ def main() -> int:
     ap.add_argument("--bits", type=int, default=2)
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--batch", type=int, default=8)
+    ap.add_argument(
+        "--ldlq",
+        action="store_true",
+        help="Use identity-Hessian LDLQ instead of the default all-tiles fallback.",
+    )
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument(
         "--link-only",
@@ -380,6 +476,7 @@ def main() -> int:
         args.batch,
         args.allow_partial,
         only,
+        fast=not args.ldlq,
     )
 
 

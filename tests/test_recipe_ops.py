@@ -131,6 +131,13 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("VLLM_EXL3_NO_CUDA=1", df)
         self.assertIn("exl3_moe", df)
 
+    def test_assemble_pack_is_executable_and_wired(self) -> None:
+        path = ROOT / "tools/assemble_pack.sh"
+        self.assertTrue(path.is_file())
+        self.assertTrue(os.access(path, os.X_OK))
+        run = _read("README.md")
+        self.assertIn("assemble_pack.sh", run)
+
     def test_head_preflight_before_worker_scp(self) -> None:
         run = _read("run.sh")
         idx = run.find('ORCHESTRATE" == "auto" && "$ROLE" == "head"')

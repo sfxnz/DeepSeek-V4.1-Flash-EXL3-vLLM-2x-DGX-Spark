@@ -67,7 +67,13 @@ docker exec dsv41-quant python3 -u /recipe/tools/quantize_experts_exl3.py \
   --allow-partial --batch 8 --only-files $(python3 -c "print(' '.join(f'model-{i:05d}-of-00048.safetensors' for i in range(23,43)))")
 ```
 
-3. Place the pack at `models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg` on both nodes, or `hf download sfxnz/DeepSeek-V4.1-Flash-EXL3 --revision 2.0bpw-mcg` once published. Stop the `dsv41-quant` containers before `./run.sh` — exclusive GPUs.
+3. Merge the two node outputs and copy the pack to spark2:
+
+```bash
+bash tools/assemble_pack.sh
+```
+
+4. Place the pack at `models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg` on both nodes, or `hf download sfxnz/DeepSeek-V4.1-Flash-EXL3 --revision 2.0bpw-mcg` once published. Stop the `dsv41-quant` containers before `./run.sh` — exclusive GPUs.
 
 ## Run
 

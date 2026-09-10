@@ -60,6 +60,26 @@ class PackMetaTests(unittest.TestCase):
         self.assertFalse(self.meta.is_routed_expert_tensor("mtp.layers.0.ffn.experts.0.w1.weight"))
 
 
+class AssemblePackTests(unittest.TestCase):
+    def test_assemble_pulls_spark2_shards_and_rebuilds_index(self) -> None:
+        src = (ROOT / "tools/assemble_pack.sh").read_text()
+        self.assertIn("rebuild_index.py", src)
+        self.assertIn("seq 23 42", src)
+        self.assertIn('quant_method")=="exl3"', src)
+        self.assertIn('WORKER:-10.100.8.2', src)
+        self.assertIn("rsync -a", src)
+
+
+class QuantizeFastTests(unittest.TestCase):
+    def test_default_convert_uses_fast_fallback(self) -> None:
+        q = _load("tools/quantize_experts_exl3.py", "quantize_experts_exl3")
+        src = (ROOT / "tools/quantize_experts_exl3.py").read_text()
+        self.assertIn("def _quantize_fast", src)
+        self.assertIn("skip_g_scale=True", src)
+        self.assertIn("fast=not args.ldlq", src)
+        self.assertTrue(q.convert_shards.__defaults__[-1] is True)
+
+
 class RebuildIndexTests(unittest.TestCase):
     def test_rebuild_index_from_safetensors_headers(self) -> None:
         rebuild = _load("tools/rebuild_index.py", "rebuild_index")
