@@ -60,6 +60,35 @@ class PackMetaTests(unittest.TestCase):
         self.assertFalse(self.meta.is_routed_expert_tensor("mtp.layers.0.ffn.experts.0.w1.weight"))
 
 
+class RebuildIndexTests(unittest.TestCase):
+    def test_rebuild_index_from_safetensors_headers(self) -> None:
+        rebuild = _load("tools/rebuild_index.py", "rebuild_index")
+        with tempfile.TemporaryDirectory() as d:
+            dst = Path(d)
+            hdr = {
+                "layers.6.ffn.experts.0.w1.trellis": {
+                    "dtype": "I16",
+                    "shape": [2, 2, 32],
+                    "data_offsets": [0, 256],
+                },
+                "__metadata__": {"format": "pt"},
+            }
+            hb = json.dumps(hdr).encode()
+            hb += b" " * ((8 - len(hb) % 8) % 8)
+            shard = dst / "model-00003-of-00048.safetensors"
+            with shard.open("wb") as fh:
+                fh.write(struct.pack("<Q", len(hb)))
+                fh.write(hb)
+                fh.write(b"\x00" * 256)
+            wm = rebuild.rebuild(dst)
+            self.assertEqual(
+                wm["layers.6.ffn.experts.0.w1.trellis"],
+                "model-00003-of-00048.safetensors",
+            )
+            idx = json.loads((dst / "model.safetensors.index.json").read_text())
+            self.assertEqual(idx["weight_map"], wm)
+
+
 class DownloadOfficialTests(unittest.TestCase):
     def test_enables_xet_and_pins_revision(self) -> None:
         src = (ROOT / "tools/download_official.py").read_text()
