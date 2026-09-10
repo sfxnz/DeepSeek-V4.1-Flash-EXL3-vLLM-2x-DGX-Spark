@@ -217,7 +217,7 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("--entrypoint vllm", run)
         serve_idx = run.find("--entrypoint vllm")
         self.assertIn("serve", run[serve_idx : serve_idx + 400])
-        self.assertIn('BLOCK_SIZE="${BLOCK_SIZE:-64}"', run)
+        self.assertIn('BLOCK_SIZE="${BLOCK_SIZE:-128}"', run)
         self.assertIn('SPEC="${SPEC:-none}"', run)
         self.assertIn('ENFORCE_EAGER="${ENFORCE_EAGER:-1}"', run)
         self.assertIn("enable_flashinfer_autotune", run)
