@@ -65,11 +65,12 @@ On the head node:
 ```bash
 ./run.sh
 python3 smoke_chat.py
+python3 bench_decode.py --phase prose --concurrency 1
 ```
 
 The API is `http://127.0.0.1:8000/v1`. The served model is `deepseek-ai/DeepSeek-V4.1-Flash`. Cap is `MAX_NUM_SEQS=2`. Do not send a third stream.
 
-The `smoke_chat.py` default prompt is `What is 17*19? Return only the integer.` Thinking is off. Non-empty `content` is the pass. `323` is enough.
+The `smoke_chat.py` default prompt is `What is 17*19? Return only the integer.` Thinking is off. Non-empty `content` is the pass. `323` is enough. `bench_decode.py` is streamed greedy, thinking off, 200 completion tokens, 3-run median.
 
 If `ORCHESTRATE=auto` (the default) and SSH to `WORKER_HOST` fails, `run.sh` exits 1. It does not start a TP=2 head rank alone.
 
@@ -95,7 +96,7 @@ When you are done:
 | `--quantization` | `exl3` |
 | Engram | disk (`DSV41_ENGRAM_DISK=1`) |
 | `--block-size` | 64 |
-| Speculative | `SPEC=none` |
+| Speculative | DSpark-5 (`SPEC=dspark`) |
 | Tokenizers / tools / reasoning | `deepseek_v41` |
 | Default thinking | `thinking=false`, `reasoning_effort=low` |
 | API | `http://<head>:8000/v1` |
@@ -105,12 +106,12 @@ When you are done:
 
 ## Measured on 2× DGX Spark
 
-Not frozen yet. Smoke is `python3 smoke_chat.py` with thinking off.
+Streamed greedy, thinking off, 200 completion tokens, 3-run median. Default is DSpark-5 with `--enforce-eager`. Smoke is `python3 smoke_chat.py` with thinking off.
 
 <!-- BEGIN generated measured from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
 |---|---|---:|---:|---:|
-| prose | 1 | — | — | — s |
+| prose | 1 | 21.2 | 21.2 | 0.365 s |
 <!-- END generated measured -->
 
 ## Rebuild the pack
