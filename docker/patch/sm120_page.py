@@ -45,6 +45,50 @@ def manager_block_for_flashinfer_extra(
     return FLASHINFER_DSV4_PAGE_BLOCK_SIZE * int(compress_ratio)
 
 
+PERSISTENT_TOPK_OLD = """        use_persistent_topk = current_platform.is_cuda() and topk_tokens in (
+            512,
+            1024,
+            2048,
+        )"""
+PERSISTENT_TOPK_NEW = """        use_persistent_topk = (
+            current_platform.is_cuda()
+            and topk_tokens in (512, 1024, 2048)
+            and not current_platform.is_device_capability_family(120)
+        )"""
+KPOOL_PERSISTENT_OLD = (
+    "        if current_platform.is_cuda() and select_k in (512, 1024, 2048):"
+)
+KPOOL_PERSISTENT_NEW = (
+    "        if current_platform.is_cuda() and select_k in (512, 1024, 2048) "
+    "and not current_platform.is_device_capability_family(120):"
+)
+
+
+def use_persistent_indexer_topk(is_sm120: bool, topk_tokens: int) -> bool:
+    """GB10 cannot launch persistent_topk at TopK=512 with 2 decode rows."""
+    if is_sm120:
+        return False
+    return int(topk_tokens) in (512, 1024, 2048)
+
+
+def patch_persistent_topk_source(src: str) -> str:
+    """Disable SM120 persistent_topk the same way Qwen excludes cooperative."""
+    if "use_persistent_topk" in src and "is_device_capability_family(120)" in src:
+        if PERSISTENT_TOPK_OLD not in src:
+            return src
+    if PERSISTENT_TOPK_OLD not in src:
+        raise ValueError("persistent_topk dispatch not found")
+    return src.replace(PERSISTENT_TOPK_OLD, PERSISTENT_TOPK_NEW, 1)
+
+
+def patch_kpool_persistent_topk_source(src: str) -> str:
+    if KPOOL_PERSISTENT_NEW in src:
+        return src
+    if KPOOL_PERSISTENT_OLD not in src:
+        raise ValueError("kpool persistent_topk dispatch not found")
+    return src.replace(KPOOL_PERSISTENT_OLD, KPOOL_PERSISTENT_NEW, 1)
+
+
 def uses_prefill_orchestrator(num_tokens: int) -> bool:
     """FlashInfer SM120 takes the C++ prefill path when num_tokens > 64."""
     return int(num_tokens) > FLASHINFER_DSV4_DECODE_MAX_TOKENS

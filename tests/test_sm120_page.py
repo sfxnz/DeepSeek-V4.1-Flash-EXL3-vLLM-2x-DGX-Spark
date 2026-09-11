@@ -81,6 +81,15 @@ class Sm120PageTests(unittest.TestCase):
         )
         self.assertIn(topk, self.mod.FLASHINFER_DSV4_DECODE_TOPK)
 
+    def test_sm120_disables_persistent_indexer_topk(self) -> None:
+        self.assertFalse(self.mod.use_persistent_indexer_topk(True, 512))
+        self.assertTrue(self.mod.use_persistent_indexer_topk(False, 512))
+
+    def test_patch_persistent_topk_source_excludes_sm120(self) -> None:
+        patched = self.mod.patch_persistent_topk_source(self.mod.PERSISTENT_TOPK_OLD)
+        self.assertIn("is_device_capability_family(120)", patched)
+        self.assertEqual(self.mod.patch_persistent_topk_source(patched), patched)
+
     def test_sitecustomize_does_not_zero_vision_n_layers(self) -> None:
         site = (ROOT / "docker/patch/sitecustomize.py").read_text()
         self.assertIn("text_only_max_image_tokens", site)
@@ -91,6 +100,7 @@ class Sm120PageTests(unittest.TestCase):
         self.assertIn("indexer_kernel_block_sizes", site)
         self.assertIn("manager_block_for_flashinfer_extra", site)
         self.assertIn("DeepseekV4Attention", site)
+        self.assertIn("patch_persistent_topk_source", site)
 
 
 if __name__ == "__main__":

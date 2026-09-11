@@ -11,6 +11,32 @@ import sys
 if "/opt/dsv41-patch" not in sys.path:
     sys.path.insert(0, "/opt/dsv41-patch")
 
+# GB10 (SM120) persistent_topk oversubscribes at 2 decode rows (TopK=512).
+# Patch installed vLLM before it imports. Qwen already excludes family 120
+# for cooperative topk; V4.1 indexer still calls persistent_topk.
+try:
+    from pathlib import Path
+
+    from sm120_page import (
+        patch_kpool_persistent_topk_source,
+        patch_persistent_topk_source,
+    )
+
+    _idx = Path(
+        "/usr/local/lib/python3.12/dist-packages/vllm/model_executor/layers"
+        "/sparse_attn_indexer.py"
+    )
+    if _idx.is_file():
+        _idx.write_text(patch_persistent_topk_source(_idx.read_text()))
+    _kpool = Path(
+        "/usr/local/lib/python3.12/dist-packages/vllm/model_executor/layers"
+        "/sparse_attn_indexer_kpool.py"
+    )
+    if _kpool.is_file():
+        _kpool.write_text(patch_kpool_persistent_topk_source(_kpool.read_text()))
+except Exception:
+    pass
+
 # Load vLLM general plugins in every process (API, EngineCore, workers).
 # VLLM_PLUGINS=vllm_exl3 is not enough on this image: EngineCore can resolve
 # --quantization exl3 before load_general_plugins() runs.
