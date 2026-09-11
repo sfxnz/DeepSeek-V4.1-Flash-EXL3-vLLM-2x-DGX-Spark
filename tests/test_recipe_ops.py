@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import importlib.util
 import os
 import re
 import socket
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -24,6 +26,8 @@ def _env(**extra: str) -> dict[str, str]:
     env.pop("FORCE_UNSAFE_CTX", None)
     env.pop("FORCE_UNSAFE_ENGRAM", None)
     env.pop("FORCE_UNSAFE_QUANT", None)
+    env.pop("VALIDATE_ONLY", None)
+    env.pop("RESOLVE_SNAPSHOT_ONLY", None)
     env.update(extra)
     return env
 
@@ -46,6 +50,42 @@ def _func_body(src: str, name: str) -> str:
     if m is None:
         raise AssertionError(f"missing function {name}")
     return m.group(1)
+
+
+def _load_tool(rel: str, name: str):
+    path = ROOT / rel
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise AssertionError(f"cannot load {rel}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+HUB_MODEL = "sfxnz/DeepSeek-V4.1-Flash-EXL3"
+HUB_REV = "2.0bpw-mcg"
+HUB_DIRNAME = "models--sfxnz--DeepSeek-V4.1-Flash-EXL3"
+
+
+def _hub(cache: Path) -> Path:
+    return cache / "hub" / HUB_DIRNAME
+
+
+def _resolve(hf_cache: str, **extra: str) -> subprocess.CompletedProcess[str]:
+    env = _env(**extra)
+    env.pop("VALIDATE_ONLY", None)
+    env["RESOLVE_SNAPSHOT_ONLY"] = "1"
+    env["HF_CACHE"] = hf_cache
+    env["MODEL"] = extra.get("MODEL", HUB_MODEL)
+    env["SNAPSHOT_SHA"] = extra.get("SNAPSHOT_SHA", HUB_REV)
+    return subprocess.run(
+        [str(ROOT / "run.sh")],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=str(ROOT),
+        env=env,
+    )
 
 
 class RecipeOpsTests(unittest.TestCase):
@@ -110,6 +150,18 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn('--revision "$SNAPSHOT_SHA"', run)
         self.assertIn(".run-state/worker_host", run)
         self.assertNotIn("starting local rank only", run)
+
+    def test_run_sh_does_not_default_disable_xet(self) -> None:
+        run = _read("run.sh")
+        self.assertNotIn('HF_HUB_DISABLE_XET="${HF_HUB_DISABLE_XET:-1}"', run)
+        self.assertIn("unset HF_HUB_DISABLE_XET", run)
+        self.assertIn("HF_XET_HIGH_PERFORMANCE", run)
+        self.assertIn('HF_HUB_CACHE="${HF_CACHE}/hub"', run)
+        self.assertIn('--revision "$SNAPSHOT_SHA"', run)
+        body = _func_body(run, "resolve_snapshot")
+        self.assertIn("/refs/", body)
+        self.assertIn("/snapshots/", body)
+        self.assertLess(body.find('-f "$refs"'), body.find('-d "$named"'))
 
     def test_resolve_model_does_not_fall_back_to_hub_id(self) -> None:
         body = _func_body(_read("run.sh"), "resolve_model")
@@ -228,6 +280,82 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn('ENFORCE_EAGER="${ENFORCE_EAGER:-1}"', run)
         self.assertIn("enable_flashinfer_autotune", run)
         self.assertIn("enable_jit_warmup", run)
+
+    def test_locator_prefers_refs_commit_over_named_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            cache = Path(d)
+            hub = _hub(cache)
+            commit = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            (hub / "refs").mkdir(parents=True)
+            (hub / "refs" / HUB_REV).write_text(commit + "\n")
+            named = hub / "snapshots" / HUB_REV
+            named.mkdir(parents=True)
+            (named / "config.json").write_text("{}")
+            snap = hub / "snapshots" / commit
+            snap.mkdir(parents=True)
+            (snap / "config.json").write_text("{}")
+            proc = _resolve(str(cache))
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(proc.stdout.strip(), str(snap))
+
+    def test_locator_falls_back_to_named_snapshot_when_refs_absent(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            cache = Path(d)
+            hub = _hub(cache)
+            named = hub / "snapshots" / HUB_REV
+            named.mkdir(parents=True)
+            (named / "config.json").write_text("{}")
+            proc = _resolve(str(cache))
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(proc.stdout.strip(), str(named))
+
+    def test_locator_falls_back_to_named_snapshot_when_commit_dir_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            cache = Path(d)
+            hub = _hub(cache)
+            (hub / "refs").mkdir(parents=True)
+            (hub / "refs" / HUB_REV).write_text("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n")
+            named = hub / "snapshots" / HUB_REV
+            named.mkdir(parents=True)
+            (named / "config.json").write_text("{}")
+            proc = _resolve(str(cache))
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(proc.stdout.strip(), str(named))
+
+    def test_resolve_snapshot_only_exits_1_when_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            proc = _resolve(d)
+            self.assertEqual(proc.returncode, 1)
+            self.assertTrue(proc.stderr.strip())
+            self.assertFalse(proc.stdout.strip())
+
+
+class PublishPackTests(unittest.TestCase):
+    def test_allow_omits_official_non_serve_trees(self) -> None:
+        pub = _load_tool("tools/publish_pack.py", "publish_pack")
+        for bad in ("inference/", "encoding/", "evaluation/", "assets/", "README.md"):
+            self.assertNotIn(bad, pub.ALLOW)
+        with tempfile.TemporaryDirectory() as d:
+            src = Path(d)
+            (src / "config.json").write_text("{}")
+            (src / "LICENSE").write_text("MIT")
+            (src / "tokenizer.json").write_text("{}")
+            (src / "model-00001-of-00048.safetensors").write_bytes(b"x")
+            for rel in (
+                "README.md",
+                "inference/run.py",
+                "encoding/enc.bin",
+                "evaluation/eval.py",
+                "assets/logo.png",
+            ):
+                path = src / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("official")
+            allowed = {p.relative_to(src).as_posix() for p in pub.iter_allowed(src)}
+        self.assertEqual(
+            allowed,
+            {"config.json", "LICENSE", "tokenizer.json", "model-00001-of-00048.safetensors"},
+        )
 
 
 if __name__ == "__main__":

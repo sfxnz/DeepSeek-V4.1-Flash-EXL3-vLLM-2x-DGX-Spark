@@ -39,8 +39,45 @@ ORCHESTRATE="${ORCHESTRATE:-auto}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 # END generated
 HF_HOME_IN_CONTAINER="/cache/huggingface"
-SNAPSHOT="${HF_CACHE}/hub/models--${MODEL//\//--}/snapshots/${SNAPSHOT_SHA}"
-SNAPSHOT_IN_CONTAINER="${HF_HOME_IN_CONTAINER}/hub/models--${MODEL//\//--}/snapshots/${SNAPSHOT_SHA}"
+
+# Hub download writes a commit hash in refs/<rev>. Files live in snapshots/<commit>/.
+# Assembled packs live at snapshots/<rev>/ with no refs file. Prefer refs when both exist.
+resolve_snapshot() {
+  local hub refs commit named
+  hub="${HF_CACHE}/hub/models--${MODEL//\//--}"
+  refs="${hub}/refs/${SNAPSHOT_SHA}"
+  named="${hub}/snapshots/${SNAPSHOT_SHA}"
+  if [[ -f "$refs" ]]; then
+    commit="$(tr -d '[:space:]' <"$refs")"
+    if [[ -n "$commit" && -d "${hub}/snapshots/${commit}" ]]; then
+      printf '%s\n' "${hub}/snapshots/${commit}"
+      return 0
+    fi
+  fi
+  if [[ -d "$named" ]]; then
+    printf '%s\n' "$named"
+    return 0
+  fi
+  return 1
+}
+
+snapshot_in_container() {
+  local host="$1"
+  if [[ "$host" != "$HF_CACHE"/* ]]; then
+    echo "snapshot $host is not under HF_CACHE=$HF_CACHE" >&2
+    return 1
+  fi
+  printf '%s%s\n' "$HF_HOME_IN_CONTAINER" "${host#"$HF_CACHE"}"
+}
+
+if [[ "${RESOLVE_SNAPSHOT_ONLY:-0}" == "1" ]]; then
+  if host="$(resolve_snapshot)"; then
+    printf '%s\n' "$host"
+    exit 0
+  fi
+  echo "snapshot missing for $MODEL revision $SNAPSHOT_SHA under $HF_CACHE" >&2
+  exit 1
+fi
 
 if [[ -z "${SPEC_CONFIG:-}" ]]; then
   case "$SPEC" in
@@ -148,28 +185,35 @@ ensure_image() {
 }
 
 ensure_weights() {
-  if [[ "$SKIP_DOWNLOAD" != "1" ]]; then
-    local HF=""
+  local snap HF=""
+  snap="$(resolve_snapshot || true)"
+  if [[ -z "$snap" && "$SKIP_DOWNLOAD" != "1" ]]; then
     HF="$(hf_bin || true)"
-    if [[ -d "$SNAPSHOT" ]]; then
-      log "Using pinned snapshot $SNAPSHOT"
-    elif [[ -n "$HF" ]]; then
-      export HF_HUB_DISABLE_XET="${HF_HUB_DISABLE_XET:-1}"
+    if [[ -n "$HF" ]]; then
+      # Engram shards are ~95 GiB. xet must stay on.
+      unset HF_HUB_DISABLE_XET
+      export HF_XET_HIGH_PERFORMANCE="${HF_XET_HIGH_PERFORMANCE:-1}"
+      export HF_HOME="$HF_CACHE"
+      export HF_HUB_CACHE="${HF_CACHE}/hub"
       log "Downloading $MODEL revision $SNAPSHOT_SHA (resumes under $HF_CACHE)"
       "$HF" download "$MODEL" --revision "$SNAPSHOT_SHA"
+      snap="$(resolve_snapshot || true)"
     else
-      echo "No hf CLI on PATH and snapshot $SNAPSHOT is missing" >&2
+      echo "No hf CLI on PATH and snapshot missing for $MODEL revision $SNAPSHOT_SHA under $HF_CACHE" >&2
       exit 1
     fi
   fi
-  if [[ ! -d "$SNAPSHOT" ]]; then
-    echo "Pinned snapshot missing: $SNAPSHOT" >&2
+  if [[ -z "$snap" ]]; then
+    echo "Pinned snapshot missing for $MODEL revision $SNAPSHOT_SHA under $HF_CACHE" >&2
     exit 1
   fi
+  SNAPSHOT="$snap"
+  SNAPSHOT_IN_CONTAINER="$(snapshot_in_container "$snap")"
+  log "Using pinned snapshot $SNAPSHOT"
   if [[ "$QUANTIZATION" == exl3 && "$FORCE_UNSAFE_QUANT" != 1 ]]; then
     if ! python3 -c 'import json,sys; p=sys.argv[1]; c=json.load(open(p)); q=c.get("quantization_config") or {}; sys.exit(0 if q.get("quant_method")=="exl3" else 1)' \
       "$SNAPSHOT/config.json"; then
-      echo "Snapshot $SNAPSHOT is not an EXL3 pack (quant_method!=exl3). Run tools/quantize_experts_exl3.py first." >&2
+      echo "Snapshot $SNAPSHOT is not an EXL3 pack (quant_method!=exl3)." >&2
       exit 1
     fi
   fi
