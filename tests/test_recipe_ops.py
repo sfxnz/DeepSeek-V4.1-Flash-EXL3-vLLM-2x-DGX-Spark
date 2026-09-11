@@ -10,6 +10,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 PINNED_FROM = (
     "vllm/vllm-openai:deepseekv41-flash-0909@"
@@ -65,6 +67,32 @@ def _load_tool(rel: str, name: str):
 HUB_MODEL = "sfxnz/DeepSeek-V4.1-Flash-EXL3"
 HUB_REV = "2.0bpw-mcg"
 HUB_DIRNAME = "models--sfxnz--DeepSeek-V4.1-Flash-EXL3"
+HUB_PACK_URL = "https://huggingface.co/sfxnz/DeepSeek-V4.1-Flash-EXL3"
+DEFAULTS_BEGIN = (
+    "<!-- BEGIN generated defaults from recipe.yaml — edit recipe.yaml and run kit/render.py -->"
+)
+DEFAULTS_END = "<!-- END generated defaults -->"
+
+
+def _recipe() -> dict:
+    return yaml.load((ROOT / "recipe.yaml").read_text(), Loader=yaml.BaseLoader)
+
+
+def _generated_defaults() -> str:
+    text = _read("README.md")
+    start = text.find(DEFAULTS_BEGIN)
+    stop = text.find(DEFAULTS_END)
+    if start < 0 or stop < 0 or stop <= start:
+        raise AssertionError("README.md is missing generated defaults markers")
+    return text[start:stop]
+
+
+def _defaults_row(setting: str) -> str:
+    prefix = f"| {setting} |"
+    for line in _generated_defaults().splitlines():
+        if line.startswith(prefix):
+            return line
+    raise AssertionError(f"missing generated defaults row {setting!r}")
 
 
 def _hub(cache: Path) -> Path:
@@ -356,6 +384,29 @@ class PublishPackTests(unittest.TestCase):
             allowed,
             {"config.json", "LICENSE", "tokenizer.json", "model-00001-of-00048.safetensors"},
         )
+
+
+class ReadmeHowToTests(unittest.TestCase):
+    def test_readme_stranger_serve_path(self) -> None:
+        readme = _read("README.md")
+        pack = _recipe()["links"]["pack"]
+        self.assertEqual(pack, HUB_PACK_URL)
+        self.assertIn(pack, readme)
+        self.assertIn("git clone", readme)
+        self.assertIn("hf download", readme)
+        self.assertIn("docker build", readme)
+        self.assertIn("./run.sh", readme)
+        self.assertIn("python3 smoke_chat.py", readme)
+        self.assertNotIn("once published", readme)
+        self.assertNotIn("docker exec dsv41-quant", readme)
+
+    def test_generated_speculative_row_off_when_spec_none(self) -> None:
+        spec = _recipe()["serve"]["env"]["SPEC"]
+        row = _defaults_row("Speculative")
+        if spec != "none":
+            self.fail(f"SPEC={spec!r}; expected none so the generated row can stay off")
+        self.assertNotIn("DSpark", row)
+        self.assertIn("`SPEC=none`", row)
 
 
 if __name__ == "__main__":
