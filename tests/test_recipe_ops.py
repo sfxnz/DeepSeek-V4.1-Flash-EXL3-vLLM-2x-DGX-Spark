@@ -400,6 +400,22 @@ class ReadmeHowToTests(unittest.TestCase):
         self.assertNotIn("once published", readme)
         self.assertNotIn("docker exec dsv41-quant", readme)
 
+    def test_readme_clone_uses_github_default_main(self) -> None:
+        readme = _read("README.md")
+        clones = [
+            line.strip()
+            for line in readme.splitlines()
+            if line.strip().startswith("git clone")
+        ]
+        self.assertEqual(
+            clones,
+            [
+                "git clone https://github.com/sfxnz/DeepSeek-V4.1-Flash-EXL3-vLLM-2x-DGX-Spark.git"
+            ],
+        )
+        self.assertIn("The default branch is `main`.", readme)
+        self.assertNotIn("recipe/dsv41-flash-exl3", readme)
+
     def test_generated_speculative_row_off_when_spec_none(self) -> None:
         spec = _recipe()["serve"]["env"]["SPEC"]
         row = _defaults_row("Speculative")

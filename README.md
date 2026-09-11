@@ -22,7 +22,7 @@ The recipe defaults are `HEAD_IP=10.100.8.1`, `WORKER_HOST=spark2`, `IFACE=enp1s
 
 ## Clone the recipe
 
-The default branch is `recipe/dsv41-flash-exl3`.
+The default branch is `main`.
 
 ```bash
 git clone https://github.com/sfxnz/DeepSeek-V4.1-Flash-EXL3-vLLM-2x-DGX-Spark.git
