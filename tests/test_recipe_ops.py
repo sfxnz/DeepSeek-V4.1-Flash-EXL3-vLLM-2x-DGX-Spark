@@ -258,7 +258,7 @@ class RecipeOpsTests(unittest.TestCase):
             text=True,
             cwd=str(ROOT),
         )
-        self.assertRegex(proc.stdout, r"^100755\\s", proc.stdout)
+        self.assertTrue(proc.stdout.startswith("100755 "), proc.stdout)
         self.assertTrue(os.access(ROOT / "run.sh", os.X_OK))
 
     def test_validate_only_defaults_pass(self) -> None:
