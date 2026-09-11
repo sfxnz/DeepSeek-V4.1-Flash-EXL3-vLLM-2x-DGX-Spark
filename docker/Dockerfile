@@ -10,8 +10,6 @@ RUN python3 /opt/dsv41-patch/apply_engram_disk.py \
 # Plugin source is cloned at build so the pin is in the RUN line, not a floating latest.
 # Native vllm-exl3 CUDA MoE is 4096-wide; V4.1 is 5120x2304, so we ship the
 # Python plugin and run GEMM through ExLlamaV3's exl3_moe.
-# apply_exl3_native_5120.py widens p2b to 5120x1152; not applied while
-# VLLM_EXL3_NO_CUDA=1.
 ARG VLLM_EXL3_REF=d3cfd394920360d69f820d2dc96f8292a9e10283
 ARG EXLLAMAV3_REF=5be886578ec80324c2c715269387be2058724b6e
 RUN apt-get update \
