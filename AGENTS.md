@@ -4,6 +4,8 @@ Serve an EXL3 pack of `deepseek-ai/DeepSeek-V4.1-Flash` at TP=2. Local image `ds
 
 Humans read [README.md](README.md).
 
+The public path is clone, `hf download` of `sfxnz/DeepSeek-V4.1-Flash-EXL3` at `2.0bpw-mcg`, image build on both nodes, then `./run.sh`. `run.sh` resolves Hub `refs/<rev>` to `snapshots/<commit>/`. It also accepts an assembled pack at `snapshots/2.0bpw-mcg`.
+
 ## Working rules
 
 - `recipe.yaml` is the source of truth for pins and generated blocks. Edit it, then `python3 kit/render.py`. Do not hand-edit `# BEGIN generated` or `<!-- BEGIN generated` blocks.
