@@ -1,0 +1,17 @@
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=200 runs=3 concurrency=[1] phases=['prose']
+phase=prose c=1 run=1 wall=12.70s agg=15.97 tok/s per_stream=[15.97] ttft=[0.240]
+phase=prose c=1 run=2 wall=8.68s agg=23.97 tok/s per_stream=[23.97] ttft=[0.376]
+phase=prose c=1 run=3 wall=9.74s agg=21.23 tok/s per_stream=[21.23] ttft=[0.365]
+SUMMARY [
+  {
+    "phase": "prose",
+    "concurrency": 1,
+    "median_decode_tok_s": 21.233498929538584,
+    "median_ttft_s": 0.3648690100526437,
+    "median_agg_tok_s": 21.232375811478803,
+    "median_completion_tokens": 200,
+    "n": 3,
+    "acceptance_len": 2.9752475247524752,
+    "draft_acceptance_rate": 0.39504950495049507
+  }
+]
