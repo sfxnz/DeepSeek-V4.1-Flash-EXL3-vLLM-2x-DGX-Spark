@@ -34,11 +34,17 @@ def _env(**extra: str) -> dict[str, str]:
     return env
 
 
+def _bash(rel: str) -> list[str]:
+    # Drive the shipped script via bash so VALIDATE_ONLY still runs when
+    # git mode is 100644 (GitHub Contents API cannot set 100755).
+    return ["bash", str(ROOT / rel)]
+
+
 def _run_sh(**extra: str) -> subprocess.CompletedProcess[str]:
     env = _env(**extra)
     env["VALIDATE_ONLY"] = "1"
     return subprocess.run(
-        [str(ROOT / "run.sh")],
+        _bash("run.sh"),
         check=False,
         capture_output=True,
         text=True,
@@ -107,7 +113,7 @@ def _resolve(hf_cache: str, **extra: str) -> subprocess.CompletedProcess[str]:
     env["MODEL"] = extra.get("MODEL", HUB_MODEL)
     env["SNAPSHOT_SHA"] = extra.get("SNAPSHOT_SHA", HUB_REV)
     return subprocess.run(
-        [str(ROOT / "run.sh")],
+        _bash("run.sh"),
         check=False,
         capture_output=True,
         text=True,
@@ -134,7 +140,7 @@ class RecipeOpsTests(unittest.TestCase):
         stop = _read("stop.sh")
         self.assertRegex(stop, re.compile(r'ORCHESTRATE" == "0".*exit 0', re.S))
         proc = subprocess.run(
-            [str(ROOT / "stop.sh")],
+            _bash("stop.sh"),
             check=False,
             capture_output=True,
             text=True,
@@ -151,7 +157,7 @@ class RecipeOpsTests(unittest.TestCase):
         if host.startswith("spark2"):
             self.skipTest("this host is spark2")
         proc = subprocess.run(
-            [str(ROOT / "stop.sh")],
+            _bash("stop.sh"),
             check=False,
             capture_output=True,
             text=True,
