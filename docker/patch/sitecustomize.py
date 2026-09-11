@@ -98,6 +98,46 @@ try:
 except Exception:
     pass
 
+# compress_ratio=2 at manager 64 yields extra_page_block_size=32. SM120
+# prefill (num_tokens>64) rejects that. Bump those specs to 128 so extra
+# pages stay 64 and DeepGEMM still sees 128/2=64 states.
+try:
+    from dataclasses import replace
+
+    from sm120_page import manager_block_for_flashinfer_extra
+    from vllm.models.deepseek_v4_1.attention import (
+        DeepseekV4Attention,
+        DeepseekV4IndexerCache,
+    )
+
+    def _pin_extra_page(spec, compress_ratio: int):
+        if spec is None:
+            return spec
+        new_bs = manager_block_for_flashinfer_extra(spec.block_size, compress_ratio)
+        if new_bs == spec.block_size:
+            return spec
+        return replace(spec, block_size=new_bs)
+
+    _attn_spec = DeepseekV4Attention.get_kv_cache_spec
+
+    def _attn_spec_extra_page(self, vllm_config):
+        return _pin_extra_page(
+            _attn_spec(self, vllm_config), int(getattr(self, "compress_ratio", 1) or 1)
+        )
+
+    DeepseekV4Attention.get_kv_cache_spec = _attn_spec_extra_page
+
+    _idx_spec = DeepseekV4IndexerCache.get_kv_cache_spec
+
+    def _idx_spec_extra_page(self, vllm_config):
+        return _pin_extra_page(
+            _idx_spec(self, vllm_config), int(getattr(self, "compress_ratio", 1) or 1)
+        )
+
+    DeepseekV4IndexerCache.get_kv_cache_spec = _idx_spec_extra_page
+except Exception:
+    pass
+
 # --language-model-only still flattens vision_max_n_token onto hf_config, so
 # SWA prefill index rows widen to window+1024=1152. SM120 DSV4 decode topk is
 # {128,192,256,512,1024}. Do not zero vision_n_layers: VL checkpoints ship

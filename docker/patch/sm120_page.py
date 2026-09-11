@@ -14,9 +14,40 @@ V41_SLIDING_WINDOW = 128
 V41_VISION_MAX_IMAGE_TOKENS = 1024
 
 
+FLASHINFER_DSV4_DECODE_MAX_TOKENS = 64
+
+
 def indexer_kernel_block_sizes() -> tuple[int, ...]:
-    """DeepGEMM paged-MQA logits only accept block_kv in {32, 64}."""
-    return (FLASHINFER_DSV4_PAGE_BLOCK_SIZE,)
+    """64 for compress_ratio=1 (DeepGEMM). 128 for compress_ratio=2 so extra pages stay 64."""
+    return (FLASHINFER_DSV4_PAGE_BLOCK_SIZE, FLASHINFER_DSV4_PAGE_BLOCK_SIZE * 2)
+
+
+def extra_page_block_size(manager_block: int, compress_ratio: int) -> int:
+    """Compressed-KV page width FlashInfer sees as extra_page_block_size."""
+    ratio = max(int(compress_ratio), 1)
+    return int(manager_block) // ratio
+
+
+def manager_block_for_flashinfer_extra(
+    manager_block: int, compress_ratio: int
+) -> int:
+    """Raise ratio-2 manager pages to 128 so extra_page_block_size stays 64.
+
+    L.A.I.L 81-token prefill died with extra_page_block_size=32
+    (manager 64 / compress_ratio 2). Decode kernels tolerate that. The
+    SM120 prefill orchestrator does not.
+    """
+    extra = extra_page_block_size(manager_block, compress_ratio)
+    if extra == FLASHINFER_DSV4_PAGE_BLOCK_SIZE:
+        return int(manager_block)
+    if int(compress_ratio) <= 1:
+        return int(manager_block)
+    return FLASHINFER_DSV4_PAGE_BLOCK_SIZE * int(compress_ratio)
+
+
+def uses_prefill_orchestrator(num_tokens: int) -> bool:
+    """FlashInfer SM120 takes the C++ prefill path when num_tokens > 64."""
+    return int(num_tokens) > FLASHINFER_DSV4_DECODE_MAX_TOKENS
 
 
 def coerce_swa_block_size(block_size: int) -> int:

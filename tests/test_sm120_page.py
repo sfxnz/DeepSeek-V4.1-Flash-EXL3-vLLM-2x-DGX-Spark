@@ -21,11 +21,31 @@ class Sm120PageTests(unittest.TestCase):
     def setUp(self) -> None:
         self.mod = _load()
 
-    def test_indexer_kernel_page_is_deepgemm_legal(self) -> None:
+    def test_indexer_kernel_pages_cover_ratio1_and_ratio2(self) -> None:
         sizes = self.mod.indexer_kernel_block_sizes()
-        self.assertEqual(sizes, (64,))
-        for size in sizes:
-            self.assertIn(size, (32, 64))
+        self.assertEqual(sizes, (64, 128))
+        self.assertIn(64, sizes)
+        self.assertIn(128, sizes)
+
+    def test_lail_81_token_prefill_uses_orchestrator(self) -> None:
+        self.assertFalse(self.mod.uses_prefill_orchestrator(16))
+        self.assertFalse(self.mod.uses_prefill_orchestrator(64))
+        self.assertTrue(self.mod.uses_prefill_orchestrator(81))
+
+    def test_block64_ratio2_extra_page_is_the_lail_crash(self) -> None:
+        extra = self.mod.extra_page_block_size(64, 2)
+        self.assertEqual(extra, 32)
+        self.assertNotEqual(extra, self.mod.FLASHINFER_DSV4_PAGE_BLOCK_SIZE)
+
+    def test_ratio2_manager_bump_keeps_extra_page_64(self) -> None:
+        manager = self.mod.manager_block_for_flashinfer_extra(64, 2)
+        self.assertEqual(manager, 128)
+        self.assertEqual(
+            self.mod.extra_page_block_size(manager, 2),
+            self.mod.FLASHINFER_DSV4_PAGE_BLOCK_SIZE,
+        )
+        self.assertEqual(self.mod.manager_block_for_flashinfer_extra(64, 1), 64)
+        self.assertEqual(self.mod.manager_block_for_flashinfer_extra(64, 0), 64)
 
     def test_coerce_upstream_swa_32_to_flashinfer_64(self) -> None:
         self.assertEqual(
@@ -69,6 +89,8 @@ class Sm120PageTests(unittest.TestCase):
         self.assertIn("DeepseekV4IndexerBackend", site)
         self.assertIn("DeepseekV4FlashInferMLASparseBackend", site)
         self.assertIn("indexer_kernel_block_sizes", site)
+        self.assertIn("manager_block_for_flashinfer_extra", site)
+        self.assertIn("DeepseekV4Attention", site)
 
 
 if __name__ == "__main__":
