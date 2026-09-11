@@ -43,7 +43,7 @@ serve:
     KV_CACHE_MEMORY: 4294967296
     BLOCK_SIZE: 64
     NUM_SPECULATIVE_TOKENS: 5
-    SPEC: none
+    SPEC: dspark
     LOAD_FORMAT: auto
     QUANTIZATION: exl3
     DSV41_ENGRAM_DISK: 1
@@ -72,7 +72,7 @@ readme:
     - "`--quantization`": "`{QUANTIZATION}`"
     - Engram: "disk (`DSV41_ENGRAM_DISK={DSV41_ENGRAM_DISK}`)"
     - "`--block-size`": "{BLOCK_SIZE}"
-    - Speculative: "`SPEC={SPEC}`"
+    - Speculative: "DSpark-{NUM_SPECULATIVE_TOKENS} (`SPEC={SPEC}`)"
     - Tokenizers / tools / reasoning: "`deepseek_v41`"
     - Default thinking: "`thinking=false`, `reasoning_effort=low`"
     - API: "`http://<head>:{PORT}/v1`"
@@ -81,10 +81,10 @@ readme:
 
 measured:
   decode:
-    conditions: streamed greedy, thinking off, 200 completion tokens; not frozen yet
+    conditions: streamed greedy, thinking off, 200 completion tokens, 3-run median; DSpark-5, eager, Engram on disk
     units: {decode: tok/s per stream (median), aggregate: tok/s, ttft_p50: s}
     rows:
-      - {phase: prose, concurrency: 1, decode: "—", aggregate: "—", ttft_p50: "—", evidence: null}
+      - {phase: prose, concurrency: 1, decode: "21.2", aggregate: "21.2", ttft_p50: "0.365", evidence: evidence/h1-dspark/bench-wave2.txt}
 
 links:
   model: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash
