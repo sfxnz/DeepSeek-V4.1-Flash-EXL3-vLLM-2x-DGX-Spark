@@ -252,6 +252,9 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("validate-only", proc.stdout)
         self.assertIn("quant=exl3", proc.stdout)
         self.assertIn("engram_disk=1", proc.stdout)
+        self.assertIn("spec=dspark", proc.stdout)
+        self.assertIn("spec_tokens=5", proc.stdout)
+        self.assertIn("eager=1", proc.stdout)
 
     def test_validate_only_refuses_max_num_seqs(self) -> None:
         proc = _run_sh(MAX_NUM_SEQS="8")
@@ -304,7 +307,10 @@ class RecipeOpsTests(unittest.TestCase):
         serve_idx = run.find("--entrypoint vllm")
         self.assertIn("serve", run[serve_idx : serve_idx + 400])
         self.assertIn('BLOCK_SIZE="${BLOCK_SIZE:-64}"', run)
-        self.assertIn('SPEC="${SPEC:-none}"', run)
+        spec = _recipe()["serve"]["env"]["SPEC"]
+        self.assertIn(f'SPEC="${{SPEC:-{spec}}}"', run)
+        self.assertEqual(spec, "dspark")
+        self.assertIn('NUM_SPECULATIVE_TOKENS="${NUM_SPECULATIVE_TOKENS:-5}"', run)
         self.assertIn('ENFORCE_EAGER="${ENFORCE_EAGER:-1}"', run)
         self.assertIn("enable_flashinfer_autotune", run)
         self.assertIn("enable_jit_warmup", run)
@@ -397,6 +403,7 @@ class ReadmeHowToTests(unittest.TestCase):
         self.assertIn("docker build", readme)
         self.assertIn("./run.sh", readme)
         self.assertIn("python3 smoke_chat.py", readme)
+        self.assertIn("python3 bench_decode.py", readme)
         self.assertNotIn("once published", readme)
         self.assertNotIn("docker exec dsv41-quant", readme)
 
@@ -416,13 +423,31 @@ class ReadmeHowToTests(unittest.TestCase):
         self.assertIn("The default branch is `main`.", readme)
         self.assertNotIn("recipe/dsv41-flash-exl3", readme)
 
-    def test_generated_speculative_row_off_when_spec_none(self) -> None:
+    def test_measured_prose_c1_is_a_number_with_evidence(self) -> None:
+        rows = _recipe()["measured"]["decode"]["rows"]
+        row = next(
+            r
+            for r in rows
+            if r["phase"] == "prose" and str(r["concurrency"]) == "1"
+        )
+        decode = float(row["decode"])
+        self.assertGreater(decode, 0.0)
+        evidence = row.get("evidence") or ""
+        self.assertTrue(evidence, "measured prose c=1 needs an evidence path")
+        self.assertTrue((ROOT / evidence).is_file(), evidence)
+
+    def test_generated_speculative_row_matches_recipe(self) -> None:
         spec = _recipe()["serve"]["env"]["SPEC"]
+        tokens = _recipe()["serve"]["env"]["NUM_SPECULATIVE_TOKENS"]
         row = _defaults_row("Speculative")
-        if spec != "none":
-            self.fail(f"SPEC={spec!r}; expected none so the generated row can stay off")
-        self.assertNotIn("DSpark", row)
-        self.assertIn("`SPEC=none`", row)
+        self.assertIn(f"`SPEC={spec}`", row)
+        if spec == "none":
+            self.assertNotIn("DSpark", row)
+        elif spec == "dspark":
+            self.assertIn("DSpark", row)
+            self.assertIn(tokens, row)
+        else:
+            self.fail(f"unexpected SPEC={spec!r}")
 
 
 if __name__ == "__main__":
