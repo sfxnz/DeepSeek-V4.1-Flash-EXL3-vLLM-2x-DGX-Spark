@@ -66,6 +66,7 @@ On the head node:
 ./run.sh
 python3 smoke_chat.py
 python3 bench_decode.py --phase prose --concurrency 1
+python3 tools/measure_lail_prose.py
 ```
 
 The API is `http://127.0.0.1:8000/v1`. The served model is `deepseek-ai/DeepSeek-V4.1-Flash`. Cap is `MAX_NUM_SEQS=2`. Do not send a third stream.
@@ -97,6 +98,7 @@ When you are done:
 | Engram | disk (`DSV41_ENGRAM_DISK=1`) |
 | `--block-size` | 64 |
 | Speculative | DSpark-5 (`SPEC=dspark`) |
+| CUDA graphs | `FULL_AND_PIECEWISE` (`ENFORCE_EAGER=0`, `DSV41_ALLOW_CUDA_GRAPHS=1`) |
 | Tokenizers / tools / reasoning | `deepseek_v41` |
 | Default thinking | `thinking=false`, `reasoning_effort=low` |
 | API | `http://<head>:8000/v1` |
@@ -106,12 +108,13 @@ When you are done:
 
 ## Measured on 2× DGX Spark
 
-Streamed greedy, thinking off, 200 completion tokens, 3-run median. Default is DSpark-5 with `--enforce-eager`. Smoke is `python3 smoke_chat.py` with thinking off.
+`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median. `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2). Default is DSpark-5 with CUDA graphs. Smoke is `python3 smoke_chat.py` with thinking off.
 
 <!-- BEGIN generated measured from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
 |---|---|---:|---:|---:|
 | prose | 1 | 21.2 | 21.2 | 0.365 s |
+| lail_prose | 1 | 15.3 | 15.3 | 0.474 s |
 <!-- END generated measured -->
 
 ## Rebuild the pack
