@@ -15,7 +15,7 @@ image:
 
 engine:
   name: vllm
-  version: dsv41-flash-0909 + vllm-exl3 + Engram-on-disk
+  version: dsv41-flash-0909 + vllm-exl3 native p2b + Engram-on-disk
 
 hardware:
   shape: 2x DGX Spark (GB10)
@@ -52,7 +52,9 @@ serve:
     FORCE_UNSAFE_CTX: 0
     FORCE_UNSAFE_ENGRAM: 0
     FORCE_UNSAFE_QUANT: 0
-    ENFORCE_EAGER: 1
+    ENFORCE_EAGER: 0
+    DSV41_ALLOW_CUDA_GRAPHS: 1
+    VLLM_USE_BREAKABLE_CUDAGRAPH: 1
     HF_CACHE: $HOME/.cache/huggingface
     SNAPSHOT_SHA: *revision
     SKIP_DOWNLOAD: 0
@@ -68,11 +70,12 @@ readme:
     - "`--max-num-seqs`": "{MAX_NUM_SEQS}"
     - "`--max-num-batched-tokens`": "{MAX_NUM_BATCHED_TOKENS}"
     - "`--kv-cache-dtype`": "`{KV_CACHE_DTYPE}`"
-    - "`--kv-cache-memory`": "`{KV_CACHE_MEMORY}`"
+    - "`--kv-cache-memory`": "{KV_CACHE_MEMORY}"
     - "`--quantization`": "`{QUANTIZATION}`"
     - Engram: "disk (`DSV41_ENGRAM_DISK={DSV41_ENGRAM_DISK}`)"
     - "`--block-size`": "{BLOCK_SIZE}"
     - Speculative: "DSpark-{NUM_SPECULATIVE_TOKENS} (`SPEC={SPEC}`)"
+    - CUDA graphs: "`FULL_AND_PIECEWISE` (`ENFORCE_EAGER={ENFORCE_EAGER}`, `DSV41_ALLOW_CUDA_GRAPHS={DSV41_ALLOW_CUDA_GRAPHS}`)"
     - Tokenizers / tools / reasoning: "`deepseek_v41`"
     - Default thinking: "`thinking=false`, `reasoning_effort=low`"
     - API: "`http://<head>:{PORT}/v1`"
@@ -81,10 +84,11 @@ readme:
 
 measured:
   decode:
-    conditions: streamed greedy, thinking off, 200 completion tokens, 3-run median; DSpark-5, eager, Engram on disk
+    conditions: streamed greedy 200-token recipe bench, and L.A.I.L prose c=1 512 tokens temperature 0.2; DSpark-5, Engram on disk, native p2b, CUDA graphs with disk rows staged in prepare_inputs
     units: {decode: tok/s per stream (median), aggregate: tok/s, ttft_p50: s}
     rows:
       - {phase: prose, concurrency: 1, decode: "21.2", aggregate: "21.2", ttft_p50: "0.365", evidence: evidence/h1-dspark/bench-wave2.txt}
+      - {phase: lail_prose, concurrency: 1, decode: "15.3", aggregate: "15.3", ttft_p50: "0.474", evidence: evidence/decode-512/h8-graphs/bench.txt}
 
 links:
   model: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash
