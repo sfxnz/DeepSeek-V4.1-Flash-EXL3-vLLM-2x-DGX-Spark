@@ -78,11 +78,17 @@ try:
 except Exception:
     pass
 
+# Graph capture still dummy-forwards DeepGEMM paged-MQA unless the warmup
+# stubs above stay. Default serve sets DSV41_ALLOW_CUDA_GRAPHS=1 and
+# ENFORCE_EAGER=0. Disk Engram rows are staged in prepare_inputs.
 try:
+    import os
+
     from vllm.v1.worker.gpu_worker import Worker
     from vllm.v1.worker.worker_base import CompilationTimes
 
-    Worker.compile_or_warm_up_model = lambda self: CompilationTimes(0.0, 0.0)
+    if os.environ.get("DSV41_ALLOW_CUDA_GRAPHS") != "1":
+        Worker.compile_or_warm_up_model = lambda self: CompilationTimes(0.0, 0.0)
 except Exception:
     pass
 
