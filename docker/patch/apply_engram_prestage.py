@@ -227,13 +227,13 @@ MS_INIT_NEW = """            self.lookback_token_ids = torch.full(
     def prepare_inputs(
 """
 
-MS_PREP_OLD = """        model_inputs[\"lookback_token_ids\"] = window
+MS_PREP_OLD = """        model_inputs["lookback_token_ids"] = window
         return model_inputs
 """
 
-MS_PREP_NEW = """        model_inputs[\"lookback_token_ids\"] = window
+MS_PREP_NEW = """        model_inputs["lookback_token_ids"] = window
         if self.engram_stager is not None and input_batch.input_ids is not None:
-            positions = model_inputs.get(\"positions\")
+            positions = model_inputs.get("positions")
             self.engram_stager.stage(
                 input_batch.input_ids,
                 positions if positions is not None else input_batch.positions,
