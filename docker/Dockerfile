@@ -5,29 +5,35 @@ FROM vllm/vllm-openai:deepseekv41-flash-0909@sha256:d84a123255b822fc225086352180
 COPY patch /opt/dsv41-patch
 RUN python3 /opt/dsv41-patch/apply_engram_disk.py \
       --engram /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/common/engram.py \
-      --weights /usr/local/lib/python3.12/dist-packages/vllm/model_executor/model_loader/weight_utils.py
+      --weights /usr/local/lib/python3.12/dist-packages/vllm/model_executor/model_loader/weight_utils.py \
+ && python3 /opt/dsv41-patch/apply_engram_prestage.py \
+      --engram /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/common/engram.py \
+      --model-state /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/nvidia/model_state.py
 
 # Plugin source is cloned at build so the pin is in the RUN line, not a floating latest.
-# Native vllm-exl3 CUDA MoE is 4096-wide; V4.1 is 5120x2304, so we ship the
-# Python plugin and run GEMM through ExLlamaV3's exl3_moe.
+# Native p2b CUDA is parameterized by hidden/inter in 128-wide tiles. The
+# host gate used to allow only 4096 x {1024,2048}; widen_p2b_shapes.py also
+# allows V4.1 TP=2 5120x1152.
 ARG VLLM_EXL3_REF=d3cfd394920360d69f820d2dc96f8292a9e10283
 ARG EXLLAMAV3_REF=5be886578ec80324c2c715269387be2058724b6e
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       git libcusparse-dev-13-0 libcusolver-dev-13-0 \
- && git clone https://github.com/vcruz305/vllm-exl3.git /opt/vllm-exl3 \
- && git -C /opt/vllm-exl3 checkout "$VLLM_EXL3_REF" \
- && python3 /opt/dsv41-patch/fix_vllm_exl3_setup.py /opt/vllm-exl3/setup.py \
- && VLLM_EXL3_NO_CUDA=1 python3 -m pip install --no-build-isolation --no-deps /opt/vllm-exl3 \
- && python3 -c "import vllm_exl3; print('vllm_exl3 ok')" \
  && git clone https://github.com/turboderp-org/exllamav3.git /opt/exllamav3 \
  && git -C /opt/exllamav3 checkout "$EXLLAMAV3_REF" \
  && python3 /opt/dsv41-patch/patch_exllamav3_aarch64.py /opt/exllamav3/exllamav3/exllamav3_ext \
  && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps /opt/exllamav3 \
  && python3 -c "import torch, exllamav3, exllamav3_ext; assert hasattr(exllamav3_ext, 'exl3_moe'); print('exllamav3 ok')" \
+ && git clone https://github.com/vcruz305/vllm-exl3.git /opt/vllm-exl3 \
+ && git -C /opt/vllm-exl3 checkout "$VLLM_EXL3_REF" \
+ && python3 /opt/dsv41-patch/fix_vllm_exl3_setup.py /opt/vllm-exl3/setup.py \
+ && python3 /opt/dsv41-patch/widen_p2b_shapes.py /opt/vllm-exl3 \
+ && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps /opt/vllm-exl3 \
+ && python3 -c "import torch, vllm_exl3, vllm_exl3_c; assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); print('vllm_exl3 cuda ok')" \
  && rm -rf /opt/exllamav3 /opt/vllm-exl3 /var/lib/apt/lists/*
 
 ENV VLLM_PLUGINS=vllm_exl3
+ENV VLLM_EXL3_MOE_KERNEL=native
 ENV DSV41_ENGRAM_DISK=1
 COPY patch/sitecustomize.py /usr/lib/python3.12/sitecustomize.py
 ENTRYPOINT ["vllm", "serve"]
