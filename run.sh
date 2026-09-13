@@ -274,6 +274,9 @@ start_local() {
     -e "PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True"
     -e "VLLM_PLUGINS=vllm_exl3"
     -e "DSV41_ENGRAM_DISK=$DSV41_ENGRAM_DISK"
+    -e "DSV41_VISION=${DSV41_VISION:-0}"
+    -e "DSV41_PROBE=${DSV41_PROBE:-0}"
+    -e "DSV41_PROBE_LOG=${DSV41_PROBE_LOG:-/tmp/fi-probe.log}"
     -e "DSV41_ALLOW_CUDA_GRAPHS=$DSV41_ALLOW_CUDA_GRAPHS"
     -e "VLLM_USE_BREAKABLE_CUDAGRAPH=$VLLM_USE_BREAKABLE_CUDAGRAPH"
     -e "NCCL_SOCKET_IFNAME=$IFACE"
@@ -317,6 +320,12 @@ start_local() {
   )
 
   local vol_args=(-v "${HF_CACHE}:${HF_HOME_IN_CONTAINER}")
+  if [[ "${DSV41_VISION:-0}" == "1" || "${DSV41_PROBE:-0}" == "1" ]]; then
+    vol_args+=(-v "${HOME}/docker/patch/sitecustomize.py:/usr/lib/python3.12/sitecustomize.py"
+               -v "${HOME}/docker/patch/mm_preprocess_vision.py:/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/common/mm_preprocess.py"
+               -v "${HOME}/docker/patch/attention_vision.py:/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/attention.py"
+               -v "${HOME}/docker/patch/sparse_swa_vision.py:/usr/local/lib/python3.12/dist-packages/vllm/v1/attention/backends/mla/sparse_swa.py")
+  fi
   local batched_args=()
   if [[ -n "$MAX_NUM_BATCHED_TOKENS" ]]; then
     batched_args+=(--max-num-batched-tokens "$MAX_NUM_BATCHED_TOKENS")
@@ -414,6 +423,9 @@ wait_ready() {
 }
 
 ROLE="$(detect_role)"
+# Multi-username nodes: the worker resolves its own cache dir (the head
+# passes its /home/<headuser> path, which mkdir-fails on other users).
+if [[ "$ROLE" == "worker" ]]; then HF_CACHE="$HOME/.cache/huggingface"; export HF_CACHE; fi
 log "role=$ROLE host=$(host_short)"
 
 if [[ "$ORCHESTRATE" == "auto" && "$ROLE" == "head" ]]; then
@@ -429,7 +441,7 @@ if [[ "$ORCHESTRATE" == "auto" && "$ROLE" == "head" ]]; then
     printf '%s\n' "$WORKER_HOST" >"${PWD}/.run-state/worker_host"
     scp -q "$0" "${WORKER_HOST}:/tmp/dsv41-exl3-run.sh"
     ssh "$WORKER_HOST" \
-      "ROLE=worker ORCHESTRATE=0 IMAGE='$IMAGE' CONTAINER_NAME='$CONTAINER_NAME' PORT='$PORT' MASTER_PORT='$MASTER_PORT' HEAD_IP='$HEAD_IP' IFACE='$IFACE' HCA='$HCA' MAX_MODEL_LEN='$MAX_MODEL_LEN' MAX_NUM_SEQS='$MAX_NUM_SEQS' UTIL='$UTIL' KV_CACHE_MEMORY='$KV_CACHE_MEMORY' KV_CACHE_DTYPE='$KV_CACHE_DTYPE' BLOCK_SIZE='$BLOCK_SIZE' TP='$TP' NNODES='$NNODES' SERVED_NAME='$SERVED_NAME' SKIP_DOWNLOAD='$SKIP_DOWNLOAD' SPEC='$SPEC' SPEC_CONFIG='$SPEC_CONFIG' NUM_SPECULATIVE_TOKENS='$NUM_SPECULATIVE_TOKENS' ENFORCE_EAGER='$ENFORCE_EAGER' COMPILATION_CONFIG='$COMPILATION_CONFIG' MAX_NUM_BATCHED_TOKENS='$MAX_NUM_BATCHED_TOKENS' FORCE_UNSAFE_CTX='$FORCE_UNSAFE_CTX' FORCE_UNSAFE_ENGRAM='$FORCE_UNSAFE_ENGRAM' FORCE_UNSAFE_QUANT='$FORCE_UNSAFE_QUANT' LOAD_FORMAT='$LOAD_FORMAT' QUANTIZATION='$QUANTIZATION' DSV41_ENGRAM_DISK='$DSV41_ENGRAM_DISK' DSV41_ALLOW_CUDA_GRAPHS='$DSV41_ALLOW_CUDA_GRAPHS' VLLM_USE_BREAKABLE_CUDAGRAPH='$VLLM_USE_BREAKABLE_CUDAGRAPH' LANGUAGE_MODEL_ONLY='$LANGUAGE_MODEL_ONLY' SNAPSHOT_SHA='$SNAPSHOT_SHA' HF_CACHE='$HF_CACHE' MODEL='$MODEL' EXTRA_ARGS='$EXTRA_ARGS' bash /tmp/dsv41-exl3-run.sh"
+      "ROLE=worker ORCHESTRATE=0 IMAGE='$IMAGE' CONTAINER_NAME='$CONTAINER_NAME' PORT='$PORT' MASTER_PORT='$MASTER_PORT' HEAD_IP='$HEAD_IP' IFACE='$IFACE' HCA='$HCA' MAX_MODEL_LEN='$MAX_MODEL_LEN' MAX_NUM_SEQS='$MAX_NUM_SEQS' UTIL='$UTIL' KV_CACHE_MEMORY='$KV_CACHE_MEMORY' KV_CACHE_DTYPE='$KV_CACHE_DTYPE' BLOCK_SIZE='$BLOCK_SIZE' TP='$TP' NNODES='$NNODES' SERVED_NAME='$SERVED_NAME' SKIP_DOWNLOAD='$SKIP_DOWNLOAD' SPEC='$SPEC' SPEC_CONFIG='$SPEC_CONFIG' NUM_SPECULATIVE_TOKENS='$NUM_SPECULATIVE_TOKENS' ENFORCE_EAGER='$ENFORCE_EAGER' COMPILATION_CONFIG='$COMPILATION_CONFIG' MAX_NUM_BATCHED_TOKENS='$MAX_NUM_BATCHED_TOKENS' FORCE_UNSAFE_CTX='$FORCE_UNSAFE_CTX' FORCE_UNSAFE_ENGRAM='$FORCE_UNSAFE_ENGRAM' FORCE_UNSAFE_QUANT='$FORCE_UNSAFE_QUANT' LOAD_FORMAT='$LOAD_FORMAT' QUANTIZATION='$QUANTIZATION' DSV41_ENGRAM_DISK='$DSV41_ENGRAM_DISK' DSV41_VISION='${DSV41_VISION:-0}' DSV41_PROBE='${DSV41_PROBE:-0}' DSV41_ALLOW_CUDA_GRAPHS='$DSV41_ALLOW_CUDA_GRAPHS'='$DSV41_ALLOW_CUDA_GRAPHS' VLLM_USE_BREAKABLE_CUDAGRAPH='$VLLM_USE_BREAKABLE_CUDAGRAPH' LANGUAGE_MODEL_ONLY='$LANGUAGE_MODEL_ONLY' SNAPSHOT_SHA='$SNAPSHOT_SHA' HF_CACHE='$HF_CACHE' MODEL='$MODEL' EXTRA_ARGS='$EXTRA_ARGS' bash /tmp/dsv41-exl3-run.sh"
     log "Worker container started. Waiting 25s for NCCL listen, then starting head"
     sleep 25
   fi

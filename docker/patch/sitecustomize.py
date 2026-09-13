@@ -182,9 +182,23 @@ try:
 
     def _v41_cfg_init_text_only(self, *args, **kwargs):
         _v41_cfg_init(self, *args, **kwargs)
-        self.vision_max_n_token = text_only_max_image_tokens(
-            getattr(self, "vision_max_n_token", 0), True
-        )
+        # Vision enablement (Snail3D): SM120 kernel contract — the DSv4
+        # dual-lane prefill kernel rejects topk>128 when the compressed lane
+        # is present, and upstream vLLM inflates topk by vision_max_n_token
+        # for image spans. Split the attribute: a real budget (896) for
+        # image PREPROCESSING (processor/encoder/profile sizing) and a
+        # dedicated zero for attention-path widening, so prefill index rows
+        # stay at the 128-wide window. Attention-path readers are patched to
+        # use dsv41_attention_vmnt; images ride the Lightning Indexer lane.
+        # Also: is_mm_prefix_lm must stay OFF — the mm-prefix attention
+        # metadata mode is untested at long context and degraded a ~110K-token
+        # production session mid-generation; with dsv41_attention_vmnt=0 its
+        # metadata is unused anyway.
+        self.vision_max_n_token = 896
+        self.dsv41_attention_vmnt = 0
+        self.is_mm_prefix_lm = False
+        self.mm_prefix_clamp_sliding_window = False
+        self.mm_prefix_span_leading_pad_modulus = 0
 
     DeepseekV41Config.__init__ = _v41_cfg_init_text_only
 except Exception:
