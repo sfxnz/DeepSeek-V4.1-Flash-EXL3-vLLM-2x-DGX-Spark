@@ -47,7 +47,7 @@ serve:
     LOAD_FORMAT: auto
     QUANTIZATION: exl3
     DSV41_ENGRAM_DISK: 1
-    LANGUAGE_MODEL_ONLY: 1
+    LANGUAGE_MODEL_ONLY: 0
     MAX_NUM_BATCHED_TOKENS: 2048
     FORCE_UNSAFE_CTX: 0
     FORCE_UNSAFE_ENGRAM: 0
@@ -77,6 +77,7 @@ readme:
     - Speculative: "DSpark-{NUM_SPECULATIVE_TOKENS} (`SPEC={SPEC}`)"
     - CUDA graphs: "`FULL_AND_PIECEWISE` (`ENFORCE_EAGER={ENFORCE_EAGER}`, `DSV41_ALLOW_CUDA_GRAPHS={DSV41_ALLOW_CUDA_GRAPHS}`)"
     - Tokenizers / tools / reasoning: "`deepseek_v41`"
+    - Vision: "on (`LANGUAGE_MODEL_ONLY={LANGUAGE_MODEL_ONLY}`)"
     - Default thinking: "`thinking=false`, `reasoning_effort=low`"
     - API: "`http://<head>:{PORT}/v1`"
     - Container: "`{CONTAINER_NAME}`"
@@ -84,11 +85,11 @@ readme:
 
 measured:
   decode:
-    conditions: streamed greedy 200-token recipe bench, and L.A.I.L prose c=1 512 tokens temperature 0.2; DSpark-5, Engram on disk, native p2b, CUDA graphs with disk rows staged in prepare_inputs
+    conditions: streamed greedy 200-token recipe bench, and L.A.I.L prose c=1 512 tokens temperature 0.2 thinking off; vision on (LANGUAGE_MODEL_ONLY=0); DSpark-5 greedy; Engram on disk; CFG=1 native p2b; b12x MXFP8 Q/O; CUDA graphs FULL_AND_PIECEWISE. Second independent L.A.I.L wave was 22.37 tok/s.
     units: {decode: tok/s per stream (median), aggregate: tok/s, ttft_p50: s}
     rows:
       - {phase: prose, concurrency: 1, decode: "21.2", aggregate: "21.2", ttft_p50: "0.365", evidence: evidence/h1-dspark/bench-wave2.txt}
-      - {phase: lail_prose, concurrency: 1, decode: "15.3", aggregate: "15.3", ttft_p50: "0.474", evidence: evidence/decode-512/h8-graphs/bench.txt}
+      - {phase: lail_prose, concurrency: 1, decode: "23.4", aggregate: "23.4", ttft_p50: "0.420", evidence: evidence/b12x-mxfp8/lail-w1.txt}
 
 links:
   model: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash

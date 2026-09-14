@@ -14,6 +14,7 @@ import statistics
 import sys
 import time
 import urllib.request
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -35,6 +36,45 @@ def lail_decode_tok_s(completion_tokens: int, decode_s: float) -> float:
     if decode_s <= 0 or completion_tokens <= 0:
         return 0.0
     return completion_tokens / decode_s
+
+
+def prose_type_token_ratio(text: str) -> float:
+    """Unique whitespace tokens over token count. A 9-word loop is ~0.02."""
+    words = text.split()
+    if not words:
+        return 1.0
+    return len(set(words)) / len(words)
+
+
+def prose_ngram_diversity(text: str, ngram: int = 8) -> float:
+    """Unique n-grams over window count. A rotating loop stays near 0."""
+    words = text.split()
+    if len(words) < ngram * 2:
+        return 1.0
+    windows = [
+        " ".join(words[i : i + ngram]) for i in range(len(words) - ngram + 1)
+    ]
+    return len(set(windows)) / len(windows)
+
+
+def prose_repeat_ratio(text: str, ngram: int = 8) -> float:
+    """Share of n-gram windows equal to the most common window."""
+    words = text.split()
+    if len(words) < ngram * 2:
+        return 0.0
+    windows = [
+        " ".join(words[i : i + ngram]) for i in range(len(words) - ngram + 1)
+    ]
+    top = Counter(windows).most_common(1)[0][1]
+    return top / len(windows)
+
+
+def prose_collapsed(text: str) -> bool:
+    """True when the completion is a looping phrase, not an essay."""
+    words = text.split()
+    if len(words) < 32:
+        return False
+    return prose_type_token_ratio(text) < 0.12 or prose_ngram_diversity(text) < 0.12
 
 
 def completion_body(model: str) -> dict:
@@ -66,6 +106,7 @@ def stream_one(url: str, model: str) -> dict:
     first = None
     chunks = 0
     usage: dict = {}
+    parts: list[str] = []
     with urllib.request.urlopen(req, timeout=600) as resp:
         for raw in resp:
             line = raw.decode("utf-8", "replace").strip()
@@ -88,6 +129,7 @@ def stream_one(url: str, model: str) -> dict:
                 first = time.perf_counter()
             if delta:
                 chunks += 1
+                parts.append(delta)
     t1 = time.perf_counter()
     if first is None:
         raise RuntimeError("no streamed content tokens")
@@ -95,6 +137,8 @@ def stream_one(url: str, model: str) -> dict:
     if completion == 0:
         raise RuntimeError("completion_tokens==0")
     decode_s = t1 - first
+    text = "".join(parts)
+    ratio = prose_repeat_ratio(text)
     return {
         "ttft_s": first - t0,
         "decode_s": decode_s,
@@ -104,6 +148,9 @@ def stream_one(url: str, model: str) -> dict:
         "lail_tok_s": lail_decode_tok_s(completion, decode_s),
         "recipe_tok_s": decode_rate(completion, decode_s),
         "tokens_per_chunk": (completion / chunks) if chunks else 0.0,
+        "repeat_ratio": ratio,
+        "collapsed": prose_collapsed(text),
+        "preview": text[:240],
     }
 
 
@@ -126,6 +173,13 @@ def main() -> int:
         row.update(acceptance(before, spec_counters(metrics_url)))
         rows.append(row)
         print(f"run={i+1} {json.dumps(row)}", flush=True)
+        if row.get("collapsed"):
+            print(
+                "COLLAPSE fake tok/s: looping prose "
+                f"repeat_ratio={row['repeat_ratio']:.3f} preview={row.get('preview')!r}",
+                flush=True,
+            )
+            return 2
     summary = {
         "phase": "lail_prose",
         "concurrency": 1,
