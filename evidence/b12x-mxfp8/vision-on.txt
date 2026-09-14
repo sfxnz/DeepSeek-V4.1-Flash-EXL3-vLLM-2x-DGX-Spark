@@ -1,0 +1,17 @@
+--- image ---
+head image=sha256:f1fbdaaec37f077dd16123e0dd1a5975785923059b7da8b901d10cb44d96f157 oom=false status=running
+worker image=sha256:f1fbdaaec37f077dd16123e0dd1a5975785923059b7da8b901d10cb44d96f157 oom=false status=running
+--- HAS_LMO ---
+HAS_LMO False
+LANGUAGE_MODEL_ONLY=0
+--- backend ---
+107:            backend="auto",
+196:            backend="cute-dsl",
+293:            backend="trtllm",
+--- logs ---
+patched /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/mxfp8/flashinfer.py
+(Worker_TP0 pid=618) INFO 09-13 11:59:53 [cuda.py:581] Using backend AttentionBackendEnum.FLASH_ATTN for vit attention
+(Worker_TP0 pid=618) INFO 09-13 11:59:53 [__init__.py:889] Using FlashInferCutlassMxfp8LinearKernel for MXFP8 GEMM
+(Worker_TP0 pid=618) INFO 09-13 12:05:09 [__init__.py:889] Using EmulationMxfp8LinearKernel for MXFP8 GEMM
+(Worker_TP0 pid=618) INFO 09-13 12:05:58 [encoder_runner.py:131] Encoder cache will be initialized with a budget of 2048 tokens, and profiled with 1 image items of the maximum feature size.
+(Worker_TP0 pid=618) INFO 09-13 12:07:01 [model_runner.py:974] Graph capturing finished in 13 secs, took 0.67 GiB

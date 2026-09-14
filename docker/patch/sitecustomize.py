@@ -11,6 +11,55 @@ import sys
 if "/opt/dsv41-patch" not in sys.path:
     sys.path.insert(0, "/opt/dsv41-patch")
 
+# c1_graph_safe_adaptive is unwired. Extra-graphs and pin-budget=2 both
+# failed L.A.I.L (22.5 and 21.1). 6-token-verify family is closed.
+
+# SM120 MXFP8 Q/O: vLLM hardcodes mm_mxfp8 backend=cutlass. auto prefers
+# b12x small-M tiles on SM120/SM121 and falls back to cutlass if needed.
+try:
+    from pathlib import Path as _P2
+
+    from prefer_b12x_mxfp8 import apply as _apply_b12x_mxfp8
+
+    _apply_b12x_mxfp8(
+        _P2("/usr/local/lib/python3.12/dist-packages/vllm")
+    )
+except Exception:
+    pass
+
+# sm120_wo_a unwired. b12x wo_a_dense_gemm_mxfp8 waves 21.23/23.00; not
+# faster than Emulation torch.bmm. wo_a is not the remaining 22ms.
+
+# Two IO warps on DSV4 decode. Default off. Naive IO_WARPS=4 races mbarriers.
+try:
+    import os
+    from pathlib import Path as _Pio
+
+    if os.environ.get("DSV41_MLA_IO_WARPS", "0") == "2":
+        from widen_mla_io2 import apply as _apply_mla_io2
+
+        _apply_mla_io2(_Pio("/usr/local/lib/python3.12/dist-packages/flashinfer"))
+        print("dsv41: MLA decode DSV4_IO_WARPS=2 linear io_tid", flush=True)
+except Exception as _mla_io2_err:
+    print(f"dsv41: MLA IO=2 patch skipped: {_mla_io2_err!r}", flush=True)
+
+# Tile32 MLA: workspace mid_out splits must match CAND_WINDOW. The JIT image
+# already has WINDOW=32; stock _core.py still sizes scratch with split_tile=64.
+try:
+    from pathlib import Path as _P
+
+    from widen_mla_tile32 import apply as _apply_mla_tile32
+
+    _fi = _P("/usr/local/lib/python3.12/dist-packages/flashinfer")
+    _cuh = (
+        _fi
+        / "data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh"
+    )
+    if _cuh.is_file() and "DSV4_CAND_WINDOW = 32" in _cuh.read_text():
+        _apply_mla_tile32(_fi)
+except Exception:
+    pass
+
 # GB10 (SM120) persistent_topk oversubscribes at 2 decode rows (TopK=512).
 # Patch installed vLLM before it imports. Qwen already excludes family 120
 # for cooperative topk; V4.1 indexer still calls persistent_topk.
@@ -170,22 +219,510 @@ try:
 except Exception:
     pass
 
-# --language-model-only still flattens vision_max_n_token onto hf_config, so
-# SWA prefill index rows widen to window+1024=1152. SM120 DSV4 decode topk is
-# {128,192,256,512,1024}. Do not zero vision_n_layers: VL checkpoints ship
-# gate.bias_vl and load_weights KeyErrors without that param.
+# Vision-on: keep hf_config.vision_max_n_token and vision_n_layers so VL
+# weights load. SM120 dual-cache prefill only instantiates SWA topk=128.
+# SWA index width stays window=128. Decode still uses window=128.
 try:
-    from sm120_page import text_only_max_image_tokens
+    import os
+    from pathlib import Path
+
+    from sm120_page import (
+        clamp_index_topk,
+        language_model_only_from_env,
+        patch_attention_image_width_source,
+        patch_indexer_adaptive_source,
+        patch_indexer_short_context_source,
+        patch_native_indexer_decode_source,
+        patch_swa_prefill_image_width_source,
+        text_only_max_image_tokens,
+    )
     from vllm.transformers_utils.configs.deepseek_v41 import DeepseekV41Config
 
     _v41_cfg_init = DeepseekV41Config.__init__
 
-    def _v41_cfg_init_text_only(self, *args, **kwargs):
+    def _v41_cfg_init_vision(self, *args, **kwargs):
         _v41_cfg_init(self, *args, **kwargs)
+        lm_only = language_model_only_from_env(sys.argv, os.environ)
         self.vision_max_n_token = text_only_max_image_tokens(
-            getattr(self, "vision_max_n_token", 0), True
+            getattr(self, "vision_max_n_token", 0), lm_only
         )
+        idx_clamp = int(os.environ.get("DSV41_INDEX_TOPK", "0") or "0")
+        text_cfg = getattr(self, "text_config", None)
+        if text_cfg is not None and hasattr(text_cfg, "index_topk"):
+            text_cfg.index_topk = clamp_index_topk(
+                getattr(text_cfg, "index_topk", 512), idx_clamp
+            )
+        if hasattr(self, "index_topk"):
+            self.index_topk = clamp_index_topk(
+                getattr(self, "index_topk", 512), idx_clamp
+            )
+    DeepseekV41Config.__init__ = _v41_cfg_init_vision
 
-    DeepseekV41Config.__init__ = _v41_cfg_init_text_only
+    _swa = Path(
+        "/usr/local/lib/python3.12/dist-packages/vllm/v1/attention/backends"
+        "/mla/sparse_swa.py"
+    )
+    if _swa.is_file():
+        _swa.write_text(patch_swa_prefill_image_width_source(_swa.read_text()))
+    _attn = Path(
+        "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"
+        "/attention.py"
+    )
+    if _attn.is_file():
+        _attn.write_text(patch_attention_image_width_source(_attn.read_text()))
+    _mla_idx = Path(
+        "/usr/local/lib/python3.12/dist-packages/vllm/v1/attention/backends"
+        "/mla/indexer.py"
+    )
+    if _mla_idx.is_file():
+        _mla_idx.write_text(patch_native_indexer_decode_source(_mla_idx.read_text()))
+        _mla_idx.write_text(patch_indexer_adaptive_source(_mla_idx.read_text()))
+    _v41_attn = Path(
+        "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"
+        "/attention.py"
+    )
+    if _v41_attn.is_file():
+        _v41_attn.write_text(patch_indexer_short_context_source(_v41_attn.read_text()))
 except Exception:
     pass
+
+# DSpark Markov scale. 1 = stock sequential bias. 0 = parallel backbone drafts.
+try:
+    import os
+
+    from sm120_page import scale_markov_bias
+    from vllm.models.deepseek_v4_1.nvidia.dspark import DSparkDeepseekV4ForCausalLM
+
+    _markov_scale = float(os.environ.get("DSV41_DSPARK_MARKOV_SCALE", "1"))
+    if _markov_scale != 1.0:
+        _markov_bias = DSparkDeepseekV4ForCausalLM.markov_bias
+
+        def _markov_bias_scaled(self, markov_embed):
+            return scale_markov_bias(_markov_bias(self, markov_embed), _markov_scale)
+
+        DSparkDeepseekV4ForCausalLM.markov_bias = _markov_bias_scaled
+except Exception:
+    pass
+
+# Optional decode-step census (draft graph, target forward, Engram staging).
+try:
+    import os
+
+    if os.environ.get("DSV41_STEP_CENSUS", "0") == "1":
+        from sm120_page import install_step_census
+
+        install_step_census()
+except Exception:
+    pass
+
+# Decode MHC prenorm split-K: DeepGEMM heuristic returns 16 at m=6.
+try:
+    import os
+
+    if os.environ.get("DSV41_MHC_DECODE_SPLITS", "0") == "1":
+        from sm120_page import decode_mhc_pre_num_splits
+        from vllm.model_executor.kernels.mhc import tilelang as _mhc_tl
+        from vllm.model_executor.kernels.mhc import warmup as _mhc_wu
+
+        _mhc_splits = _mhc_wu.compute_mhc_pre_num_splits
+
+        def _mhc_splits_decode(input_size: int, num_tokens: int) -> int:
+            return decode_mhc_pre_num_splits(
+                num_tokens, _mhc_splits(input_size, num_tokens)
+            )
+
+        _mhc_wu.compute_mhc_pre_num_splits = _mhc_splits_decode
+        _mhc_tl.compute_mhc_pre_num_splits = _mhc_splits_decode
+        print("dsv41: MHC decode prenorm splits collapsed to 1", flush=True)
+except Exception:
+    pass
+
+# Host LRU for disk Engram rows. Staging still hashes on GPU; this skips
+# NVMe pread+dequant on repeated file rows (overlapping n-grams).
+try:
+    import os
+
+    if os.environ.get("DSV41_ENGRAM_CACHE", "0") == "1":
+        from sm120_page import (
+            engram_row_cache_split,
+            engram_row_cache_store,
+            fill_engram_cache_hits,
+        )
+        from vllm.models.deepseek_v4_1.common.engram_disk import DiskEngramTable
+
+        _engram_cache: dict = {}
+        _engram_order: list = []
+        _engram_cap = int(os.environ.get("DSV41_ENGRAM_CACHE_ROWS", "32768"))
+        _engram_gather = DiskEngramTable.gather_dequant
+
+        def _cached_gather_dequant(self, rel, owned):
+            keys = [int(x) for x in rel.reshape(-1).tolist()]
+            hits, missing = engram_row_cache_split(_engram_cache, keys)
+            fetched: dict = {}
+            if missing:
+                import torch
+
+                miss_rel = rel.new_tensor(missing)
+                own_map = {
+                    int(k): bool(o)
+                    for k, o in zip(keys, owned.reshape(-1).tolist())
+                }
+                miss_owned = owned.new_tensor([own_map[k] for k in missing])
+                fetched_rows = _engram_gather(self, miss_rel, miss_owned)
+                for i, k in enumerate(missing):
+                    row = fetched_rows[i].detach().clone()
+                    fetched[k] = row
+                    engram_row_cache_store(
+                        _engram_cache, _engram_order, k, row, _engram_cap
+                    )
+            rows = fill_engram_cache_hits(keys, hits, fetched)
+            import torch
+
+            return torch.stack(rows, 0)
+
+        DiskEngramTable.gather_dequant = _cached_gather_dequant
+        print("dsv41: Engram disk row cache enabled", flush=True)
+except Exception:
+    pass
+
+# MHC prenorm: stock DeepGEMM uses 16 split-K at m=6. Forcing the TileLang
+# GEMM (n_splits=1) is a separate path from DSV41_MHC_DECODE_SPLITS.
+try:
+    import os
+
+    if os.environ.get("DSV41_MHC_NO_DEEPGEMM", "0") == "1":
+        from vllm.model_executor.kernels.mhc import tilelang as _mhc_tl
+
+        def _mhc_no_deep_gemm() -> bool:
+            return False
+
+        _mhc_tl.is_deep_gemm_supported = _mhc_no_deep_gemm
+        print("dsv41: MHC prenorm uses TileLang GEMM not DeepGEMM", flush=True)
+except Exception:
+    pass
+
+# Greedy propose, softmax verify. Allocate draft_logits on greedy DSpark
+# and cache pre-temperature U+Markov logits, then argmax. Rejection then
+# uses q=softmax(draft) instead of one-hot. Do not Gumbel-sample drafts.
+try:
+    import os
+
+    from sm120_page import dspark_softmax_verify_from_env
+
+    if dspark_softmax_verify_from_env(
+        int(os.environ.get("DSV41_DSPARK_SOFTMAX_VERIFY", "0") or "0")
+    ):
+        import torch
+        from vllm.v1.worker.gpu.spec_decode.dspark.speculator import (
+            DSparkSpeculator,
+        )
+
+        _dspark_init = DSparkSpeculator.__init__
+
+        def _dspark_init_logits_cache(self, *args, **kwargs):
+            _dspark_init(self, *args, **kwargs)
+            if self.draft_logits is None:
+                dtype, fill = self.draft_logits_spec(self.vllm_config)
+                self.draft_logits = torch.full(
+                    (
+                        self.max_num_reqs,
+                        self.num_speculative_steps,
+                        self.vocab_size,
+                    ),
+                    fill,
+                    dtype=dtype,
+                    device=self.device,
+                )
+            self._zero_temperature = torch.zeros_like(self.temperature)
+
+        DSparkSpeculator.__init__ = _dspark_init_logits_cache
+
+        from vllm.v1.worker.gpu.sample.gumbel import gumbel_sample
+
+        def _sample_logits_greedy_cache(
+            self, logits, idx_map, sample_pos, step
+        ):
+            if self._d2t_scatter_index is not None:
+                assert self._draft_scatter_buf is not None
+                buf = self._draft_scatter_buf[: logits.shape[0]]
+                buf.index_copy_(
+                    1, self._d2t_scatter_index, logits.to(buf.dtype)
+                )
+                logits = buf
+            # T=0 is plain argmax. gumbel_sample still caches pre-temperature
+            # logits and skips idx_map < 0, which index_copy_ does not.
+            return gumbel_sample(
+                logits,
+                idx_map,
+                self._zero_temperature,
+                self.seeds,
+                sample_pos - 1,
+                apply_temperature=True,
+                is_drafting=True,
+                logits_cache=self.draft_logits,
+                logits_cache_col=self._step_cols[step],
+                use_fp64=self.use_fp64_gumbel,
+            )
+
+        DSparkSpeculator._sample_logits = _sample_logits_greedy_cache
+        print("dsv41: DSpark greedy propose, softmax verify", flush=True)
+except Exception as _softmax_verify_err:
+    print(
+        f"dsv41: DSpark softmax-verify wrap skipped: {_softmax_verify_err!r}",
+        flush=True,
+    )
+
+# Gate Markov bias by the unused confidence head: logits = base + conf * bias.
+try:
+    import os
+
+    from dspark_conf_gate import (
+        apply_confidence_gate,
+        dspark_conf_gate_from_env,
+    )
+
+    if dspark_conf_gate_from_env(
+        int(os.environ.get("DSV41_DSPARK_CONF_GATE", "0") or "0")
+    ):
+        from vllm.v1.worker.gpu.spec_decode.dspark.speculator import (
+            DSparkSpeculator,
+        )
+
+        _dspark_sample_seq = DSparkSpeculator._sample_sequential
+
+        def _sample_sequential_conf_gate(self, num_reqs, head_hidden):
+            if self._draft_topk is not None:
+                return _dspark_sample_seq(self, num_reqs, head_hidden)
+            n_spec = self.num_speculative_steps
+            num_sample = num_reqs * n_spec
+            sample_hidden = head_hidden[self.sample_indices[:num_sample]]
+            base_logits = self.model.compute_draft_logits(sample_hidden)
+            vocab_size = base_logits.shape[-1]
+            base_logits = base_logits.view(num_reqs, n_spec, vocab_size)
+            idx_map = self.sample_idx_mapping[:num_sample].view(num_reqs, n_spec)
+            sample_pos = self.sample_pos[:num_sample].view(num_reqs, n_spec)
+            hidden_by_step = sample_hidden.view(num_reqs, n_spec, -1)
+            prev = self.input_buffers.input_ids[self._anchor_idx[:num_reqs]]
+            for i in range(n_spec):
+                markov_embed = self.model.markov_embed(prev)
+                bias = self.model.markov_bias(markov_embed)
+                conf = self.model.compute_confidence(
+                    hidden_by_step[:, i], markov_embed
+                )
+                logits_i = apply_confidence_gate(
+                    base_logits[:, i], bias, conf
+                )
+                draft_sampled_i = self._sample_logits(
+                    logits_i, idx_map[:, i], sample_pos[:, i], i
+                )
+                self.draft_tokens[:num_reqs, i] = draft_sampled_i
+                prev = draft_sampled_i
+
+        DSparkSpeculator._sample_sequential = _sample_sequential_conf_gate
+        print("dsv41: DSpark confidence-gated Markov", flush=True)
+except Exception as _conf_gate_err:
+    print(
+        f"dsv41: DSpark conf-gate wrap skipped: {_conf_gate_err!r}",
+        flush=True,
+    )
+
+# Second DSpark pass: write pass-1 samples into noise query slots and
+# replay _generate_draft so later hiddens attend to tokens, not the mask.
+try:
+    import os
+
+    from dspark_refine_pass import (
+        apply_refine_fill,
+        dspark_refine_pass_from_env,
+        refine_query_index,
+    )
+
+    if dspark_refine_pass_from_env(
+        int(os.environ.get("DSV41_DSPARK_REFINE_PASS", "0") or "0")
+    ):
+        from vllm.v1.worker.gpu.spec_decode.dspark.speculator import (
+            DSparkSpeculator,
+        )
+
+        _dspark_refine_init = DSparkSpeculator.__init__
+
+        def _dspark_init_refine_idx(self, *args, **kwargs):
+            _dspark_refine_init(self, *args, **kwargs)
+            self._refine_idx = refine_query_index(
+                int(self.max_num_reqs),
+                int(self.num_query_per_req),
+                int(self.num_speculative_steps),
+                self.device,
+            )
+
+        DSparkSpeculator.__init__ = _dspark_init_refine_idx
+
+        _dspark_generate_draft = DSparkSpeculator._generate_draft
+
+        def _dspark_generate_draft_refine(
+            self,
+            num_reqs,
+            *args,
+            **kwargs,
+        ):
+            _dspark_generate_draft(self, num_reqs, *args, **kwargs)
+            apply_refine_fill(
+                self.input_buffers.input_ids,
+                self.draft_tokens,
+                self._refine_idx,
+                int(num_reqs),
+            )
+            _dspark_generate_draft(self, num_reqs, *args, **kwargs)
+
+        DSparkSpeculator._generate_draft = _dspark_generate_draft_refine
+        print("dsv41: DSpark refine pass 2 on pass-1 query fill", flush=True)
+except Exception as _refine_pass_err:
+    print(
+        f"dsv41: DSpark refine-pass wrap skipped: {_refine_pass_err!r}",
+        flush=True,
+    )
+
+# DSpark tail n-gram: keep draft pos 0..start_pos-1, fill the dead Markov
+# tail from prompt-lookup of prefix+head. Graph-safe: runs after propose()
+# returns, which is after FULL draft-graph replay.
+try:
+    import os
+
+    from sm120_page import (
+        dspark_tail_ngram_start_pos,
+        overlay_ngram_on_draft_tail,
+    )
+
+    _tail_pos = dspark_tail_ngram_start_pos(
+        int(os.environ.get("DSV41_DSPARK_TAIL_NGRAM", "0") or "0"),
+        int(os.environ.get("DSV41_DSPARK_TAIL_NGRAM_POS", "3") or "3"),
+    )
+    if _tail_pos is not None:
+        import torch
+        from vllm.v1.worker.gpu.model_runner import GPUModelRunner
+
+        _sample_tokens = GPUModelRunner.sample_tokens
+
+        def _sample_tokens_tail_ngram(self, *args, **kwargs):
+            spec = getattr(self, "speculator", None)
+            orig_propose = spec.propose if spec is not None else None
+            if orig_propose is None:
+                return _sample_tokens(self, *args, **kwargs)
+
+            def _propose_overlay(input_batch, *a, **k):
+                drafts = orig_propose(input_batch, *a, **k)
+                try:
+                    n_req = int(drafts.shape[0])
+                    idx_np = input_batch.idx_mapping_np
+                    computed = self.req_states.num_computed_tokens_np
+                    ids = self.req_states.all_token_ids.gpu
+                    prefixes = []
+                    for i in range(n_req):
+                        req_idx = int(idx_np[i])
+                        slen = int(computed[req_idx])
+                        if slen <= 0:
+                            prefixes.append([])
+                        else:
+                            prefixes.append(
+                                [int(x) for x in ids[req_idx, :slen].tolist()]
+                            )
+                    cpu = drafts.detach().to("cpu").tolist()
+                    merged = overlay_ngram_on_draft_tail(
+                        cpu, prefixes, start_pos=_tail_pos
+                    )
+                    drafts.copy_(
+                        torch.tensor(
+                            merged, dtype=drafts.dtype, device=drafts.device
+                        )
+                    )
+                except Exception as _tail_err:
+                    print(
+                        f"dsv41: tail ngram overlay skipped: {_tail_err!r}",
+                        flush=True,
+                    )
+                return drafts
+
+            spec.propose = _propose_overlay
+            try:
+                return _sample_tokens(self, *args, **kwargs)
+            finally:
+                spec.propose = orig_propose
+
+        GPUModelRunner.sample_tokens = _sample_tokens_tail_ngram
+        print(
+            f"dsv41: DSpark tail ngram overlay start_pos={_tail_pos}",
+            flush=True,
+        )
+except Exception as _tail_ngram_err:
+    print(
+        f"dsv41: DSpark tail ngram wrap skipped: {_tail_ngram_err!r}",
+        flush=True,
+    )
+
+# Restrict DSpark backbone logits to top-k before sequential Markov.
+# Do not set hf_config.dspark_draft_topk: SpeculativeConfig only allows
+# that field on Qwen3DSpark, and DeepSeek lacks apply_markov_bias_gathered.
+# Mask in-place (fill_ + scatter_) so CUDA graph capture does not allocate
+# a second full-vocab tensor. Dense _sample_sequential still runs.
+try:
+    import os
+
+    from sm120_page import dspark_draft_topk_from_env
+
+    _draft_k = dspark_draft_topk_from_env(
+        int(os.environ.get("DSV41_DSPARK_DRAFT_TOPK", "0") or "0")
+    )
+    if _draft_k is not None:
+        from vllm.models.deepseek_v4_1.nvidia.dspark import (
+            DSparkDeepseekV4ForCausalLM,
+        )
+
+        _cdl = DSparkDeepseekV4ForCausalLM.compute_draft_logits
+
+        def _cdl_topk(self, hidden_states):
+            logits = _cdl(self, hidden_states)
+            vals, idx = logits.topk(_draft_k, dim=-1)
+            logits.fill_(float("-inf"))
+            return logits.scatter_(-1, idx, vals)
+
+        DSparkDeepseekV4ForCausalLM.compute_draft_logits = _cdl_topk
+        print(
+            f"dsv41: DSpark compute_draft_logits topk={_draft_k}",
+            flush=True,
+        )
+except Exception as _draft_topk_err:
+    print(
+        f"dsv41: DSpark compute_draft_logits wrap skipped: {_draft_topk_err!r}",
+        flush=True,
+    )
+
+# Bake SM120 sparse-MLA chunks_per_block into the captured decode graph.
+# Default 0 leaves FlashInfer AutoTuner/heuristic. A positive k is the
+# cubin tactic (1..num_splits) and skips autotune.
+try:
+    import os
+
+    from sm120_page import mla_chunks_per_block_from_env
+
+    _mla_cpb = mla_chunks_per_block_from_env(
+        int(os.environ.get("DSV41_MLA_CHUNKS_PER_BLOCK", "0") or "0")
+    )
+    if _mla_cpb is not None:
+        import flashinfer.mla._sparse_mla_sm120 as _sm120_mla
+
+        _sm120_decode = _sm120_mla.sparse_mla_sm120_decode_dsv4
+
+        def _sm120_decode_cpb(*args, chunks_per_block=None, **kwargs):
+            kwargs["chunks_per_block"] = _mla_cpb
+            return _sm120_decode(*args, **kwargs)
+
+        _sm120_mla.sparse_mla_sm120_decode_dsv4 = _sm120_decode_cpb
+        print(
+            f"dsv41: SM120 MLA chunks_per_block={_mla_cpb}",
+            flush=True,
+        )
+except Exception as _mla_cpb_err:
+    print(
+        f"dsv41: SM120 MLA chunks_per_block wrap skipped: {_mla_cpb_err!r}",
+        flush=True,
+    )

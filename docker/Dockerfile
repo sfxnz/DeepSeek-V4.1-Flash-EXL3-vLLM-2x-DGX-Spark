@@ -28,6 +28,8 @@ RUN apt-get update \
  && git -C /opt/vllm-exl3 checkout "$VLLM_EXL3_REF" \
  && python3 /opt/dsv41-patch/fix_vllm_exl3_setup.py /opt/vllm-exl3/setup.py \
  && python3 /opt/dsv41-patch/widen_p2b_shapes.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_mrow.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_cfg1.py /opt/vllm-exl3 \
  && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps /opt/vllm-exl3 \
  && python3 -c "import torch, vllm_exl3, vllm_exl3_c; assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); print('vllm_exl3 cuda ok')" \
  && rm -rf /opt/exllamav3 /opt/vllm-exl3 /var/lib/apt/lists/*
@@ -36,4 +38,8 @@ ENV VLLM_PLUGINS=vllm_exl3
 ENV VLLM_EXL3_MOE_KERNEL=native
 ENV DSV41_ENGRAM_DISK=1
 COPY patch/sitecustomize.py /usr/lib/python3.12/sitecustomize.py
+# Native SM120 grouped MXFP8 BMM / WO projection (CuTe DSL). The extra is a
+# py3-none-any wheel; cutlass-dsl is already in the FlashInfer b12x Q/O path.
+RUN python3 -m pip install --no-deps "b12x==1.3.0" \
+ && python3 -c "import b12x; print('b12x', getattr(b12x, '__version__', 'ok'))"
 ENTRYPOINT ["vllm", "serve"]

@@ -179,6 +179,23 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("MODEL='$MODEL'", ssh_block)
         self.assertIn("QUANTIZATION='$QUANTIZATION'", ssh_block)
         self.assertIn("DSV41_ENGRAM_DISK='$DSV41_ENGRAM_DISK'", ssh_block)
+        self.assertIn("DSV41_PATCH_DIR='/tmp/dsv41-patch'", ssh_block)
+        self.assertIn('scp -q -r "$SCRIPT_DIR/docker/patch"', run)
+        self.assertIn("/opt/dsv41-patch:ro", run)
+        self.assertIn("/usr/lib/python3.12/sitecustomize.py:ro", run)
+        self.assertIn("DSV41_STEP_CENSUS=", run)
+        self.assertIn("DSV41_INDEX_TOPK=", run)
+        self.assertIn("DSV41_MHC_DECODE_SPLITS=", run)
+        self.assertIn("DSV41_ENGRAM_CACHE=", run)
+        self.assertIn("DSV41_MHC_NO_DEEPGEMM=", run)
+        self.assertIn("DSV41_DSPARK_DRAFT_TOPK=", run)
+        self.assertIn("DSV41_DSPARK_TAIL_NGRAM=", run)
+        self.assertIn("DSV41_DSPARK_TAIL_NGRAM_POS=", run)
+        self.assertIn("DSV41_DSPARK_SOFTMAX_VERIFY=", run)
+        self.assertIn("DSV41_DSPARK_REFINE_PASS=", run)
+        self.assertIn("DSV41_DSPARK_CONF_GATE=", run)
+        self.assertIn("DSV41_MLA_IO_WARPS=", run)
+        self.assertIn("DSV41_MLA_CHUNKS_PER_BLOCK=", run)
         self.assertIn('--revision "$SNAPSHOT_SHA"', run)
         self.assertIn(".run-state/worker_host", run)
         self.assertNotIn("starting local rank only", run)
@@ -224,8 +241,21 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("DeepseekV41Config", site)
         self.assertIn("from sm120_page import", site)
         self.assertTrue((ROOT / "docker/patch/sm120_page.py").is_file())
+        self.assertIn("prefer_b12x_mxfp8", site)
+        self.assertTrue((ROOT / "docker/patch/prefer_b12x_mxfp8.py").is_file())
+        self.assertIn('b12x==1.3.0', df)
         self.assertIn("libcusparse-dev-13-0", df)
-        self.assertIn("VLLM_EXL3_NO_CUDA=1", df)
+        self.assertIn("VLLM_EXL3_MOE_KERNEL=native", df)
+        self.assertIn("widen_p2b_shapes.py", df)
+        self.assertIn("widen_p2b_mrow.py", df)
+        self.assertIn("widen_p2b_cfg1.py", df)
+        self.assertNotIn("widen_p2b_fma.py", df)
+        self.assertNotIn("widen_p2b_pf4.py", df)
+        self.assertNotIn("widen_p2b_nocoop.py", df)
+        self.assertNotIn("widen_p2b_cpasync.py", df)
+        self.assertNotIn("widen_p2b_ldg.py", df)
+        self.assertNotIn("widen_p2b_cp16.py", df)
+        self.assertIn("p2b_fused_moe", df)
         self.assertIn("exl3_moe", df)
 
     def test_assemble_pack_is_executable_and_wired(self) -> None:
@@ -269,7 +299,9 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("engram_disk=1", proc.stdout)
         self.assertIn("spec=dspark", proc.stdout)
         self.assertIn("spec_tokens=5", proc.stdout)
-        self.assertIn("eager=1", proc.stdout)
+        self.assertIn("eager=0", proc.stdout)
+        self.assertIn("lm_only=0", proc.stdout)
+        self.assertNotIn("--language-model-only", proc.stdout)
 
     def test_validate_only_refuses_max_num_seqs(self) -> None:
         proc = _run_sh(MAX_NUM_SEQS="8")
@@ -326,9 +358,27 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn(f'SPEC="${{SPEC:-{spec}}}"', run)
         self.assertEqual(spec, "dspark")
         self.assertIn('NUM_SPECULATIVE_TOKENS="${NUM_SPECULATIVE_TOKENS:-5}"', run)
-        self.assertIn('ENFORCE_EAGER="${ENFORCE_EAGER:-1}"', run)
+        self.assertIn('ENFORCE_EAGER="${ENFORCE_EAGER:-0}"', run)
+        self.assertIn('LANGUAGE_MODEL_ONLY="${LANGUAGE_MODEL_ONLY:-0}"', run)
         self.assertIn("enable_flashinfer_autotune", run)
         self.assertIn("enable_jit_warmup", run)
+
+    def test_dspark_default_draft_sample_method_is_greedy(self) -> None:
+        run = _read("run.sh")
+        self.assertIn('"draft_sample_method":"greedy"', run)
+        self.assertNotIn('"draft_sample_method":"probabilistic"', run)
+
+    def test_default_language_model_only_is_off(self) -> None:
+        self.assertEqual(_recipe()["serve"]["env"]["LANGUAGE_MODEL_ONLY"], "0")
+        run = _read("run.sh")
+        body = _func_body(run, "start_local")
+        self.assertIn('lm_args+=(--language-model-only)', body)
+        self.assertIn('LANGUAGE_MODEL_ONLY" == "1"', body)
+        self.assertIn('LANGUAGE_MODEL_ONLY=$LANGUAGE_MODEL_ONLY', body)
+        proc = _run_sh()
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("lm_only=0", proc.stdout)
+        self.assertNotIn("--language-model-only", proc.stdout)
 
     def test_locator_prefers_refs_commit_over_named_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as d:
@@ -449,6 +499,19 @@ class ReadmeHowToTests(unittest.TestCase):
         self.assertGreater(decode, 0.0)
         evidence = row.get("evidence") or ""
         self.assertTrue(evidence, "measured prose c=1 needs an evidence path")
+        self.assertTrue((ROOT / evidence).is_file(), evidence)
+
+    def test_measured_lail_prose_c1_has_evidence(self) -> None:
+        rows = _recipe()["measured"]["decode"]["rows"]
+        row = next(
+            r
+            for r in rows
+            if r["phase"] == "lail_prose" and str(r["concurrency"]) == "1"
+        )
+        decode = float(row["decode"])
+        self.assertGreater(decode, 0.0)
+        evidence = row.get("evidence") or ""
+        self.assertTrue(evidence, "measured lail_prose c=1 needs an evidence path")
         self.assertTrue((ROOT / evidence).is_file(), evidence)
 
     def test_generated_speculative_row_matches_recipe(self) -> None:

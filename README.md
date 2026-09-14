@@ -93,13 +93,14 @@ When you are done:
 | `--max-num-seqs` | 2 |
 | `--max-num-batched-tokens` | 2048 |
 | `--kv-cache-dtype` | `fp8` |
-| `--kv-cache-memory` | `4294967296` |
+| `--kv-cache-memory` | 4294967296 |
 | `--quantization` | `exl3` |
 | Engram | disk (`DSV41_ENGRAM_DISK=1`) |
 | `--block-size` | 64 |
 | Speculative | DSpark-5 (`SPEC=dspark`) |
 | CUDA graphs | `FULL_AND_PIECEWISE` (`ENFORCE_EAGER=0`, `DSV41_ALLOW_CUDA_GRAPHS=1`) |
 | Tokenizers / tools / reasoning | `deepseek_v41` |
+| Vision | on (`LANGUAGE_MODEL_ONLY=0`) |
 | Default thinking | `thinking=false`, `reasoning_effort=low` |
 | API | `http://<head>:8000/v1` |
 | Container | `dsv41-flash-exl3` |
@@ -114,7 +115,7 @@ When you are done:
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
 |---|---|---:|---:|---:|
 | prose | 1 | 21.2 | 21.2 | 0.365 s |
-| lail_prose | 1 | 15.3 | 15.3 | 0.474 s |
+| lail_prose | 1 | 23.4 | 23.4 | 0.420 s |
 <!-- END generated measured -->
 
 ## Rebuild the pack
