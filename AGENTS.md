@@ -4,7 +4,7 @@ Serve an EXL3 pack of `deepseek-ai/DeepSeek-V4.1-Flash` at TP=2. Local image `ds
 
 Humans read [README.md](README.md).
 
-The public path is clone, `hf download` of `sfxnz/DeepSeek-V4.1-Flash-EXL3` at `2.0bpw-mcg`, image build on both nodes, then `./run.sh`. `run.sh` resolves Hub `refs/<rev>` to `snapshots/<commit>/`. It also accepts an assembled pack at `snapshots/2.0bpw-mcg`.
+The public path is clone, `hf download` of `sfxnz/DeepSeek-V4.1-Flash-EXL3` at `2.0bpw-mcg`, image build on both nodes, then `./run.sh`. `run.sh` resolves Hub `refs/<rev>` to `snapshots/<commit>/`. It also accepts an assembled pack at `snapshots/2.0bpw-mcg`. Rebuild defaults to MUL1 (`2.0bpw-mul1`) and needs p2b `cb=2`. Pack-only MUL1 is a decode regression.
 
 ## Working rules
 
@@ -14,6 +14,7 @@ The public path is clone, `hf download` of `sfxnz/DeepSeek-V4.1-Flash-EXL3` at `
 - Pin `NCCL_IB_HCA`. GB10 exposes four HCAs and two are DOWN. Defaults are `enp1s0f1np1` / `rocep1s0f1`.
 - Default thinking is off. `chat_template_kwargs`: `thinking=false`, `reasoning_effort=low`. Tokenizer/tool/reasoning parsers are `deepseek_v41`.
 - DeepJIT is a CUDA/Ascend kernel JIT library, not a serving stack. Official V4.1 kernels in the HF `inference/` tree are TileLang. Do not vendor DeepJIT into this image.
+- Stay at EXL3 K=2. Calibrate before raising bits. Do not raise `MAX_NUM_SEQS` before a new occupancy row. DSpark block stays 5.
 
 `ORCHESTRATE=auto` (default): if SSH to `WORKER_HOST` fails, `run.sh` exits 1. Do not start a TP=2 head rank alone.
 
@@ -41,9 +42,10 @@ After `./run.sh` is up:
 
 ```bash
 python3 smoke_chat.py
+python3 smoke_vision.py
 ```
 
-The body must have non-empty `choices[0].message.content`. `323` is enough for `17*19`.
+`smoke_chat.py` must have non-empty `choices[0].message.content`. `323` is enough for `17*19`. `smoke_vision.py` must not return HTTP 400 `is not a multimodal model`.
 
 ## Never touch
 
