@@ -111,9 +111,11 @@ When you are done:
 
 ## Measured on 2× DGX Spark
 
-`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median. `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2). Default is DSpark-5 with CUDA graphs. Smoke is `python3 smoke_chat.py` and `python3 smoke_vision.py` with thinking off. These cells are the published MCG pack (`2.0bpw-mcg`) on native p2b `cb=1`. A MUL1 pack is unmeasured.
+`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median. `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2). Default is DSpark-5 with CUDA graphs. Smoke is `python3 smoke_chat.py` and `python3 smoke_vision.py` with thinking off. These cells are the published MCG pack (`2.0bpw-mcg`) on native p2b `cb=1`. Do not switch the serve pin to MUL1.
 
 spark1+spark2 TP=2 A/B of PR 6 (`e507021`, batched 8192, `--mm-encoder-tp-mode data`) vs `main` (`dcac67a`, batched 2048), still `2.0bpw-mcg`: prose c=1 decode 33.05 vs 27.98 tok/s (overlap in run spread, not a win); 12,712-token prefill 755 vs 797 tok/s (−5%). A 3,182-token prefill was 797 vs 719 (+11%, one batch). Default `--max-num-batched-tokens` stays 2048. `MAX_NUM_BATCHED_TOKENS=8192` remains an override, not a proven upgrade. See `evidence/pr6-batched-8192/`.
+
+MUL1 + p2b `cb=2` (`2.0bpw-mul1` K=2 on `dsv41-flash-exl3-sm121:cb2`) lost prose decode: 23.52 vs 27.98 MCG. Runs 26.43 / 23.52 / 23.17 vs baseline 26.34 / 27.98 / 31.77. MUL1 median and two of three runs sit below the worst baseline run. 12,712-token prefill 792 vs 797 (flat). Rebuild tools stay. Serve stays `2.0bpw-mcg`. See `evidence/pr6-mul1-cb2/`.
 
 <!-- BEGIN generated measured from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
@@ -124,7 +126,7 @@ spark1+spark2 TP=2 A/B of PR 6 (`e507021`, batched 8192, `--mm-encoder-tp-mode d
 
 ## Rebuild the pack
 
-If you already downloaded `sfxnz/DeepSeek-V4.1-Flash-EXL3` at revision `2.0bpw-mcg`, skip this section. The published pack is the serve path. Rebuild writes a different revision (`2.0bpw-mul1`) and needs an image that includes `widen_p2b_codebook.py`. Pack-only MUL1 without p2b `cb=2` drops native fused MoE onto generic `exl3_moe` and is a decode regression.
+If you already downloaded `sfxnz/DeepSeek-V4.1-Flash-EXL3` at revision `2.0bpw-mcg`, skip this section. The published pack is the serve path. Rebuild writes a different revision (`2.0bpw-mul1`) and needs an image that includes `widen_p2b_codebook.py`. Pack-only MUL1 without p2b `cb=2` drops native fused MoE onto generic `exl3_moe` and is a decode regression. MUL1 + p2b `cb=2` was measured and lost prose decode (23.52 vs 27.98). Do not point `SNAPSHOT_SHA` at `2.0bpw-mul1`.
 
 Stay at K=2. Calibrate (activation Hessian / official convert) before raising bits. Do not pass `--hq` or `bits!=2` here. This recipe does not ship a calibration harness.
 

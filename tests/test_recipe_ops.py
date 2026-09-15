@@ -408,6 +408,9 @@ class RecipeOpsTests(unittest.TestCase):
         readme = _read("README.md")
         self.assertIn("−5%", readme)
         self.assertIn("12,712", readme)
+        self.assertIn("23.52", readme)
+        self.assertIn("27.98", readme)
+        self.assertIn("2.0bpw-mcg", _recipe()["serve"]["env"]["SNAPSHOT_SHA"])
 
     def test_locator_prefers_refs_commit_over_named_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as d:

@@ -40,4 +40,4 @@ Model weights are MIT from DeepSeek. `vllm-exl3` is AGPL-3.0. The recipe image c
 
 ## Rebuild
 
-The GitHub recipe documents `tools/quantize_experts_exl3.py --codebook mul1` and `tools/assemble_pack.sh`. That writes revision `2.0bpw-mul1`. Serve still pins this `2.0bpw-mcg` pack. A pack-only MCG→MUL1 swap without p2b `cb=2` drops the fused decode path. Stay at K=2 and calibrate before raising bits.
+The GitHub recipe documents `tools/quantize_experts_exl3.py --codebook mul1` and `tools/assemble_pack.sh`. That writes revision `2.0bpw-mul1`. Serve still pins this `2.0bpw-mcg` pack. MUL1 + p2b `cb=2` lost prose decode (23.52 vs 27.98). A pack-only swap without `cb=2` also drops the fused path. Stay at K=2 and calibrate before raising bits.
