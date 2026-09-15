@@ -15,7 +15,7 @@ image:
 
 engine:
   name: vllm
-  version: dsv41-flash-0909 + vllm-exl3 native p2b + Engram-on-disk
+  version: dsv41-flash-0909 + vllm-exl3 native p2b (cb=1 MCG / cb=2 MUL1) + Engram-on-disk
 
 hardware:
   shape: 2x DGX Spark (GB10)
@@ -48,6 +48,7 @@ serve:
     QUANTIZATION: exl3
     DSV41_ENGRAM_DISK: 1
     LANGUAGE_MODEL_ONLY: 0
+    MM_ENCODER_TP_MODE: data
     MAX_NUM_BATCHED_TOKENS: 2048
     FORCE_UNSAFE_CTX: 0
     FORCE_UNSAFE_ENGRAM: 0
@@ -78,6 +79,7 @@ readme:
     - CUDA graphs: "`FULL_AND_PIECEWISE` (`ENFORCE_EAGER={ENFORCE_EAGER}`, `DSV41_ALLOW_CUDA_GRAPHS={DSV41_ALLOW_CUDA_GRAPHS}`)"
     - Tokenizers / tools / reasoning: "`deepseek_v41`"
     - Vision: "on (`LANGUAGE_MODEL_ONLY={LANGUAGE_MODEL_ONLY}`)"
+    - "`--mm-encoder-tp-mode`": "{MM_ENCODER_TP_MODE}"
     - Default thinking: "`thinking=false`, `reasoning_effort=low`"
     - API: "`http://<head>:{PORT}/v1`"
     - Container: "`{CONTAINER_NAME}`"

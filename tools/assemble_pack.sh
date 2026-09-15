@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Merge two-Spark EXL3 shards, rebuild the index, rsync the pack to the worker.
 set -euo pipefail
-DST="${DST:-$HOME/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg}"
+CODEBOOK="${CODEBOOK:-mul1}"
+REV="${REV:-2.0bpw-${CODEBOOK}}"
+DST="${DST:-$HOME/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/$REV}"
 WORKER="${WORKER:-10.100.8.2}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 log() { printf '==> %s\n' "$*"; }
@@ -35,7 +37,7 @@ fi
 log "rebuild index"
 idx="$DST/model.safetensors.index.json"
 if [[ -e "$idx" && ! -w "$idx" ]]; then
-  docker exec dsv41-quant chmod a+w "/root/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg/model.safetensors.index.json" 2>/dev/null || chmod a+w "$idx" 2>/dev/null || true
+  docker exec dsv41-quant chmod a+w "$idx" 2>/dev/null || chmod a+w "$idx" 2>/dev/null || true
 fi
 python3 "$ROOT/tools/rebuild_index.py" --dst "$DST"
 if ! python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); q=c.get("quantization_config") or {}; sys.exit(0 if q.get("quant_method")=="exl3" else 1)' \

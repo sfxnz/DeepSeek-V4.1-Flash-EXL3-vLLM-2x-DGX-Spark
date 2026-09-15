@@ -30,6 +30,7 @@ RUN apt-get update \
  && python3 /opt/dsv41-patch/widen_p2b_shapes.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_mrow.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_cfg1.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_codebook.py /opt/vllm-exl3 \
  && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps /opt/vllm-exl3 \
  && python3 -c "import torch, vllm_exl3, vllm_exl3_c; assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); print('vllm_exl3 cuda ok')" \
  && rm -rf /opt/exllamav3 /opt/vllm-exl3 /var/lib/apt/lists/*
