@@ -13,7 +13,7 @@ RUN python3 /opt/dsv41-patch/apply_engram_disk.py \
 # Plugin source is cloned at build so the pin is in the RUN line, not a floating latest.
 # Native p2b CUDA is parameterized by hidden/inter in 128-wide tiles. The
 # host gate used to allow only 4096 x {1024,2048}; widen_p2b_shapes.py also
-# allows V4.1 TP=2 5120x1152. widen_p2b_cfg2.py is COLS=128 at that geometry.
+# allows V4.1 TP=2 5120x1152.
 ARG VLLM_EXL3_REF=d3cfd394920360d69f820d2dc96f8292a9e10283
 ARG EXLLAMAV3_REF=5be886578ec80324c2c715269387be2058724b6e
 RUN apt-get update \

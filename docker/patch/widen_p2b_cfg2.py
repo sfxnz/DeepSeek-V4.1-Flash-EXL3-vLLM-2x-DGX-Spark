@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""Switch vllm-exl3 p2b fused MoE decode tiles from CFG=1 to CFG=2.
-
-CFG=1 is WK=8, WNT=4, COLS=64, THREADS=256. CFG=2 keeps WK=8 and 256 threads
-and widens WNT to 8 / COLS to 128. The stock WNT ternary is binary
-(`CFG == 0 ? 2 : 4`), so CFG=2 would still emit WNT=4 unless that line
-changes. num_groups and sh_red must match COLS=128. 5120 and 1152 both
-divide 128, so down groups go 80→40 and gate groups 18→9.
-
-Apply after widen_p2b_cfg1.py. Idempotent. Keeps BITS, m-row work lists,
-launch_bounds(256, 4), cooperative 256-thread launch, and cb=1 (MCG).
-"""
-
 from __future__ import annotations
 
 import argparse
