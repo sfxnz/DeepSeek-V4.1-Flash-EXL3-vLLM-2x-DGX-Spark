@@ -11,7 +11,7 @@ The public path is clone, `hf download` of `sfxnz/DeepSeek-V4.1-Flash-EXL3` at `
 - `recipe.yaml` is the source of truth for pins and generated blocks. Edit it, then `python3 kit/render.py`. Do not hand-edit `# BEGIN generated` or `<!-- BEGIN generated` blocks.
 - Read unified memory with `free -h`. Never `nvidia-smi` VRAM.
 - Exclusive GPUs. Do not start this while another `--gpus all` serve is up. Unload that serve first (`./stop.sh` in its recipe). Stop `dsv41-quant` too — it holds the GPU during pack conversion.
-- Pin `NCCL_IB_HCA`. GB10 exposes four HCAs and two are DOWN. Defaults are `enp1s0f1np1` / `rocep1s0f1`.
+- Pin `NCCL_IB_HCA` exact (`==name`). `NCCL_CROSS_NIC=0`. GB10 exposes four HCAs and two are DOWN. Defaults are `enp1s0f1np1` / `rocep1s0f1`.
 - Default thinking is off. `chat_template_kwargs`: `thinking=false`, `reasoning_effort=low`. Tokenizer/tool/reasoning parsers are `deepseek_v41`.
 - DeepJIT is a CUDA/Ascend kernel JIT library, not a serving stack. Official V4.1 kernels in the HF `inference/` tree are TileLang. Do not vendor DeepJIT into this image.
 

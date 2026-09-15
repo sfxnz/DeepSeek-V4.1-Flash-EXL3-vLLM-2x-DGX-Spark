@@ -1,0 +1,5 @@
+ts	phase	decision	why	evidence	result
+2026-09-15T19:30:00Z	harness	keep frozen prose c=1 3-run median vs 27.98	ruler already exists; do not invent tok/s	docs/deepseek-v41-pr6-spark-results.md	open; GLM holds exclusive GPUs
+2026-09-15T19:30:00Z	scope	new PR from main not stacked on PR 6	PR 6 is MUL1 + cb=2 + batched 8192; MUL1 lost at 23.52; serve stays MCG	docs/deepseek-v41-mul1-ab.md	open
+2026-09-15T19:30:00Z	p2b	CFG=2 COLS=128 after cfg1, stay cb=1	Nsight hot slice is p2b_moe_batched 22-23% at 5120x1152; both dims divide 128; banned family is fma/pf4/nocoop/cpasync/ldg/cp16	docker/patch/widen_p2b_cfg2.py	unmeasured
+2026-09-15T19:30:00Z	nccl	exact HCA CROSS_NIC=0 Ring 1-2 channels no PROTO=LL	decode AR is 10 KiB; CROSS_NIC=1 can hunt a DOWN NIC; 304 ms tail is wait or retry; LL would hit 20-124 MiB prefill	run.sh NCCL block	unmeasured
