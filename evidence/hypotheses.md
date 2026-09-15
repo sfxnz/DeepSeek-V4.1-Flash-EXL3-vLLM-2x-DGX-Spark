@@ -37,3 +37,27 @@ Risk: known crash class. Do not land if smoke dies.
 
 Mechanism: FlashInfer AR disabled at world_size=2; engine uses PYNCCL. Tony's 4× V4.1
 recipe measured ~5 ms in 88 all-reduces/step. Smaller than MoE, not 1.5× alone.
+PYNCCL is already libnccl. This H4 as written is a false fork.
+
+## H5. Native p2b CFG=2 COLS=128, stay MCG cb=1
+
+Mechanism: Nsight decode-hot slice is `p2b_moe_batched` (~22–23%) at 5120×1152.
+CFG=1 is 80 down groups × 64 cols. Both dims divide 128. CFG=2 is WNT=8,
+COLS=128, down groups 40, gate groups 9, same WK=8 / 256 threads /
+`launch_bounds(256, 4)`. Halves GEMV work-list items. Register pressure at
+WNT=8 is the fail mode. Do not drop minBlocks until a compile or boot log
+shows spill.
+
+Risk: spill drops occupancy; cooperative launch fails if four blocks cannot
+reside. Image rebuild required.
+
+## H6. Exact HCA, CROSS_NIC=0, Ring, two channels
+
+Mechanism: Nsight AllReduce is ~11–15% plus a 304 ms spark1 tail. Decode AR
+is about 10 KiB (5120×2). `CROSS_NIC=1` can hunt a DOWN HCA on GB10 (four
+HCAs, two DOWN). Exact `NCCL_IB_HCA==$HCA` plus `CROSS_NIC=0` pins one rail.
+Ring plus `MIN_NCHANNELS=1` / `MAX_NCHANNELS=2` matches two-rank small-message
+AR. Do not set `NCCL_PROTO=LL`. Prefill ARs are 20–124 MiB.
+
+Risk: Ring or channel pin can hurt prefill. Exact HCA stays required for boot.
+Image rebuild not required.

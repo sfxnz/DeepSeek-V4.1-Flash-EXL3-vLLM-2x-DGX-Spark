@@ -200,6 +200,20 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn(".run-state/worker_host", run)
         self.assertNotIn("starting local rank only", run)
 
+    def test_run_sh_pins_decode_nccl(self) -> None:
+        run = _read("run.sh")
+        self.assertIn('-e "NCCL_IB_HCA==$HCA"', run)
+        self.assertNotIn('-e "NCCL_IB_HCA=$HCA"', run)
+        self.assertIn('-e "NCCL_CROSS_NIC=0"', run)
+        self.assertNotIn("NCCL_CROSS_NIC=1", run)
+        self.assertIn('-e "NCCL_ALGO=Ring"', run)
+        self.assertIn('-e "NCCL_MIN_NCHANNELS=1"', run)
+        self.assertIn('-e "NCCL_MAX_NCHANNELS=2"', run)
+        self.assertNotIn("NCCL_PROTO", run)
+        self.assertIn('-e "NCCL_NET=IB"', run)
+        self.assertIn('-e "NCCL_NVLS_ENABLE=0"', run)
+        self.assertIn('-e "NCCL_CUMEM_ENABLE=0"', run)
+
     def test_run_sh_does_not_default_disable_xet(self) -> None:
         run = _read("run.sh")
         self.assertNotIn('HF_HUB_DISABLE_XET="${HF_HUB_DISABLE_XET:-1}"', run)
@@ -249,6 +263,11 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("widen_p2b_shapes.py", df)
         self.assertIn("widen_p2b_mrow.py", df)
         self.assertIn("widen_p2b_cfg1.py", df)
+        self.assertIn("widen_p2b_cfg2.py", df)
+        self.assertLess(
+            df.find("python3 /opt/dsv41-patch/widen_p2b_cfg1.py"),
+            df.find("python3 /opt/dsv41-patch/widen_p2b_cfg2.py"),
+        )
         self.assertNotIn("widen_p2b_fma.py", df)
         self.assertNotIn("widen_p2b_pf4.py", df)
         self.assertNotIn("widen_p2b_nocoop.py", df)

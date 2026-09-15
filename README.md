@@ -16,7 +16,7 @@ You need:
 - About 340 GB free disk per node
 - Hugging Face `hf` (or `huggingface-cli`) and Docker on both nodes
 
-Pin `NCCL_IB_HCA`. GB10 exposes four HCAs and two are DOWN. Read unified memory with `free -h`. Never read VRAM from `nvidia-smi`.
+Pin `NCCL_IB_HCA` to an exact device (`==$HCA`). `NCCL_CROSS_NIC=0` so NCCL does not hunt a DOWN NIC. GB10 exposes four HCAs and two are DOWN. Read unified memory with `free -h`. Never read VRAM from `nvidia-smi`.
 
 The recipe defaults are `HEAD_IP=10.100.8.1`, `WORKER_HOST=spark2`, `IFACE=enp1s0f1np1`, and `HCA=rocep1s0f1`. If your fabric differs, export `HEAD_IP`, `WORKER_HOST`, `IFACE`, and `HCA` before `./run.sh`.
 

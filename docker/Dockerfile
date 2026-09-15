@@ -13,7 +13,7 @@ RUN python3 /opt/dsv41-patch/apply_engram_disk.py \
 # Plugin source is cloned at build so the pin is in the RUN line, not a floating latest.
 # Native p2b CUDA is parameterized by hidden/inter in 128-wide tiles. The
 # host gate used to allow only 4096 x {1024,2048}; widen_p2b_shapes.py also
-# allows V4.1 TP=2 5120x1152.
+# allows V4.1 TP=2 5120x1152. widen_p2b_cfg2.py is COLS=128 at that geometry.
 ARG VLLM_EXL3_REF=d3cfd394920360d69f820d2dc96f8292a9e10283
 ARG EXLLAMAV3_REF=5be886578ec80324c2c715269387be2058724b6e
 RUN apt-get update \
@@ -30,6 +30,7 @@ RUN apt-get update \
  && python3 /opt/dsv41-patch/widen_p2b_shapes.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_mrow.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_cfg1.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_cfg2.py /opt/vllm-exl3 \
  && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps /opt/vllm-exl3 \
  && python3 -c "import torch, vllm_exl3, vllm_exl3_c; assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); print('vllm_exl3 cuda ok')" \
  && rm -rf /opt/exllamav3 /opt/vllm-exl3 /var/lib/apt/lists/*
