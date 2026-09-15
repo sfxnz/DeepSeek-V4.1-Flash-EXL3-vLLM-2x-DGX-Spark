@@ -4,14 +4,48 @@
 Routed experts are EXL3 trellis. Everything else stays in the official
 MXFP8/MXFP4/BF16 layout, including Engram tables (read from disk at serve).
 DSpark draft experts stay source-format from backbone layer 40.
+
+Codebook is a named pair (marker suffix, p2b cb). MCG is cb=1. MUL1 is cb=2.
+The published Hub pin is still 2.0bpw-mcg. Rebuild defaults to MUL1 so a
+matching p2b cb=2 kernel can use ExLlamaV3's current optimized paths.
+A pack-only swap without cb=2 drops native p2b onto generic exl3_moe.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 BACKBONE_LAYERS = 40
 DEFAULT_BITS = 2
-CODEBOOK = "mcg"
+
+
+@dataclass(frozen=True)
+class Codebook:
+    name: str
+    cb: int
+    suffix: str
+    quant_key: str
+
+
+CODEBOOKS = {
+    "mcg": Codebook("mcg", 1, "mcg", "mcg"),
+    "mul1": Codebook("mul1", 2, "mul1", "mul1"),
+}
+DEFAULT_CODEBOOK = "mul1"
+SERVE_REVISION = "2.0bpw-mcg"
+
+
+def get_codebook(name: str) -> Codebook:
+    key = str(name).strip().lower()
+    found = CODEBOOKS.get(key)
+    if found is None:
+        raise ValueError(f"unsupported codebook={name}")
+    return found
+
+
+def revision_for(bits: int = DEFAULT_BITS, codebook: str = DEFAULT_CODEBOOK) -> str:
+    get_codebook(codebook)
+    return f"{int(bits)}.0bpw-{codebook}"
 
 
 def is_routed_expert_tensor(name: str) -> bool:
@@ -34,17 +68,16 @@ def is_routed_expert_weight(name: str) -> bool:
 def build_quantization_config(
     *,
     bits: int = DEFAULT_BITS,
-    codebook: str = CODEBOOK,
+    codebook: str = DEFAULT_CODEBOOK,
     layer_bits: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     if bits not in (2, 3, 4, 5, 6):
         raise ValueError(f"unsupported EXL3 bits={bits}")
-    if codebook not in ("mcg", "mul1"):
-        raise ValueError(f"unsupported codebook={codebook}")
+    cb = get_codebook(codebook)
     cfg: dict[str, Any] = {
         "quant_method": "exl3",
         "bits": int(bits),
-        "codebook": codebook,
+        "codebook": cb.name,
         "mtp_experts": "source",
         "mtp_experts_start_layer": BACKBONE_LAYERS,
         # Copied onto Exl3Config so DSV4.1's scale mapper uses MXFP8

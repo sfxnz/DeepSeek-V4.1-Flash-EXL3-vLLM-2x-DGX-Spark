@@ -29,15 +29,21 @@ def check_shard(path: Path) -> list[str]:
     suh = [n for n in names if n.endswith(".suh")]
     svh = [n for n in names if n.endswith(".svh")]
     mcg = [n for n in names if n.endswith(".mcg")]
+    mul1 = [n for n in names if n.endswith(".mul1")]
+    markers = mcg + mul1
     problems: list[str] = []
     if leftover:
         problems.append(f"leftover routed MXFP4 weights: {len(leftover)}")
     if not trellis:
         problems.append("no .trellis tensors")
-    if trellis and not (len(trellis) == len(suh) == len(svh) == len(mcg)):
+    if trellis and not (len(trellis) == len(suh) == len(svh) == len(markers)):
         problems.append(
-            f"suffix counts trellis={len(trellis)} suh={len(suh)} svh={len(svh)} mcg={len(mcg)}"
+            "suffix counts "
+            f"trellis={len(trellis)} suh={len(suh)} svh={len(svh)} "
+            f"mcg={len(mcg)} mul1={len(mul1)}"
         )
+    if mcg and mul1:
+        problems.append("shard mixes .mcg and .mul1 markers")
     return problems
 
 

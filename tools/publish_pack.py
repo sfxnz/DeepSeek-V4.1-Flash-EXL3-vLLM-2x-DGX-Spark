@@ -19,8 +19,8 @@ os.environ.pop("HF_HUB_DISABLE_XET", None)
 os.environ.setdefault("HF_XET_HIGH_PERFORMANCE", "1")
 
 REPO = "sfxnz/DeepSeek-V4.1-Flash-EXL3"
-REVISION = "2.0bpw-mcg"
-DEFAULT_SRC = Path.home() / ".cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg"
+REVISION = "2.0bpw-mul1"
+DEFAULT_SRC = Path.home() / ".cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mul1"
 ROOT = Path(__file__).resolve().parents[1]
 CARD = ROOT / "model-card.md"
 
@@ -77,11 +77,11 @@ def check_pack(src: Path) -> None:
         raise SystemExit(f"missing model card {CARD}")
 
 
-def dry_run(src: Path) -> int:
+def dry_run(src: Path, revision: str) -> int:
     files = iter_allowed(src)
     total = sum(p.stat().st_size for p in files)
     print(f"src {src}")
-    print(f"repo {REPO} revision {REVISION}")
+    print(f"repo {REPO} revision {revision}")
     print(f"files {len(files)} bytes {total}")
     for path in files:
         rel = path.relative_to(src).as_posix()
@@ -89,7 +89,7 @@ def dry_run(src: Path) -> int:
     return 0
 
 
-def publish(src: Path) -> int:
+def publish(src: Path, revision: str) -> int:
     from huggingface_hub import HfApi
 
     api = HfApi()
@@ -102,43 +102,48 @@ def publish(src: Path) -> int:
         repo_id=REPO,
         repo_type="model",
         revision="main",
-        commit_message="Add EXL3 2.0bpw-mcg model card",
+        commit_message=f"Add EXL3 {revision} model card",
     )
-    print(f"create_branch {REVISION}", flush=True)
-    api.create_branch(REPO, branch=REVISION, repo_type="model", exist_ok=True)
-    print(f"upload_folder {src} -> {REPO}@{REVISION}", flush=True)
+    print(f"create_branch {revision}", flush=True)
+    api.create_branch(REPO, branch=revision, repo_type="model", exist_ok=True)
+    print(f"upload_folder {src} -> {REPO}@{revision}", flush=True)
     api.upload_folder(
         repo_id=REPO,
         folder_path=str(src),
         repo_type="model",
-        revision=REVISION,
+        revision=revision,
         allow_patterns=ALLOW,
-        commit_message="Upload EXL3 2.0bpw-mcg pack",
+        commit_message=f"Upload EXL3 {revision} pack",
     )
-    print(f"upload model card to {REVISION}", flush=True)
+    print(f"upload model card to {revision}", flush=True)
     api.upload_file(
         path_or_fileobj=str(CARD),
         path_in_repo="README.md",
         repo_id=REPO,
         repo_type="model",
-        revision=REVISION,
-        commit_message="Add EXL3 2.0bpw-mcg model card",
+        revision=revision,
+        commit_message=f"Add EXL3 {revision} model card",
     )
-    print(f"DONE {REPO} revision {REVISION}", flush=True)
+    print(f"DONE {REPO} revision {revision}", flush=True)
     return 0
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Publish the local EXL3 pack to Hugging Face.")
     parser.add_argument("--src", type=Path, default=DEFAULT_SRC)
+    parser.add_argument(
+        "--revision",
+        default=REVISION,
+        help="Hub revision to create/upload. Default 2.0bpw-mul1. Serve still pins 2.0bpw-mcg.",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     src = args.src.expanduser().resolve()
     check_pack(src)
     if args.dry_run:
-        return dry_run(src)
+        return dry_run(src, args.revision)
     _need_hub()
-    return publish(src)
+    return publish(src, args.revision)
 
 
 if __name__ == "__main__":
