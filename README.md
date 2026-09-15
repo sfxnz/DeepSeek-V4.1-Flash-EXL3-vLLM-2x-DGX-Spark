@@ -92,7 +92,7 @@ When you are done:
 | `--tensor-parallel-size` / `--nnodes` | 2 / 2 |
 | `--max-model-len` | 1048576 |
 | `--max-num-seqs` | 2 |
-| `--max-num-batched-tokens` | 8192 |
+| `--max-num-batched-tokens` | 2048 |
 | `--kv-cache-dtype` | `fp8` |
 | `--kv-cache-memory` | 4294967296 |
 | `--quantization` | `exl3` |
@@ -112,6 +112,8 @@ When you are done:
 ## Measured on 2× DGX Spark
 
 `bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median. `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2). Default is DSpark-5 with CUDA graphs. Smoke is `python3 smoke_chat.py` and `python3 smoke_vision.py` with thinking off. These cells are the published MCG pack (`2.0bpw-mcg`) on native p2b `cb=1`. A MUL1 pack is unmeasured.
+
+spark1+spark2 TP=2 A/B of PR 6 (`e507021`, batched 8192, `--mm-encoder-tp-mode data`) vs `main` (`dcac67a`, batched 2048), still `2.0bpw-mcg`: prose c=1 decode 33.05 vs 27.98 tok/s (overlap in run spread, not a win); 12,712-token prefill 755 vs 797 tok/s (−5%). A 3,182-token prefill was 797 vs 719 (+11%, one batch). Default `--max-num-batched-tokens` stays 2048. `MAX_NUM_BATCHED_TOKENS=8192` remains an override, not a proven upgrade. See `evidence/pr6-batched-8192/`.
 
 <!-- BEGIN generated measured from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
