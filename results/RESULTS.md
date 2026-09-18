@@ -271,3 +271,65 @@ Next single hypothesis, in priority order:
   project with prior failures in this repo, deferred deliberately.
 - Remaining measured-open axes: none at flag level. Serve restored to the
   new default config (8 GiB KV, DSpark-5, 8192 chunks).
+
+### E7 — torch.compile / inductor for prefill (2026-09-19)
+
+- E7a `mode: INDUCTOR`: fast config-validation fail — valid modes on this
+  build are NONE, STOCK_TORCH_COMPILE, DYNAMO_TRACE_ONCE, VLLM_COMPILE.
+- E7b `mode: VLLM_COMPILE` (boot OK, `CompilationMode.VLLM_COMPILE`
+  confirmed in engine config): correctness 7/7; pp@16k 670.6 (E5 cell
+  708.4, −5%), pp@64k 699.1 (703.1, noise), tg cells in band, L.A.I.L
+  21.95 (band).
+- Verdict: **REJECT** — inductor has nothing profitable to fuse here;
+  prefill time sits in the opaque custom MoE/MLA kernels. Closes the
+  compile axis and reconfirms the kernel-boundary conclusion by
+  measurement.
+
+### Kernel archaeology (2026-09-19, before E8)
+
+- The shipped p2b kernel runs `mma.m16n8k16` with ONE live A-row per work
+  item (15 of 16 M-rows zero-padded; `a_row0 = 0`). At decode m_loc≈1 so
+  the padding is unavoidable there.
+- `widen_p2b_mma.py` (present, unwired) batches up to 8 same-expert rows
+  into one tile: weights decoded once, reused across rows. It was reverted
+  on a DECODE-ONLY verdict (L.A.I.L 10.8 vs 15.1 at the time — the mma
+  indexing overhead taxes the m_loc≈1 decode case).
+- Prefill was never measured with it: at prefill m_loc ≈ 64-512 rows per
+  expert per 2048-row slice. E8 measures exactly that.
+
+### E8 — p2b mma-over-m rows, prefill verdict (2026-09-19)
+
+- Hypothesis: `widen_p2b_mma.py` batches ≤8 same-expert rows per tile
+  (weights decoded once, reused across rows). It was reverted in round -1
+  on a decode-only verdict; prefill has m_loc ≈ 64–512 rows/expert per
+  2048-row slice, so the batching should finally engage there.
+- Change: derived image `dsv41-flash-exl3-sm121:mma8`
+  (`docker/Dockerfile.mma`: full patch chain shapes→mrow→mma→cfg1→
+  codebook, rebuild of vllm_exl3 CUDA; "mma build ok" gate; image shipped
+  to spark2 via `docker save | ssh docker load`). Served on both ranks.
+- Correctness: 7/7 (mma is numerically correct).
+- Micro: **pp@64k 709.4 (base 703.1 — flat)**, pp@16k 620.3 (base ~700,
+  −12%), tg@16k 10.5 / tg@64k 11.5 (decode halves, as known).
+- Verdict: **REJECT** for serving — but it closes the row-batching
+  hypothesis with a prefill measurement: batching A-side work (rows) and
+  halving weight re-reads does not move prefill at all. Combined with the
+  flat pp across chunk sizes, fat thresholds, and compile modes, the
+  remaining bottleneck is the **B-side weight-decode instruction stream**
+  (per-weight trellis dq8 + `__shfl_sync` + mma packing), which is
+  identical in the one-row and mma variants. ~23 GB/s of effective weight
+  throughput against ~273 GB/s UMA says the decode path is
+  instruction-bound, not memory-bound.
+- Next kernel target, if kernel work resumes: vectorized multi-weight
+  trellis decode (fewer shuffles per fragment) — a from-scratch inner
+  loop, not a config flip. The E8 image recipe stays in the repo for
+  reproducibility.
+
+### Round 3 summary (2026-09-19)
+
+- Rejected with measurements: E7 inductor compile (pp flat, −5% at 16k),
+  E8 mma row-batching (pp flat, decode −50%).
+- Every flag-level axis is now closed by local numbers; the row-batching
+  kernel axis is closed by a direct prefill A/B. The recipe is at a
+  measured local optimum on this hardware for every bounded change.
+- Serve restored to the winning config (image `dsv41-flash-exl3-sm121`,
+  8 GiB KV, DSpark-5, 8192 chunks).
