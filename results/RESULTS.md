@@ -176,3 +176,72 @@ Next single hypothesis, in priority order:
    pp@16k 695, pp@64k 703.
 2. DSpark `NUM_SPECULATIVE_TOKENS=10` (divisible by block 5): only if the
    draft cost does not swamp the extra accepted tokens; e2e-gated.
+
+### E0 — live prefill census instrument (2026-09-19, round 2)
+
+- Attempt: `docker/patch/prefill_census.py` wrapping the exl3 MoE entries +
+  model.forward with CUDA-event timers, bound after `load_general_plugins()`
+  (the shipped `DSV41_STEP_CENSUS` never flushed — it dumps only from draft
+  ticks that never fire in this build).
+- Result 1: wraps bound ("installed" printed) but recorded nothing — the
+  model's MoE call path does not resolve through the wrapped module
+  attributes in the executing processes (registry/custom-op dispatch).
+- Result 2: the CUDA-event `synchronize()` wraps coincided with
+  `TimeoutError: RPC call to sample_tokens timed out` → EngineDead during a
+  decode request. In-process instrumentation around the spec-decode
+  machinery is unsafe here.
+- Verdict: **abandoned** (wiring reverted; two restarts spent). Any kernel
+  work must justify itself with before/after micro cells instead of live
+  per-op timing. Config-math estimate stands in: routed experts are ~85% of
+  prefill FLOPs (6 experts × 3 GEMMs × 5120×2304 × 37 layers vs attention
+  topk 512), so the MoE path is the kernel target.
+
+### E4 — VLLM_EXL3_FAT_THRESHOLD=2048, fat path off (2026-09-19)
+
+- Hypothesis: the per-expert python fat-GEMM loop is a prefill tax; turning
+  it off (threshold 2048 = kernel's own row cap) routes everything through
+  the standard kernel.
+- Correctness: 7/7.
+- Micro: pp@16k 601.1 (base 695.0), pp@64k 703.4 (base 703.3 — identical),
+  tg noise.
+- Verdict: **REJECT**. With E3 this closes the fat/standard mix axis at all
+  three thresholds (96/256/2048): pp@64k ≈ 700±10 regardless. Prefill is
+  not chunking-, slicing-, sync-, or mix-bound.
+
+### Kernel-work boundary assessment (2026-09-19)
+
+- Bandwidth check: per 8192-token chunk per rank, routed-expert weight
+  traffic ≈ 262 GB across slices ≈ 23 GB/s — nowhere near the ~273 GB/s UMA
+  ceiling. Prefill is not weight-bandwidth-bound.
+- Efficiency check: ~18.5 GFLOP/token × 703 tok/s ≈ 13 TFLOPS effective vs
+  ~200 TFLOPS bf16-class peak → ~6.5% MFU. The p2b kernel is a GEMV design
+  (one token row per work item, scalar fp32 accum; `a_row0 = 0` in
+  `p2b_moe.cu`), correct for decode m=1..12, structurally wrong for prefill
+  m=64..512 rows/expert.
+- The fix is a tensor-core grouped dequant-GEMM for the EXL3 trellis format
+  at prefill M. That is a multi-day kernel project with a documented
+  failure history in this repo (`evidence/p2b-{mma,fma,cp16,cpasync,ldg,
+  pf4,nocoop,mrow}`, `mma-revert`); the FMA variant also produced silently
+  wrong output caught only by the essay-collapse check. Not a bounded
+  single-hypothesis loop — deferred with this record.
+
+### E5 — KV_CACHE_MEMORY 4→8 GiB (2026-09-19) — **KEEP**
+
+- Hypothesis: at MAX_NUM_SEQS=2 the 4 GiB pool held exactly 2×1M context
+  with zero slack, so the prefix cache evicted constantly on agent
+  workloads; doubling the pool doubles resident prefix blocks and adds
+  real long-context headroom.
+- Change: `KV_CACHE_MEMORY=8589934592 ./serve.sh` (exactly the guard
+  ceiling; no FORCE needed). Engine reports "GPU KV cache size: 2,289,205
+  tokens, Maximum concurrency for 1,048,576 tokens per request: 2.18x".
+  16 GiB still available after boot — Engram staging keeps its headroom.
+- Correctness: **8/8 including 64k recall**.
+- Micro: pp@16k 708.4 (base 695.0, noise), pp@64k 703.1 (base 703.3,
+  identical), tg@16k 28.0 / tg@64k 29.6 (base 24.0/26.6 — top of the
+  acceptance-noise band).
+- E2E: 3/3 (coding decode 38.2–38.4 tok/s, needle hit at 63k, tool ok).
+  One coding TTFT read 14.2s on the first request after engine init;
+  re-run 0.51s — cold-start flake, not a regression.
+- L.A.I.L: 22.57 tok/s (band 21.6–23.9).
+- Verdict: **KEEP** — capacity doubled, nothing regressed. New recipe
+  default (`recipe.yaml` regenerated; run.sh now defaults 8589934592).

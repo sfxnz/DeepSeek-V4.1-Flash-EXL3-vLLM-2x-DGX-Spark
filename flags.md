@@ -18,7 +18,7 @@ Effect column key: **measured** = number recorded in `evidence/` or
 | `--max-num-seqs 2` | Running requests | Occupancy measured for 2; DSpark draft + Engram staging leave no more | guard (`FORCE_UNSAFE_CTX`); `evidence/extra-topk-128` |
 | `--max-num-batched-tokens 8192` | Chunked-prefill chunk | **measured local optimum** (2026-09-18): 2048 → pp@16k −28%, 16384 → pp@64k −12% and needs +1 GiB KV to even boot; see `results/RESULTS.md` E1/E2/E2b |
 | `--kv-cache-dtype fp8` | KV cache storage | KV bytes/token halved vs bf16; CSA2 + indexer pages | measured vs auto in early packs |
-| `--kv-cache-memory 4294967296` | 4 GiB KV pool | CSA2 ≈ 890 B/token → 4 GiB holds 1M×2 streams | guard at 8 GiB (`FORCE_UNSAFE_CTX`) |
+| `--kv-cache-memory 8589934592` | 8 GiB KV pool | **measured keep (E5, 2026-09-19)**: pool grows to 2,289,205 tokens = 2.18× concurrency at 1M ctx (4 GiB held exactly 2×1M with zero prefix-cache slack); pp/tg/correctness/e2e all unchanged; 16 GiB still free for Engram staging | guard at 8 GiB (`FORCE_UNSAFE_CTX`) |
 | `--gpu-memory-utilization 0.75` | UMA fraction | Leaves ~25 GiB for Engram staging + OS | **required** (0.9 OOMs boot) |
 | `--block-size 64` | KV pages | FlashInfer SM120 DSV4 decode kernel is compiled for page 64 | **required** (32 breaks decode kernel) |
 | `--quantization exl3` | Loader | Native MXFP4 experts ≈130 GiB/rank do not fit 121 GiB UMA | guard (`FORCE_UNSAFE_QUANT`) |

@@ -94,7 +94,7 @@ When you are done:
 | `--max-num-seqs` | 2 |
 | `--max-num-batched-tokens` | 8192 |
 | `--kv-cache-dtype` | `fp8` |
-| `--kv-cache-memory` | 4294967296 |
+| `--kv-cache-memory` | 8589934592 |
 | `--quantization` | `exl3` |
 | Engram | disk (`DSV41_ENGRAM_DISK=1`) |
 | `--block-size` | 64 |
