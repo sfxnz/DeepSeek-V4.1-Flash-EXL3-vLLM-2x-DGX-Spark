@@ -162,3 +162,17 @@ Prefill observations (worker logs + image code):
 - Decode/tg cells did not move outside acceptance noise in any experiment.
 - Serve restored to published defaults after the round.
 
+
+### Restore check (2026-09-18, end of round)
+
+`./serve.sh` with defaults up again: chunk 8192, KV 4 GiB, `smoke_chat` 323,
+`smoke_vision` ok, unit tests + `kit/render.py --check` pass, correctness
+7/7, L.A.I.L prose 21.56 tok/s (waves this harness produced on this pack:
+23.44 / 22.37 / 23.94 / 21.56 — temperature-0.2 run-to-run band).
+
+Next single hypothesis, in priority order:
+1. Prefill grouped GEMM for routed experts at m≈64-512 rows/expert (kernel
+   work; needs a bit-exactness gate before any perf claim). Before-cells:
+   pp@16k 695, pp@64k 703.
+2. DSpark `NUM_SPECULATIVE_TOKENS=10` (divisible by block 5): only if the
+   draft cost does not swamp the extra accepted tokens; e2e-gated.
