@@ -94,3 +94,71 @@ Prefill observations (worker logs + image code):
 ## Experiments
 
 (append below; one hypothesis per row-set)
+
+### E1 — MAX_NUM_BATCHED_TOKENS=2048 (2026-09-18)
+
+- Hypothesis: 2048-token chunks cannot exceed `TEMP_ROWS_FUSED=2048`
+  rows/expert, so the whole-chunk fat-chunk re-slicing never fires; if
+  re-slicing was the prefill tax, pp improves.
+- Change: `MAX_NUM_BATCHED_TOKENS=2048 ./serve.sh` (single flag). Zero
+  fat-chunk slicing lines in worker logs (verified).
+- Correctness: 7/7 (without --full).
+- Micro: pp@16k 498.9 (base 695.0, −28%), pp@64k 689.3 (base 703.3, −2%
+  ≈ noise), tg@16k 20.7 (base 24.0), tg@64k 22.2 (base 26.6).
+- E2E: not run (micro rejected).
+- Verdict: **REJECT** — smaller chunks lose at 16k, nothing at 64k. The
+  slicing path is not the dominant cost; per-token compute is. 8192 stays.
+
+### E2 — MAX_NUM_BATCHED_TOKENS=16384 (2026-09-18)
+
+- Hypothesis: bigger chunks amortize fixed per-chunk costs (launches,
+  all-reduce latency, prestage) that E1 showed matter at 16k.
+- Result: **boot failure** — 16384-token chunks grow activation/scratch so
+  the KV pool drops to 4.0 GiB < 4.16 GiB needed for max_model_len 1M
+  (`ValueError` from `_check_enough_kv_cache_memory`). Measured memory
+  cost of the bigger chunk: ~0.5 GiB at UTIL=0.75.
+- Retry E2b with `KV_CACHE_MEMORY=5368709120` (5 GiB, still under the
+  8 GiB guard) as the enabler.
+
+### E2b — MAX_NUM_BATCHED_TOKENS=16384 + KV_CACHE_MEMORY=5 GiB (2026-09-18)
+
+- Change: `KV_CACHE_MEMORY=5368709120 MAX_NUM_BATCHED_TOKENS=16384 ./serve.sh`.
+- Micro: pp@16k 524.1 (base 695.0, −25%), pp@64k 619.1 (base 703.3, −12%),
+  tg cells ≈ noise. 10 fat-chunk slicing lines in logs.
+- Verdict: **REJECT** — both directions away from 8192 lose (E1: −28%@16k;
+  E2b: −25%@16k, −12%@64k). 8192 is a measured local optimum for prefill on
+  GB10; the GB200-style 16384 default is wrong for this hardware and costs
+  ~0.5 GiB KV headroom on top. `MAX_NUM_BATCHED_TOKENS=8192` and
+  `KV_CACHE_MEMORY=4 GiB` stay, now with numbers behind them.
+- Chunk-size axis closed. Next: kernel-mix flag
+  (`VLLM_EXL3_FAT_THRESHOLD`) at fixed 8192 chunks.
+
+### E3 — VLLM_EXL3_FAT_THRESHOLD=96 at 8192 chunks (2026-09-18)
+
+- Hypothesis: lowering the fat-expert threshold from 256 to 96 sends more
+  routed rows through the per-expert 128×128 fat GEMM; if the standard
+  exl3_moe kernel is the prefill bottleneck at 64-256 rows/expert, pp
+  improves.
+- Change: `VLLM_EXL3_FAT_THRESHOLD=96 ./serve.sh` (single env; run.sh
+  already passes it through to the container).
+- Correctness: 7/7.
+- Micro: pp@16k 618.2 (base 695.0, −11%), pp@64k 711.9 (base 703.3, +1.2%
+  ≈ noise), tg cells noise.
+- Verdict: **REJECT** — kernel mix does not move prefill. Combined with
+  E1 (slicing never fires at 2048 chunks, no gain) this says prefill is
+  per-token compute/bandwidth bound in the kernels themselves, not in
+  chunking, slicing, host syncs, or the fat/standard split.
+
+### Round summary (2026-09-18)
+
+- Prefill flag space measured and closed: chunk 2048/8192/16384 and fat
+  threshold 96/256 all reject; **8192 + threshold 256 stays**, now with
+  local numbers instead of "GB200 uses 16384".
+- The remaining prefill upside is kernel-level: a prefill-shaped grouped
+  GEMM for routed experts (m≈64-512 rows/expert, the decode-tuned p2b
+  tiles and the per-expert python fat loop both leave it on the table).
+  That is the next single hypothesis if kernel work is in scope; before/
+  after cells are `pp@16k 695`, `pp@64k 703`.
+- Decode/tg cells did not move outside acceptance noise in any experiment.
+- Serve restored to published defaults after the round.
+

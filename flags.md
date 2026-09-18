@@ -16,7 +16,7 @@ Effect column key: **measured** = number recorded in `evidence/` or
 | `--distributed-executor-backend mp` | Multiproc within node | vLLM TP across 2 nodes via master-addr | **required** |
 | `--max-model-len 1048576` | Full native window | V4.1 Flash ships CSA2 1M context; goal is context capacity | guard at 1M (`FORCE_UNSAFE_CTX`) |
 | `--max-num-seqs 2` | Running requests | Occupancy measured for 2; DSpark draft + Engram staging leave no more | guard (`FORCE_UNSAFE_CTX`); `evidence/extra-topk-128` |
-| `--max-num-batched-tokens 8192` | Chunked-prefill chunk | Raised 2048→8192 to cut TTFT on long prompts | **measured**: see `results/RESULTS.md` pp cells |
+| `--max-num-batched-tokens 8192` | Chunked-prefill chunk | **measured local optimum** (2026-09-18): 2048 → pp@16k −28%, 16384 → pp@64k −12% and needs +1 GiB KV to even boot; see `results/RESULTS.md` E1/E2/E2b |
 | `--kv-cache-dtype fp8` | KV cache storage | KV bytes/token halved vs bf16; CSA2 + indexer pages | measured vs auto in early packs |
 | `--kv-cache-memory 4294967296` | 4 GiB KV pool | CSA2 ≈ 890 B/token → 4 GiB holds 1M×2 streams | guard at 8 GiB (`FORCE_UNSAFE_CTX`) |
 | `--gpu-memory-utilization 0.75` | UMA fraction | Leaves ~25 GiB for Engram staging + OS | **required** (0.9 OOMs boot) |
@@ -68,6 +68,15 @@ encode measured occupancy/memory limits, not style rules.
 | warmup stubs (`kernel_warmup = None`, `deepseek_v4_sparse_mla_attention_warmup = None`) | Skip DeepGEMM paged-MQA dummy forward | asserts block_kv∈{32,64} on this pack | **required** for boot |
 | Exl3Config `weight_block_size` copy | Mapper picks `weight_scale` vs `weight_scale_inv` | Exl3Config keeps the field in `non_routed_quantization` | **required** (weights load) |
 | `DSV41_DSPARK_MARKOV_SCALE` wrap | Scale Markov bias | experiment knob (default 1 = stock) | measured: ≠1 rejected (`evidence/` decode waves) |
+
+## Image/kernel env (vllm_exl3, read at import)
+
+| Env | Default | What | Verdict |
+|---|---|---|---|
+| `VLLM_EXL3_MOE_KERNEL` | `native` (run.sh sets) | Native p2b fused MoE vs generic | **measured** ~23 vs 15 tok/s decode |
+| `VLLM_EXL3_FAT_THRESHOLD` | 256 | Rows above which an expert takes the per-expert 128×128 fat GEMM loop instead of the standard kernel | **measured** (E3): 96 → pp@16k −11%, pp@64k noise; keep 256 |
+| `VLLM_EXL3_PREFILL_SYNC` | unset | CPU/device sync workaround for 33..144-row prefill wedges | not needed at 8192 chunks; leave unset |
+| `TEMP_ROWS_FUSED` | 2048 (const) | Fused-kernel per-expert row cap; chunks with a hotter expert are re-sliced | **measured** (E1): avoiding re-slice via 2048 chunks does not improve pp — not a bottleneck |
 
 ## Experiment knobs — present, default OFF, with verdicts
 
