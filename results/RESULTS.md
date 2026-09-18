@@ -245,3 +245,29 @@ Next single hypothesis, in priority order:
 - L.A.I.L: 22.57 tok/s (band 21.6–23.9).
 - Verdict: **KEEP** — capacity doubled, nothing regressed. New recipe
   default (`recipe.yaml` regenerated; run.sh now defaults 8589934592).
+
+### E6 — DSpark NUM_SPECULATIVE_TOKENS=10 (2026-09-19)
+
+- Hypothesis: goal step D — extending the draft block from 5 to 10 (guard
+  passes, divisible by 5) buys accepted tokens on long matches.
+- Correctness: 7/7.
+- Micro: tg@4k 12.0 (E5 cell 28.0), tg@64k 16.6 (E5 29.6), pp unchanged.
+- L.A.I.L: 12.14 tok/s median vs 22.57 on E5 — decode nearly halved.
+  Acceptance length **fell** to 1.87 (from 2.4–2.8 at n=5): the Markov
+  draft's extra 5 positions are almost never accepted, while every step
+  pays for two draft blocks instead of one.
+- Verdict: **REJECT** — n=5 is the measured optimum for this draft head.
+  Textbook case of the goal's "do not raise n if e2e slows".
+
+### Round 2 summary (2026-09-19)
+
+- **KEEP: KV_CACHE_MEMORY 8 GiB (E5)** — capacity doubled (2.29M tokens,
+  2.18× at 1M ctx) with zero perf/quality cost. New recipe default.
+- Rejected: fat-threshold 2048 (E4), spec n=10 (E6).
+- Abandoned with record: in-process prefill census (never bound to the
+  live call path; CUDA-event wraps coincided with an engine RPC timeout).
+- Kernel boundary documented: prefill MoE runs a decode-shaped GEMV at
+  ~6.5% MFU; the fix is a grouped tensor-core dequant GEMM — a multi-day
+  project with prior failures in this repo, deferred deliberately.
+- Remaining measured-open axes: none at flag level. Serve restored to the
+  new default config (8 GiB KV, DSpark-5, 8192 chunks).
