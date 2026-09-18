@@ -224,11 +224,9 @@ def main() -> int:
                                   seed=seed, pos_frac=0.5)
         res = post_chat(args.url, args.model, [
             {"role": "user",
-             "content": doc + "\n\nFind the archive passcode in the "
-                             "maintenance note, then write two sentences on "
-                             "why chunked prefill keeps time-to-first-token "
-                             "bounded."},
-        ], max_tokens=192)
+             "content": doc + "\n\nWhat is the archive passcode in the "
+                             "maintenance note? Return only the passcode."},
+        ], max_tokens=64)
         ok, why = grade_recall(res, code)
         phases.append({"phase": "doc_recall", "run": r + 1, "pass": ok,
                        "detail": why,
