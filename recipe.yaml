@@ -87,11 +87,12 @@ readme:
 
 measured:
   decode:
-    conditions: streamed greedy 200-token recipe bench, and L.A.I.L prose c=1 512 tokens temperature 0.2 thinking off; vision on (LANGUAGE_MODEL_ONLY=0); DSpark-5 greedy; Engram on disk; CFG=1 native p2b; b12x MXFP8 Q/O; CUDA graphs FULL_AND_PIECEWISE. Second independent L.A.I.L wave was 22.37 tok/s.
+    conditions: "Final capture 2026-09-19 on the winning config (KV pool 8 GiB, DSpark-5 greedy, CUDA graphs, vision on, Engram on disk, native p2b CFG=1, b12x MXFP8 Q/O). bench_decode.py prose phase = streamed greedy 200 tokens thinking off; L.A.I.L prose = 512 tokens temperature 0.2. c=2 is the MAX_NUM_SEQS=2 two-stream capability. Full log with pp/tg cells at 512/4k/16k/64k: results/2026-09-19-final/all-cells.log; history in results/RESULTS.md."
     units: {decode: tok/s per stream (median), aggregate: tok/s, ttft_p50: s}
     rows:
-      - {phase: prose, concurrency: 1, decode: "21.2", aggregate: "21.2", ttft_p50: "0.365", evidence: evidence/h1-dspark/bench-wave2.txt}
-      - {phase: lail_prose, concurrency: 1, decode: "23.4", aggregate: "23.4", ttft_p50: "0.420", evidence: evidence/b12x-mxfp8/lail-w1.txt}
+      - {phase: prose, concurrency: 1, decode: "34.7", aggregate: "34.7", ttft_p50: "0.24", evidence: results/2026-09-19-final/all-cells.log}
+      - {phase: prose, concurrency: 2, decode: "21.3", aggregate: "41.2", ttft_p50: "0.40", evidence: results/2026-09-19-final/all-cells.log}
+      - {phase: lail_prose, concurrency: 1, decode: "22.4", aggregate: "22.4", ttft_p50: "0.34", evidence: results/2026-09-19-final/all-cells.log}
 
 links:
   model: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash

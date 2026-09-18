@@ -111,13 +111,14 @@ When you are done:
 
 ## Measured on 2× DGX Spark
 
-`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median. `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2). Default is DSpark-5 with CUDA graphs. Smoke is `python3 smoke_chat.py` and `python3 smoke_vision.py` with thinking off. These cells are the published MCG pack (`2.0bpw-mcg`) on native p2b `cb=1`. A MUL1 pack is unmeasured.
+`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median. `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2). Default is DSpark-5 with CUDA graphs. Smoke is `python3 smoke_chat.py` and `python3 smoke_vision.py` with thinking off. These cells are the published MCG pack (`2.0bpw-mcg`) on native p2b `cb=1`. A MUL1 pack is unmeasured. The KV pool is 8 GiB (2,289,205 tokens — 2.18× concurrency at the 1M window). Split prefill/decode cells at 512/4k/16k/64k context and every accepted/rejected experiment live in `results/RESULTS.md`; run `benches/micro.sh` and `benches/e2e.sh` to reproduce them, and `tests/correctness.sh --full` for the quality gate.
 
 <!-- BEGIN generated measured from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
 |---|---|---:|---:|---:|
-| prose | 1 | 21.2 | 21.2 | 0.365 s |
-| lail_prose | 1 | 23.4 | 23.4 | 0.420 s |
+| prose | 1 | 34.7 | 34.7 | 0.24 s |
+| prose | 2 | 21.3 | 41.2 | 0.40 s |
+| lail_prose | 1 | 22.4 | 22.4 | 0.34 s |
 <!-- END generated measured -->
 
 ## Rebuild the pack

@@ -69,6 +69,23 @@ encode measured occupancy/memory limits, not style rules.
 | Exl3Config `weight_block_size` copy | Mapper picks `weight_scale` vs `weight_scale_inv` | Exl3Config keeps the field in `non_routed_quantization` | **required** (weights load) |
 | `DSV41_DSPARK_MARKOV_SCALE` wrap | Scale Markov bias | experiment knob (default 1 = stock) | measured: ≠1 rejected (`evidence/` decode waves) |
 
+## Compile / kernel experiments — verdicts (2026-09-19)
+
+| Change | What | Verdict | Evidence |
+|---|---|---|---|
+| `--compilation-config mode=VLLM_COMPILE` | inductor compile of the model graph | **rejected**: pp@64k 699 vs 703 (flat), pp@16k −5%; nothing outside the opaque custom kernels to fuse | `results/RESULTS.md` E7 |
+| p2b mma-over-m rows (`docker/Dockerfile.mma`, image `:mma8`) | batch ≤8 same-expert rows per mma tile | **rejected for serving**: pp@64k 709 vs 703 (flat), decode halves (m_loc≈1 pays the batching overhead) | `results/RESULTS.md` E8 |
+| Chunk size 2048 / 16384 | chunked-prefill chunk | **rejected**: both directions lose; 8192 is the local optimum | E1/E2/E2b |
+| `VLLM_EXL3_FAT_THRESHOLD` 96 / 2048 | fat-expert GEMM loop cutoff | **rejected**: pp@64k ≈ 700±10 at 96/256/2048 | E3/E4 |
+| `NUM_SPECULATIVE_TOKENS=10` | deeper DSpark draft | **rejected**: L.A.I.L 12.1 vs 22.6; acceptance falls to 1.87 | E6 |
+
+Kernel conclusion (measured, not guessed): prefill MoE time is invariant to
+row batching, chunking, kernel mix, and compile mode — the wall is inside
+the p2b weight-decode path itself (trellis `dq8` + shuffle stream at ~23 GB/s
+effective vs ~273 GB/s UMA). The next kernel step is a vectorized multi-
+weight trellis decode: a new inner loop, gated on the E8 image pipeline.
+Do not retry row batching or threshold tuning; those axes are closed.
+
 ## Image/kernel env (vllm_exl3, read at import)
 
 | Env | Default | What | Verdict |

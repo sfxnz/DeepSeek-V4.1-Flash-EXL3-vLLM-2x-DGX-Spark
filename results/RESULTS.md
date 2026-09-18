@@ -333,3 +333,21 @@ Next single hypothesis, in priority order:
   measured local optimum on this hardware for every bounded change.
 - Serve restored to the winning config (image `dsv41-flash-exl3-sm121`,
   8 GiB KV, DSpark-5, 8192 chunks).
+
+### Round 4 — final capture on the winning config (2026-09-19)
+
+`results/2026-09-19-final/all-cells.log`, defaults from `./serve.sh`
+(8 GiB KV, DSpark-5, 8192 chunks, graphs on, vision on):
+
+- Correctness: **8/8** (includes 64k needle recall)
+- pp: 491 / 747 / 709 / 710 tok/s at 512 / 4k / 16k / 64k (64k runs
+  706.5–710.4 — tight)
+- tg32: 23.8 / 23.5 / 27.0 / 22.5 tok/s (DSpark acceptance 2.3–2.9)
+- e2e: 3/3 (coding guard, 63k needle, tool/JSON)
+- L.A.I.L prose c=1: 22.40 tok/s (acceptance 2.24)
+- decode prose c=1: 34.7; **c=2: 41.2 aggregate, 21.3 per stream**
+  (MAX_NUM_SEQS=2 two-stream capability, now in the README table)
+
+Published `recipe.yaml`/README measured table refreshed from this capture;
+history rows remain above. Round-3 verdicts (E7 inductor, E8 mma) added to
+flags.md.
