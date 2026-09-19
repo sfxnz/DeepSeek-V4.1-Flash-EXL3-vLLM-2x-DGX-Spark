@@ -116,9 +116,8 @@ When you are done:
 <!-- BEGIN generated measured from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
 |---|---|---:|---:|---:|
-| prose | 1 | 34.7 | 34.7 | 0.24 s |
-| prose | 2 | 21.3 | 41.2 | 0.40 s |
-| lail_prose | 1 | 22.4 | 22.4 | 0.34 s |
+| prose | 1 | 34.3 | 34.3 | 0.29 s |
+| lail_prose | 1 | 23.3 | 23.3 | 0.37 s |
 <!-- END generated measured -->
 
 ## Rebuild the pack

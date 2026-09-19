@@ -87,12 +87,11 @@ readme:
 
 measured:
   decode:
-    conditions: "Final capture 2026-09-19 on the winning config (KV pool 8 GiB, DSpark-5 greedy, CUDA graphs, vision on, Engram on disk, native p2b CFG=1, b12x MXFP8 Q/O). bench_decode.py prose phase = streamed greedy 200 tokens thinking off; L.A.I.L prose = 512 tokens temperature 0.2. c=2 is the MAX_NUM_SEQS=2 two-stream capability. Full log with pp/tg cells at 512/4k/16k/64k: results/2026-09-19-final/all-cells.log; history in results/RESULTS.md."
+    conditions: "Capture 2026-09-19 round 6 on the E11 config (E10+E11 keeps: p2b funnelshift extraction, b12x (16,64) small-m tiles, o_proj wo_a exact-requant onto the fp8 einsum; KV pool 8 GiB, DSpark-5 greedy, CUDA graphs, vision on, Engram on disk, native p2b CFG=1). bench_decode.py prose phase = streamed greedy 200 tokens thinking off; L.A.I.L prose = 512 tokens temperature 0.2. Full capture log: results/2026-09-19-e11/cells.log; history in results/RESULTS.md."
     units: {decode: tok/s per stream (median), aggregate: tok/s, ttft_p50: s}
     rows:
-      - {phase: prose, concurrency: 1, decode: "34.7", aggregate: "34.7", ttft_p50: "0.24", evidence: results/2026-09-19-final/all-cells.log}
-      - {phase: prose, concurrency: 2, decode: "21.3", aggregate: "41.2", ttft_p50: "0.40", evidence: results/2026-09-19-final/all-cells.log}
-      - {phase: lail_prose, concurrency: 1, decode: "22.4", aggregate: "22.4", ttft_p50: "0.34", evidence: results/2026-09-19-final/all-cells.log}
+      - {phase: prose, concurrency: 1, decode: "34.3", aggregate: "34.3", ttft_p50: "0.29", evidence: results/2026-09-19-e11/cells.log}
+      - {phase: lail_prose, concurrency: 1, decode: "23.3", aggregate: "23.3", ttft_p50: "0.37", evidence: results/2026-09-19-e11/cells.log}
 
 links:
   model: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash

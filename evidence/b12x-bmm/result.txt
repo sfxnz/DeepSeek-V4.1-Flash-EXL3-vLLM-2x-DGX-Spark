@@ -1,0 +1,6 @@
+hyp: put B12xMxfp8LinearKernel and FlashInferCutlass ahead of Emulation on MXFP8 BMM (MLA wo_a)
+image: sha256:f1fbdaaec37f
+verdict: REVERT (did not boot)
+why: Worker RuntimeError deepgemm layout.hpp t.dim()==N during load. No Using B12xMxfp8LinearKernel log. get_b12x_mxfp8_linear() is None in the image (vllm[b12x] extra missing). Dispatch skipped to FlashInferCutlass on 3D BMM input. Stock Emulation path is the one that boots.
+oom: false exit 1
+next: flatten 3D BMM activations to 2D before mm_mxfp8, or leave wo_a on Emulation and restore b12x DSpark-5 KEEP.

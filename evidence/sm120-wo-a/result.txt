@@ -1,0 +1,11 @@
+hyp: is_bmm=False + SM120 o_proj grouped mm_mxfp8 (G=4 loop) instead of Emulation torch.bmm
+image: sha256:f1fbdaaec37f
+vision: LANGUAGE_MODEL_ONLY=0 vit FLASH_ATTN encoder 1 image
+kernel: FlashInferCutlassMxfp8 only (no Emulation log)
+smoke: 323
+wave1 median_lail_tok_s: 22.363874305141856 accept 2.261
+wave2 median_lail_tok_s: 21.523292982987037 accept 2.169
+oom: false ~24/25 GiB UMA remaining
+verdict: REVERT
+why: 4 Python mm_mxfp8 launches per layer lost to one BF16 torch.bmm. Need a single grouped MXFP8 GEMM, not a loop.
+next: b12x==1.3.0 batched/grouped mm if it exists; else leave Emulation wo_a.

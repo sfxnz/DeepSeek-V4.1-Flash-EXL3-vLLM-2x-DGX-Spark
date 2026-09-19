@@ -1,0 +1,10 @@
+hyp: b12x==1.3.0 + is_bmm=False + wo_a_dense_gemm_mxfp8 (4,1024,4096 tiled)
+image: sha256:3035f190d9fb (b12xpkg on f1fbdaae)
+vision: LANGUAGE_MODEL_ONLY=0 vit FLASH_ATTN encoder 1 image
+smoke: 323
+wave1 median_lail_tok_s: 21.2323155996228 accept 2.184
+wave2 median_lail_tok_s: 22.995294581289034 accept 2.296
+oom: false ~23/24 GiB UMA remaining
+verdict: REVERT
+why: specialized DSV4 TP2 WO-A MXFP8 GEMM did not beat Emulation torch.bmm. Step still ~102ms. wo_a is not the 22ms.
+next: restore f1fbdaae KEEP b12x Q/O 23.44/22.37. wo_a stays Emulation.

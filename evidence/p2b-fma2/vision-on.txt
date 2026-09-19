@@ -1,0 +1,26 @@
+=== image ===
+Image=sha256:1470377e9b004c3f031113067833b00aaa89c07c83179d79069b50106075424e ConfigImage=dsv41-flash-exl3-sm121:fma2 OOMKilled=false
+=== cmdline language-model-only ===
+["serve","/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg","--tensor-parallel-size","2","--nnodes","2","--node-rank","0","--distributed-executor-backend","mp","--master-addr","10.100.8.1","--master-port","29524","--host","0.0.0.0","--port","8000","--max-model-len","1048576","--kv-cache-dtype","fp8","--kv-cache-memory","4294967296","--gpu-memory-utilization","0.75","--max-num-seqs","2","--max-num-batched-tokens","2048","--compilation-config","{\"cudagraph_mode\":\"FULL_AND_PIECEWISE\",\"cudagraph_capture_sizes\":[1,5,6,10,12],\"custom_ops\":[\"all\"]}","--kernel-config","{\"enable_flashinfer_autotune\":false,\"enable_jit_warmup\":false}","--block-size","64","--quantization","exl3","--speculative-config","{\"method\":\"dspark\",\"num_speculative_tokens\":5,\"draft_sample_method\":\"greedy\"}","--tokenizer-mode","deepseek_v41","--tool-call-parser","deepseek_v41","--enable-auto-tool-choice","--reasoning-parser","deepseek_v41","--default-chat-template-kwargs","{\"thinking\":false,\"reasoning_effort\":\"low\"}","--served-model-name","deepseek-ai/DeepSeek-V4.1-Flash","--trust-remote-code"]
+=== env ===
+DSV41_ENGRAM_DISK=1
+DSV41_DSPARK_CONF_GATE=0
+DSV41_DSPARK_MARKOV_SCALE=1
+DSV41_DSPARK_DRAFT_TOPK=0
+DSV41_DSPARK_SOFTMAX_VERIFY=0
+DSV41_DSPARK_REFINE_PASS=0
+DSV41_MHC_NO_DEEPGEMM=0
+DSV41_DSPARK_TAIL_NGRAM=0
+DSV41_MLA_IO_WARPS=0
+DSV41_ENGRAM_CACHE=0
+DSV41_DSPARK_TAIL_NGRAM_POS=3
+DSV41_INDEX_TOPK=0
+DSV41_ALLOW_CUDA_GRAPHS=1
+VLLM_EXL3_MOE_KERNEL=native
+DSV41_MLA_CHUNKS_PER_BLOCK=0
+LANGUAGE_MODEL_ONLY=0
+DSV41_MHC_DECODE_SPLITS=0
+DSV41_STEP_CENSUS=0
+=== logs vision ===
+(Worker_TP0 pid=617) INFO 09-13 23:34:30 [cuda.py:581] Using backend AttentionBackendEnum.FLASH_ATTN for vit attention
+(APIServer pid=1) INFO:     Application startup complete.

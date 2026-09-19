@@ -1,0 +1,11 @@
+hyp: extra CUDA graphs 2,3,4 + snap draft budget to {0,1,2,3,4,5}
+image: sha256:f1fbdaaec37f (b12x Q/O KEEP)
+vision: LANGUAGE_MODEL_ONLY=0 vit FLASH_ATTN encoder 1 image supports_varlen=False
+graphs: capture [1,2,3,4,5,6,10,12] 58s, took -1.12 GiB
+smoke: 323
+wave1 median_lail_tok_s: 22.490787771461004 accept 2.355
+wave2 median_lail_tok_s: 22.498711579094003 accept 2.332
+oom: false both ranks, ~20/21 GiB UMA remaining
+verdict: REVERT
+why: cost tables still pick ~full verify. Chunks 217-229 same as b12x. Extra graphs did not trim m. Not 30.
+next: force draft_budget=2 (query_len=3) when any drafts are scheduled. Never AR, never 6.

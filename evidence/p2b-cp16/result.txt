@@ -1,0 +1,7 @@
+REVERT. p2b trellis B 16B cp.async.cg L2::128B 4-lane group. Image dsv41-flash-exl3-sm121:cp16
+wave1 median_lail_tok_s=22.79 accept=2.36
+wave2 median_lail_tok_s=22.89 accept=2.3378995433789953
+median_completion_tokens=512
+KEEP f1fbdaae was 23.44/22.37. smoke 323. no OOM.
+16B cg is the same coalesced 256B warp window as __ldcs/4B ca. Dockerfile unwired. Patcher stays.
+Restore: docker tag f1fbdaaec37f dsv41-flash-exl3-sm121:latest

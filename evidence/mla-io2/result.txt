@@ -1,0 +1,6 @@
+REVERT. MLA decode DSV4_IO_WARPS=2 linear io_tid single expect_tx leader. Image f1fbdaae + DSV41_MLA_IO_WARPS=2
+wave1 median_lail_tok_s=20.86 accept=2.19
+wave2 median_lail_tok_s=22.02
+KEEP f1fbdaae was 23.44/22.37. smoke 323. no OOM.
+Two IO warps did not beat one. Extra 32 threads likely occupancy. Env default 0. Patcher stays.
+Restore: DSV41_MLA_IO_WARPS=0 ./run.sh on f1fbdaae
