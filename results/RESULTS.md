@@ -351,3 +351,67 @@ Next single hypothesis, in priority order:
 Published `recipe.yaml`/README measured table refreshed from this capture;
 history rows remain above. Round-3 verdicts (E7 inductor, E8 mma) added to
 flags.md.
+
+## Round 5 — decode campaign: kernel-format study, GEMV harness, live profile (2026-09-19)
+
+Goal: substantial decode improvement via the B-side trellis-decode work.
+Method: understand the format exactly, reproduce the deployed kernel in a
+bit-exact standalone harness, then profile the LIVE decode step before
+committing to any rewrite.
+
+### Format findings (both packs)
+
+- MCG and MUL1 share the identical trellis stream: per 16x16 tile 32 uint16
+  (512 bit = 256 weights x 2 bit); value[p] = codebook(16-bit window at bit
+  2p). The codebooks are fixed procedural functions: MCG = `x*0xCBAC1FED +
+  LOP3 + HADD2`, MUL1 = `x*0x83DCD12D + dp4a byte-sum + HFMA2`. The `.mcg` /
+  `.mul1` tensors are 1-element int32 markers carrying the multiplier.
+- The naive MUL1+cb=2 port (branch `38e67b4`, image `:cb2`) decodes the same
+  windows with different arithmetic (~6 vs 7 instr per pair). Its earlier
+  -16% prose loss was acceptance-driven (2.86 -> 2.39), not kernel-time.
+- Full-LUT decode of the 64K-entry codebook is **closed on GB10**: 128 KiB
+  table vs 99 KiB smem/block opt-in (48 SMs, sm_121).
+
+### GEMV harness (`kernel_study/gemv_bench/`, untracked study tree)
+
+- `bench.cu`/`bench2.cu`: byte-faithful clone of the deployed tile (image
+  patch chain reproduced on the pinned plugin ref), plus PFMUL (prefetch
+  depth) and DEC (decode variant) template knobs. Bit-exact vs the installed
+  `vllm_exl3_c` (one-hot routing weights make the stock atomicAdd epilogue
+  order-exact; arbitrary weights are 1 half-ULP nondeterministic in stock
+  itself at e>6).
+- Warm e=30 (30 experts x 3 mats, fixed ids): stock 657-672 us/call =
+  **790-810 Gw/s = 198-202 GB/s of trellis stream (74% of 273 GB/s UMA)**.
+- Cold-rotating ids: 624.6 us median = **212 GB/s** — instruction-side wins
+  disappear when experts are DRAM-cold: the GEMV is memory-stream-bound.
+- PF ring depth sweep REJECT: PFx2 -3%, PFx4 -14%, PFx8 -45% (register
+  pressure). Occupancy 4 blocks x 256 thr/SM throughout.
+- Funnelshift extraction variant (vdec1): **-6.1% bit-exact warm** (670.7 ->
+  629.7 us), no cold effect. Warp-smem staging (vdec2): -2.5% warm.
+
+### Live profile (torch profiler replica, `--profiler-config`, rank 0)
+
+One 110-token prose generation; 2240 p2b calls (median **775 us** each in
+serving vs 625-672 harness — profiler/CUPTI and L2-cold effects account for
+the gap; graph capture stays on). Device-busy composition per decode step:
+
+| phase | share | note |
+|---|---|---|
+| p2b MoE kernel | ~35% | 40 x ~0.65-0.78 ms; at 74% UMA peak already |
+| dense projections (b12x mxfp8 GEMMs + bf16 WMMA) | **~42%** | 234 b12x calls/step at ~85 us, grids (1,1,14..48) x 96 thr = parallelism-starved (96 thr/SM vs p2b's 1024); o_proj wo_a BMM runs cutlass_80 sm_80 WMMA bf16 at 176 us (0.9 TFLOPS) |
+| NCCL AllReduce | ~11% | ~90 x ~105-165 us latency-bound 2-rank RING_LL |
+| eltwise/topk/norm/MLA decode | ~12% | sparse_mla itself is 1.2% |
+
+Decode step model at prose c=1 (~70-83 ms/step): expert streaming 5.3 GB at
+~205 GB/s = 26 ms is near-roofline; dense projection streaming ~4 GB at
+~111 GB/s = ~36 ms is at HALF the achievable stream rate. The decode wall is
+now the dense-projection path and comms, not the trellis GEMV.
+
+### Experiment queue (next rounds)
+
+- X1 NCCL proto/algo tune for 2-rank small ARs (env-only restart A/B).
+- X2 flashinfer mxfp8 cute-dsl tile/tuner for m=5 dense GEMMs (serve pins
+  `enable_flashinfer_autotune:false`; default tile -> tiny grids).
+- X3 o_proj wo_a bf16 WMMA fallback -> modern fp8/b12x path.
+- X4 p2b vdec1 funnelshift (+vdec2): bit-exact, small; rides along with any
+  kernel image rebuild.

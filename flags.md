@@ -126,3 +126,18 @@ same ideas are not retried blind.
 - Micro: `benches/micro.sh` — fresh docs per invocation (prefix-cache-proof), pp = prompt_tokens/TTFT, tg32 post-first-token.
 - E2E: `benches/e2e.sh` — coding-agent turn, 64k doc recall+summary, tool/JSON, then L.A.I.L prose.
 - `reasoning_effort` and `thinking` stay locked in every harness; never bench with the default-on thinking.
+
+## Round 5 — decode campaign axes (2026-09-19)
+
+| axis | verdict | evidence |
+|---|---|---|
+| p2b prefetch ring depth (PF 2/4/8) | **REJECT** | e=30 warm: 672 → 727/761/1359 us; register pressure |
+| Full codebook LUT in smem | **CLOSED (hw)** | 128 KiB table > 99 KiB smem/block opt-in on sm_121 |
+| vdec1 funnelshift extraction | **KEEP-candidate** | −6.1% bit-exact warm (670.7→629.7 us), 0 cold; ship with next kernel rebuild |
+| vdec2 warp-smem staging | reject-ish | −2.5% warm, +3% cold |
+| MUL1 pack as decode lever | **CLOSED** | same window format; −16% prose was acceptance-driven; kernel-time parity at best |
+| decode-instruction rewrite as main lever | **DEPRIORITIZED** | cold-L2 serving case is memory-stream-bound at 74% UMA peak; ceiling ≤1.35x on 35% of step |
+
+New open axes (from live profile): dense-projection stream efficiency
+(b12x grids starve 48 SMs; o_proj wo_a on sm_80 WMMA), NCCL 2-rank AR
+latency. See results/RESULTS.md round 5.
