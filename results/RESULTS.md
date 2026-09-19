@@ -475,3 +475,29 @@ Gates on `:e11` (all green):
   regression (one 681.8 outlier was cache-cold).
 
 Chain promoted into the main Dockerfile. Serve live on `:e11`.
+
+### Round 7 — attribution + cp.async reject + canonical promotion (2026-09-19)
+
+**E11 attribution profile** (profiler replica, same methodology as round 5):
+the wo_a fix is verified in-trace — the per-layer cutlass_80 WMMA (288 us
+x40/step) is gone from decode, replaced by `deep_gemm` fp8 einsum at
+80.6 us x40/step. Step composition now: p2b 48%, dense b12x GEMMs 28%,
+NCCL 17.5% (92.7 ARs/step at 124 us in-graph vs 43 us isolated floor —
+launch/graph-structure overhead, not protocol).
+
+- `widen_b12x_smalls` measured **no effect** (dense total trace-flat; those
+  GEMMs are latency-bound, not parallelism-starved). Kept, harmless.
+- p2b **cp.async 4-buffer ring** (bit-exact, bench3): REJECT — 672.4 us vs
+  642.2 us stock cold (−4.7%). Load-mechanics axis closed: PF depth, smem
+  staging, cp.async all rejected; the tile runs at ~76% of UMA peak cold and
+  further gains need pack-layout work (multi-day, out of scope).
+- **b12x pip package regression found**: canonical-e11 (Dockerfile rebuild,
+  which installs the optional `b12x` extra) measured prose 29.9/32.0 vs
+  :e11's 31.4-34.3 at equal acceptance — vLLM routes dense MXFP8 through the
+  package kernels and loses 5-9%. Removed the pip line from the Dockerfile;
+  canonical-e12 (without it) rebuilds content-equivalent to :e11.
+
+Serve now on `dsv41-flash-exl3-sm121:canonical-e12` (both nodes): smoke 323,
+woa-requant 43/43, prose 31.2 (acc 2.83) / L.A.I.L 21.9 — both inside the
+final bands. Remaining untested levers: flashinfer autotune flag (one serve
+flag), NCCL AR overlap (structural).
