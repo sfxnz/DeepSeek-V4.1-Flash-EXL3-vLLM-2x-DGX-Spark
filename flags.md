@@ -173,3 +173,11 @@ latency. See results/RESULTS.md round 5.
 |---|---|---|
 | flashinfer autotune (serve flag) | **NO EFFECT / stays off** | prose 30.2 vs 31.2, L.A.I.L 22.3 vs 21.9 — bands; GEMMs latency-bound |
 | async-TP / comm overlap | **NOT AVAILABLE** in build | no flag/config; structural patch required (hand-off) |
+
+## Round 9 (2026-09-19)
+
+| axis | verdict | evidence |
+|---|---|---|
+| WNT=8 wide tile (CFG=2) | **REJECT** | 1798 vs 655 us cold — registers kill occupancy |
+| group-major trellis layout | **CONFIRMED +6% kernel, not yet integrated** | bit-exact; cold 627.4 vs 667.6 us; needs loader permute + all readers re-indexed (prefill risk) |
+| pair-codebook requant | **DEPRIORITIZED→closed** | decode is memory-bound cold; instruction cuts provably don't move it |

@@ -523,3 +523,27 @@ Every cheap lever is now closed by measurement. Remaining multi-day levers,
 in measured-size order: (1) NCCL AR overlap (~7 ms/step), (2) p2b pack
 layout for >76% UMA peak (~6 ms/step), (3) pair-codebook requant (decode
 instruction halving, needs constant search + 12 GPU-h requant).
+
+### Round 9 — WNT=8 reject; pack-layout locality CONFIRMED and de-risked (2026-09-19)
+
+- **WNT=8 wide tile** (CFG=2, 512B contiguous per k-stride, bit-exact):
+  REJECT — 1798 us vs 655 us cold (2.7x slower). Register pressure collapses
+  occupancy; wider-tile-per-warp is not a viable route to DRAM locality.
+- **Group-major trellis layout** (DEC=5 in `kernel_study/gemv_bench/`):
+  permute `[k][n][words] -> [group][k][128]` so each warp's whole k-chunk
+  stream is contiguous. Bit-exact (same logical weights, permuted storage):
+  **cold 627.4 vs 667.6 us (−6.0%), 211.5 vs 198.8 GB/s; warm −4.1%.**
+  The DRAM-locality hypothesis is confirmed and the reference implementation
+  of both sides exists (bench5.cu: stock layout vs group-major indexing).
+- Integration cost: the permutation must be applied at load time and every
+  trellis reader re-indexed — p2b (done, DEC5), exllamav3 `exl3_gemm/moe`
+  prefill kernels, and the vllm-exl3 fat GEMM. Expected e2e: ~+3% decode
+  (p2b is ~48% of step). Weighed against prefill-correctness risk (E8
+  lesson), this is a **de-risked, measured, multi-file project** — the
+  recommended next kernel investment, not a same-day keep.
+
+Campaign verdict table for the decode-side axes now closes with every
+configuration-level lever measured; the three structural levers (NCCL
+overlap ~7 ms/step, pack layout ~2 ms/step + prefill upside, pair-codebook
+requant — now known to be pointless while memory-bound) are scoped in
+flags.md / RESULTS.md round 8-9.
