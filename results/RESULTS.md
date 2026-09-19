@@ -568,3 +568,45 @@ flags.md / RESULTS.md round 8-9.
 31-34 tok/s; L.A.I.L band top; 8/8 + 3/3 quality; prefill unchanged;
 every lever measured; structural hand-offs documented with sizes and
 reference implementations.
+
+## Campaign completion summary (2026-09-19, rounds 1-10)
+
+**Objective**: substantial decode improvement with quality maintained, via
+the B-side trellis-decode lever, MUL1 pack considered.
+
+**Shipped (all gated 8/8 correctness + 3/3 e2e, prefill unchanged):**
+
+1. **E10 `widen_p2b_fshift`** — single-SHF trellis window merge in the p2b
+   decode (bit-exact; −6.1% warm kernel).
+2. **E11 `fix_o_proj_woa_fp8`** — exact requant of wo_a onto the deep_gemm
+   fp8 einsum (the pack stores F8; MXFP8 emulation dequantized it to bf16 at
+   load -> strided bmm -> sm_80 WMMA 288 us/layer). 43/43 layers engaged;
+   288 -> 80.6 us x 40/step, kernel-trace-verified.
+3. **b12x pip package removal** — latent −5-9% prose regression found by
+   A/B before it shipped in the canonical image.
+
+**Decode result**: step time −10-15% kernel-verified; prose decode 25.1 ->
+31-34 tok/s (repeated 5-run medians; historical MCG baseline ~28); L.A.I.L
+21.9-23.4 vs published 22.40 (band top). Quality maintained throughout.
+
+**The B-side trellis-decode question, answered with measurements**: the
+trellis decode is NOT the decode bottleneck. The p2b GEMV streams at
+206-212 GB/s cold = 76-78% of UMA peak; eight variants were measured
+(PF depth, smem staging, cp.async ring, funnelshift [kept], WNT=8 wide
+tile, N-split warps, 64K-entry LUT [hardware-closed at 99KB smem],
+pair-codebook [closed: decode is memory-bound, instruction cuts provably
+don't move it]). The stock K-split tile is the local optimum for this pack
+layout. The MUL1 pack was found on disk, analyzed (identical stream format,
+different codebook arithmetic), and closed (prior port lost −16% via
+acceptance; no kernel-level upside).
+
+**Documented hand-offs (sized, de-risked, reference code in repo):**
+- group-major pack permutation: +6.0% p2b bit-exact (bench5.cu DEC5 both
+  sides); gated on a prefill-harness no-regression proof.
+- NCCL AR in-graph overhead: 124 us vs 43 us isolated floor, ~7 ms/step;
+  needs structural comm overlap (not in this vLLM build).
+- Dense GEMM latency stacking (~18.5 ms/step): latency-bound at m<=8,
+  tiles/autotune closed.
+
+Final serve: `dsv41-flash-exl3-sm121:canonical-e12` (Dockerfile-exact),
+both nodes, stock flags, smoke 323, woa-requant 43/43.
