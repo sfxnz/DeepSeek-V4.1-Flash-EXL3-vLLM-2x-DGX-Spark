@@ -501,3 +501,25 @@ Serve now on `dsv41-flash-exl3-sm121:canonical-e12` (both nodes): smoke 323,
 woa-requant 43/43, prose 31.2 (acc 2.83) / L.A.I.L 21.9 — both inside the
 final bands. Remaining untested levers: flashinfer autotune flag (one serve
 flag), NCCL AR overlap (structural).
+
+### Round 8 — autotune null; lever inventory closes (2026-09-19)
+
+- **flashinfer autotune A/B** (serve flag, tuner enabled at warmup):
+  correctness 7/7, prose 30.2 (acc 2.79) / L.A.I.L 22.3 vs stock 31.2/21.9 —
+  inside bands, **no effect**. Consistent with the round-7 finding that the
+  decode dense GEMMs are latency-bound: no tile choice fixes per-GEMM
+  latency. Flag stays off.
+- **Async-TP / comm-overlap**: not present in this vLLM build (no flag, no
+  config) — reducing the 124 us in-graph AR (vs 43 us isolated floor) is a
+  structural patch, not configuration. Scoped hand-off.
+- Serve restored to `canonical-e12` stock flags after clearing a leftover
+  NCCL-test container that briefly blocked exclusive GPUs.
+
+**Campaign close-out state (2026-09-19):** decode steps are 10-15% faster
+kernel-verified (wo_a 288->80.6 us x40/step + fshift); measured prose decode
+24-37% above the session baseline (25.1 -> 31-34 tok/s band); L.A.I.L at
+band top (+0-4%); quality gates 8/8 + 3/3 throughout; prefill unchanged.
+Every cheap lever is now closed by measurement. Remaining multi-day levers,
+in measured-size order: (1) NCCL AR overlap (~7 ms/step), (2) p2b pack
+layout for >76% UMA peak (~6 ms/step), (3) pair-codebook requant (decode
+instruction halving, needs constant search + 12 GPU-h requant).

@@ -166,3 +166,10 @@ latency. See results/RESULTS.md round 5.
 | p2b load-mechanics axis | **CLOSED** | PF depth, smem staging, cp.async all rejected; kernel at ~76% UMA peak cold — further gains need pack-layout work |
 | b12x (16,64) small-m tiles | **NO EFFECT** (kept, harmless) | trace-flat: dense GEMM total 990→1038 ms over same steps; those GEMMs are latency-bound, not parallelism-starved |
 | wo_a fp8 einsum | **VERIFIED IN-TRACE** | WMMA 288 us x40/step gone; deep_gemm einsum 80.6 us x40/step |
+
+## Round 8 (2026-09-19)
+
+| axis | verdict | evidence |
+|---|---|---|
+| flashinfer autotune (serve flag) | **NO EFFECT / stays off** | prose 30.2 vs 31.2, L.A.I.L 22.3 vs 21.9 — bands; GEMMs latency-bound |
+| async-TP / comm overlap | **NOT AVAILABLE** in build | no flag/config; structural patch required (hand-off) |
