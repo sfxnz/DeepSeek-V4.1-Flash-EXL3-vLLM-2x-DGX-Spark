@@ -141,3 +141,12 @@ same ideas are not retried blind.
 New open axes (from live profile): dense-projection stream efficiency
 (b12x grids starve 48 SMs; o_proj wo_a on sm_80 WMMA), NCCL 2-rank AR
 latency. See results/RESULTS.md round 5.
+
+## E10 (2026-09-19)
+
+| change | verdict | evidence |
+|---|---|---|
+| widen_p2b_fshift (funnelshift window merge) | **KEEP** | bit-exact; -6.1% p2b warm; correctness 8/8 |
+| widen_b12x_smalls ((16,64) tiles m<=8 n<=8192) | **KEEP** | prefill flat 754/700; prose 25.1->31.4 same-session; gates pass |
+| probe_wo_a (diagnostic) | keep | wo_a runtime dtype = bf16 (pack F8) -> sm_80 WMMA bmm: next target |
+| NCCL_PROTO forcing | **CLOSED** | isolated 2-rank AR: default=LL 43.0us; LL128 81.8us |

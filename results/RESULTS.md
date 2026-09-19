@@ -415,3 +415,34 @@ now the dense-projection path and comms, not the trellis GEMV.
 - X3 o_proj wo_a bf16 WMMA fallback -> modern fp8/b12x path.
 - X4 p2b vdec1 funnelshift (+vdec2): bit-exact, small; rides along with any
   kernel image rebuild.
+
+### E10 — decode bundle: fshift extraction + b12x small-m tiles + wo_a probe (2026-09-19) — **KEEP-candidate**
+
+Image `dsv41-flash-exl3-sm121:e10` (Dockerfile.e10; chain promoted into the
+main Dockerfile). Three independently attributable changes:
+
+1. `widen_p2b_fshift.py` — single-`SHF` window merge in the p2b bits==2
+   decode (bit-identical windows; harness: 670.7 -> 629.7 us warm e=30).
+2. `widen_b12x_smalls.py` — flashinfer sm120 blockscaled dense GEMM picks
+   (16,64) tiles for m<=8, n<=8192 (2x CTAs; grids were 14-48 CTAs on 48
+   SMs). Prefill untouched (m>128 branch).
+3. `probe_wo_a.py` — boot log. **Finding: wo_a loads as bf16 (4096,4096)
+   despite F8_E4M3 in the pack -> per-layer `torch.bmm` on an sm_80 WMMA
+   kernel (~176 us). wo_b correctly fp8.** Root-caused next target.
+
+Gates on :e10:
+
+- Correctness **8/8** including 64k recall; e2e **3/3** (coding decode 31.0,
+  needle hit at 63k, decode 42.9 on that cell, tool ok).
+- pp@4k 754.3 / pp@64k ~700 — prefill flat (b12x change correctly scoped).
+- Prose decode c=1 (5-run median): **31.44 tok/s, acceptance 2.97** vs
+  25.11/2.78 same-session pre-E10 and 27.98/2.86 historical MCG baseline.
+- L.A.I.L 23.0-23.2 (band 21.6-23.9, final capture 22.40).
+- NCCL proto axis closed by isolation test: default already LL = 43.0 us for
+  the 51 KB 2-rank AR (LL128 81.8) — serving AR overhead is launch/graph
+  side, not protocol.
+
+Serve is live on `:e10` (identical patch chain to the promoted Dockerfile);
+canonical image rebuild/retag lands next round. Next decode targets by
+measured size: wo_a bf16-bmm -> fp8 einsum (~5.6 ms/step), NCCL AR overlap,
+eltwise/gap trims.

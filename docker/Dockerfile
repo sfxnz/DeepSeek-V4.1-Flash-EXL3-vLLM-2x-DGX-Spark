@@ -31,6 +31,7 @@ RUN apt-get update \
  && python3 /opt/dsv41-patch/widen_p2b_mrow.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_cfg1.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_codebook.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_fshift.py /opt/vllm-exl3 \
  && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps /opt/vllm-exl3 \
  && python3 -c "import torch, vllm_exl3, vllm_exl3_c; assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); print('vllm_exl3 cuda ok')" \
  && rm -rf /opt/exllamav3 /opt/vllm-exl3 /var/lib/apt/lists/*
@@ -43,4 +44,10 @@ COPY patch/sitecustomize.py /usr/lib/python3.12/sitecustomize.py
 # py3-none-any wheel; cutlass-dsl is already in the FlashInfer b12x Q/O path.
 RUN python3 -m pip install --no-deps "b12x==1.3.0" \
  && python3 -c "import b12x; print('b12x', getattr(b12x, '__version__', 'ok'))"
+# E10: (16,64) tiles for decode-sized m in the flashinfer b12x dense GEMM
+# (2x CTAs at n<=8192; no K-split exists in that kernel), and a boot log of
+# the o_proj wo_a runtime dtype (pack stores F8; loader hands over bf16 ->
+# torch.bmm -> sm_80 WMMA, the next decode target).
+RUN python3 /opt/dsv41-patch/widen_b12x_smalls.py /usr/local/lib/python3.12/dist-packages/flashinfer/gemm/kernels/dense_blockscaled_gemm_sm120_b12x.py \
+ && python3 /opt/dsv41-patch/probe_wo_a.py /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
 ENTRYPOINT ["vllm", "serve"]

@@ -1,0 +1,26 @@
+# Experiment image E10: decode-path bundle on top of the recipe image.
+#   1. widen_p2b_fshift  — bit-exact funnelshift window extraction (p2b).
+#   2. widen_b12x_smalls — (16,64) tiles for m<=8, n<=8192 dense MXFP8 GEMMs.
+#   3. probe_wo_a        — boot log of o_proj wo_a runtime dtype (diagnostic).
+# Attributable separately: (1) touches only the p2b kernel, (2) only the
+# flashinfer tile heuristic, (3) prints only.
+FROM dsv41-flash-exl3-sm121
+
+COPY patch /opt/dsv41-patch
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+       git libcusparse-dev-13-0 libcusolver-dev-13-0 \
+  && git clone https://github.com/vcruz305/vllm-exl3.git /opt/vllm-exl3 \
+  && git -C /opt/vllm-exl3 checkout d3cfd394920360d69f820d2dc96f8292a9e10283 \
+  && python3 /opt/dsv41-patch/fix_vllm_exl3_setup.py /opt/vllm-exl3/setup.py \
+  && python3 /opt/dsv41-patch/widen_p2b_shapes.py /opt/vllm-exl3 \
+  && python3 /opt/dsv41-patch/widen_p2b_mrow.py /opt/vllm-exl3 \
+  && python3 /opt/dsv41-patch/widen_p2b_cfg1.py /opt/vllm-exl3 \
+  && python3 /opt/dsv41-patch/widen_p2b_codebook.py /opt/vllm-exl3 \
+  && python3 /opt/dsv41-patch/widen_p2b_fshift.py /opt/vllm-exl3 \
+  && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps /opt/vllm-exl3 \
+  && python3 -c "import vllm_exl3_c; assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); print('e10 plugin ok')" \
+  && python3 /opt/dsv41-patch/widen_b12x_smalls.py /usr/local/lib/python3.12/dist-packages/flashinfer/gemm/kernels/dense_blockscaled_gemm_sm120_b12x.py \
+  && python3 /opt/dsv41-patch/probe_wo_a.py /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py \
+  && rm -rf /opt/vllm-exl3 /var/lib/apt/lists/*
