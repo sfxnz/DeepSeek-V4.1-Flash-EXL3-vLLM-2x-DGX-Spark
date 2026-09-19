@@ -756,3 +756,19 @@ try:
     )
 except Exception as _engram_fast_err:
     print(f"dsv41: engram fast stage skipped: {_engram_fast_err!r}", flush=True)
+
+# Engram next-step prefetch: fadvise WILLNEED for the next decode chunk's
+# rows, hashed on CPU at postprocess time so kernel readahead overlaps the
+# draft graph. Advisory only (correctness never depends on it). Requires
+# engram_stage_fast. DSV41_ENGRAM_PREFETCH=1 enables.
+try:
+    from pathlib import Path as _Pp
+
+    from engram_prefetch import apply as _apply_engram_pf
+
+    _apply_engram_pf(
+        _Pp("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"),
+        _Pp("/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py"),
+    )
+except Exception as _engram_pf_err:
+    print(f"dsv41: engram prefetch skipped: {_engram_pf_err!r}", flush=True)

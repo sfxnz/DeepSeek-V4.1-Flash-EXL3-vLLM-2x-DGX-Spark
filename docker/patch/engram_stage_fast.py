@@ -82,6 +82,20 @@ STAGE_FAST = """    @torch.inference_mode()
         from .mm_preprocess import image_sentinel_mask
 
         ids = input_ids[:n]
+        import os as _pf_os
+
+        if _pf_os.environ.get("DSV41_ENGRAM_PF_DUMP", "0") == "1":
+            _win = (
+                lookback_token_ids[0].tolist()
+                if lookback_token_ids is not None
+                and lookback_token_ids.numel()
+                else []
+            )
+            print(
+                "[pf-dump-stage] n=%d ids=%s pos=%s win=%s"
+                % (n, ids.tolist()[:8], positions[:n].tolist()[:8], _win),
+                flush=True,
+            )
         hashes = self.hash_state(
             ids,
             positions[:n],

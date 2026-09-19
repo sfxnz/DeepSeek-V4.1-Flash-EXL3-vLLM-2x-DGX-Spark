@@ -610,3 +610,67 @@ acceptance; no kernel-level upside).
 
 Final serve: `dsv41-flash-exl3-sm121:canonical-e12` (Dockerfile-exact),
 both nodes, stock flags, smoke 323, woa-requant 43/43.
+
+## Round 11 — the L.A.I.L gap: Engram disk staging (2026-09-19)
+
+The user's brief: kernel wins must show up in L.A.I.L (22.0-23.5 band,
+acc ~2.27-2.32). Cross-checking steps/s showed the wins were real at the
+device level but absorbed by inter-step dead time. Trace forensics on a
+28-step L.A.I.L window (crash-safe ijson parser with RLIMIT_AS after a
+full-trace json.load OOM'd the host — see incident note below):
+
+- ~25.6 ms/step of GPU idle; the innermost frame spanning nearly every
+  gap was `_thread.lock.acquire` under `engram_disk._read_rows ->
+  Future.result`. Not NCCL (AR p50 = 41-54 us, near the 43 us isolated
+  floor; the 122-236 us "averages" were tail-polluted), not the scheduler.
+- `EngramDiskStager.stage` gathers the per-layer disk tables serially in
+  prepare_inputs; 1-2 cold-row NVMe misses per step block the next graph
+  replay. `async_scheduling` measured NEUTRAL-negative (21.8/21.9 vs
+  22.0-23.5 band); `NCCL_MIN/MAX_NCHANNELS=1` measured NULL (steps/s 9.65
+  vs 9.68-10.26 band).
+
+### KEEP: parallel Engram disk staging (`docker/patch/engram_stage_fast.py`)
+
+The per-table CPU gathers (pread + dequant into pinned host rows) now run
+concurrently; H2D stays on the calling thread (stream order before replay
+unchanged). Self-check vs the serial loop is bit-exact on both TP ranks.
+
+- census: avg read_w 0.20 -> 0.03 ms per gather
+- L.A.I.L prose: 22.0-23.5 -> 25.2-26.3 tok/s at matched acceptance
+  (n=10 per boot, three boots), steps/s 9.7-10.3 -> 11.1-11.5
+- full validation pass: correctness 5/5 (math_small 323, math_mid 252,
+  json_strict, tool_call, code_trace), pp in band (685-689 @16k/64k),
+  prose bench 28.4-33.4
+
+### EXPERIMENTAL (off by default): next-step row prefetch (`engram_prefetch.py`)
+
+Timeline fact: the next step's exact input tokens (verify outputs) are on
+the GPU before the draft graph launches, so a side-stream D2H + CPU port
+of `_hash_ids_kernel` + `posix_fadvise(WILLNEED)` can warm the rows under
+the draft graph. The CPU hash port was verified against live stage dumps
+(predicted rows intersect the actual staged rows; garbage-tail truncation
+via num_sampled fixed; anchor-relative next-chunk positions fixed). But
+the measured pf_hit stays ~0% and read times do not drop, so the
+consumption pairing or the fadvise window is still wrong somewhere.
+Ships dark (`DSV41_ENGRAM_PREFETCH=0`), fully advisory, self-disabling.
+
+### Incident note (worth remembering)
+
+Loading a 132 MB / 5.1M-event torch trace with `json.load` materializes
+~15-20 GB of Python objects on this UMA host with the serve resident ->
+kernel OOM cascade -> hard hang (user power-cycled spark1). All trace
+analysis now goes through `kernel_study/gemv_bench/parse_trace_safe.py`
+(ijson streaming + 6 GB RLIMIT_AS). Traces must be `docker cp`'d out of
+the container immediately (docker rm destroys them) and only after the
+profiler flushes (wait >10 s after stop_profile).
+
+### Hand-offs
+
+- Prefetch: the hash math and the hook are verified end-to-end offline;
+  the remaining bug is in the published-set vs gather pairing (off-by-
+  something) or fadvise latency. Worth one focused session.
+- Step composition at L.A.I.L after round 11 (per step): p2b 33-34 ms,
+  dense b12x ~19-20 ms, AR steady ~6 ms + tail, draft bf16 sm80 kernels
+  ~3-4 ms, gaps ~11-13 ms. 35 tok/s at acc 2.3 needs a 66 ms step:
+  p2b group-major pack (+6% kernel, needs prefill no-regression proof) +
+  dense fusion or the prefetch above are the remaining paths.
