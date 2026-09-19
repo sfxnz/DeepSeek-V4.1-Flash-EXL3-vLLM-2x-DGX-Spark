@@ -726,3 +726,33 @@ except Exception as _mla_cpb_err:
         f"dsv41: SM120 MLA chunks_per_block wrap skipped: {_mla_cpb_err!r}",
         flush=True,
     )
+
+# Engram disk stager census: time the per-step NVMe gather phases. The
+# inter-step gap is dominated by EngramDiskStager.stage (15-28 ms/step at
+# L.A.I.L shapes); this census names the phase so the fast-stager patch can
+# target it. Diagnostic only; enable with DSV41_ENGRAM_CENSUS=1.
+try:
+    from pathlib import Path as _Pc
+
+    from engram_stage_census import apply as _apply_engram_census
+
+    _apply_engram_census(
+        _Pc("/usr/local/lib/python3.12/dist-packages/vllm")
+    )
+except Exception as _engram_census_err:
+    print(f"dsv41: engram census skipped: {_engram_census_err!r}", flush=True)
+
+# Engram fast stage: the 13 per-layer disk gathers run concurrently instead
+# of serially. Trace forensics: ~25.6 ms/step of GPU idle is
+# _read_rows Future.result lock-wait (cold NVMe rows in the serial loop).
+# DSV41_ENGRAM_FAST_STAGE=1 default; self-check reverts on any mismatch.
+try:
+    from pathlib import Path as _Pf
+
+    from engram_stage_fast import apply as _apply_engram_fast
+
+    _apply_engram_fast(
+        _Pf("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1")
+    )
+except Exception as _engram_fast_err:
+    print(f"dsv41: engram fast stage skipped: {_engram_fast_err!r}", flush=True)
