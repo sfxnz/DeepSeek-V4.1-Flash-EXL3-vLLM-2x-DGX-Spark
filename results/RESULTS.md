@@ -547,3 +547,24 @@ configuration-level lever measured; the three structural levers (NCCL
 overlap ~7 ms/step, pack layout ~2 ms/step + prefill upside, pair-codebook
 requant — now known to be pointless while memory-bound) are scoped in
 flags.md / RESULTS.md round 8-9.
+
+### Round 10 — N-split warp decomposition reject; p2b variant space exhausted (2026-09-19)
+
+- **N-split warps** (each warp owns one 4-tile group's full K range; 8 warps
+  read 2KB contiguous per k-slice; reduction-free epilogue; numerically
+  equivalent reorder, uniform ≤3 half-ULP diffs, no clustering): **REJECT —
+  758.0 vs 643.3 us cold (−18%).** The stock K-split's 8 independent
+  k-regions per block are the latency hiding; N-split trades that for DRAM
+  locality and loses. Gate tail waste (18 groups / 8 warps) adds more.
+- With WNT=8 (registers) and N-split (latency) both rejected, the p2b
+  optimization space is exhaustively mapped: **the stock K-split tile at
+  206 GB/s cold is the local optimum for this pack layout**, and the
+  group-major pack permutation (+6.0%, bit-exact, DEC5 reference) is the
+  only remaining p2b lever — gated on a prefill-harness proof of
+  no-regression (exllamav3 gemm-inner remap, E8 risk class).
+
+**Campaign final state**: decode step ~10-15% faster kernel-verified
+(wo_a fp8 einsum 288->80.6 us x40/step + fshift); prose decode 25.1 ->
+31-34 tok/s; L.A.I.L band top; 8/8 + 3/3 quality; prefill unchanged;
+every lever measured; structural hand-offs documented with sizes and
+reference implementations.

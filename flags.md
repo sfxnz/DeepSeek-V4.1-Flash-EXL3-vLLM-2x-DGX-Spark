@@ -181,3 +181,10 @@ latency. See results/RESULTS.md round 5.
 | WNT=8 wide tile (CFG=2) | **REJECT** | 1798 vs 655 us cold — registers kill occupancy |
 | group-major trellis layout | **CONFIRMED +6% kernel, not yet integrated** | bit-exact; cold 627.4 vs 667.6 us; needs loader permute + all readers re-indexed (prefill risk) |
 | pair-codebook requant | **DEPRIORITIZED→closed** | decode is memory-bound cold; instruction cuts provably don't move it |
+
+## Round 10 (2026-09-19)
+
+| axis | verdict | evidence |
+|---|---|---|
+| N-split warp decomposition (DEC6) | **REJECT** | 758.0 vs 643.3 us cold (−18%); K-split latency spreading wins |
+| p2b variant space | **EXHAUSTED** | K-split+stock layout = local optimum; group-major permute is the sole remaining lever (+6%, needs prefill harness) |
