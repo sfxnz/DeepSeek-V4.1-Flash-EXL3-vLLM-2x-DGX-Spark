@@ -49,5 +49,6 @@ RUN python3 -m pip install --no-deps "b12x==1.3.0" \
 # the o_proj wo_a runtime dtype (pack stores F8; loader hands over bf16 ->
 # torch.bmm -> sm_80 WMMA, the next decode target).
 RUN python3 /opt/dsv41-patch/widen_b12x_smalls.py /usr/local/lib/python3.12/dist-packages/flashinfer/gemm/kernels/dense_blockscaled_gemm_sm120_b12x.py \
- && python3 /opt/dsv41-patch/probe_wo_a.py /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+ && python3 /opt/dsv41-patch/probe_wo_a.py /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py \
+ && python3 /opt/dsv41-patch/fix_o_proj_woa_fp8.py /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
 ENTRYPOINT ["vllm", "serve"]

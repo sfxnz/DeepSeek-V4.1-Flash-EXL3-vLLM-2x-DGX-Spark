@@ -446,3 +446,32 @@ Serve is live on `:e10` (identical patch chain to the promoted Dockerfile);
 canonical image rebuild/retag lands next round. Next decode targets by
 measured size: wo_a bf16-bmm -> fp8 einsum (~5.6 ms/step), NCCL AR overlap,
 eltwise/gap trims.
+
+### E11 — o_proj wo_a exact-requant onto the fp8 einsum (2026-09-19) — **KEEP**
+
+Root cause chain (from E10's probe): the pack stores wo_a as F8_E4M3 +
+ue8m0 block scales, but on GB10 the ModelOpt MXFP8 BMM path picks the
+emulation kernel whose load-time dequant (`VLLM_MXFP8_EMULATION_DEQUANT_AT_LOAD`,
+default on) replaces the weight with BF16. `deep_gemm_fp8_o_proj` then took
+its `torch.bmm` fallback — a strided bf16 BMM cublas maps to a cutlass_80
+sm_80 WMMA kernel, ~176 us/layer at decode (~0.9 TFLOPS; 37 of them per
+step in the live profile).
+
+Fix (`fix_o_proj_woa_fp8.py`): the layer retains its e8m0 scales, so
+requantizing the bf16 weight with THOSE scales is a bit-exact roundtrip of
+the original e4m3 bytes. One-time, capture-guarded, self-tested conversion
+(43/43 layers engaged at boot: `[woa-requant] fp8 einsum engaged`), with a
+permanent bf16 fallback on any failure. Isolated bench of the einsum at the
+decode shape: 45.1 us vs 157.2 us bf16 bmm (3.5x).
+
+Gates on `:e11` (all green):
+
+- Correctness **8/8** (incl. 64k recall); e2e **3/3**.
+- Prose decode c=1 (5-run median): **33.57 tok/s, acc 3.05** — E10 31.44,
+  session pre-E10 25.11 (**+34% cumulative**).
+- L.A.I.L 22.2-23.1 (band); tg cells acceptance-noisy (18.5-32.6 at
+  acc 2.0-3.4), medians consistent with E10-or-better.
+- pp@64k tie-breaker 706/699/698 — inside the 695-710 band; no prefill
+  regression (one 681.8 outlier was cache-cold).
+
+Chain promoted into the main Dockerfile. Serve live on `:e11`.

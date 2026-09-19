@@ -150,3 +150,10 @@ latency. See results/RESULTS.md round 5.
 | widen_b12x_smalls ((16,64) tiles m<=8 n<=8192) | **KEEP** | prefill flat 754/700; prose 25.1->31.4 same-session; gates pass |
 | probe_wo_a (diagnostic) | keep | wo_a runtime dtype = bf16 (pack F8) -> sm_80 WMMA bmm: next target |
 | NCCL_PROTO forcing | **CLOSED** | isolated 2-rank AR: default=LL 43.0us; LL128 81.8us |
+
+## E11 (2026-09-19)
+
+| change | verdict | evidence |
+|---|---|---|
+| fix_o_proj_woa_fp8 (exact requant, self-guarded) | **KEEP** | 43/43 layers engaged; prose 31.4->33.6; 8/8 + 3/3; pp band intact |
+| wo_a bf16-bmm (emulation dequant) | root-caused | MXFP8 emulation kernel dequants at load; scales retained -> exact roundtrip |
