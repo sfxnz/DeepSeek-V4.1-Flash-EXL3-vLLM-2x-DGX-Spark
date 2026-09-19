@@ -244,7 +244,11 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertTrue((ROOT / "docker/patch/sm120_page.py").is_file())
         self.assertIn("prefer_b12x_mxfp8", site)
         self.assertTrue((ROOT / "docker/patch/prefer_b12x_mxfp8.py").is_file())
-        self.assertIn('b12x==1.3.0', df)
+        # The b12x pip package is deliberately NOT installed: with it,
+        # vLLM routes dense MXFP8 through the package kernels and prose
+        # decode measured 5-9% slower (2026-09-19 A/B).
+        self.assertNotIn('b12x==1.3.0', df)
+        self.assertIn('b12x package kernels', df)
         self.assertIn("libcusparse-dev-13-0", df)
         self.assertIn("VLLM_EXL3_MOE_KERNEL=native", df)
         self.assertIn("widen_p2b_shapes.py", df)
