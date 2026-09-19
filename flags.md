@@ -157,3 +157,12 @@ latency. See results/RESULTS.md round 5.
 |---|---|---|
 | fix_o_proj_woa_fp8 (exact requant, self-guarded) | **KEEP** | 43/43 layers engaged; prose 31.4->33.6; 8/8 + 3/3; pp band intact |
 | wo_a bf16-bmm (emulation dequant) | root-caused | MXFP8 emulation kernel dequants at load; scales retained -> exact roundtrip |
+
+## Round 7 axes (2026-09-19)
+
+| axis | verdict | evidence |
+|---|---|---|
+| p2b cp.async 4-buffer ring (DEC3, bit-exact) | **REJECT** | cold e=30: 672.4 us vs stock 642.2 (−4.7%); kernel not load-starved |
+| p2b load-mechanics axis | **CLOSED** | PF depth, smem staging, cp.async all rejected; kernel at ~76% UMA peak cold — further gains need pack-layout work |
+| b12x (16,64) small-m tiles | **NO EFFECT** (kept, harmless) | trace-flat: dense GEMM total 990→1038 ms over same steps; those GEMMs are latency-bound, not parallelism-starved |
+| wo_a fp8 einsum | **VERIFIED IN-TRACE** | WMMA 288 us x40/step gone; deep_gemm einsum 80.6 us x40/step |
