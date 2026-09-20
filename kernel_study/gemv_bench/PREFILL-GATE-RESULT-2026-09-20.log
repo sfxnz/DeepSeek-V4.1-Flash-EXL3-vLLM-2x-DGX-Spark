@@ -1,0 +1,122 @@
+PREFILL GATE RESULT — 2026-09-20 (GPU window, spark1 GB10, serves fully stopped)
+Harness: kernel_study/gemv_bench/driver_prefill.py @ commit eb78a8b (built+CPU-validated)
+Run env: GPU container dsv41-flash-exl3-sm121:latest (f1fbdaae), torch 2.13.0+cu130,
+NVIDIA GB10, serves stopped (host MemAvail 116/117 GiB). Source at repo
+kernel_study/gemv_bench read-only mounted; extension JIT'd inside the container
+(TORCH_EXTENSIONS_DIR=/tmp/ext), never on the host. Protocol per PREFILL-GATE.md:
+--mode check first, then the m in {64,128,256,512} sweep at --reps 5.
+
+VERDICT: **FAIL** — bit-exactness broken at EVERY (matrix, m, shape): 20/20 MISMATCH.
+
+Control (run once, gate/up m=128 shape2):
+  stock self-consistent: True True   (three identical stock runs)
+  g8   self-consistent: True         (two identical g8 runs)
+  stock vs g8 equal:    False
+→ Both layouts are individually deterministic; the outputs genuinely differ
+  cross-layout. This is a REAL PF-G8 B-load address-remap defect (the g8 layout
+  does not reproduce stock results), not harness noise/nondeterminism.
+  Failure signature: max abs diff ~415–678 (fp16 out scale), n_diff ≈ 99.998%
+  of elements — the g8 path computes from the wrong (permuted) addresses
+  everywhere, i.e. the remap is systematically wrong, not marginally wrong.
+
+== RAW: --mode check (driver_prefill.py, exit 1) ==
+[check] gate/up m=64 shape2: MISMATCH
+  max abs diff 618.5  n_diff 147441 / 147456
+[check] gate/up m=64 shape3: MISMATCH
+  max abs diff 618.5  n_diff 147439 / 147456
+[check] gate/up m=128 shape2: MISMATCH
+  max abs diff 677.5  n_diff 294872 / 294912
+[check] gate/up m=128 shape3: MISMATCH
+  max abs diff 677.625  n_diff 294876 / 294912
+[check] gate/up m=256 shape2: MISMATCH
+  max abs diff 612.5  n_diff 589770 / 589824
+[check] gate/up m=256 shape3: MISMATCH
+  max abs diff 612.5  n_diff 589763 / 589824
+[check] gate/up m=512 shape2: MISMATCH
+  max abs diff 665.75  n_diff 1179514 / 1179648
+[check] gate/up m=512 shape3: MISMATCH
+  max abs diff 665.75  n_diff 1179517 / 1179648
+[check] down m=64 shape2: MISMATCH
+  max abs diff 415.0  n_diff 327639 / 327680
+[check] down m=64 shape3: MISMATCH
+  max abs diff 415.0  n_diff 327651 / 327680
+[check] down m=64 shape4: MISMATCH
+  max abs diff 458.5  n_diff 327637 / 327680
+[check] down m=128 shape2: MISMATCH
+  max abs diff 422.5  n_diff 655288 / 655360
+[check] down m=128 shape3: MISMATCH
+  max abs diff 422.5  n_diff 655289 / 655360
+[check] down m=128 shape4: MISMATCH
+  max abs diff 418.375  n_diff 655287 / 655360
+[check] down m=256 shape2: MISMATCH
+  max abs diff 451.125  n_diff 1310566 / 1310720
+[check] down m=256 shape3: MISMATCH
+  max abs diff 451.125  n_diff 1310580 / 1310720
+[check] down m=256 shape4: MISMATCH
+  max abs diff 465.0  n_diff 1310565 / 1310720
+[check] down m=512 shape2: MISMATCH
+  max abs diff 453.875  n_diff 2621149 / 2621440
+[check] down m=512 shape3: MISMATCH
+  max abs diff 453.875  n_diff 2621169 / 2621440
+[check] down m=512 shape4: MISMATCH
+  max abs diff 476.875  n_diff 2621149 / 2621440
+
+Note: --mode all (check+sweep) aborts at the check per the harness design
+(sys.exit(1)); the sweep below was captured with --mode bench --reps 5 and is
+ADVISORY ONLY — the gate verdict is already FAIL on bit-exactness.
+
+== RAW: --mode bench --reps 5 (advisory; wrong-results timing) ==
+matrix     m shape   stock us      g8 us    delta
+ gate/up    64     2      102.4      102.3    +0.1%
+ gate/up    64     3      106.5      106.5    +0.0%
+ gate/up   128     2      198.0      204.8    -3.4%
+ gate/up   128     3      220.8      207.3    +6.1%
+ gate/up   256     2      389.2      389.4    -0.1%
+ gate/up   256     3      409.4      409.6    -0.0%
+ gate/up   512     2      776.2      773.9    +0.3%
+ gate/up   512     3      815.5      813.3    +0.3%
+    down    64     2       96.2       96.3    -0.0%
+    down    64     3       92.1       92.1    -0.0%
+    down    64     4      116.7      116.8    -0.0%
+    down   128     2      187.6      186.3    +0.7%
+    down   128     3      176.2      176.2    -0.0%
+    down   128     4      229.3      229.3    -0.0%
+    down   256     2      366.9      366.9    -0.0%
+    down   256     3      348.2      348.3    -0.0%
+    down   256     4      453.4      453.5    -0.0%
+    down   512     2      729.0      729.3    -0.0%
+    down   512     3      691.1      698.3    -1.0%
+    down   512     4      902.7      902.6    +0.0%
+
+[layer estimate] 2x gate/up + 1x down per expert (best shape), x384 experts x37 routed layers
+  m=64: stock 4.22 s  g8 4.22 s  (+0.0%)
+  m=128: stock 8.13 s  g8 8.32 s  (-2.4%)
+  m=256: stock 16.01 s  g8 16.01 s  (-0.0%)
+  m=512: stock 31.88 s  g8 31.91 s  (-0.1%)
+
+Advisory perf readout (does not rescue the gate): at the veto m ∈ {128,256,512}
+G8 vs stock medians are within ±1% everywhere except gate/up m=128 (shape2
+-3.4% slower, shape3 +6.1% faster — best-shape selection nets +0.7% there);
+aggregate layer estimate within ±0.1% at m ∈ {256,512}, -2.4% (worse) at
+m=128. Perf alone would have been borderline-PASS; correctness kills the arm.
+
+== Gate criteria application (PREFILL-GATE.md) ==
+- Bit-exact at every (matrix, m, shape): FAIL (20/20 MISMATCH)
+- G8 ≤ 1.05x stock at m ∈ {128,256,512}: perf PASS (advisory; see above)
+- Aggregate ≤ +2% worse: PASS at m∈{256,512}, FAIL at m=128 (-2.4%)
+
+FINAL: **FAIL** — any check mismatch vetoes. Per PREFILL-GATE.md decision rule:
+close the permutation lever; the PF-G8 GEMM B-load remap
+(exl3_gemm_kernel_pf.cuh / exl3_gemm_inner_pf.cuh `pf_g8` path) does not
+reproduce stock outputs. Two possible readings, both requiring harness-side
+work BEFORE any pack permutation decision:
+  (a) the PF-G8 GEMM remap itself is buggy (wrong address math) — lever fixable
+      in the harness, gate must re-run after the fix; or
+  (b) the remap is fine and the discrepancy is a harness/test-construction
+      artifact (e.g. check-path scale/scale-e vs bench-path mismatch) — but
+      the CPU-validated claim and the deterministic control make this less
+      likely; note the harness was validated CPU-side (compile) only, never
+      numerically validated on GPU before this window.
+Either way: DO NOT fold PF-G8 into tools/quantize_experts_exl3.py; keep p2b
+stock layout. Re-open only via a harness fix + a fresh GPU gate re-run
+(bit-exactness is the binding criterion).

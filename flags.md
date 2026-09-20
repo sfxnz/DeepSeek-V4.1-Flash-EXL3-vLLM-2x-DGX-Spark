@@ -225,3 +225,34 @@ prose 16.80. Sampling method is not the pathology. Signature stands: drafter
 agrees with sampled decoding (2.08 @ t=0.2) but is systematically wrong under
 greedy verify. Lane parked at SPEC_METHOD=none; Boot B (coop) blocked until a
 draft fix. Evidence: results/2026-09-20-mul1-lane/BOOT-A3-VERDICT.md.
+
+### Round 13b — mul1 A4: LANGUAGE_MODEL_ONLY=1 text-only arm — lane PARKED PERMANENTLY
+
+Text-only server (her documented measurement condition) moved greedy prose by
++0.1 tok/s (16.35→16.45) and acceptance 1.32→1.33 — identical, within noise.
+Her exact 400-token budget: 20.30 tok/s @ acceptance 1.69 (acceptance grows
+with generation length, not with text-only). Her 28 tok/s k=3 is not
+reproducible on this pack under any condition tested (A/A3/A4 × vision on/off
+× 200/400 tok × default/greedy draft sampling). Root cause confirmed as pack
+property: 4-bit EXL3 MTP drafter (`mtp_bits: 4`) — MCG's source-precision
+drafter shows 2.77/2.87 with the same harness. Decision rule (prose ≥24 AND
+acc ≥2.0) FAILED on both. mul1 lane PARKED PERMANENTLY at SPEC_METHOD=none
+(23.64 / 845.6 @32k); Boot B stays blocked. Re-open mechanism: requantize the
+pack with a source-precision drafter (`mtp_experts: source`, MCG-style).
+A4 side-observations: text-only k=3 floors 6.2/7.7 GiB; micro tg 8k/32k
+36.8/33.9 (acc 2.89/2.92 — best of the lane); LAIL t=0.2 26.79 (parity with
+MCG lane). MCG restored + verified; LAIL real job c33b06334e36 = 25.34.
+Evidence: results/2026-09-20-mul1-lane/BOOT-A4-VERDICT.md.
+
+### Round 13c — p2b group-major prefill gate: FAIL (bit-exactness)
+
+PREFILL-GATE.md harness (commit eb78a8b) run in the GPU window per spec:
+`--mode check` MISMATCH at ALL 20 (matrix, m∈{64,128,256,512}, shape) combos;
+control proves both layouts individually deterministic — the PF-G8 B-load
+remap genuinely computes wrong outputs (max abs diff 415–678, ~99.998% of
+elements differ). Advisory bench (wrong-result timing): G8 within ±1% of
+stock nearly everywhere; layer estimate −0.1%..−2.4%. Verdict FAIL — do NOT
+fold PF-G8 into quantize_experts_exl3.py; keep p2b stock layout. Lever
+re-openable only via harness fix + fresh GPU gate re-run (the harness was
+CPU-validated for compile only, never numerically on GPU). Evidence:
+kernel_study/gemv_bench/PREFILL-GATE-RESULT-2026-09-20.log.
