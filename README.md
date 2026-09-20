@@ -56,6 +56,8 @@ Stock `vllm/vllm-openai` wheels do not load `DeepseekV41ForCausalLM`. The image 
 
 If the image `dsv41-flash-exl3-sm121` is already present, skip the pull and the build on that node.
 
+`dsv41-flash-exl3-sm121` is the base build tag — the derived experiment Dockerfiles (`docker/Dockerfile.e10`, `docker/Dockerfile.mma`) chain `FROM` it. The promoted serve image carrying the E10+E11 keeps is `dsv41-flash-exl3-sm121:canonical-e12` (build chain `docker/Dockerfile.e10` → `docker/Dockerfile.e11`, promoted in `results/RESULTS.md` round 7), and that is what both nodes run: `IMAGE=dsv41-flash-exl3-sm121:canonical-e12 ./run.sh`.
+
 ## Run
 
 If another `--gpus all` container is up, stop it first.
@@ -117,7 +119,7 @@ When you are done:
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
 |---|---|---:|---:|---:|
 | prose | 1 | 34.3 | 34.3 | 0.29 s |
-| lail_prose | 1 | 23.3 | 23.3 | 0.37 s |
+| lail_prose | 1 | 25.4 | 25.4 | 0.34 s |
 <!-- END generated measured -->
 
 ## Rebuild the pack

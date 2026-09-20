@@ -11,6 +11,7 @@ image:
   base: vllm/vllm-openai:deepseekv41-flash-0909
   digest: sha256:d84a123255b822fc22508635218000187221794f59c0694c33b0650d1e377d58
   local_tag: &image dsv41-flash-exl3-sm121
+  canonical_tag: dsv41-flash-exl3-sm121:canonical-e12
   build: docker/Dockerfile
 
 engine:
@@ -87,11 +88,11 @@ readme:
 
 measured:
   decode:
-    conditions: "Capture 2026-09-19 round 6 on the E11 config (E10+E11 keeps: p2b funnelshift extraction, b12x (16,64) small-m tiles, o_proj wo_a exact-requant onto the fp8 einsum; KV pool 8 GiB, DSpark-5 greedy, CUDA graphs, vision on, Engram on disk, native p2b CFG=1). bench_decode.py prose phase = streamed greedy 200 tokens thinking off; L.A.I.L prose = 512 tokens temperature 0.2. Full capture log: results/2026-09-19-e11/cells.log; history in results/RESULTS.md."
+    conditions: "Capture 2026-09-19 rounds 6-11 on the E11 config (E10+E11 keeps: p2b funnelshift extraction, b12x (16,64) small-m tiles, o_proj wo_a exact-requant onto the fp8 einsum) plus round-11 parallel Engram staging (DSV41_ENGRAM_FAST_STAGE=1, default on since run.sh). KV pool 8 GiB, DSpark-5 greedy, CUDA graphs, vision on, Engram on disk, native p2b CFG=1. bench_decode.py prose phase = streamed greedy 200 tokens thinking off; L.A.I.L prose = 512 tokens temperature 0.2. Prose evidence: results/2026-09-19-e11/cells.log; lail_prose evidence after round-11 fast staging: results/2026-09-19-faststage/02-e2e.log; history in results/RESULTS.md."
     units: {decode: tok/s per stream (median), aggregate: tok/s, ttft_p50: s}
     rows:
       - {phase: prose, concurrency: 1, decode: "34.3", aggregate: "34.3", ttft_p50: "0.29", evidence: results/2026-09-19-e11/cells.log}
-      - {phase: lail_prose, concurrency: 1, decode: "23.3", aggregate: "23.3", ttft_p50: "0.37", evidence: results/2026-09-19-e11/cells.log}
+      - {phase: lail_prose, concurrency: 1, decode: "25.4", aggregate: "25.4", ttft_p50: "0.34", evidence: results/2026-09-19-faststage/02-e2e.log}
 
 links:
   model: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash
