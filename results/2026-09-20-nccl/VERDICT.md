@@ -55,6 +55,10 @@ own. No regression beyond noise anywhere → **KEEP**.
 - `results/2026-09-20-nccl/04-lail.log` + `04-lail-rerun.log` — both L.A.I.L passes
 - `results/2026-09-20-nccl/00-boot.log` — boot, armed lines, ready at 480s
 - NCCL WARN grep on both nodes' docker logs: 0 matches (head and worker)
+- L.A.I.L runner record: job_id `dcc67f0b824e` (completed,
+  `decode_prose` c=1): decode median **26.39 tok/s** (+4.1% vs 25.34
+  baseline) — third independent confirmation (26.55 in-harness, 26.12
+  re-check, 26.39 via L.A.I.L's own bench).
 
 ## Restore / rollback
 
