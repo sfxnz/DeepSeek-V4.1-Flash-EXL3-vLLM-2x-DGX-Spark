@@ -683,3 +683,14 @@ evidence in `results/2026-09-20-nccl/VERDICT.md`. Prose 34.69 (flat),
 prefill32k 733.0 (+2.1%), L.A.I.L 26.55/26.12, MemAvail 22.29/23.84 GiB
 (+3.5/+2.8). Zero NCCL WARN/error lines on either node. Serve left up with
 the full env set; exact boot in `results/2026-09-20-nccl/boot-arm.sh`.
+
+## 2026-09-20 — engram-pf-v2 arm (NO-GO, REVERTED)
+
+Final campaign arm: Engram prefetch v2 (DSV41_ENGRAM_PREFETCH=1). The v2
+pairing self-check fixed v1's publish-too-late and proved the remaining
+failure is the prediction itself: publishes land before consumption every
+gen, yet pred∩consumed ≈ 0 (pf_hit ~0%, 98/105 census windows); read_w
+already 0.06–0.10 ms cold. L.A.I.L 26.05 (job 243a53d345ca) = parity with
+baseline, not the projected 34–36 tok/s. Reverted to the exact NCCL-arm
+serve. Wiring commit `befa570` stays (dormant, env-guarded). Verdict +
+evidence: `results/2026-09-20-engrampf/VERDICT.md`.

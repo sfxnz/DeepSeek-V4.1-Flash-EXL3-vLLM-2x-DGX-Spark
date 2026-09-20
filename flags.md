@@ -195,6 +195,23 @@ latency. See results/RESULTS.md round 5.
 | N-split warp decomposition (DEC6) | **REJECT** | 758.0 vs 643.3 us cold (−18%); K-split latency spreading wins |
 | p2b variant space | **EXHAUSTED** | K-split+stock layout = local optimum; group-major permute is the sole remaining lever (+6%, needs prefill harness) |
 
+## Round 14 — Engram prefetch v2 (2026-09-20): NO-GO, REVERTED
+
+v2 patch (per-table immediate publish, gen-stamped union, exact fadvise spans,
+paired census) wired at `befa570` (dormant while PREFETCH=0; also fixes the
+run.sh:475 worker omission of PF_DUMP + adds PREFETCH_DEBUG fwd on both ranks).
+Booted with PREFETCH=1 on the nccl-set baseline. Pairing self-check worked as
+designed and pinpointed the failure: `[pf-pub]` lands before `[pf-pair]` every
+gen (publish timing FIXED — v1's publish-too-late bug is dead), yet
+table_pred_id ≠ consumed_id on ~88% of 80 pairs, intersect ≈0 (sum 88/72 rows
+over 40 pairs/rank); census pf_hit ~0% (98/105 windows 0%), read_w already
+0.06–0.10 ms cold. L.A.I.L 25.23 cold / 26.79 warm / job 26.05 = parity, not
+≥28. Doc's "pairing still wrong" branch — but the divergence is now on the
+PREDICTION side (rows hashed ≠ rows the next gather reads), not delivery;
+direct-pread next lever NOT indicated. Serve reverted to the exact NCCL-arm
+config (boot-arm.sh), wiring commit stays dormant. Evidence:
+results/2026-09-20-engrampf/ (VERDICT.md, pf-evidence-spark{1,2}.log).
+
 ## Round 12 — NCCL AR-tail set (2026-09-20)
 
 | axis | verdict | evidence |
