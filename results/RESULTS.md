@@ -674,3 +674,12 @@ profiler flushes (wait >10 s after stop_profile).
   ~3-4 ms, gaps ~11-13 ms. 35 tok/s at acc 2.3 needs a 66 ms step:
   p2b group-major pack (+6% kernel, needs prefill no-regression proof) +
   dense fusion or the prefetch above are the remaining paths.
+
+## 2026-09-20 — nccl-set arm (KEEP)
+
+NCCL buffer/proto/channel set (BUFFSIZE=1M, LL128_BUFFSIZE=256K, PROTO='^LL128',
+MAX_NCHANNELS=8) on the mem-hygiene baseline. Wiring `1a43d15`; verdict +
+evidence in `results/2026-09-20-nccl/VERDICT.md`. Prose 34.69 (flat),
+prefill32k 733.0 (+2.1%), L.A.I.L 26.55/26.12, MemAvail 22.29/23.84 GiB
+(+3.5/+2.8). Zero NCCL WARN/error lines on either node. Serve left up with
+the full env set; exact boot in `results/2026-09-20-nccl/boot-arm.sh`.

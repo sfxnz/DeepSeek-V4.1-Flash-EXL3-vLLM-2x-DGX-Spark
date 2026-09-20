@@ -194,3 +194,9 @@ latency. See results/RESULTS.md round 5.
 |---|---|---|
 | N-split warp decomposition (DEC6) | **REJECT** | 758.0 vs 643.3 us cold (−18%); K-split latency spreading wins |
 | p2b variant space | **EXHAUSTED** | K-split+stock layout = local optimum; group-major permute is the sole remaining lever (+6%, needs prefill harness) |
+
+## Round 12 — NCCL AR-tail set (2026-09-20)
+
+| axis | verdict | evidence |
+|---|---|---|
+| NCCL_BUFFSIZE=1M + LL128_BUFFSIZE=256K + PROTO='^LL128' + MAX_NCHANNELS=8 (on mem-hygiene baseline) | **KEEP** | prose flat (34.69 vs 34.67 re-run; first pass 31.59 = cold-cache artifact), prefill32k +2.1% (733.0), L.A.I.L 26.55/26.12 both above 25.2–26.3 band, MemAvail +3.5/+2.8 GiB/rank (pinned-buffer shrink 4.7→0.14 GiB realized), zero NCCL WARN lines both nodes. results/2026-09-20-nccl/ |
