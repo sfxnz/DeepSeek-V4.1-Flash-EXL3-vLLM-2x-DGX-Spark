@@ -4,7 +4,7 @@ Serve an EXL3 pack of `deepseek-ai/DeepSeek-V4.1-Flash` at TP=2. Local image `ds
 
 Humans read [README.md](README.md).
 
-The public path is clone, `hf download` of `sfxnz/DeepSeek-V4.1-Flash-EXL3` at `2.0bpw-mcg`, image build on both nodes, then `./run.sh`. `run.sh` resolves Hub `refs/<rev>` to `snapshots/<commit>/`. It also accepts an assembled pack at `snapshots/2.0bpw-mcg`. Rebuild defaults to MUL1 (`2.0bpw-mul1`) and needs p2b `cb=2`. Pack-only MUL1 is a decode regression.
+The public path is clone, `hf download` of `sfxnz/DeepSeek-V4.1-Flash-EXL3` at `2.0bpw-mcg`, image build on both nodes, then `./run.sh`. `run.sh` resolves Hub `refs/<rev>` to `snapshots/<commit>/`. It also accepts an assembled pack at `snapshots/2.0bpw-mcg`. Rebuild tools can write `2.0bpw-mul1` and need p2b `cb=2`. Do not switch the serve pin: MUL1 + p2b `cb=2` lost prose decode (23.52 vs 27.98). Pack-only MUL1 is also a decode regression.
 
 ## Working rules
 
@@ -15,6 +15,8 @@ The public path is clone, `hf download` of `sfxnz/DeepSeek-V4.1-Flash-EXL3` at `
 - Default thinking is off. `chat_template_kwargs`: `thinking=false`, `reasoning_effort=low`. Tokenizer/tool/reasoning parsers are `deepseek_v41`.
 - DeepJIT is a CUDA/Ascend kernel JIT library, not a serving stack. Official V4.1 kernels in the HF `inference/` tree are TileLang. Do not vendor DeepJIT into this image.
 - Stay at EXL3 K=2. Calibrate before raising bits. Do not raise `MAX_NUM_SEQS` before a new occupancy row. DSpark block stays 5.
+- Keep `--max-num-batched-tokens` at 2048. spark1+spark2 measured 8192 at 12,712 tokens as 755 vs 797 tok/s (−5%). Do not ship 8192 as a proven prefill upgrade. Override is `MAX_NUM_BATCHED_TOKENS=8192`.
+- Serve stays `SNAPSHOT_SHA=2.0bpw-mcg`. MUL1 + p2b `cb=2` measured 23.52 vs 27.98 prose decode. Prefill 792 vs 797 is flat and does not change the call.
 
 `ORCHESTRATE=auto` (default): if SSH to `WORKER_HOST` fails, `run.sh` exits 1. Do not start a TP=2 head rank alone.
 

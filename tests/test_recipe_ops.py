@@ -397,17 +397,24 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("lm_only=0", proc.stdout)
         self.assertNotIn("--language-model-only", proc.stdout)
 
-    def test_default_prefill_batch_is_8192_and_hub_rev_stays_mcg(self) -> None:
-        self.assertEqual(_recipe()["serve"]["env"]["MAX_NUM_BATCHED_TOKENS"], "8192")
+    def test_default_prefill_batch_stays_2048_and_hub_rev_stays_mcg(self) -> None:
+        self.assertEqual(_recipe()["serve"]["env"]["MAX_NUM_BATCHED_TOKENS"], "2048")
         self.assertEqual(_recipe()["serve"]["env"]["MM_ENCODER_TP_MODE"], "data")
         self.assertEqual(_recipe()["serve"]["env"]["SNAPSHOT_SHA"], HUB_REV)
         self.assertEqual(HUB_REV, "2.0bpw-mcg")
         run = _read("run.sh")
-        self.assertIn('MAX_NUM_BATCHED_TOKENS="${MAX_NUM_BATCHED_TOKENS:-8192}"', run)
+        self.assertIn('MAX_NUM_BATCHED_TOKENS="${MAX_NUM_BATCHED_TOKENS:-2048}"', run)
         self.assertIn('MM_ENCODER_TP_MODE="${MM_ENCODER_TP_MODE:-data}"', run)
         row = _defaults_row("`--max-num-batched-tokens`")
-        self.assertIn("8192", row)
+        self.assertIn("2048", row)
+        self.assertNotIn("8192", row)
         self.assertIn("data", _defaults_row("`--mm-encoder-tp-mode`"))
+        readme = _read("README.md")
+        self.assertIn("−5%", readme)
+        self.assertIn("12,712", readme)
+        self.assertIn("23.52", readme)
+        self.assertIn("27.98", readme)
+        self.assertIn("2.0bpw-mcg", _recipe()["serve"]["env"]["SNAPSHOT_SHA"])
 
     def test_locator_prefers_refs_commit_over_named_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as d:

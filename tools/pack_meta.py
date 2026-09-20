@@ -6,8 +6,9 @@ MXFP8/MXFP4/BF16 layout, including Engram tables (read from disk at serve).
 DSpark draft experts stay source-format from backbone layer 40.
 
 Codebook is a named pair (marker suffix, p2b cb). MCG is cb=1. MUL1 is cb=2.
-The published Hub pin is still 2.0bpw-mcg. Rebuild defaults to MUL1 so a
-matching p2b cb=2 kernel can use ExLlamaV3's current optimized paths.
+The published Hub pin is still 2.0bpw-mcg. Rebuild tools default to MUL1
+and p2b cb=2 exists so a later pack can use it. spark1+spark2 measured
+MUL1 + cb=2 at 23.52 vs 27.98 prose decode. Do not switch the serve pin.
 A pack-only swap without cb=2 drops native p2b onto generic exl3_moe.
 """
 from __future__ import annotations
