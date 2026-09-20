@@ -1,0 +1,32 @@
+{
+  "arm": "baseline-live",
+  "ts": "2026-09-20T16:23:21Z",
+  "host": "spark1",
+  "serve_image": "dsv41-flash-exl3-sm121:canonical-e12",
+  "serve_cmd_digest": "28b56d8e0f5d24661811c15420affa81bd3479b2ba243fe264bb27bcae4aa85c",
+  "prose_median_tok_s": 34.53,
+  "prose_runs": [
+    31.29,
+    29.23,
+    34.81,
+    36.38,
+    30.64,
+    36.07,
+    28.28,
+    36.0,
+    34.53
+  ],
+  "acceptance": 2.837,
+  "prefill_8k_tok_s": 693.3,
+  "prefill_32k_tok_s": 715.0,
+  "lail_prose_median_tok_s": 25.71,
+  "lail_runs": [
+    25.71,
+    25.24,
+    26.28
+  ],
+  "memavail_after_prefill_gib_spark1": 12.98,
+  "memavail_after_prefill_gib_spark2": 14.72,
+  "notes": "number 3 (MoE/attention ms per layer at shipped chunk) NOT captured: no live probe exists; documented fallback = boot knobs DSV41_STEP_CENSUS=1 / DSV41_ENGRAM_CENSUS=1 (decode-side only; E0 prefill-flush caveat), real profiling is a separate gated step (TODO). serve_cmd_digest = sha256(json.dumps(Config.Cmd list)). MemAvailable read on both nodes immediately after the 32k prefill, before the L.A.I.L runs.",
+  "partial": false
+}
