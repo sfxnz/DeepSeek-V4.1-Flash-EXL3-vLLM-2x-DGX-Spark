@@ -1,0 +1,81 @@
+# Mul1-lane boot — proposed serve env/flag DELTA vs our current run.sh
+# ===================================================================
+# Boot A: "mul1 lane STOCK BASELINE" — Mia's GHCR image + her 2.9bpw mul1
+# pack, NO cooperative overlay. One lever: the model lane. Everything else
+# is her validated default or our pinned safety floor. Coop is Boot B
+# (separate boot, adds ONLY EXL3_OVERLAY_HOST — see bottom).
+#
+# Context: our current serve = MCG pack on dsv41-flash-exl3-sm121:canonical-e12
+# via ./run.sh (our stack: vllm_exl3 plugin; hers: overlay exl3.py — the coop
+# extension is inert on ours, see docker/cooperative/BUILD.md §1). This boot
+# runs HER stack: clone mia-exl3-ref on the head, configure .env, her
+# ./start.sh. Pack already in HF cache on both sparks:
+# models--Mia-AiLab--DeepSeek-V4.1-Flash-EXL3-2.9bpw (~197G, quant_method=exl3
+# verified). Her launcher auto-downloads/verifies if missing (AUTO_DOWNLOAD).
+#
+# HOST SAFETY (our floors, non-negotiable — from parent constraint):
+#   - free -h before boot: require MemAvailable >= 10 GiB on BOTH sparks,
+#     else ABORT (live serve is NOT touched by this boot; it must be stopped
+#     first per exclusive-GPU rule — coordinate with the serve owner).
+#   - Monitor MemAvailable during boot + first 10 min; ABORT (stop both
+#     ranks) if < 10 GiB. Her kit reference: weights ~99.5 GiB/rank of the
+#     121.7 GiB UMA; her validated boot left 5.18-5.65 GiB min MemAvailable
+#     (docs/cooperative-moe.md:111-114) — our 10 GiB abort floor is
+#     deliberately stricter than her observed low-water.
+#   - Her weights are Engram-on-disk too? NO — her pack bundles Engram in
+#     the checkpoint (HF_ENGRAM_REPO separate ~190G; her kit defaults
+#     ENGRAM_DIR=./engram-src). Disk: 609G free on spark1 — CHECK spark2
+#     disk before enabling AUTO_DOWNLOAD=1 there.
+#   - Measurement: ours tools/four_numbers.sh (HTTP-only, any port) —
+#     no GPU/docker access needed. Port: her default 8888 (PORT=8888).
+
+# ── Her .env (deliberate deviations from her .env.example defaults) ──
+IMAGE=ghcr.io/miaai-lab/deepseek-v4.1-flash-exl3-2x-dgx-sparks:2.9bpw   # her validated public tag (digest sha256:2f0cf3ad…; local already)
+SKIP_PULL=1          # image already pulled on spark1 (ID 4cdba4e9…); rsync-ship to spark2 via her IMAGE_SHIP=rsync or docker save|load
+HF_MODEL_REPO=Mia-AiLab/DeepSeek-V4.1-Flash-EXL3-2.9bpw   # her pack; in HF cache both sparks
+DSPARK_TOKENS=3      # [DEVIATION: her default 5] her measured optimum for interactive decode (k=3 28 tok/s vs k=5 25, .env.example "DSPARK_TOKENS=3" note); quickstart bench used k=3
+# Capture sizes '1 2 3 4 6 8 12 18 24' = her start.sh:185 default — nothing to set. [KEEP STOCK]
+MAX_NUM_BATCHED_TOKENS=1536   # [KEEP] her validated default (vision-on requires >=1536)
+LANGUAGE_MODEL_ONLY=0         # [KEEP] her default; vision validated 2026-09-13 (her .env.example)
+# Long-prefill threshold: her benchmark boot used 2816 with MNBT 3072; her
+# shipped default pairs 1536 (disabled). [KEEP STOCK — do NOT set 2816 with 1536]
+
+# ── Kernel lane knobs (identical in Boot A and Boot B — set once) ──
+EXL3_FUSED_MOE=1        # fused decode path on (runtime gate: ours would be stock dispatch without it; her overlay reads it at overlay/exl3.py:543)
+EXL3_FAT_GROUPED=1      # E3v2 grouped kernels for prefill-side large batches (her .env.example; overlay/e3v2 built into her image)
+EXL3_TEMP_ROWS_FUSED=16 # fused-rows cap: >= MAX_NUM_SEQS x (k+1) = 2x4 = 8; 16 = her measured optimum (.env.example: "cap 16 17ms vs cap 32 34ms/layer")
+EXL3_FAT_KERNEL=0       # E2 K4/MCG-only kernels OFF (this is a mul1 pack; .env.example)
+# KV dtype: UNSET (her native CSA2 KV is FP4 ~890B/token, "Do not set GLM's fp8_ds_mla" — .env.example KV_CACHE_DTYPE comment)
+# KV pool: her validated pin. ~99.5G weights/rank leaves ~22G for everything else; her 2.5 GiB pool = 774,400 tokens @600k ctx (1.26x one 600k request).
+KV_CACHE_MEMORY_BYTES=2684354560
+MAX_MODEL_LEN=600000    # her validated default (shipped); 600k is the setting her +23.9% decode claim was measured at
+MAX_NUM_SEQS=2          # her default; also the coop contract needs <=8 physical rows — 2 reqs x (k+1)=4 rows max. OK.
+KV_BLOCK_SIZE=64
+# Stream contract — REQUIRED for coop (Boot B) and her validated lane config (Boot A keeps them too; they were her boots 11-14 deadlock fix):
+DSV41_EXL3_SERIAL_STREAMS=1
+VLLM_DISABLE_SHARED_EXPERTS_STREAM=1
+# Memory hygiene (her validated defaults, keep):
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+DSV41_DROP_PAGE_CACHE=1
+DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192
+DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=2.5
+DSV41_IO_THREADS=96
+DSV41_BOOT_SHAPE_WARMUP=1
+GPU_MEM_UTIL=0.88
+
+# ── Not set in this boot (one-lever rule) ──
+# EXL3_OVERLAY_HOST: unset (stock overlay; her start.sh:168 default → overlay/exl3.py of her kit)
+# DSV41_COOPERATIVE_MOE: unset (does nothing without the overlay anyway)
+# PREFIX_CACHE_RETENTION_INTERVAL: leave at her repo default (her HEAD defaults 4096 —mia-exl3-ref commit 0b5654d; fine)
+# NCCL pins: her .env.example CX7 section — MUST be adapted to our spark1/spark2 wiring (HEAD_CX7_IF etc.) at boot time; not a lever, wiring.
+
+# ── Boot B delta (LATER, separate boot; adds ONLY this) ──
+# EXL3_OVERLAY_HOST=/opt/dsv41/coop/exl3-coop.py   # in coop-e1 image (sha d5291f08…); stage overlay+artifacts identically on BOTH ranks first (BUILD.md §3)
+# (all other knobs identical to Boot A; DSV41_COOPERATIVE_MOE stays unset — the overlay's install(enabled=True) is the activation)
+
+# ── Validation gates for Boot A ──
+# 1. Both ranks healthy, her warmups complete (her start.sh waits; 14 warmup requests reference in docs/cooperative-moe.md:111)
+# 2. Smoke: 17*19 chat completion → expect "323", finish_reason stop (her quickstart:250-254); ours smoke_chat.py against PORT
+# 3. ours tools/four_numbers.sh → record baseline decode/acceptance for the coop A/B
+# 4. tests/ correctness: her kit tests are CPU-only (her README §Tests); ours tests/correctness.sh --full targets our stack —
+#    for her stack use the 17*19+323 smoke + four_numbers prose cells as the gate this boot.

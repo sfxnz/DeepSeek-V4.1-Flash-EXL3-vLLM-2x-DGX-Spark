@@ -1,0 +1,117 @@
+# Cooperative MoE extension layer for Mia's DS4.1 EXL3 2.9bpw mul1 image.
+#
+# BUILDS FROM SOURCE onto her public GHCR image (parent decision: functional
+# validation replaces her unpublished sha pin a09a589c… — GitHub issue #17).
+# Base image ID sha256:4cdba4e946da… = her validated build (quickstart step 2).
+#
+# WHY NOT canonical-e12: her runtime.py monkeypatches Exl3MoEMethod /
+# apply_exl3_fused_moe and reads layer attrs (_exl3_k_gate/_exl3_k_up/
+# _exl3_k_down/_exl3_mul1/_exl3_mcg — runtime.py:33-55) that only HER overlay
+# exl3.py sets (overlay/exl3.py:1512-1516). Our vllm_exl3 plugin fork
+# (canonical-e12, module sha afc6da3e…) sets _exl3_codebook_flags instead and
+# none of those attrs -> layer_eligible() is False on every layer: the
+# adapter installs but stays permanently inert. Coop lane = her image.
+#
+# Artifacts land in /opt/dsv41/coop (image-local, NOT /root/.cache/vllm/... —
+# her launcher mounts the host vllm cache over that path at serve time and
+# would shadow anything baked there). Activation is still a generated overlay
+# selected via EXL3_OVERLAY_HOST (see cooperative/BUILD.md).
+
+ARG BASE=ghcr.io/miaai-lab/deepseek-v4.1-flash-exl3-2x-dgx-sparks:2.9bpw
+FROM ${BASE}
+
+# 1) Sources: her extension, vendored byte-for-byte (MIT, LICENSE kept).
+#    Layout matches her build.sh's own directory contract: it reads
+#    native/{cooperative_moe.cu,cooperative_moe_kernel.cuh,exl3_moe_coop.cuh}
+#    and runtime.py relative to its own location (build.sh lines 9, 22-27).
+COPY cooperative/native/cooperative_moe.cu /tmp/coop-src/native/cooperative_moe.cu
+COPY cooperative/native/cooperative_moe_kernel.cuh /tmp/coop-src/native/cooperative_moe_kernel.cuh
+COPY cooperative/native/exl3_moe_coop.cuh /tmp/coop-src/native/exl3_moe_coop.cuh
+COPY cooperative/native/LICENSE.exllamav3 /tmp/coop-src/native/LICENSE.exllamav3
+COPY cooperative/build.sh /tmp/coop-src/build.sh
+COPY cooperative/runtime.py /tmp/coop-src/runtime.py
+
+# 2) Upstream headers: exllamav3_ext tree pinned at her commit
+#    02aef45cd681b960a00afcd0749a4ab99e6c1bfe (archive_upstream.sh pin),
+#    vendored on the host via cooperative/fetch-upstream.sh (codeload tarball;
+#    base image has no git — same route her own Dockerfile uses).
+COPY cooperative/upstream/exllamav3.tar.gz /tmp/coop-src/upstream.tar.gz
+
+# 3) Compile with her exact build.sh: it stages
+#    out/upstream/exllamav3/exllamav3_ext/{quant/...}, the pinned kernel
+#    header names, and runs nvcc with -gencode arch=compute_121a,code=sm_121a
+#    -std=c++17 -O3 --use_fast_math -lineinfo --expt-relaxed-constexpr
+#    -Xcompiler -fPIC --ptxas-options=-v (build.sh lines 33-40).
+#    MAX_JOBS/OMP threads capped for the host RAM floor (live serve resident;
+#    nvcc itself is single-shot per TU, MAX_JOBS honored for any host-side
+#    packaging steps). CPATH adds the vLLM image's cu13 headers (her
+#    Dockerfile:97-99 route; the standalone C ABI needs no ATen).
+ARG MAX_JOBS=2
+RUN set -eux; \
+    mkdir -p /tmp/coop-tree /tmp/coop-out; \
+    tar -xzf /tmp/coop-src/upstream.tar.gz -C /tmp/coop-tree; \
+    test -d /tmp/coop-tree/exllamav3/exllamav3/exllamav3_ext; \
+    PY_SITE="$(python3 -c 'import site; print(site.getsitepackages()[0])')"; \
+    export CPATH="${PY_SITE}/nvidia/cu13/include${CPATH:+:$CPATH}"; \
+    export CPLUS_INCLUDE_PATH="${PY_SITE}/nvidia/cu13/include${CPLUS_INCLUDE_PATH:+:$CPLUS_INCLUDE_PATH}"; \
+    export C_INCLUDE_PATH="${PY_SITE}/nvidia/cu13/include${C_INCLUDE_PATH:+:$C_INCLUDE_PATH}"; \
+    NVCC=/usr/local/cuda/bin/nvcc MAX_JOBS="${MAX_JOBS}" OMP_NUM_THREADS=1 \
+      bash /tmp/coop-src/build.sh /tmp/coop-tree/exllamav3 /tmp/coop-out \
+      || { cat /tmp/coop-out/cooperative_moe-build.log >&2; exit 1; }; \
+    sha256sum /tmp/coop-out/cooperative_moe.so /tmp/coop-out/runtime.py
+
+# 4) Install to /opt/dsv41/coop. runtime.py's SHA256 pin (runtime.py:19,
+#    asserted at CDLL load: runtime.py:84) is re-pointed at OUR built digest
+#    — the load-time check stays active, just against the binary we built and
+#    functionally validated (boot log line + smoke + integration gate replace
+#    the unpublished-pin acceptance). Fail-closed sed: build aborts unless
+#    exactly the one pin line changes.
+RUN set -eux; \
+    mkdir -p /opt/dsv41/coop; \
+    OUR_SHA="$(sha256sum /tmp/coop-out/cooperative_moe.so | cut -d' ' -f1)"; \
+    sed -i "s/^SHA256 = \"a09a589cbdcecb5372991c7b091d732236d58bc5f5aea14ab91e38e426f08d78\"$/SHA256 = \"${OUR_SHA}\"/" /tmp/coop-out/runtime.py; \
+    test "$(grep -c '^SHA256 = ' /tmp/coop-out/runtime.py)" = 1; \
+    grep -q "^SHA256 = \"${OUR_SHA}\"$" /tmp/coop-out/runtime.py; \
+    grep -q '^SHA256 = ' /tmp/coop-out/runtime.py; \
+    ! grep -q a09a589c /tmp/coop-out/runtime.py; \
+    install -m 644 /tmp/coop-out/cooperative_moe.so /opt/dsv41/coop/cooperative_moe.so; \
+    install -m 644 /tmp/coop-out/runtime.py /opt/dsv41/coop/runtime.py; \
+    install -m 755 /tmp/coop-src/build.sh /opt/dsv41/coop/build.sh; \
+    install -m 644 /tmp/coop-src/native/LICENSE.exllamav3 /opt/dsv41/coop/LICENSE.exllamav3; \
+    sha256sum /opt/dsv41/coop/cooperative_moe.so /opt/dsv41/coop/runtime.py; \
+    echo "COOP_SO_SHA256=${OUR_SHA}"
+
+# 5) Generate the opt-in overlay (her prepare_profile.py contract, pinned to
+#    OUR artifacts; still enforces her stock-overlay sha ccdc69bf…).
+COPY cooperative/make_coop_overlay.py /tmp/coop-src/make_coop_overlay.py
+RUN set -eux; \
+    python3 /tmp/coop-src/make_coop_overlay.py \
+      --stock /opt/dsv41/exl3.py \
+      --artifacts /opt/dsv41/coop \
+      --runtime-directory /opt/dsv41/coop \
+      --output /opt/dsv41/coop/exl3-coop.py; \
+    sha256sum /opt/dsv41/coop/exl3-coop.py
+
+# 6) Baked-in CPU-only self-checks (no GPU in this build): her dispatch test
+#    (torch-stubbed; exercises install()/eligibility/stream-contract gates on
+#    the re-pinned runtime) + py_compile + pin-vs-binary match. ABI probing
+#    (goal50_coop_info) needs a live CUDA device -> serve-time gate covers it.
+COPY cooperative/test_dispatch.py /opt/dsv41/coop/test_dispatch.py
+COPY cooperative/test_cuda_integration.py /opt/dsv41/coop/test_cuda_integration.py
+RUN set -eux; \
+    python3 -m py_compile /opt/dsv41/coop/runtime.py /opt/dsv41/coop/exl3-coop.py; \
+    python3 /opt/dsv41/coop/test_dispatch.py; \
+    python3 - <<'PY'
+import hashlib, pathlib
+root = pathlib.Path("/opt/dsv41/coop")
+sha = hashlib.sha256((root / "cooperative_moe.so").read_bytes()).hexdigest()
+rt = (root / "runtime.py").read_text()
+assert f'SHA256 = "{sha}"' in rt, "runtime.py pin must match built .so"
+print("coop self-check ok: pin matches built .so:", sha)
+PY
+
+# 7) Cleanup build tree (keep /opt/dsv41/coop + the .so build log for audit).
+RUN set -eux; \
+    mkdir -p /opt/dsv41/coop/build; \
+    mv /tmp/coop-out/cooperative_moe-build.log /opt/dsv41/coop/build/ 2>/dev/null || true; \
+    rm -rf /tmp/coop-src /tmp/coop-tree /tmp/coop-out
