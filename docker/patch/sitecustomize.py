@@ -27,6 +27,18 @@ try:
 except Exception:
     pass
 
+# Indexer prefill gather workspace: stock max_model_len*40 entries (~5.3 GiB
+# per rank at 1M ctx) locked for process life. DSV41_INDEXER_PREFILL_FACTOR=1
+# right-sizes it to max_model_len*1 (~130 MB). Unset = stock no-op.
+try:
+    from pathlib import Path as _Pw
+
+    from indexer_workspace import apply as _apply_idx_ws
+
+    _apply_idx_ws(_Pw("/usr/local/lib/python3.12/dist-packages/vllm"))
+except Exception as _idx_ws_err:
+    print(f"dsv41: indexer workspace patch skipped: {_idx_ws_err!r}", flush=True)
+
 # sm120_wo_a unwired. b12x wo_a_dense_gemm_mxfp8 waves 21.23/23.00; not
 # faster than Emulation torch.bmm. wo_a is not the remaining 22ms.
 
@@ -140,6 +152,25 @@ try:
         Worker.compile_or_warm_up_model = lambda self: CompilationTimes(0.0, 0.0)
 except Exception:
     pass
+
+# mem-hygiene bundle (env-guarded no-ops when their envs are unset):
+# 1) fadvise DONTNEED on shard files after weight load — the GB10 driver
+#    allocates from MemFree and does not reclaim clean page cache
+#    (DSV41_DROP_PAGE_CACHE=1).
+# 2) torch.cuda.empty_cache() after long prefill chunks while MemAvailable is
+#    under the floor (DSV41_PREFILL_EMPTY_CACHE_TOKENS / _MEMAVAIL_GIB).
+try:
+    from drop_page_cache import install as _install_dpc
+
+    _install_dpc()
+except Exception as _dpc_err:
+    print(f"dsv41: drop-page-cache install skipped: {_dpc_err!r}", flush=True)
+try:
+    from prefill_empty_cache import install as _install_pec
+
+    _install_pec()
+except Exception as _pec_err:
+    print(f"dsv41: prefill-empty-cache install skipped: {_pec_err!r}", flush=True)
 
 # FlashInfer SM120 DSV4 decode is compiled only for page_block_size=64.
 # Upstream V4.1 hardcodes SWA pages to 32 (DeepGEMM paged-MQA).
