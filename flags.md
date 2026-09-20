@@ -217,3 +217,11 @@ Verdicts: pack+kernels healthy (spec-off matches her ~23; mul1 32k prefill
 pathology (her draft-wo-a-slices patch skipped). Mul1 lane parked at
 SPEC_METHOD=none until a draft fix; coop Boot B deferred (its 40.2 ceiling
 assumes healthy acceptance). Evidence: results/2026-09-20-mul1-lane/.
+
+### Round 13a — mul1 A3: draft_sample_method=greedy (REFUTED)
+
+Forcing greedy drafting moved greedy-verify acceptance 1.32 → 1.36 (noise);
+prose 16.80. Sampling method is not the pathology. Signature stands: drafter
+agrees with sampled decoding (2.08 @ t=0.2) but is systematically wrong under
+greedy verify. Lane parked at SPEC_METHOD=none; Boot B (coop) blocked until a
+draft fix. Evidence: results/2026-09-20-mul1-lane/BOOT-A3-VERDICT.md.
