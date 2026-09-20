@@ -200,3 +200,20 @@ latency. See results/RESULTS.md round 5.
 | axis | verdict | evidence |
 |---|---|---|
 | NCCL_BUFFSIZE=1M + LL128_BUFFSIZE=256K + PROTO='^LL128' + MAX_NCHANNELS=8 (on mem-hygiene baseline) | **KEEP** | prose flat (34.69 vs 34.67 re-run; first pass 31.59 = cold-cache artifact), prefill32k +2.1% (733.0), L.A.I.L 26.55/26.12 both above 25.2–26.3 band, MemAvail +3.5/+2.8 GiB/rank (pinned-buffer shrink 4.7→0.14 GiB realized), zero NCCL WARN lines both nodes. results/2026-09-20-nccl/ |
+
+## Round 13 — mul1 lane A/B on 2x Spark (2026-09-20)
+
+Mia-AiLab 2.9bpw pack on her stock GHCR image, our topology (spark2 CX7=f1/GID1,
+NFS weights+engram over QSFP), k=3 dspark vs spec off:
+
+| arm | prose c=1 | prefill 8k / 32k | LAIL t0.2 | MemAvail s1/s2 |
+|---|---|---|---|---|
+| k=3 dspark | 16.35 (acc 1.32, draft 0.108) | 593.7 / 711.7 | 25.63 | 5.3 / 6.7 |
+| spec off | **23.64** | 587.9 / **845.6** | 23.46 | 8.8 / 10.0 |
+| MCG lane ref | 34.69 | 690 / 733 | 26.39 | 22.3 / 23.8 |
+
+Verdicts: pack+kernels healthy (spec-off matches her ~23; mul1 32k prefill
++15% over MCG). k=3 drafting actively harmful in our boots — draft/verify
+pathology (her draft-wo-a-slices patch skipped). Mul1 lane parked at
+SPEC_METHOD=none until a draft fix; coop Boot B deferred (its 40.2 ceiling
+assumes healthy acceptance). Evidence: results/2026-09-20-mul1-lane/.
