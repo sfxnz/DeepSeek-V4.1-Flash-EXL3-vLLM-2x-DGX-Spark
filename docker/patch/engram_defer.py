@@ -195,6 +195,7 @@ STAGER_METHODS = MARKER + '''
             self._df_stats = [0, 0, 0, 0, 0.0]
             self._df_att = 0
             self._df_miss_logs = 0
+            self._df_seen_gen = 0
             self._df_census = _os.environ.get("DSV41_ENGRAM_CENSUS", "0") == "1"
             self._df_every = int(
                 _os.environ.get("DSV41_ENGRAM_CENSUS_EVERY", "32")
@@ -266,6 +267,24 @@ STAGER_METHODS = MARKER + '''
                 else self._df_omax,
                 self._df_omax,
             )
+            # Boot-2 evidence: an adaptive-verification micro-step calls
+            # this hook with a malformed snapshot (sum(qsl[1:]) !=
+            # num_tokens). Enqueueing it would churn _df_gen, make the
+            # GOOD worker abandon (gen check) and make stage() reject the
+            # good ready as superseded -> 0% hits. Skip malformed shapes.
+            qsl_l = [
+                int(x)
+                for x in query_start_loc[: num_reqs + 1].tolist()
+            ]
+            if (
+                len(qsl_l) != num_reqs + 1
+                or qsl_l[0] != 0
+                or sum(qsl_l[1:]) != num_tokens
+                or any(
+                    qsl_l[i + 1] <= qsl_l[i] for i in range(num_reqs)
+                )
+            ):
+                return
             self._df_stream.wait_stream(_torch.cuda.current_stream())
             with _torch.cuda.stream(self._df_stream):
                 self._df_pin_ids[:num_tokens].copy_(
@@ -275,7 +294,9 @@ STAGER_METHODS = MARKER + '''
                     positions[:num_tokens].to(_torch.int64), non_blocking=True
                 )
                 self._df_pin_qsl[: num_reqs + 1].copy_(
-                    query_start_loc[: num_reqs + 1].to(_torch.int64),
+                    _torch.tensor(
+                        qsl_l, dtype=_torch.int64, pin_memory=True
+                    ),
                     non_blocking=True,
                 )
                 if window is not None and window.numel():
@@ -555,6 +576,13 @@ STAGER_METHODS = MARKER + '''
                                  % (self._df_gen, self.defer_on))
                 self._defer_census_tick()
                 return False
+            if ready["gen"] <= getattr(self, "_df_seen_gen", 0):
+                self._defer_miss("already-consumed",
+                                 "ready_gen=%d seen=%d"
+                                 % (ready["gen"],
+                                    getattr(self, "_df_seen_gen", 0)))
+                self._defer_census_tick()
+                return False
             if ready["gen"] != self._df_gen:
                 self._defer_miss("superseded", "ready_gen=%d cur=%d"
                                  % (ready["gen"], self._df_gen))
@@ -597,9 +625,11 @@ STAGER_METHODS = MARKER + '''
             except Exception as exc:  # noqa: BLE001
                 self._defer_disarm(f"join error: {exc!r}")
                 return False
+            self._df_seen_gen = ready["gen"]
             if self._df_warm < self._df_warm_n:
                 self._df_warm += 1
                 st[0] += 1
+                self._defer_census_tick()
                 return "warm"
             st[0] += 1
             st[4] += ready.get("ms", 0.0)
