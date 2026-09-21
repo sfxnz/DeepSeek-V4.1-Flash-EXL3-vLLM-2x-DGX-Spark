@@ -167,8 +167,12 @@ STAGER_METHODS = MARKER + '''
             ):
                 return
             k = min(int(draft_tokens.shape[1]), self._pf_kmax)
+            # Order the side stream behind main-stream work queued so far.
+            # MUST be issued while the MAIN stream is current — inside the
+            # with-block below current_stream() IS the side stream and
+            # wait_stream(self) is a no-op (stale-read bug, fixed round 20).
+            self._pf_stream.wait_stream(_torch.cuda.current_stream())
             with _torch.cuda.stream(self._pf_stream):
-                self._pf_stream.wait_stream(_torch.cuda.current_stream())
                 self._pf_pin_ids[:num_tokens].copy_(
                     input_ids[:num_tokens].to(_torch.int64), non_blocking=True
                 )

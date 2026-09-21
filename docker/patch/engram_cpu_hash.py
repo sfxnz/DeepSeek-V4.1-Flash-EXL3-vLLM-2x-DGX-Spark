@@ -518,8 +518,13 @@ STAGER_METHODS = MARKER + '''\
             self._ch_drain()
             import torch as _torch
 
+            # Order the side stream behind ALL main-stream work queued so far
+            # (incl. the dspark draft-graph replay that writes draft_tokens).
+            # MUST be issued while the MAIN stream is current: inside the
+            # with-block below, current_stream() IS the side stream and
+            # wait_stream(self) is a no-op (the Round-19 stale-draft bug).
+            st["stream"].wait_stream(_torch.cuda.current_stream())
             with _torch.cuda.stream(st["stream"]):
-                st["stream"].wait_stream(_torch.cuda.current_stream())
                 st["pin"]["ids"][:num_tokens].copy_(
                     input_ids[:num_tokens].to(_torch.int64), non_blocking=True
                 )
@@ -876,8 +881,10 @@ STAGER_METHODS = MARKER + '''\
             # (side stream; sync via the event recorded after the copies)
             import numpy as _np
 
+            # Order after main-stream writes of ids/pos/window (see enqueue:
+            # wait_stream must be issued while the MAIN stream is current).
+            st["stream"].wait_stream(_torch.cuda.current_stream())
             with _torch.cuda.stream(st["stream"]):
-                st["stream"].wait_stream(_torch.cuda.current_stream())
                 st["pin"]["aid"][:n].copy_(ids.to(_torch.int64), non_blocking=True)
                 st["pin"]["apos"][:n].copy_(
                     positions.to(_torch.int64), non_blocking=True
@@ -948,8 +955,11 @@ STAGER_METHODS = MARKER + '''\
         # never waits for it.
         from .mm_preprocess import image_sentinel_mask
 
+        # Order the canary hash after this step's main-stream work (see
+        # enqueue: wait_stream must be issued while the MAIN stream is
+        # current — inside the with-block it would self-wait, a no-op).
+        st["stream"].wait_stream(_torch.cuda.current_stream())
         with _torch.cuda.stream(st["stream"]):
-            st["stream"].wait_stream(_torch.cuda.current_stream())
             hashes = self.hash_state(
                 ids,
                 positions,
