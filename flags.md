@@ -383,3 +383,34 @@ Restore k3c UP (smoke 323 ✓, confirm median 27.40, boot spread). Gap to 35:
 writes req_states.draft_tokens — next combine may read that, not the
 speculator buffer); snapshot at the commit hook instead. Mirror is ready.
 Evidence: results/2026-09-21-cpuhash/VERDICT.md.
+
+### Round 20 — CPU-hash stream-ordering fix: ENGAGED end-to-end, REVERT on L.A.I.L
+
+Root cause of the Round-19 PREDICT failure found by source audit (no
+diagnostic boot needed): OUR OWN patch called
+side.wait_stream(torch.cuda.current_stream()) INSIDE
+'with torch.cuda.stream(side):' — a self-wait NO-OP — in all 3 cpu-hash
+side-stream blocks and prefetch-v3's enqueue. The pinned D2H snapshots were
+unordered vs the main stream and raced the dspark draft CUDA-graph replay
+(writes speculator.draft_tokens, dflash/speculator.py:484): bonus row fresh
+(sampler lands earlier), draft rows = previous generation. Refuted the
+Round-19 candidate from source: model_runner.py:1980 scatters propose()'s
+return into req_states.draft_tokens (same tensor the hook reads), combine
+(input_batch.py:445) reads req_states verbatim, set_draft_tokens is
+structured-output-only (draft_tokens_np=None otherwise); commit hook
+(line 1690) runs BEFORE prepare_inputs→stage() (1733) so commit-time
+snapshot would be TOO LATE — enqueue point was right, ordering was wrong.
+Fix (commit 35e05fd): hoist wait_stream(main) before the with-block.
+BOOT (2 of 3 cap used): ENGAGED BOTH RANKS — "cpu-hash ACTIVE (mirror+
+predict bit-exact x4; D2H+event sync removed)", fast-path steps=500+,
+zero canary hits. The Round-19 rule was always correct.
+L.A.I.L n=5 + independent n=5: medians 28.19 / 27.22, all-10 27.46 vs
+k3c 28.76 → sync removal does NOT convert to wall time (off-thread
+pread/dequant gather + per-step canary hash ≈ the sync cost). REVERT the
+env lever; code fix stays dormant (makes a future PREFETCH=1 re-arm
+testable — its ordering bug is also fixed). Restore k3c UP: smoke 323 ✓,
+confirm 30.04/29.37/29.38 median 29.38. Gap to 35: 6.24 — pool attribution
+stands but "delete the sync via CPU-side prediction" is now MEASURED
+END-TO-END and does not recover it; next lever must attack the pool
+differently (overlap/defer the gather, not re-predict the hashes).
+Evidence: results/2026-09-21-cpuhash2/VERDICT.md.
