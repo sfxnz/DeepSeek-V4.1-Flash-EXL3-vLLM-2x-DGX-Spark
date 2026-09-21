@@ -136,15 +136,15 @@ void exl3_gemm_kernel_inner
     // PF-G8: B stored [group of 8 n-tiles][k-block][8*16*bits words].
     // Group g covers n-blocks 8g..8g+7; a k-block row inside a group is
     // 8*16*bits contiguous words (512B at bits=2). Any n-tile window
-    // (TILEBLOCKS_N in {8,16,32}) is whole groups. load_b_gl fully addresses
-    // within the window, so the base is pinned at the window start and the
-    // per-tile k-advance is 0; the window base itself advances by whole
-    // groups (KB_FULL * 8 * 16 * bits words each).
+    // (TILEBLOCKS_N in {8,16,32}) is whole groups. load_b_gl addresses
+    // within the window (its (blk/8) term jumps groups INSIDE the window),
+    // so the window base advances per k-tile by TILEBLOCKS_K group k-rows
+    // and per n-window by whole groups (KB_FULL * 8 * 16 * bits words).
     const int pf_kb_full = size_k / 16;
     int gl_b_stride_k = blocks_n_full * TILEBLOCKS_K * 256 / 16 * bits;
     const int gl_b_stride_n = TILEBLOCKS_N * 256 / 16 * bits;
     const int sh0_b_stride_k = TILEBLOCKS_K * TILEBLOCKS_N * 256 / 16 * bits;
-    if (pf_g8) gl_b_stride_k = 0;
+    if (pf_g8) gl_b_stride_k = TILEBLOCKS_K * 8 * 16 * bits;
     auto pf_b_n_off = [&] (int sn) -> size_t
     {
         return pf_g8

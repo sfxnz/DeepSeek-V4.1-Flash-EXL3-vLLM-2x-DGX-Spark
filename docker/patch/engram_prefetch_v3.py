@@ -215,6 +215,39 @@ STAGER_METHODS = MARKER + '''
         end_a = (start + row_bytes + 4095) & -4096
         _os.posix_fadvise(fd, start_a, end_a - start_a, _os.POSIX_FADV_WILLNEED)
 
+    def _fadvise_rows_capped(self, fd: int, base: int, rows, row_bytes: int) -> None:
+        # --- engram-prefetch-fadvise-cap ---
+        # Round-25 trace: 191 posix_fadvise(WILLNEED)/step (~3.1 ms of
+        # off-thread gap time) with pf_hit 100% — the pages are already
+        # resident, so per-row calls are pure waste. DORMANT by default:
+        # DSV41_ENGRAM_FADVISE_CAP unset/empty = exact legacy per-row
+        # behavior. Set to coalesce sorted rows into contiguous page runs,
+        # ONE fadvise per run, at most DSV41_ENGRAM_FADVISE_CAP calls per
+        # table (~24 = 2 tables x 12 rows); "0" issues none.
+        import os as _os
+
+        env = _os.environ.get("DSV41_ENGRAM_FADVISE_CAP")
+        if env is None or env == "":
+            for row in rows:
+                self._fadvise_row(fd, base, row, row_bytes)
+            return
+        try:
+            cap = int(env)
+        except ValueError:
+            cap = 24
+        if cap == 0 or not rows:
+            return
+        spans = []
+        for row in sorted(rows):
+            start = (base + row * row_bytes) & -4096
+            end = (base + row * row_bytes + row_bytes + 4095) & -4096
+            if spans and start <= spans[-1][1]:
+                spans[-1][1] = max(spans[-1][1], end)
+            else:
+                spans.append([start, end])
+        for start, end in spans[:cap]:
+            _os.posix_fadvise(fd, start, end - start, _os.POSIX_FADV_WILLNEED)
+
     def _pf_set_id(self, rows) -> int:
         import zlib as _zlib
 
@@ -335,9 +368,10 @@ STAGER_METHODS = MARKER + '''
                         v1,
                     )
                     # fadvise FIRST (pages start landing), then publish.
-                    for row in rows:
-                        self._fadvise_row(w_fd, w_off, row, dim)
-                        self._fadvise_row(s_fd, s_off, row, sb)
+                    # --- engram-prefetch-fadvise-cap --- coalesced + capped
+                    # (191/step per-row calls were pure waste at pf_hit 100%)
+                    self._fadvise_rows_capped(w_fd, w_off, rows, dim)
+                    self._fadvise_rows_capped(s_fd, s_off, rows, sb)
                     # Publish gen-stamped; only the newest generation wins.
                     if gen >= self._pf_pub_gen:
                         self._pf_pub_gen = gen
