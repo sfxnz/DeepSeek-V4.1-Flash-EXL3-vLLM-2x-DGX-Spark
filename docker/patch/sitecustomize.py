@@ -98,6 +98,41 @@ try:
 except Exception:
     pass
 
+# PF-G8 loader re-index (results/2026-09-21-pfg8/BOOT-CHAIN-AUDIT.md):
+# DSV41_LOAD_PF_G8=1 serves a G8 pack (trellis [NT/8][KT][8W]) — the loader
+# must narrow the G8 dims (gate/up dim0, down dim1) or TP sharding reads the
+# pack wrong. Install is idempotent; failure here means the image's
+# vllm_exl3/exl3.py no longer matches the patch anchors — serving on would
+# produce garbage, so abort the boot instead of falling back silently.
+try:
+    import os as _os_g8
+
+    if _os_g8.environ.get("DSV41_LOAD_PF_G8", "0") == "1":
+        from pathlib import Path as _Pg8
+
+        from pfg8_loader_reindex import patch as _pfg8_patch
+
+        _exl3_py = _Pg8(
+            "/usr/local/lib/python3.12/dist-packages/vllm_exl3/exl3.py"
+        )
+        _t = _exl3_py.read_text()
+        _out = _pfg8_patch(_t)
+        if _out != _t:
+            _exl3_py.write_text(_out)
+            print("dsv41: pfg8 loader re-index installed", flush=True)
+        else:
+            print("dsv41: pfg8 loader re-index already present", flush=True)
+except SystemExit as _g8_exit:
+    print(f"dsv41: FATAL pfg8 loader re-index failed: {_g8_exit}", flush=True)
+    import os as _os_g8x
+
+    _os_g8x._exit(1)
+except Exception as _g8_err:
+    print(f"dsv41: FATAL pfg8 loader wiring error: {_g8_err!r}", flush=True)
+    import os as _os_g8x
+
+    _os_g8x._exit(1)
+
 # Load vLLM general plugins in every process (API, EngineCore, workers).
 # VLLM_PLUGINS=vllm_exl3 is not enough on this image: EngineCore can resolve
 # --quantization exl3 before load_general_plugins() runs.
@@ -316,6 +351,20 @@ try:
         _v41_attn.write_text(patch_indexer_short_context_source(_v41_attn.read_text()))
 except Exception:
     pass
+
+# lm_head MXFP8 (b12x): DSV41_LMHEAD_MXFP8=1 + quantized tensor in the
+# snapshot. Default-off; self-disarms (one line, never a crash) when the
+# snapshot keeps the bf16 head. Halves the ~735 MB/call vocab-head weight
+# stream (5.35 ms/step bf16 pair, DRAFT-AUX-13MS lever #1).
+try:
+    import os as _os_lmh
+
+    from lmhead_mxfp8 import enabled_from_env as _lmh_enabled, install as _lmh_install
+
+    if _lmh_enabled(_os_lmh.environ):
+        _lmh_install()
+except Exception as _lmh_err:
+    print(f"dsv41: lm_head mxfp8 hook skipped: {_lmh_err!r}", flush=True)
 
 # DSpark Markov scale. 1 = stock sequential bias. 0 = parallel backbone drafts.
 try:
