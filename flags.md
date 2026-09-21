@@ -360,3 +360,26 @@ MemAvail to 3 GiB once → serve stopped before parsing, restored 117/117
 Gap to 35: 6.24 — the CPU-hash patch spans it alone. Evidence:
 results/2026-09-21-trace-attribution/{ATTRIBUTION.md,VERDICT.md}; trace
 kept locally (gitignored). New parsers: parse_gaps{,_stacks,_memcpy}.py.
+
+### Round 19 — CPU-hash REVERT (prediction rule wrong, mirror proven bit-exact)
+
+Built the Round-18 fix as DSV41_ENGRAM_CPU_HASH=1 (commits 03c59e1, ea8bfe8,
+dormant default-off): post-propose snapshot → off-thread reconstruct next
+chunk + numpy mirror of _hash_ids_kernel + pread/dequant; stage() = join+H2D
+only (no GPU hash, no D2H, no hashes_ready.synchronize on the main thread).
+PREMISE CORRECTION: input_ids is a GPU buffer (combine_sampled_and_draft_
+tokens ← GPU-only last_sampled/draft) — "ids host-resident" is false; the
+fix must predict. Offline: 300 fuzz cases bit-exact vs independent scalar
+kernel transcription; chain-apply + real-image dry-run clean; 225 tests OK.
+BOOT 1: armed both ranks, self-disarmed at warmup (single-stage check).
+Disarmed parity 28.87 median ≈ 28.76 (fallback free). BOOT 2 (one retry,
+two-stage warmup): stage A MIRROR PASSED LIVE (CPU hash of ACTUAL ids
+bit-exact vs GPU kernel); stage B PREDICT FAILED — bonus row (row 0)
+matches, draft rows 1-3 differ (positions match, ids differ): the next
+step's draft ids are NOT propose()'s return. This also explains prefetch-v3's
+~33% intersect (bonus-only rows). → REVERT; patch stays dormant in repo.
+Restore k3c UP (smoke 323 ✓, confirm median 27.40, boot spread). Gap to 35:
+6.24. NEXT LEVER: find where draft ids change post-propose (set_draft_tokens
+writes req_states.draft_tokens — next combine may read that, not the
+speculator buffer); snapshot at the commit hook instead. Mirror is ready.
+Evidence: results/2026-09-21-cpuhash/VERDICT.md.
