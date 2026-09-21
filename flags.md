@@ -333,3 +333,30 @@ reverted → abort-early rule: ARM C skipped, serve restored byte-identical to
 boot-k3c.sh (engine log re-verified k3/[1,3,4,6,8]/greedy, smoke 323 ✓,
 confirm job a132c12230a2 = 28.69 ≈ baseline). Gap to 35: still 6.24 (82.2%).
 Evidence: results/2026-09-21-draftk2/VERDICT.md.
+
+### Round 18 — trace attribution: gap = ONE engram hard-sync; SOFTMAX_VERIFY REVERT
+
+BOOT 1 (trace on stock k3c + --profiler-config torch replica): ONE L.A.I.L
+prose request profiled (20.57 s window, 5.02M events). Pure GPU idle
+~14.2 ms/step; **99.9% owned by a single stack**: EngramDiskStager.stage →
+hashes_ready.synchronize() — a hard cudaEventSynchronize in prepare_inputs
+waiting on a tiny D2H hash copy queued behind the previous step's graph
+(engram.py image lines 1302-1339). Classes #2/#4/#5 closed (<0.15% of
+idle). Winning patch class (named, NOT implemented): **#1 host critical
+path — CPU-side hash** (verified CPU port of _hash_ids_kernel exists in
+the prefetch-v3 work) → delete the sync; expected ≈ full 13-14 ms/step
+pool ⇒ ~34.5-37 tok/s at acc 2.26. Profiler method pinned: the torch
+profiler mounts /start_profile//stop_profile ONLY when --profiler-config
+profiler=torch is passed at serve (openapi-verified); ignore_frontend=true
+crashes start_profile (AsyncLLM.profiler AttributeError) — do not use.
+BOOT 2 (SOFTMAX_VERIFY=1, wrap engaged at boot, knob verified boot-fixed):
+L.A.I.L warmup + n=3 = 27.14/26.46/28.56 → median 27.14 (−5.6% vs 28.76,
+gate ≥29.62 failed); repo harness acc_len 2.20 (vs 2.26 stock) — the k5
+acceptance gain does not transfer to k3. **REVERT** (default 0 stays).
+BOOT 3: k3c restored and left UP (smoke 323 ✓, MemAvail 25/27, best 28.76).
+All boots 116/117 pre, ≥25 post, zero aborts; trace export dropped s1
+MemAvail to 3 GiB once → serve stopped before parsing, restored 117/117
+(lesson: no big host work while serve resident after profiler export).
+Gap to 35: 6.24 — the CPU-hash patch spans it alone. Evidence:
+results/2026-09-21-trace-attribution/{ATTRIBUTION.md,VERDICT.md}; trace
+kept locally (gitignored). New parsers: parse_gaps{,_stacks,_memcpy}.py.

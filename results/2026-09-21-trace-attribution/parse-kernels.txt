@@ -1,0 +1,29 @@
+total kernel time: 18174.5 ms
+
+== top kernels ==
+   5596.30 ms   10080     555.2 us  void p2b_moe_batched_kernel<2, 1>(__half const*, long const*, long const*, long const*, long const*,
+   4466.51 ms   57929      77.1 us  kernel_cutlass_kernel_flashinfergemmkernelsdense_blockscaled_gemm_sm120_b12xDenseGemmKernel_object_a
+   1542.42 ms   22264      69.3 us  ncclDevKernel_AllReduce_Sum_bf16_RING_LL(ncclDevKernelArgsStorage<4096ul>)
+   1361.33 ms     505    2695.7 us  void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_16x16_128x2_tn_align8>(cutlass_
+    814.00 ms   10080      80.8 us  void deep_gemm::sm120_fp8_fp4_gemm_1d1d_impl<0u, 4u, 4096u, 32u, 32u, 4u, 128u, 16u, 128u, 128u, 128
+    477.93 ms   21505      22.2 us  void deep_gemm::sm120_tf32_hc_prenorm_gemm_impl<24u, 20480u, 128u, 32u, 64u, 16u, 4u, 256u, 128u>(un
+    305.63 ms   11088      27.6 us  void cutlass::Kernel2<cutlass_80_wmma_tensorop_s161616gemm_bf16_16x16_128x2_tn_align8>(cutlass_80_wm
+    257.36 ms   10120      25.4 us  void flashinfer::sparse_mla_sm120::sparse_mla_decode_dsv4_kernel<(ModelType)1, 32, 128, 64>(__nv_bfl
+    242.86 ms   56046       4.3 us  void at::native::unrolled_elementwise_kernel<at::native::direct_copy_kernel_cuda(at::TensorIteratorB
+    229.60 ms      40    5740.0 us  void exl3_moe_kernel<2, 128, 1>(__half const*, __half*, __half*, __half*, __half*, float*, unsigned 
+    219.89 ms   10120      21.7 us  _dsv4_topk_kernel
+    214.09 ms     759     282.1 us  void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_32x32_128x1_tn_align8>(cutlass_
+    212.40 ms   10879      19.5 us  void deep_gemm::transpose_and_pack_fp32_into_ue8m0<512u, 48u, 128u, 1u, false>(float*, unsigned int*
+    186.06 ms    3024      61.5 us  void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_16x16_128x1_tn_align8>(cutlass_
+    145.73 ms   44994       3.2 us  void at::native::vectorized_elementwise_kernel<4, at::native::compare_scalar_kernel<long>(at::Tensor
+    143.67 ms   11088      13.0 us  void cublasLt::splitKreduce_kernel<32, 16, int, float, float, float, float, false, float, float, flo
+    136.55 ms   21758       6.3 us  mhc_pre_big_fuse_with_norm_tilelang_kernel
+    135.16 ms     759     178.1 us  void deep_gemm::sm120_fp8_fp4_gemm_1d1d_impl<0u, 2304u, 5120u, 128u, 32u, 128u, 64u, 128u, 128u, 128
+    126.49 ms   45034       2.8 us  kernel_cutlass_kernel_flashinferquantizationkernelsmxfp8_quantizeMXFP8QuantizeSwizzledKernel_object_
+    123.20 ms    1012     121.7 us  ncclDevKernel_AllGather_RING_LL(ncclDevKernelArgsStorage<4096ul>)
+
+== gpu annotations ==
+  37210.57 ms   33012  execute_context_0(0)_generation_1(4)
+    970.97 ms       4  execute_context_1(61)_generation_0(0)
+
+== kernel time by launching cpu op ==

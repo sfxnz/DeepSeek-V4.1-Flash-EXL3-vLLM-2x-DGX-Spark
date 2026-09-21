@@ -694,3 +694,17 @@ already 0.06–0.10 ms cold. L.A.I.L 26.05 (job 243a53d345ca) = parity with
 baseline, not the projected 34–36 tok/s. Reverted to the exact NCCL-arm
 serve. Wiring commit `befa570` stays (dormant, env-guarded). Verdict +
 evidence: `results/2026-09-20-engrampf/VERDICT.md`.
+
+## 2026-09-21 — trace attribution round 18 (gap owned by engram stage sync; SOFTMAX_VERIFY revert)
+
+Round 18 profiled ONE L.A.I.L prose request on stock k3c (torch profiler
+replica via --profiler-config; /start_profile only mounts with that flag).
+Result: pure GPU idle ~14.2 ms/step, 99.9% under ONE stack —
+`EngramDiskStager.stage → hashes_ready.synchronize()` (hard event sync in
+prepare_inputs, engram.py:1329-region). Eager sampler region, sampler
+softmax, and indexer bookkeeping all closed at <0.15% of idle. Named fix
+(not implemented): CPU-side next-step hashing to delete the sync — sized
+to span the remaining gap to 35 alone. SOFTMAX_VERIFY A/B on k3c:
+median 27.14 (−5.6% vs 28.76; acc_len 2.20) → REVERT, knob dead.
+Best unchanged: **28.76** (k3c), serve left up on boot-k3c.sh. Evidence:
+results/2026-09-21-trace-attribution/.
