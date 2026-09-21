@@ -446,3 +446,43 @@ added). Best serve restored UP on boot-k3c-pf.sh (smoke 323 ✓, L.A.I.L
 confirm 32.49/30.51/33.85). Gap to 35: 4.90 — next lever is CODE-level
 (batch pread→preadv, vectorize dequant, single pinned H2D, or off-thread
 gather for N+1 with event-wait at replay), not env.
+
+## Round 23 — 2026-09-21: engram gather v2 (preadv run batching) — KEEP, new best 31.37
+
+Round-22's code-level lever, implemented: DSV41_ENGRAM_GATHER_V2=1 (default
+off, docker/patch/engram_gather_v2.py, commit 5507311). One preadv per
+contiguous row run (scatter iovecs, dup-row read-once+memcpy, row-aligned
+partial resume), dequant VERBATIM from stock (bit-exact by construction +
+live self-check compares raw bf16 BITS — float equal lies on fp8 NaN
+bytes), H2D unchanged (one pinned copy per table per step, inside the
+round-11 parallel stage workers). Any error → one DISABLED line → stock
+path, never crashes the serve.
+
+Key finding (pre-implementation probe, spark1, hot cache, real 256B/8B
+geometry, R=51): the stock chunk-pool _read_rows costs 0.64 ms/call of
+which pool submit/result overhead alone is 0.105 ms; the SAME 102
+per-row preads INLINE cost 0.05 ms. The pool dispatch was the loop cost,
+not the syscalls (hash rows are uniform over 384M rows — contiguous runs
+are length 1, so syscall count barely drops; the win is removing the
+pool hop + per-call alloc/dequant chaining).
+
+Offline validation ALL PASS (validate_gather_v2.py in e12 image): chain
+apply, bit-exact vs stock on real-geometry safetensors packs (fuzz
+R=51/300, contig+dups, all-unowned, single), partial-preadv resume
+(caught + fixed a REAL resume bug: row_bytes-based skip corrupted
+follower rows after the first partial — now consumes n bytes off the iov
+front), forced-failure fallback, micro-bench stock 0.82-0.85 vs v2
+0.12-0.19 ms/call = 4.2-6.9x. Gates: bash -n, py_compile, render --check,
+225 unittests OK.
+
+Boot 1 of cap 3: install line + self-check bit-exact (r=120) BOTH ranks,
+smoke 323, steady [gv2-census] rows/call=48 runs/call=96=preads/call=96
+BOTH ranks (one preadv/run, zero pool futures), zero DISABLED lines.
+L.A.I.L: b1 median 32.11, b2 (independent) 30.63, pooled n=10 median
+31.37 vs 30.10 = +4.2% → KEEP (gate +3%). 35 NOT crossed (two-medians
+rule: 32.11/30.63). Repo prose 9-run median 36.80 agg (acc 2.55), L.A.I.L
+prose 512tok 30.71 (acc 2.12). Cold prefill 32k warm runs 713-786;
+MemAvail post-32k 21/23 GiB. Serve left UP on
+results/2026-09-21-gatherv2/boot-k3c-pf-gv2.sh. Gap to 35: 3.63 —
+remaining idle is the ~2.4 ms sub-1-ms fragments + residual stage path;
+35 still needs acceptance or device-side gains.
