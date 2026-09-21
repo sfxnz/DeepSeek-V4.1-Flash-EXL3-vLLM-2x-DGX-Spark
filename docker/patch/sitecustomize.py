@@ -839,3 +839,25 @@ try:
     _apply_gather_v2(_Pg("/usr/local/lib/python3.12/dist-packages/vllm"))
 except Exception as _gather_v2_err:
     print(f"dsv41: engram gather v2 skipped: {_gather_v2_err!r}", flush=True)
+
+# Engram stage defer (Round 23 chain): ONE persistent worker per rank
+# gathers the NEXT step's rows off the critical path (v3-rule prediction,
+# cpu-hash numpy mirror, v2 preadv gather into double-buffered pinned
+# slots + side-stream H2D with proper wait-before-with ordering); stage()
+# consumes the signaled buffer with a per-table DtoD at replay time and
+# falls back to the sync v2 path on ANY anomaly (miss / late / mismatch ->
+# ONE warning line, never a crash, never slower than sync).
+# DSV41_ENGRAM_DEFER=1 enables (default off). Requires the full chain
+# (prestage -> census -> fast -> v3 -> cpu-hash -> gather v2).
+try:
+    from pathlib import Path as _Pd
+
+    from engram_defer import apply as _apply_defer
+
+    _apply_defer(
+        _Pd("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"),
+        _Pd("/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py"),
+        _Pd("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/nvidia/model_state.py"),
+    )
+except Exception as _defer_err:
+    print(f"dsv41: engram defer skipped: {_defer_err!r}", flush=True)
