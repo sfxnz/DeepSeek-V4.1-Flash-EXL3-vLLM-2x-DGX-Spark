@@ -273,3 +273,22 @@ fold PF-G8 into quantize_experts_exl3.py; keep p2b stock layout. Lever
 re-openable only via harness fix + fresh GPU gate re-run (the harness was
 CPU-validated for compile only, never numerically on GPU). Evidence:
 kernel_study/gemv_bench/PREFILL-GATE-RESULT-2026-09-20.log.
+
+### Round 15 — MCG spec-k sweep: k=3 WINS the L.A.I.L cell (single-lever, same-day n=3)
+
+First sweep of DSpark `num_speculative_tokens` on the MCG lane (k=5 was
+inherited; %5 guard bypassed with FORCE_UNSAFE_CTX=1 — k=10 already rejected
+in E6). Same day, same image/env, only k varied; L.A.I.L app bench n=3 per arm
++ CLI twin (512 tok, t=0.2) + greedy prose 9×:
+k3 27.27 / 28.57 @ acc 2.25 / prose 35.55 @ 2.62 — k5 26.32 / 25.57 @ 2.30 /
+33.03 @ 2.90 — k4 25.87 / 25.86 @ 2.18. k3 wins all three cells (+3.6% app,
++11.7% twin, +7.6% prose); k4 worst (deeper than t=0.2 acceptance justifies
+AND pads verify 5→6); k7 skipped (flat acc-vs-depth + E6 collapse at k=10).
+Mechanism: at t=0.2 acc≈2.3, draft slots 4–5 are dead weight; k3 verifies
+4 tok/step and still pads 4→5 on the k5-era capture sizes [1,5,6,10,12] —
+matched sizes [1,3,4,6,8] is the queued follow-up. Serve left UP at k=3
+(boot-k3.sh in results/2026-09-20-ksweep/, smoke 323 ✓, confirm job
+65933ed0ddd7 = 27.0). L.A.I.L job ids in VERDICT.md; contaminated job
+1b2fa6c0fc52 discarded (ran concurrently with its warmup — app bench queue
+bug in my driver script, fixed). Gap to 35: 7.7 tok/s. Evidence:
+results/2026-09-20-ksweep/VERDICT.md.
