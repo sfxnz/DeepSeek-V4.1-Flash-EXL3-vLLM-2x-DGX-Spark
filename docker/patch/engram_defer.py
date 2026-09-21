@@ -193,6 +193,8 @@ STAGER_METHODS = MARKER + '''
             self._df_v_slot = None
             # engagement census: [hits, misses, late, pairs, worker_ms]
             self._df_stats = [0, 0, 0, 0, 0.0]
+            self._df_att = 0
+            self._df_miss_logs = 0
             self._df_census = _os.environ.get("DSV41_ENGRAM_CENSUS", "0") == "1"
             self._df_every = int(
                 _os.environ.get("DSV41_ENGRAM_CENSUS_EVERY", "32")
@@ -463,6 +465,14 @@ STAGER_METHODS = MARKER + '''
             }
             pred = self._defer_predict(snap)
             if pred is None:
+                self._df_none_n = getattr(self, "_df_none_n", 0) + 1
+                if self._df_none_n <= 6:
+                    print(
+                        "[defer-miss] worker predict None (ns=%s qsl=%s "
+                        "num_reqs=%d num_tokens=%d)"
+                        % (snap["ns"], snap["qsl"], num_reqs, num_tokens),
+                        flush=True,
+                    )
                 return
             n = pred["n"]
             hashed = self._defer_hash_layers(
@@ -521,6 +531,18 @@ STAGER_METHODS = MARKER + '''
         except Exception:  # noqa: BLE001
             return None
 
+    def _defer_miss(self, why, detail=""):
+        # Bounded miss logging: first 6 reasons verbatim, then counted.
+        st = self._df_stats
+        st[1] += 1
+        n = getattr(self, "_df_miss_logs", 0)
+        self._df_miss_logs = n + 1
+        if n < 6:
+            print(
+                "[defer-miss] %s%s" % (why, (" " + detail) if detail else ""),
+                flush=True,
+            )
+
     def _defer_try_stage(self, n, input_batch):
         # Main thread, called from stage() after the stock hash+sync.
         # True -> consume the predicted rows (DtoD only); "warm" -> also
@@ -529,23 +551,39 @@ STAGER_METHODS = MARKER + '''
         try:
             ready = self._df_ready
             if ready is None:
-                st[1] += 1  # miss: no usable prediction
+                self._defer_miss("no-ready (gen=%d armed=%s)"
+                                 % (self._df_gen, self.defer_on))
+                self._defer_census_tick()
                 return False
             if ready["gen"] != self._df_gen:
-                st[1] += 1  # miss: superseded prediction
+                self._defer_miss("superseded", "ready_gen=%d cur=%d"
+                                 % (ready["gen"], self._df_gen))
+                self._defer_census_tick()
                 return False
             pend = self._df_pending
             if pend is None or pend["gen"] != ready["gen"]:
-                st[1] += 1
+                self._defer_miss("pend-mismatch")
+                self._defer_census_tick()
                 return False
             sig = self._defer_sig(input_batch)
+            if sig is None:
+                self._defer_miss("sig-none (input_batch=%r)"
+                                 % (type(input_batch).__name__,))
+                self._defer_census_tick()
+                return False
             if (
-                sig is None
-                or sig[0] != ready["n"]
+                sig[0] != ready["n"]
                 or [str(x) for x in sig[1]] != ready["req_ids"]
                 or [int(x) for x in sig[2]] != ready["qsl"]
             ):
-                st[1] += 1  # miss: scheduler surprise
+                self._defer_miss(
+                    "sig-mismatch",
+                    "n=%d/%d reqs=%s/%s qsl=%s/%s"
+                    % (sig[0], ready["n"],
+                       sig[1], ready["req_ids"],
+                       [int(x) for x in sig[2]], ready["qsl"]),
+                )
+                self._defer_census_tick()
                 return False
             # Bound the join: `ready` is published as the worker's LAST
             # statement, so the future is done in the common case; the
@@ -565,10 +603,31 @@ STAGER_METHODS = MARKER + '''
                 return "warm"
             st[0] += 1
             st[4] += ready.get("ms", 0.0)
+            self._defer_census_tick()
             return True
         except Exception as exc:  # noqa: BLE001
             self._defer_disarm(f"try_stage error: {exc!r}")
             return False
+
+    def _defer_census_tick(self):
+        # Print on a fixed ATTEMPT cadence (not only on hits) so an
+        # all-miss serve is observable.
+        st = self._df_stats
+        self._df_att = getattr(self, "_df_att", 0) + 1
+        if self._df_census and self._df_att % self._df_every == 0:
+            tot = st[0] + st[1]
+            print(
+                "[defer-census] hits=%d misses=%d late=%d pairs=%d "
+                "hit%%=%.1f worker_ms/pred=%.2f"
+                % (
+                    st[0], st[1], st[2], st[3],
+                    100.0 * st[0] / tot if tot else 0.0,
+                    st[4] / max(st[3], 1),
+                ),
+                flush=True,
+            )
+            st[0] = st[1] = st[2] = st[3] = 0
+            st[4] = 0.0
 
     def _defer_check_warm(self, n):
         # Called by stage() AFTER the sync gather filled rows_host on a
@@ -614,23 +673,6 @@ STAGER_METHODS = MARKER + '''
             dest.copy_(dbuf[:n], non_blocking=True)
         st = self._df_stats
         st[3] += 1
-        if self._df_census and st[3] % self._df_every == 0:
-            tot = st[0] + st[1]
-            print(
-                "[defer-census] hits=%d misses=%d late=%d pairs=%d "
-                "hit%%=%.1f worker_ms/pred=%.2f"
-                % (
-                    st[0],
-                    st[1],
-                    st[2],
-                    st[3],
-                    100.0 * st[0] / tot if tot else 0.0,
-                    st[4] / max(st[3], 1),
-                ),
-                flush=True,
-            )
-            st[0] = st[1] = st[2] = st[3] = 0
-            st[4] = 0.0
 '''
 
 # ---------------------------------------------------------------------------
