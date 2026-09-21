@@ -1,0 +1,29 @@
+events streamed: 5776257
+device 0: 608756 kernels, busy computing…
+
+device 0: window 17893.2 ms, busy 15523.3 ms, idle 2369.8 ms, 349458 busy spans
+gaps >= 0.5 ms: 250, total 1848.2 ms
+
+== idle-gap ownership (device 0, gaps >= 0.5 ms) ==
+  1311.43 ms  STREAM_SYNC_EVENT
+   535.91 ms  HOST_SCHED_INPUT_PREP
+     0.84 ms  OTHER
+(unmatched 0.84 ms -> OTHER)
+
+== examples per class ==
+-- HOST_SCHED_INPUT_PREP
+   gap   0.66 ms @+     0.0 ms : vllm/v1/worker/gpu/states.py(91): add_request <- vllm/v1/worker/gpu/model_runner.py(1026): add_requests
+   gap   0.52 ms @+     2.5 ms : vllm/v1/attention/backend.py(500): token_to_req_indices <- vllm/v1/attention/backends/mla/sparse_swa.py(539): build <- vllm/v1/worker/gpu/attn_utils.py(253): build_attn_metadata <- vllm/v1/worker/gpu/model_states/default.py(166): prepare_attn
+   gap   0.64 ms @+    56.1 ms : flashinfer/quantization/fp8_quantization.py(171): mxfp8_quantize <- flashinfer/api_logging.py(2307): _auto_dump_wrapper <- vllm/model_executor/layers/quantization/utils/mxfp8_utils.py(187): _mxfp8_e4m3_quantize_impl <- vllm::mxfp8_quantize <- <built-in method mxfp8_quantize of pybind11_builtins.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_us <- torch/_ops.py(1267): __call__
+   gap   0.77 ms @+    58.1 ms : vllm/compilation/breakable_cudagraph.py(100): wrapper
+   gap   8.98 ms @+   722.8 ms : <built-in function posix_fadvise> <- vllm/models/deepseek_v4_1/common/engram.py(1468): _fadvise_row <- vllm/models/deepseek_v4_1/common/engram.py(1508): _prefetch_worker <- concurrent/futures/thread.py(53): run
+   gap   6.11 ms @+  1085.0 ms : <built-in function posix_fadvise> <- vllm/models/deepseek_v4_1/common/engram.py(1468): _fadvise_row <- vllm/models/deepseek_v4_1/common/engram.py(1508): _prefetch_worker <- concurrent/futures/thread.py(53): run
+-- STREAM_SYNC_EVENT
+   gap  36.06 ms @+    19.1 ms : cudaEventSynchronize <- <built-in method synchronize of Event object at 0xf04cc80d6f20> <- torch/cuda/streams.py(245): synchronize
+   gap  11.76 ms @+   357.6 ms : <built-in method synchronize of Event object at 0xf04cc80d6e40> <- torch/cuda/streams.py(245): synchronize <- vllm/models/deepseek_v4_1/common/engram.py(1397): _pf_sync <- vllm/models/deepseek_v4_1/common/engram.py(1508): _prefetch_worker <- concurrent/futures/thread.py(53): run
+   gap   7.37 ms @+   435.6 ms : cudaEventSynchronize <- <built-in method synchronize of Event object at 0xf04cc80d6f20> <- torch/cuda/streams.py(245): synchronize
+   gap   5.93 ms @+   508.0 ms : cudaEventSynchronize <- <built-in method synchronize of Event object at 0xf04cc80d6f20> <- torch/cuda/streams.py(245): synchronize
+   gap   6.90 ms @+   580.8 ms : cudaEventSynchronize <- <built-in method synchronize of Event object at 0xf04cc80d6f20> <- torch/cuda/streams.py(245): synchronize
+   gap   6.58 ms @+   651.4 ms : cudaEventSynchronize <- <built-in method synchronize of Event object at 0xf04cc80d6f20> <- torch/cuda/streams.py(245): synchronize
+
+(detailed kernel table: run parse_trace_safe.py on the same trace)

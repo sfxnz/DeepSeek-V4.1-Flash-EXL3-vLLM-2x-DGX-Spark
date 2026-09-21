@@ -427,3 +427,22 @@ n=10 = 30.10 vs 28.76 = +4.6% (KEEP gate ≥+3%). 35 NOT claimed. Serve
 left UP on boot-k3c-pf.sh (prefetch+census ON) — new best config.
 Gap to 35: 4.90 — residual gather (dequant/H2D serialization) + acceptance.
 Evidence: results/2026-09-21-pfrearm/VERDICT.md.
+
+## Round 22 — 2026-09-21: re-trace of the ENGAGED 30.10 serve — idle moved INSIDE stage, post-sync
+
+Re-ran Round-18 trace attribution on the live best (k3c + PREFETCH=1 +
+CENSUS=1 + torch profiler; results/2026-09-21-trace2/). Window 17.9 s ≈ 238
+steps: device-busy 65.3 ms/step, pure idle ~9.9 ms/step (was 14.2). STILL
+99.9% one stack: engram.py stage <- prepare_inputs (241/241 gaps ≥2 ms).
+NEW: parse_gap_split.py shows the CPU is blocked inside
+hashes_ready.synchronize() for 0.7 ms TOTAL — the event fires promptly now.
+1802 ms (7.5 ms/step) elapses AFTER the sync returns: host EXECUTION of the
+stage gather loop (51 rows × pread+dequant+H2D staging). Round 18's
+wait-behind-work is dead; what's left is Python/host loop time. No env
+lever attacks it (CPU_HASH=1 already measured end-to-end → Round-20 REVERT;
+read_w 0.1 ms proves data is in page cache). NO A/B per gate; 3 boots spent
+(1 lost to cp-after-stop — trace was in container tmpfs; protocol note
+added). Best serve restored UP on boot-k3c-pf.sh (smoke 323 ✓, L.A.I.L
+confirm 32.49/30.51/33.85). Gap to 35: 4.90 — next lever is CODE-level
+(batch pread→preadv, vectorize dequant, single pinned H2D, or off-thread
+gather for N+1 with event-wait at replay), not env.
