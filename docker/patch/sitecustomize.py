@@ -822,3 +822,20 @@ try:
     )
 except Exception as _cpu_hash_err:
     print(f"dsv41: engram cpu-hash skipped: {_cpu_hash_err!r}", flush=True)
+
+# Engram gather v2 (Round 22 attribution fix): replace the stock chunk-pool
+# _read_rows inside DiskEngramTable.gather_dequant with inline preadv
+# per contiguous row run + the stock dequant math verbatim. The Round-22
+# trace attributes ~7.5 ms/step of GPU idle to host execution of the
+# gather loop (pool dispatch + per-row syscalls), NOT IO waits (read_w
+# 0.1 ms, page-cached). DSV41_ENGRAM_GATHER_V2=1 enables (default off);
+# one-shot bit-exact self-check, any error disarms to stock with one line.
+# Requires the engram_stage_census chain (applies after it).
+try:
+    from pathlib import Path as _Pg
+
+    from engram_gather_v2 import apply as _apply_gather_v2
+
+    _apply_gather_v2(_Pg("/usr/local/lib/python3.12/dist-packages/vllm"))
+except Exception as _gather_v2_err:
+    print(f"dsv41: engram gather v2 skipped: {_gather_v2_err!r}", flush=True)
