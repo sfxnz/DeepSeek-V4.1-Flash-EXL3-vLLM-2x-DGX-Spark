@@ -414,3 +414,16 @@ stands but "delete the sync via CPU-side prediction" is now MEASURED
 END-TO-END and does not recover it; next lever must attack the pool
 differently (overlap/defer the gather, not re-predict the hashes).
 Evidence: results/2026-09-21-cpuhash2/VERDICT.md.
+
+## Round 21 — 2026-09-21: prefetch v3 re-arm (ordering-fixed) → KEEP (+4.6%)
+
+Single lever: DSV41_ENGRAM_PREFETCH=1 on k3c (v3 code, Round-20 ordering
+fix 35e05fd); CENSUS=1 for evidence, PF_DUMP/DEBUG off. Round-16 NO-GO
+SUPERSEDED: pf_hit 100% both ranks entire run (was <50%, pair ratio
+0.29–0.33) — the stale-id race was the whole failure, overlap thesis was
+right. read_w 4.0ms warmup → 0.05–0.07ms steady both ranks. L.A.I.L
+c=1 prose: batch medians 29.32 / 30.99 (independent n=5 each), pooled
+n=10 = 30.10 vs 28.76 = +4.6% (KEEP gate ≥+3%). 35 NOT claimed. Serve
+left UP on boot-k3c-pf.sh (prefetch+census ON) — new best config.
+Gap to 35: 4.90 — residual gather (dequant/H2D serialization) + acceptance.
+Evidence: results/2026-09-21-pfrearm/VERDICT.md.
