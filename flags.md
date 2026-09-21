@@ -292,3 +292,21 @@ matched sizes [1,3,4,6,8] is the queued follow-up. Serve left UP at k=3
 1b2fa6c0fc52 discarded (ran concurrently with its warmup — app bench queue
 bug in my driver script, fixed). Gap to 35: 7.7 tok/s. Evidence:
 results/2026-09-20-ksweep/VERDICT.md.
+
+### Round 16 — capture-size match KEEP (+5.5%), engram prefetch v3 NO-GO
+
+Two single-lever arms on the k=3 serve (Round 15). ARM 1: cudagraph capture
+sizes [1,5,6,10,12] → [1,3,4,6,8] via `COMPILATION_CONFIG` env (k3 verifies
+4 tok/step; 4 padded to 5 before). Verified in EngineCore
+compilation_config; boot ~12 min. L.A.I.L n=3 median **28.76** (26.20/28.76/
+28.94) vs 27.27 = +5.5% ≥ +3% gate → **KEEP**, now the serve
+(`results/2026-09-21-capture-pf/boot-k3c.sh`). Quick prose 34.89. ARM 2:
+engram prefetch v3 (commit e70c4b1, post-propose publish + bonus+draft
+anchored prediction) on the ARM-1 config — [pf-pub]/[pf-pair] on both ranks
+(40 pair-rows/rank, |pred|=48 not the hoped 72) but intersect recall still
+short: mean 0.325/0.292 (s1/s2), ≥0.5× gate only 20%/15%, L.A.I.L 28.69
+(−0.2% vs ARM 1) → **NO-GO**, serve reverted to PREFETCH=0 (patch committed,
+inactive by default). ARM 3 skipped (no flag cleared the bar; window spent
+on restore). Final serve smoke 323 ✓, MemAvail 25/26 GiB, all boots
+117/117 pre / ≥25 GiB post, zero abort lines. Gap to 35: 6.24. Evidence:
+results/2026-09-21-capture-pf/VERDICT.md.
