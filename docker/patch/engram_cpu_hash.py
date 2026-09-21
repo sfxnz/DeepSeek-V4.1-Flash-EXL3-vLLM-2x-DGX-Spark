@@ -387,6 +387,11 @@ STAGER_METHODS = MARKER + '''\
             pin = st["pin"]
             pin["ids"] = _torch.zeros(self._ch_cap, dtype=_torch.int64, pin_memory=True)
             pin["pos"] = _torch.zeros(self._ch_cap, dtype=_torch.int64, pin_memory=True)
+            pin["aid"] = _torch.zeros(self._ch_cap, dtype=_torch.int64, pin_memory=True)
+            pin["apos"] = _torch.zeros(self._ch_cap, dtype=_torch.int64, pin_memory=True)
+            pin["awin"] = _torch.zeros(
+                self._ch_rmax * self._ch_depth, dtype=_torch.int64, pin_memory=True
+            )
             pin["qsl"] = _torch.zeros(
                 self._ch_rmax + 1, dtype=_torch.int64, pin_memory=True
             )
@@ -747,6 +752,8 @@ STAGER_METHODS = MARKER + '''\
                 "qsl": [int(x) for x in pred["qsl"]],
                 "hash": self.hash_host[:n].clone(),
             }
+            st["pred_ids_dbg"] = [int(x) for x in pred["ids"]]
+            st["pred_pos_dbg"] = [int(x) for x in pred["pos"]]
         except Exception as exc:  # noqa: BLE001
             st["ok"] = False
             import traceback as _tb
@@ -814,8 +821,12 @@ STAGER_METHODS = MARKER + '''\
         import torch as _torch
 
         if st["warm"] < st["warm_n"]:
-            # Same-step bit-exact verification against the real GPU kernel.
-            # Costs the stock sync for <= warm_n steps, then never again.
+            # Two-stage warmup validation on the REAL batch:
+            #   A) mirror-vs-GPU on the ACTUAL ids (isolates the hash
+            #      mirror from the prediction);
+            #   B) predicted ids/pos/qsl/window vs actual (isolates the
+            #      reconstruction rule).
+            # Bounded dumps on failure name the diverging stream.
             from .mm_preprocess import image_sentinel_mask
 
             hashes = self.hash_state(
@@ -833,19 +844,103 @@ STAGER_METHODS = MARKER + '''\
             )
             self.hashes_ready.record()
             self.hashes_ready.synchronize()
-            if not _torch.equal(st["pin"]["ref"][:n], self.hash_host[:n]):
+
+            def _dump(tag):
+                m = ~_torch.eq(
+                    st["pin"]["gpu"][:n], self.hash_host[:n]
+                )
+                bad = m.any(dim=(1, 2))
+                idx = _torch.nonzero(bad).flatten()[:6].tolist()
+                lines = [
+                    "dsv41: engram cpu-hash warmup %s mismatch (n=%d, "
+                    "pred_n=%d, mism rows=%d/%d)"
+                    % (tag, n, pred["n"], int(bad.sum()), n)
+                ]
+                for t in idx:
+                    lines.append(
+                        "  row %d: aid=%s apos=%s | pid=%s ppos=%s | "
+                        "gpu=%s cpu=%s"
+                        % (
+                            t,
+                            a_ids[t],
+                            a_pos[t],
+                            (pred_ids[t] if t < len(pred_ids) else None),
+                            (pred_pos[t] if t < len(pred_pos) else None),
+                            st["pin"]["gpu"][t, 0, :4].tolist(),
+                            self.hash_host[t, 0, :4].tolist(),
+                        )
+                    )
+                print(chr(10).join(lines), flush=True)
+
+            # stage A: snapshot the ACTUAL ids/pos/window to pinned mirrors
+            # (side stream; sync via the event recorded after the copies)
+            import numpy as _np
+
+            with _torch.cuda.stream(st["stream"]):
+                st["stream"].wait_stream(_torch.cuda.current_stream())
+                st["pin"]["aid"][:n].copy_(ids.to(_torch.int64), non_blocking=True)
+                st["pin"]["apos"][:n].copy_(
+                    positions.to(_torch.int64), non_blocking=True
+                )
+                if lookback_token_ids is not None and lookback_token_ids.numel():
+                    aw = lookback_token_ids.reshape(-1).to(_torch.int64)
+                    st["pin"]["awin"][
+                        : min(aw.numel(), st["pin"]["awin"].numel())
+                    ].copy_(aw[: st["pin"]["awin"].numel()], non_blocking=True)
+                st["snap_ev"].record()
+            st["snap_ev"].synchronize()  # aid/apos/awin landed
+            nr = int(query_start_loc.numel()) - 1
+            a_ids = st["pin"]["aid"][:n].tolist()
+            a_pos = st["pin"]["apos"][:n].tolist()
+            a_qsl = [int(x) for x in query_start_loc.tolist()[: nr + 1]]
+            depth = self._ch_depth
+            awin = (
+                st["pin"]["awin"][: nr * depth].reshape(nr, depth).tolist()
+                if nr > 0
+                else []
+            )
+            try:
+                a_hash = self._ch_hash_layers(a_ids, a_pos, a_qsl, awin)
+                st["pin"]["gpu"][:n].copy_(
+                    _torch.from_numpy(a_hash.astype(_np.int32))
+                )
+            except Exception as exc:  # noqa: BLE001
                 st["ok"] = False
                 print(
-                    "dsv41: engram cpu-hash DISABLED: mirror mismatch vs "
-                    "GPU kernel at warmup",
+                    f"dsv41: engram cpu-hash DISABLED (mirror threw): {exc!r}",
+                    flush=True,
+                )
+                return False
+            if not _torch.equal(st["pin"]["gpu"][:n], st["pin"]["ref"][:n]):
+                _dump("MIRROR")
+                st["ok"] = False
+                return False
+            # stage B: predicted ids/pos must equal actual
+            pred_ids = list(st.get("pred_ids_dbg") or [])
+            pred_pos = list(st.get("pred_pos_dbg") or [])
+            if (
+                len(pred_ids) != n
+                or len(pred_pos) != n
+                or any(
+                    int(pred_ids[t]) != int(a_ids[t]) for t in range(n)
+                )
+                or any(
+                    int(pred_pos[t]) != int(a_pos[t]) for t in range(n)
+                )
+            ):
+                _dump("PREDICT")
+                st["ok"] = False
+                print(
+                    "dsv41: engram cpu-hash DISABLED: prediction != actual "
+                    "ids/pos (see dump above)",
                     flush=True,
                 )
                 return False
             st["warm"] += 1
             if st["warm"] == st["warm_n"]:
                 print(
-                    "dsv41: engram cpu-hash ACTIVE (mirror bit-exact x%d; "
-                    "prepare_inputs D2H+event sync removed)" % st["warm_n"],
+                    "dsv41: engram cpu-hash ACTIVE (mirror+predict bit-exact "
+                    "x%d; prepare_inputs D2H+event sync removed)" % st["warm_n"],
                     flush=True,
                 )
             return True
