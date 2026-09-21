@@ -179,11 +179,30 @@ def _meta_h(in_features: int, device: str, cache: dict):
     return h
 
 
+def _pfg8_fold(trellis):
+    # --- pfg8-pack-fold (dormant; DSV41_PACK_PF_G8=1 enables) ---
+    # PF-G8 group-major layout: [KT][NT][W] -> [NT/8][KT][8*W], groups of 8
+    # n-tiles major. Bit-exact pure re-index (gate PASS 2026-09-21,
+    # kernel_study/gemv_bench/PREFILL-GATE-RESULT-2026-09-21.log). Serving
+    # kernels must be G8-aware (or the loader must un-permute) before a G8
+    # pack is booted — see results/2026-09-21-pfg8/REBUILD-PLAN.md.
+    import os
+
+    if os.environ.get("DSV41_PACK_PF_G8", "0") != "1":
+        return trellis
+    kt, nt, w = trellis.shape
+    if nt % 8:
+        raise SystemExit(f"pfg8 fold: n-tiles {nt} not divisible by 8")
+    return trellis.view(kt, nt // 8, 8 * w).permute(1, 0, 2).contiguous()
+
+
 def _pack_one(out: dict) -> dict:
     packed = {}
     for key in ("trellis", "suh", "svh", "mcg", "mul1"):
         if key in out:
             packed[key] = out[key].detach().cpu()
+    if "trellis" in packed:
+        packed["trellis"] = _pfg8_fold(packed["trellis"])
     return packed
 
 
@@ -329,6 +348,7 @@ def _quantize_fast(
             encoded = torch.cat(idxs, 0).view(tiles_k, tiles_n, 256)
             del idxs
         trellis = pack_trellis(encoded, qa)
+        trellis = _pfg8_fold(trellis)
         packed_list.append(
             {
                 "trellis": trellis.detach().cpu(),

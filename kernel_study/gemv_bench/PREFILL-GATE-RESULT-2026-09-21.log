@@ -1,0 +1,85 @@
+PREFILL GATE RESULT — 2026-09-21 (GPU window, spark1 GB10, serves fully stopped)
+
+Re-run of the 2026-09-20 gate after the harness repair (commit 9f71b6e).
+Harness: kernel_study/gemv_bench/driver_prefill.py @ 9f71b6e (rebuilt CPU-side
+in a no-GPU container, GPU-run in throwaway dsv41-flash-exl3-sm121:canonical-e12
+container with --gpus all, JIT inside container TORCH_EXTENSIONS_DIR=/tmp/ext,
+container removed after). Protocol per PREFILL-GATE.md: --mode check first,
+then --mode bench m in {64,128,256,512} --reps 5.
+
+THE BUG (why 2026-09-20 failed 20/20): the eb78a8b G8 patch set
+`gl_b_stride_k = 0` in exl3_gemm_inner_pf.cuh, believing load_b_gl fully
+addresses global B. It does not — load_b_gl[i] is relative to the window base
+gl_b_ptr; its k term skips blocks_n_full rows precisely because the STOCK
+window base advances one k-tile per iteration (cb2/exl3_gemm_inner.cuh L168
+`gl_b_ptr += gl_b_stride_k`). With the stride zeroed, shapes 2/3
+(TILEBLOCKS_K=2) re-read k-tile 0 of the window on the second k-tile, and
+shape 4 (TILEBLOCKS_K=1) walked all 144 k-blocks at window base +0. Hence
+~100% of elements mismatched. The earlier "numpy reference check PASSED"
+because that reference was derived from the same wrong window-base model (it
+validated the harness against itself). FIX: G8 k-stride = TILEBLOCKS_K * 8 *
+16 * bits (TILEBLOCKS_K group k-rows per k-tile); window wrap pf_b_n_off
+unchanged.
+
+PHASE A (CPU, before the window): proof_prefill_bitexact.py — stock reference
+transcribed from cb2/exl3_gemm_inner.cuh L132-168 (lines asserted present at
+run time), full tile-walk simulation, real pack shapes gate/up [320,144,32]
+and down [144,320,32], shapes 2,3,4 (tile windows 8/16/32 n-blocks):
+921,600 predicated int4 B loads, 0 mismatches, 100% trellis-word coverage per
+matrix, int16 value-level spot map OK. VERDICT: BIT-EXACT.
+
+VERDICT: **PASS**
+
+== RAW: --mode check ==
+[check] gate/up m=64..512 shapes {2,3}: BIT-EXACT (8/8)
+[check] down   m=64..512 shapes {2,3,4}: BIT-EXACT (12/12)
+→ 20/20 BIT-EXACT (torch.equal), deterministic across repeats.
+
+== RAW: --mode bench --reps 5 (medians, us/GEMM) ==
+  matrix     m shape   stock us      g8 us    delta
+ gate/up    64     2      102.3      102.0    +0.3%
+ gate/up    64     3      106.5      106.7    -0.1%
+ gate/up   128     2      198.7      197.9    +0.4%
+ gate/up   128     3      224.3      207.1    +7.7%
+ gate/up   256     2      389.2      389.2    +0.0%
+ gate/up   256     3      408.5      408.8    -0.1%
+ gate/up   512     2      772.6      772.9    -0.0%
+ gate/up   512     3      816.9      811.9    +0.6%
+    down    64     2       96.2       96.2    -0.0%
+    down    64     3       91.5       91.8    -0.3%
+    down    64     4      116.7      117.2    -0.5%
+    down   128     2      186.3      186.3    +0.0%
+    down   128     3      176.2      176.2    +0.0%
+    down   128     4      228.9      228.8    +0.0%
+    down   256     2      372.5      368.1    +1.2%
+    down   256     3      348.4      348.5    -0.0%
+    down   256     4      458.6      452.9    +1.2%
+    down   512     2      736.5      730.8    +0.8%
+    down   512     3      696.9      692.3    +0.7%
+    down   512     4      907.0      901.8    +0.6%
+
+[layer estimate] 2x gate/up + 1x down per expert (best shape), x384 x37
+  m=64:  stock 4.21 s  g8 4.20 s  (+0.1%)
+  m=128: stock 8.15 s  g8 8.13 s  (+0.3%)
+  m=256: stock 16.01 s g8 16.01 s (-0.0%)
+  m=512: stock 31.85 s g8 31.80 s (+0.2%)
+
+== Gate criteria application (PREFILL-GATE.md) ==
+- Bit-exact at every (matrix, m, shape): PASS 20/20
+- G8 <= 1.05x stock at m in {128,256,512}: PASS (worst case -0.1%, i.e. g8
+  marginally slower at gate/up m=256 shape3; several combos g8 FASTER, best
+  gate/up m=128 shape3 +7.7%)
+- Aggregate layer estimate <= +2% worse: PASS at every m (worst +0.3%)
+
+FINAL: **PASS** → per the decision rule, the permutation arm is GO at the
+next pack build: fold PF-G8 into tools/quantize_experts_exl3.py (env-gated
+DSV41_PACK_PF_G8=1, staged in this commit), stage the loader re-index
+(docker/patch/pfg8_loader_reindex.py, dormant, DSV41_LOAD_PF_G8=1), make the
+serving kernels G8-aware (exl3_gemm pf_g8 remap as proven here + p2b decode
+G8 reader), rebuild image + pack (REBUILD-PLAN.md), then A/B e2e.
+
+Serve restored immediately after the window on
+results/2026-09-21-gatherv2/boot-k3c-pf-gv2.sh: both ranks up, smoke
+'17 * 19 = ? Step by step, then answer.' → **323**, env levers present
+(PREFETCH=1 CENSUS=1 GATHER_V2=1), gv2 self-check bit-exact, MemAvail 25/27
+GiB post-smoke.

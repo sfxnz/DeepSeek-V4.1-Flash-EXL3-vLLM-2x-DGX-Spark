@@ -543,3 +543,38 @@ S=249 steps (SSE chunks; acc 2.056 in-window). Results/2026-09-21-trace3/.
   or acceptance gains, not idle recovery.
 - Serve restored + verified on boot-k3c-pf-gv2.sh (boot 2 of 3): smoke 323,
   gv2 self-check both ranks, env levers present, MemAvail 25/27.
+
+## Round 26 — 2026-09-21: PF-G8 prefill gate REPAIR + re-run — PASS; fold+loader staged dormant
+
+- Root cause of the 2026-09-20 FAIL (20/20 mismatch): the eb78a8b G8 remap
+  set `gl_b_stride_k = 0`, believing load_b_gl fully addresses global B. It
+  is WINDOW-RELATIVE; the stock window base advances one k-tile per
+  iteration (cb2/exl3_gemm_inner.cuh L168). Zeroed stride ⇒ shapes 2/3
+  re-read k-tile 0 per window, shape 4 pinned at base+0 for all 144
+  k-blocks. The earlier numpy reference was derived from the same wrong
+  model — it validated the harness against itself. Fix (9f71b6e): G8
+  k-stride = TILEBLOCKS_K * 8 * 16 * bits.
+- Phase A (CPU): proof_prefill_bitexact.py — stock reference asserted
+  against cb2 source lines, full tile-walk sim on real shapes
+  gate/up [320,144,32] + down [144,320,32], shapes 2/3/4: 921,600
+  predicated B loads, 0 mismatches, 100% coverage.
+- Phase B (GPU window, serves stopped both ranks): check 20/20 BIT-EXACT;
+  bench reps 5: at veto m∈{128,256,512} worst -0.1% (g8 slower), best
+  +7.7% (gate/up m=128 shape3 g8 faster); layer estimate +0.3%/-0.0%/+0.2%
+  — PASS on all three criteria (PREFILL-GATE-RESULT-2026-09-21.log).
+- Phase C staged dormant (no rebuild this session): quantize fold
+  DSV41_PACK_PF_G8=1 (tools/quantize_experts_exl3.py _pfg8_fold, both fast
+  and LDLQ pack paths, roundtrip-verified in the recipe image) + loader
+  re-index docker/patch/pfg8_loader_reindex.py (DSV41_LOAD_PF_G8=1, TP
+  narrow-dim swap; 9 groups/rank gate/up, 72 k-tiles/rank down — both
+  whole). REBUILD-PLAN.md: measured 16.4 min/shard (mul1 build), ~5.5-6 h
+  both ranks parallel, 358.1 GB new pack vs 608-652 GB free (archive
+  2.0bpw-mul1 first). Serving kernels G8-aware + image rebuild remain the
+  gating work for the next dispatch.
+- Rider staged: DSV41_ENGRAM_FADVISE_CAP (dormant, unset = exact legacy
+  per-row fadvise; set = coalesce to one fadvise per contiguous page run,
+  capped) in engram_prefetch_v3 — Round-25's 191 fadvise/step ~3.1 ms
+  off-thread at pf_hit 100%. py_compile + chain-apply + functional matrix.
+- Serve restored on boot-k3c-pf-gv2.sh: smoke '17 * 19 = ? Step by step,
+  then answer.' → 323, env levers PREFETCH=1 CENSUS=1 GATHER_V2=1 live,
+  gv2 self-check bit-exact, MemAvail 25/27 GiB post-smoke.
