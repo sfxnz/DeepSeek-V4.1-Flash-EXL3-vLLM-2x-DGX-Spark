@@ -1,0 +1,71 @@
+251 gaps >= 1.0ms, total 1253.6 ms
+
+-- gap 22.3 ms @+19.8 ms (tid 618)
+     cudaEventSynchronize
+     <built-in method synchronize of Event object at 0xf169bc4cadd0>
+     torch/cuda/streams.py(245): synchronize
+     vllm/models/deepseek_v4_1/common/engram.py(3015): stage
+     torch/utils/_contextlib.py(120): decorate_context
+     vllm/models/deepseek_v4_1/nvidia/model_state.py(86): prepare_inputs
+
+-- gap 6.7 ms @+337.2 ms (tid 618)
+     cudaEventSynchronize
+     <built-in method synchronize of Event object at 0xf169bc4cadd0>
+     torch/cuda/streams.py(245): synchronize
+     vllm/models/deepseek_v4_1/common/engram.py(3015): stage
+     torch/utils/_contextlib.py(120): decorate_context
+     vllm/models/deepseek_v4_1/nvidia/model_state.py(86): prepare_inputs
+
+-- gap 4.7 ms @+413.5 ms (tid 618)
+     cudaEventSynchronize
+     <built-in method synchronize of Event object at 0xf169bc4cadd0>
+     torch/cuda/streams.py(245): synchronize
+     vllm/models/deepseek_v4_1/common/engram.py(3015): stage
+     torch/utils/_contextlib.py(120): decorate_context
+     vllm/models/deepseek_v4_1/nvidia/model_state.py(86): prepare_inputs
+
+-- gap 5.1 ms @+483.3 ms (tid 618)
+     cudaEventSynchronize
+     <built-in method synchronize of Event object at 0xf169bc4cadd0>
+     torch/cuda/streams.py(245): synchronize
+     vllm/models/deepseek_v4_1/common/engram.py(3015): stage
+     torch/utils/_contextlib.py(120): decorate_context
+     vllm/models/deepseek_v4_1/nvidia/model_state.py(86): prepare_inputs
+
+-- gap 4.8 ms @+553.2 ms (tid 618)
+     cudaEventSynchronize
+     <built-in method synchronize of Event object at 0xf169bc4cadd0>
+     torch/cuda/streams.py(245): synchronize
+     vllm/models/deepseek_v4_1/common/engram.py(3015): stage
+     torch/utils/_contextlib.py(120): decorate_context
+     vllm/models/deepseek_v4_1/nvidia/model_state.py(86): prepare_inputs
+
+-- gap 11.5 ms @+623.4 ms (tid 618)
+     cudaEventSynchronize
+     <built-in method synchronize of Event object at 0xf169bc4cadd0>
+     torch/cuda/streams.py(245): synchronize
+     vllm/models/deepseek_v4_1/common/engram.py(3015): stage
+     torch/utils/_contextlib.py(120): decorate_context
+     vllm/models/deepseek_v4_1/nvidia/model_state.py(86): prepare_inputs
+
+-- gap 4.3 ms @+700.8 ms (tid 618)
+     cudaEventSynchronize
+     <built-in method synchronize of Event object at 0xf169bc4cadd0>
+     torch/cuda/streams.py(245): synchronize
+     vllm/models/deepseek_v4_1/common/engram.py(3015): stage
+     torch/utils/_contextlib.py(120): decorate_context
+     vllm/models/deepseek_v4_1/nvidia/model_state.py(86): prepare_inputs
+
+-- gap 5.3 ms @+771.6 ms (tid 618)
+     cudaEventSynchronize
+     <built-in method synchronize of Event object at 0xf169bc4cadd0>
+     torch/cuda/streams.py(245): synchronize
+     vllm/models/deepseek_v4_1/common/engram.py(3015): stage
+     torch/utils/_contextlib.py(120): decorate_context
+     vllm/models/deepseek_v4_1/nvidia/model_state.py(86): prepare_inputs
+
+== gap ms by outer-caller (frames above streams.py synchronize) ==
+   1249.5 ms  vllm/models/deepseek_v4_1/common/engram.py(3015): stage <- torch/utils/_contextlib.py(120): decorate_context <- vllm/models/deepseek_v4_1/nvidia/model_state.py(86): prepare_inputs
+      1.8 ms  threading.py(323): wait <- queue.py(154): get
+      1.2 ms  <built-in method replay of pybind11_builtins.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1 object at 0xf16ce8b7edb0> <- torch/cuda/graphs.py(182): replay <- vllm/v1/worker/gpu/cudagraph_utils.py(449): run_fullgraph <- vllm/v1/worker/gpu/cudagraph_utils.py(639): run_fullgraph
+      1.0 ms  torch/nn/modules/module.py(1782): _call_impl <- nn.Module: DeepseekV4DecoderLayer_0 <- vllm/models/deepseek_v4_1/nvidia/model.py(539): forward <- torch/nn/modules/module.py(1782): _call_impl <- nn.Module: DeepseekV4Model_0

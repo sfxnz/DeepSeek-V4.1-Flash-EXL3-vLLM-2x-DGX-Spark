@@ -519,3 +519,27 @@ the ~2.4 ms sub-1-ms fragments + step/scheduler overheads + kernel
 launch tails, not the gather. 35 needs acceptance or device-side gains.
 Code stays dormant; serve restored UP on boot-k3c-pf-gv2.sh (Round-23
 best 31.37).
+
+## Round 25 — 2026-09-21: arbitration trace (trace3) — DEVICE-BOUND verdict
+
+Trace of the 31.37 best config (k3c + PREFETCH + CENSUS + GATHER_V2) with the
+Round-22 protocol (one L.A.I.L prose request, cp-before-stop, idle-host parse).
+S=249 steps (SSE chunks; acc 2.056 in-window). Results/2026-09-21-trace3/.
+
+- Device-busy (kernel-timestamp union) 65.25 ms/step; profiled wall 72.40;
+  live-implied unprofiled step 65.5-69.3 ⇒ profiler inflation ~3-5 ms (~5%),
+  all on the CPU launch path. Kernel composition/step: p2b MoE 22.4, dense
+  GEMM 17.6, AR 4.6, draft/aux ~13, prefill residue ~2.6.
+- Idle NOW 7.15 ms/step total: >=0.5ms pool 4.87 (73x5-10ms + 173x2-5ms,
+  median 4.69) + sub-0.5ms dust 2.29. The R22 7.5 ms main-thread gather
+  owner is GONE (sync-blocked 0.7 ms/window; gather now in the 2 parallel
+  stage workers). Largest coherent residual: 191 posix_fadvise(WILLNEED)/step
+  on the OFF-thread prefetch pool worker (~3.1 ms of gap time; pf_hit 100%
+  ⇒ pure waste) — code-gated (cap the fan-out), NOT env-gated.
+- ARBITRATION: 35 @ acc 2.3 needs step <=65.7 ms. Device-busy alone 65.25.
+  Perfect recovery of all 7.15 ms idle lands exactly at the bar with zero
+  margin, and no single env-reachable owner >=4 ms exists ⇒ device-bound;
+  NO A/B run. 35 at this acceptance requires kernel work (p2b/dense GEMM)
+  or acceptance gains, not idle recovery.
+- Serve restored + verified on boot-k3c-pf-gv2.sh (boot 2 of 3): smoke 323,
+  gv2 self-check both ranks, env levers present, MemAvail 25/27.
