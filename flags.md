@@ -486,3 +486,36 @@ MemAvail post-32k 21/23 GiB. Serve left UP on
 results/2026-09-21-gatherv2/boot-k3c-pf-gv2.sh. Gap to 35: 3.63 —
 remaining idle is the ~2.4 ms sub-1-ms fragments + residual stage path;
 35 still needs acceptance or device-side gains.
+
+## Round 24 — 2026-09-21: engram stage defer (off-thread next-step gather) — REVERT env, code dormant
+
+Round-18 option 2 implemented (safe since 35e05fd fixed side-stream
+ordering): DSV41_ENGRAM_DEFER=1 (default off, docker/patch/engram_defer.py,
+commits ea871aa/b2c8ad0/dc548ef). ONE persistent worker per rank predicts
+the next chunk (bit-exact v3 rule), CPU-hashes (cpu-hash numpy mirror),
+gathers all tables via v2 preadv into double-buffered pinned slots, H2Ds
+on a side stream (wait_stream BEFORE the with-block), and stage()
+consumes with ONE DtoD per table at replay — zero gather work on the
+critical path; ANY anomaly disarms to the sync v2 path with one line
+(bounded 2s join, queried events, 4-step warm bit-verify on live data).
+
+Boot-2 finding (fixed dc548ef): adaptive-verification micro-steps call
+the post-propose hook with MALFORMED snapshots (sum(qsl[1:]) !=
+num_tokens) — enqueueing them churned the generation counter and
+zeroed the hit rate SILENTLY (census only printed on hits). Now: enqueue
+validates qsl; census prints on attempt cadence; seen-gen guard.
+
+Live (boot 3/3): ACTIVE warm-verified x4, defer-hit 65.6-100% (typical
+~88) both ranks, late=0 always, worker 4.6-7.7 ms/pred vs ~72 ms step,
+zero DISABLED. Smoke 323. L.A.I.L b1 median 30.28 (28.73-30.55) vs
+31.37 baseline — flat (inside the 29.5-33.7 band), gate ≥32.3 FAIL →
+REVERT env lever per the engaged-but-flat rule.
+
+CONCLUSION (the round's real result): with the stage() gather fully off
+the critical path AND verified ~88-100% consumed, tok/s does not move —
+**the stage() host gather was NOT the remaining wall.** The Round-22
+residual idle attribution must be re-examined: remaining idle lives in
+the ~2.4 ms sub-1-ms fragments + step/scheduler overheads + kernel
+launch tails, not the gather. 35 needs acceptance or device-side gains.
+Code stays dormant; serve restored UP on boot-k3c-pf-gv2.sh (Round-23
+best 31.37).
