@@ -795,7 +795,7 @@ except Exception as _engram_fast_err:
 try:
     from pathlib import Path as _Pp
 
-    from engram_prefetch_v2 import apply as _apply_engram_pf
+    from engram_prefetch_v3 import apply as _apply_engram_pf
 
     _apply_engram_pf(
         _Pp("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"),
