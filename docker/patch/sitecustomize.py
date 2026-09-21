@@ -804,3 +804,21 @@ try:
     )
 except Exception as _engram_pf_err:
     print(f"dsv41: engram prefetch skipped: {_engram_pf_err!r}", flush=True)
+
+# Engram CPU-side hash (Round 18 attribution fix): compute the next step's
+# n-gram hashes on the host from a post-propose snapshot and delete the
+# prepare_inputs D2H + hashes_ready.synchronize() (99.9% of the ~14.2
+# ms/step GPU-idle pool). Bit-exact warmup verify + async canary; any
+# mismatch self-disables to the stock path. DSV41_ENGRAM_CPU_HASH=1
+# enables (default off). Requires the engram_stage_fast chain.
+try:
+    from pathlib import Path as _Pch
+
+    from engram_cpu_hash import apply as _apply_cpu_hash
+
+    _apply_cpu_hash(
+        _Pch("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"),
+        _Pch("/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py"),
+    )
+except Exception as _cpu_hash_err:
+    print(f"dsv41: engram cpu-hash skipped: {_cpu_hash_err!r}", flush=True)
