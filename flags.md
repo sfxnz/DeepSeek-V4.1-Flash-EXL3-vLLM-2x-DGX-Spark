@@ -310,3 +310,26 @@ inactive by default). ARM 3 skipped (no flag cleared the bar; window spent
 on restore). Final serve smoke 323 ✓, MemAvail 25/26 GiB, all boots
 117/117 pre / ≥25 GiB post, zero abort lines. Gap to 35: 6.24. Evidence:
 results/2026-09-21-capture-pf/VERDICT.md.
+
+### Round 17 — draftk2: sampled drafter + k=2 BOTH REVERT; best stays 28.76
+
+Two arms on the k3c serve. ARM A: `draft_sample_method=probabilistic` via
+SPEC_CONFIG override (boot-k3c-dsampled.sh). NOTE: the original plan said
+"remove draft_sample_method" for engine-default sampling — that is a provable
+no-op (vLLM default IS "greedy", config/speculative.py:588; removing the field
+reproduces the pinned value), so the arm was run as "probabilistic", which is
+what actually implements the sampled-drafter theory (allocates draft_logits,
+gumbel-samples drafts, full-logit rejection ratios). Verified in engine
+non-default args. L.A.I.L n=3 median 28.50 (28.80/28.50/26.92) = −0.9% vs
+28.76, gate ≥29.62 failed → REVERT. Sampled drafter is functionally healthy
+(CLI t=0 acc 3.28, draft_accept 0.76 — no collapse, unlike mul1's 4-bit
+drafter) but doesn't convert to L.A.I.L speed at t=0.2. ARM B: k=2 with
+captures resized to the k2 formula [1,2,3,4,6] (boot-k2c.sh; verify batch 3).
+L.A.I.L n=3 median 26.89 (26.08/27.57/26.89) = −6.5% → REVERT; theory refuted
+— acc 2.57 nearly saturates k2's max 3.0, but the cheaper verify does not pay
+for the lost per-step accepted tokens at c=1. k-lever now swept end-to-end:
+k5 26.32 / k4 25.87 / **k3 28.76** / k2 26.89 — k=3 is the optimum. Both arms
+reverted → abort-early rule: ARM C skipped, serve restored byte-identical to
+boot-k3c.sh (engine log re-verified k3/[1,3,4,6,8]/greedy, smoke 323 ✓,
+confirm job a132c12230a2 = 28.69 ≈ baseline). Gap to 35: still 6.24 (82.2%).
+Evidence: results/2026-09-21-draftk2/VERDICT.md.
