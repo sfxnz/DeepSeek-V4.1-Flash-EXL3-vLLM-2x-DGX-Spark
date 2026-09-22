@@ -1006,3 +1006,22 @@ except Exception as _fat_err:
     import os as _os_fat_x
 
     _os_fat_x._exit(1)
+
+# G8 stream feed (g8final r31): env-gated DSV41_LOAD_PF_G8=1 — drain the VL
+# wrapper's sorted mapped list in place during load_weights so per-tensor H2D
+# page pins are released as consumed (G8 boot OOM root cause; see
+# docker/patch/g8_stream_feed.py). Idempotent; no-op for stock boots.
+try:
+    import os as _os_sf
+
+    if _os_sf.environ.get("DSV41_LOAD_PF_G8", "0") == "1":
+        from g8_stream_feed import install as _g8sf_install
+
+        _g8sf_install()
+except SystemExit as _g8sf_exit:
+    print(f"dsv41: FATAL g8 stream feed failed: {_g8sf_exit}", flush=True)
+    import os as _os_sfx
+
+    _os_sfx._exit(1)
+except Exception as _g8sf_err:
+    print(f"dsv41: g8 stream feed skipped: {_g8sf_err!r}", flush=True)
