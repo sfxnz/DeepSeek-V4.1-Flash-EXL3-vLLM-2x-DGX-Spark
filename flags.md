@@ -610,3 +610,35 @@ S=249 steps (SSE chunks; acc 2.056 in-window). Results/2026-09-21-trace3/.
   baseline 31.37 stands. G8 pack intact on spark1; resume = fix gemv reader
   (down NT=144, m≤4) + prove p2b in-image + re-run gate + assemble_pack.sh
   (resumable) then Phase 3+. Details: results/2026-09-22-endgame/VERDICT.md.
+
+## Round 29 — 2026-09-22 endgame2 (G8-repair + resume)
+
+- R28's "NT=144 nondeterministic gemv race" was a GATE HARNESS ARTIFACT, not
+  a kernel defect. v2 passed mcg=None → host cb=0 → K=2 QTIP gemv ineligible
+  → m≤8 points silently ran the AUTOTUNED regular GEMM, whose candidate
+  timing on real B differs between stock and G8 layouts → different split-k
+  order → sub-ULP nondeterministic diffs (autotune key MAX(size_m,2) explains
+  the m=1/m=2 coupling). p2b crash = wrong-length scale tables (gu/uu/dv need
+  hidden=5120, got 2304) + 1-entry pointer tables with ids=[0,1] → OOB.
+  CPU ownership-map proof: results/2026-09-22-endgame2/ownership_map_g8.py —
+  G8 branch addressing exact for BOTH shapes and BOTH readers (no race
+  possible). Fixes: results/2026-09-21-pfg8/pfg8_bitexact_gate.py v3 (mcg
+  marker + shared EXLLAMAV3_TUNE_CACHE + correct p2b tables + NaN-aware eq).
+- GATE: 24/24 PASS ×2 consecutive (canonical-g8 image unchanged). The G8
+  kernel port is proven bit-exact including down m=1,2,4 and p2b_fused_moe.
+- G8 BOOT lane dead at the floor: loader phase-2 dest alloc fix landed
+  (2bddbc3, 06670cf) but spark2 worker OOM-killed ×3 during weight load
+  (anon ~45.5GB; G8 load path balloons host memory on the worker rank).
+  Kernels fine; loader needs a memory-lean G8 load. New dispatch required.
+- lm_head fallback BLOCKED in-image: checkpoint key lm_head.weight does not
+  route to language_model.lm_head.weight (ValueError at load). Import-path
+  fixes landed (ba0675d: vllm.models.* + direct flashinfer.mm_mxfp8;
+  install() now True in-image). Needs key-routing fix + REAL-image test —
+  its tests used a fake vllm package.
+- Serve restored: boot-k3c-pf-gv2.sh, health green, smoke 323,
+  correctness 8/8 (--full incl recall_64k), quality probes 3/3.
+  Baseline 31.37 stands; 35 NOT reached (no candidate booted).
+- Ops notes: spark2 pack push must use parallel streams (single-stream TCP
+  collapses to 22MB/s at 11ms RTT; 4 streams ≈ 400MB/s); snapshot-dir
+  symlink copies must use RELATIVE links (absolute /home paths break inside
+  the container's /cache/huggingface mount).

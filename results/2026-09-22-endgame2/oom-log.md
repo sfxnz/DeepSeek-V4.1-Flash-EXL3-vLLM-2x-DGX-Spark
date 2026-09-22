@@ -32,3 +32,9 @@ Mem:           121Gi       4.1Gi       117Gi       4.1Mi       1.6Gi       117Gi
 === 2026-09-22T07:21:23+01:00 PRE-BOOT-LM-2 (symlink fix) ===
 Mem:           121Gi       4.7Gi       113Gi       196Ki       4.8Gi       116Gi
 Mem:           121Gi       4.1Gi       116Gi       4.1Mi       2.8Gi       117Gi
+=== 2026-09-22T07:30:02+01:00 PRE-RESTORE (stock 31.37) ===
+Mem:           121Gi       4.3Gi       113Gi       188Ki       5.3Gi       117Gi
+Mem:           121Gi       4.0Gi        99Gi       2.4Mi        19Gi       117Gi
+=== 2026-09-22T07:40:18+01:00 POST-RESTORE (serve UP, smoke 323) ===
+Mem:           121Gi        96Gi        24Gi       251Mi       2.3Gi        25Gi
+Mem:           121Gi        94Gi        26Gi       252Mi       2.1Gi        27Gi
