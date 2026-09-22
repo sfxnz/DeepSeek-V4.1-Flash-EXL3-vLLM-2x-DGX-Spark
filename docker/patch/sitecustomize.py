@@ -11,6 +11,77 @@ import sys
 if "/opt/dsv41-patch" not in sys.path:
     sys.path.insert(0, "/opt/dsv41-patch")
 
+# --- pfg8 load tracer (Round 31): when DSV41_LOAD_PF_G8=1, sample the worker
+# process every 10s during weight load: RSS, gc type census (top objects by
+# retained count), torch tensor count, and main-thread stack. Writes
+# /tmp/g8trace.log inside the container. Zero-risk: pure reads, env-gated.
+try:
+    import os as _os_tr
+
+    if _os_tr.environ.get("DSV41_LOAD_PF_G8", "0") == "1":
+        import threading as _th_tr
+        import time as _t_tr
+
+        def _g8_tracer_loop():
+            path = "/tmp/g8trace.log"
+            with open(path, "a") as _fh:
+                _fh.write(f"tracer start {_t_tr.time()}\n")
+            while True:
+                try:
+                    _t_tr.sleep(10)
+                    lines = []
+                    with open("/proc/self/status") as _st:
+                        for _ln in _st:
+                            if _ln.startswith(("VmRSS:", "VmSwap:")):
+                                lines.append(_ln.strip())
+                    import gc
+
+                    _stats = {}
+                    for _o in gc.get_objects():
+                        _t = type(_o).__name__
+                        if _t in ("Tensor", "Parameter", "Storage", "dict", "list"):
+                            _stats[_t] = _stats.get(_t, 0) + 1
+                    lines.append("gc: " + repr(_stats))
+                    try:
+                        import torch as _torch_tr
+
+                        lines.append(
+                            f"torch cuda alloc={_torch_tr.cuda.memory_allocated()//2**20}MiB"
+                        )
+                    except Exception:
+                        pass
+                    # main thread stack
+                    try:
+                        for _th in _th_tr.enumerate():
+                            if _th is not _th_tr.current_thread() and getattr(_th, "__dict__", None):
+                                _f = sys._current_frames().get(_th.ident)
+                                if _f is not None and _th.name == "MainThread":
+                                    lines.append(
+                                        "stack: "
+                                        + "".join(
+                                            f"{_fr.f_code.co_filename}:{_fr.f_lineno}:{_fr.f_code.co_name} "
+                                            for _fr in [
+                                                _f,
+                                                *(_f.f_back for _ in range(0))
+                                            ][:1]
+                                        )
+                                    )
+                    except Exception:
+                        pass
+                    with open(path, "a") as _fh:
+                        _fh.write(f"--- {_t_tr.time()}\n" + "\n".join(lines) + "\n")
+                except Exception as _e:
+                    try:
+                        with open(path, "a") as _fh:
+                            _fh.write(f"tracer err {_e!r}\n")
+                    except Exception:
+                        pass
+
+        _th_tr.Thread(target=_g8_tracer_loop, daemon=True).start()
+except Exception:
+    pass
+
+
 # c1_graph_safe_adaptive is unwired. Extra-graphs and pin-budget=2 both
 # failed L.A.I.L (22.5 and 21.1). 6-token-verify family is closed.
 
