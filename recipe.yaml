@@ -43,15 +43,15 @@ serve:
     KV_CACHE_DTYPE: fp8
     KV_CACHE_MEMORY: 8589934592
     BLOCK_SIZE: 64
-    NUM_SPECULATIVE_TOKENS: 5
+    NUM_SPECULATIVE_TOKENS: 3
     SPEC: dspark
     LOAD_FORMAT: auto
     QUANTIZATION: exl3
     DSV41_ENGRAM_DISK: 1
     LANGUAGE_MODEL_ONLY: 0
     MM_ENCODER_TP_MODE: data
-    MAX_NUM_BATCHED_TOKENS: 2048
-    FORCE_UNSAFE_CTX: 0
+    MAX_NUM_BATCHED_TOKENS: 8192
+    FORCE_UNSAFE_CTX: 1
     FORCE_UNSAFE_ENGRAM: 0
     FORCE_UNSAFE_QUANT: 0
     ENFORCE_EAGER: 0
@@ -62,6 +62,10 @@ serve:
     SKIP_DOWNLOAD: 0
     ORCHESTRATE: auto
     EXTRA_ARGS: ""
+    DSV41_ENGRAM_PREFETCH: 1
+    DSV41_ENGRAM_CENSUS: 1
+    DSV41_ENGRAM_GATHER_V2: 1
+    DSV41_LMHEAD_MXFP8: 1
 
 readme:
   defaults:
@@ -88,11 +92,11 @@ readme:
 
 measured:
   decode:
-    conditions: "Capture 2026-09-19 rounds 6-11 on the E11 config (E10+E11 keeps: p2b funnelshift extraction, b12x (16,64) small-m tiles, o_proj wo_a exact-requant onto the fp8 einsum) plus round-11 parallel Engram staging (DSV41_ENGRAM_FAST_STAGE=1, default on since run.sh). KV pool 8 GiB, DSpark-5 greedy, CUDA graphs, vision on, Engram on disk, native p2b CFG=1. bench_decode.py prose phase = streamed greedy 200 tokens thinking off; L.A.I.L prose = 512 tokens temperature 0.2. Prose evidence: results/2026-09-19-e11/cells.log; lail_prose evidence after round-11 fast staging: results/2026-09-19-faststage/02-e2e.log; history in results/RESULTS.md."
+    conditions: "Campaign capture 2026-09-22 (results/2026-09-22-close/) on the promoted recipe: DSpark-3 greedy + cudagraph captures [1,3,4,6,8] + Engram prefetch v3 (pf_hit 100%) + census + gather v2 (preadv/vectorized dequant) + NCCL AR-tail set + mem-hygiene bundle + lm_head mxfp8 (b12x path, pack revision 2.0bpw-mcg-lmhead-mxfp8 — stock 2.0bpw-mcg with only model-00043 re-encoded), image canonical-e12, vision on, Engram on disk. bench_decode.py prose = streamed greedy 200 tokens thinking off, 9-run median; L.A.I.L prose = 512 tokens temperature 0.2, pooled n=10. Full campaign history rounds 1-33 in results/RESULTS.md; verdict ledger in the Hermes mlops/recipes skill."
     units: {decode: tok/s per stream (median), aggregate: tok/s, ttft_p50: s}
     rows:
-      - {phase: prose, concurrency: 1, decode: "34.3", aggregate: "34.3", ttft_p50: "0.29", evidence: results/2026-09-19-e11/cells.log}
-      - {phase: lail_prose, concurrency: 1, decode: "25.4", aggregate: "25.4", ttft_p50: "0.34", evidence: results/2026-09-19-faststage/02-e2e.log}
+      - {phase: prose, concurrency: 1, decode: "39.6", aggregate: "39.6", ttft_p50: "0.31", evidence: results/2026-09-22-close/fournumbers/four_numbers.json}
+      - {phase: lail_prose, concurrency: 1, decode: "33.2", aggregate: "33.2", ttft_p50: "0.36", evidence: results/2026-09-22-close/lail_real1.json}
 
 links:
   model: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash
