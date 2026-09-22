@@ -18,17 +18,39 @@ Dispatch map (why this is a runtime swap and not a quant-config entry):
 - LogitsProcessor._apply_head (logits_processor.py:136-143) calls
   lm_head.quant_method.apply(lm_head, hidden_states, bias) whenever head_dtype
   is None (it is, on this serve), so replacing quant_method + params on the
-  lm_head object re-routes both the target verify call (model.py:1068) and the
-  DSpark draft call (dspark.py:364; the speculator aliases the target lm_head
-  onto the draft model, spec_decode/dspark/utils.py:104-117).
+  lm_head object re-routes both the target verify call (model.py:1068) and
+  the DSpark draft call (dspark.py:364; the speculator aliases the target
+  lm_head onto the draft model, spec_decode/dspark/utils.py:104-117).
+- Checkpoint-key routing (Round-30 root cause): the serving model root is the
+  VL wrapper DeepseekV41ForCausalLM (vl_model.py). Its WeightsMapper maps HF
+  names fully into the wrapper namespace before AutoWeightsLoader strips the
+  "language_model." prefix and delegates to the child
+  (DeepseekV41LLMForCausalLM), whose own mapper is a NO-OP (vl_model.py:177
+  — the suffix rules are not idempotent). The wrapper's suffix rule
+  "head.weight" -> "language_model.lm_head.weight" (key.rsplit — prefix
+  preserved) corrupted our staged "lm_head.weight" key to
+  "lm_language_model.lm_head.weight" (garbage), while
+  "lm_head.weight_scale" matched nothing at all (the "\.scale$" regex wants
+  a literal dot; no suffix rule matches "_scale") and arrived at the wrapper
+  root as a bare name -> ValueError "There is no module or parameter named
+  'lm_head' in DeepseekV41ForCausalLM" (the crash text reported the scale
+  key's arrival point, which is why the weight key's corruption went
+  unnoticed until the Round-30 integration test).
+  Fix (this module, _install_scale_suffix_rule): prepend REGEX rules to
+  both mapper makers — "^lm_head\.weight$" -> "head.weight" (the stock
+  suffix rule then performs the canonical rename) and
+  "^lm_head\.weight_scale$" -> the fully-qualified param name. Regexes are
+  required, not suffix rules: regexes apply BEFORE the suffix pass, and any
+  suffix-rule result ending in "head.weight" would itself be re-fired by
+  the stock suffix rule (the same corruption). The rules are inert for
+  stock packs: a bf16-head index has no "lm_head.*" keys at all, and no
+  other checkpoint key starts with "lm_head.".
 
 Gating: DSV41_LMHEAD_MXFP8=1 (sitecustomize) AND the snapshot index contains
 `lm_head.weight_scale`. Absent tensor -> stock bf16 path, one log line, never
-a crash. The checkpoint key is `lm_head.weight`/`lm_head.weight_scale` (NOT
-`head.weight_scale`: the DSV4.1 WeightsMapper regex `\.scale$` matches "." not
-"_", so a `head.weight_scale` key would never be renamed onto the param and
-would be dropped as an unexpected weight; `lm_head.*` passes through mapping
-untouched and lands on the module directly).
+a crash. Checkpoint keys are `lm_head.weight`/`lm_head.weight_scale`,
+rewritten onto the model params by the mapper regex rules installed above
+(see the checkpoint-key routing note).
 
 Graph safety: apply() calls only mxfp8_e4m3_quantize (the same
 torch.ops.vllm.mxfp8_quantize the dense b12x path uses in-graph, DRAFT-AUX
@@ -106,6 +128,84 @@ def _model_snapshot_dir(model_config) -> str | None:
     return None
 
 
+# Checkpoint-key routing (see module docstring). Regex rules are REQUIRED,
+# not suffix rules: regexes apply BEFORE the suffix pass, and any mapped
+# name ending in "head.weight" is re-fired by the stock suffix rule
+# ("head.weight" -> "language_model.lm_head.weight", rsplit keeps the
+# prefix: "lm_head.weight" -> "lm_language_model.lm_head.weight", the
+# corruption the Round-30 integration test caught). Routing
+# "^lm_head\.weight$" back to "head.weight" lets the STOCK suffix rule do
+# the final rename; the scale key maps directly to the fully-qualified
+# param name (no stock rule matches "_scale", so nothing re-fires).
+LMHEAD_REGEX_RULES_VL = {
+    r"^lm_head\.weight$": "head.weight",
+    r"^lm_head\.weight_scale$": "language_model.lm_head.weight_scale",
+}
+LMHEAD_REGEX_RULES_TEXT = {
+    r"^lm_head\.weight$": "head.weight",
+    r"^lm_head\.weight_scale$": "lm_head.weight_scale",
+}
+
+
+def _install_scale_suffix_rule() -> bool:
+    """Teach the DeepSeek-V4.1 WeightsMappers the lm_head.* quantized keys.
+
+    The re-encoded pack stores the head as ``lm_head.weight`` (e4m3) +
+    ``lm_head.weight_scale`` (e8m0); stock mappers route the first key to
+    garbage (see module docstring) and the second nowhere, so the load
+    aborts with ValueError at the VL wrapper root. Appending the regex
+    rules above to BOTH mapper makers fixes routing and is inert for stock
+    packs (neither key exists there; no other key starts with "lm_head.").
+
+    Returns True if at least one maker gained the rules.
+    """
+    import re as _re
+
+    from vllm.models.deepseek_v4_1.nvidia import model as _model_mod
+    from vllm.models.deepseek_v4_1.nvidia import vl_model as _vl_mod
+
+    targets = (
+        (_model_mod, "_make_deepseek_v4_weights_mapper", LMHEAD_REGEX_RULES_TEXT),
+        (_vl_mod, "_make_deepseek_v4_vl_weights_mapper", LMHEAD_REGEX_RULES_VL),
+    )
+    ok = False
+    seen: dict[int, bool] = {}
+    for mod, name, rules in targets:
+        fn = getattr(mod, name, None)
+        if fn is None:
+            continue
+        if id(fn) in seen:
+            continue  # module aliasing (vl re-imports the text maker)
+        seen[id(fn)] = True
+        if getattr(fn, "_lmhead_regex_rules", False):
+            ok = True  # already installed (double install() call)
+            continue
+        orig = fn
+
+        def _patched(*args, _orig=orig, _rules=rules, **kwargs):
+            mapper = _orig(*args, **kwargs)
+            regex = dict(getattr(mapper, "orig_to_new_regex", None) or {})
+            for pat, repl in _rules.items():
+                regex[_re.compile(pat)] = repl
+            mapper.orig_to_new_regex = regex
+            return mapper
+
+        _patched._lmhead_regex_rules = True
+        setattr(mod, name, _patched)
+        ok = True
+    # Rebuild the class-attr default (built at import time from the stock
+    # maker) so even a consumer reading it before __init__ sees the rules.
+    cls = getattr(_model_mod, "DeepseekV41LLMForCausalLM", None)
+    if cls is not None:
+        try:
+            cls.hf_to_vllm_mapper = _model_mod._make_deepseek_v4_weights_mapper(
+                "fp4"
+            )
+        except Exception:
+            pass
+    return ok
+
+
 # ---------------------------------------------------------------------------
 # install(): wrap DeepseekV41LLMForCausalLM.__init__. Presence of the
 # quantized tensor is checked lazily at model-init time (sitecustomize runs
@@ -113,6 +213,10 @@ def _model_snapshot_dir(model_config) -> str | None:
 # ---------------------------------------------------------------------------
 
 def install() -> bool:
+    # Round-30 fix: checkpoint-key routing FIRST (see module docstring) —
+    # without the suffix rule the load dies at the first
+    # ``lm_head.weight_scale`` key regardless of the swap below.
+    _install_scale_suffix_rule()
     # Round-29 fix: this vllm build keeps the model classes under
     # vllm.models.deepseek_v4_1 (NOT vllm.model_executor.models.deepseek_v4_1
     # as the c32be56 draft assumed) — the old import raised ModuleNotFoundError

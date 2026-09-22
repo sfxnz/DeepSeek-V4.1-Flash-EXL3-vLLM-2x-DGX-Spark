@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import sys
 import tempfile
 import types
@@ -111,27 +112,21 @@ def _fake_vllm() -> types.ModuleType:
     class _FI:
         @staticmethod
         def mm_mxfp8(a, b, a_scale, b_scale, out_dtype, backend):
-            # Emulate: dequant both sides, fp32 GEMM. b is weight.t() of the
-            # e4m3 values; b_scale is the swizzled [N,K//32] scales.
-            af = a.to(torch.float32)
-            af = af.view(af.shape[0], af.shape[1] // 32, 32) * torch.exp2(
-                a_scale.to(torch.float32).view(af.shape[0], -1, 1) - 127.0
-            )
-            af = af.view(*a.shape)
-            bf = b.t().to(torch.float32)  # [N, K] values
-            bsc = b_scale.t()  # un-swizzle is identity here: we pass the
-            # row-major scales through a side channel in the test below by
-            # pre-unswizzling — see apply test note.
-            raise AssertionError("unused when row-major scales are passed")
+            raise AssertionError("replaced per-test")
 
     fi_mod.vllm_flashinfer = _FI
     vllm.__dict__["utils"] = types.ModuleType("vllm.utils")
     vllm.utils.flashinfer = fi_mod
 
-    nvidia = types.ModuleType("vllm.model_executor.models.deepseek_v4_1.nvidia")
-    model_mod = types.ModuleType(
-        "vllm.model_executor.models.deepseek_v4_1.nvidia.model"
-    )
+    # Round-29/30 layout: model classes live under vllm.models.deepseek_v4_1
+    # (NOT vllm.model_executor.models.*), flashinfer is imported directly.
+    flashinfer = types.ModuleType("flashinfer")
+    flashinfer.mm_mxfp8 = _FI.mm_mxfp8
+    sys.modules["flashinfer"] = flashinfer
+
+    nvidia = types.ModuleType("vllm.models.deepseek_v4_1.nvidia")
+    model_mod = types.ModuleType("vllm.models.deepseek_v4_1.nvidia.model")
+    vl_mod = types.ModuleType("vllm.models.deepseek_v4_1.nvidia.vl_model")
 
     class DeepseekV41LLMForCausalLM(torch.nn.Module):
         def __init__(self, *, vllm_config, prefix: str = ""):
@@ -168,6 +163,90 @@ def _fake_vllm() -> types.ModuleType:
             per = w.shape[0] // self.tp_size
             return w[self.tp_rank * per : (self.tp_rank + 1) * per]
 
+    # --- WeightsMapper replica with the REAL rule application order -------
+    # (vllm/model_executor/models/utils.py _map_name_with_shard:
+    #  regex -> substr -> stacked -> prefix -> suffix; suffix via rsplit).
+    class WeightsMapper:
+        def __init__(
+            self,
+            orig_to_new_prefix=None,
+            orig_to_new_regex=None,
+            orig_to_new_suffix=None,
+            orig_to_new_substr=None,
+        ):
+            self.orig_to_new_prefix = orig_to_new_prefix or {}
+            self.orig_to_new_regex = orig_to_new_regex or {}
+            self.orig_to_new_suffix = orig_to_new_suffix or {}
+            self.orig_to_new_substr = orig_to_new_substr or {}
+
+        def _map_name_with_shard(self, key):
+            for pattern, new_key in self.orig_to_new_regex.items():
+                if pattern.search(key):
+                    if new_key is None:
+                        return None
+                    key = pattern.sub(new_key, key)
+            for substr, new_key in self.orig_to_new_substr.items():
+                if substr in key:
+                    if new_key is None:
+                        return None
+                    key = key.replace(substr, new_key, 1)
+            for prefix, new_key in self.orig_to_new_prefix.items():
+                if key.startswith(prefix):
+                    if new_key is None:
+                        return None
+                    key = key.replace(prefix, new_key, 1)
+            for suffix, new_key in self.orig_to_new_suffix.items():
+                if key.endswith(suffix):
+                    if new_key is None:
+                        return None
+                    key = new_key.join(key.rsplit(suffix, 1))
+            return key, None
+
+    # Stock mapper makers, replicating the real rule sets (model.py
+    # _make_deepseek_v4_weights_mapper and vl_model.py
+    # _make_deepseek_v4_vl_weights_mapper, fp4 branch).
+    def _make_deepseek_v4_weights_mapper(expert_dtype, linear_scale_name="weight_scale_inv"):
+        return WeightsMapper(
+            orig_to_new_prefix={
+                "layers.": "model.layers.",
+                "embed.": "model.embed.",
+                "norm.": "model.norm.",
+                "mtp.": "model.mtp.",
+            },
+            orig_to_new_regex={
+                re.compile(r"\.scale$"): f".{linear_scale_name}",
+            },
+            orig_to_new_suffix={
+                "head.weight": "lm_head.weight",
+                "embed.weight": "embed_tokens.weight",
+            },
+        )
+
+    def _make_deepseek_v4_vl_weights_mapper(expert_dtype, linear_scale_name):
+        return WeightsMapper(
+            orig_to_new_prefix={
+                "layers.": "language_model.model.layers.",
+                "embed.": "language_model.model.embed.",
+                "norm.": "language_model.model.norm.",
+                "hc_head": "language_model.model.hc_head",
+                "mtp.": "language_model.model.mtp.",
+            },
+            orig_to_new_regex={
+                re.compile(r"\.scale$"): f".{linear_scale_name}",
+            },
+            orig_to_new_suffix={
+                "head.weight": "language_model.lm_head.weight",
+                "embed.weight": "embed_tokens.weight",
+            },
+        )
+
+    model_mod._make_deepseek_v4_weights_mapper = _make_deepseek_v4_weights_mapper
+    DeepseekV41LLMForCausalLM.hf_to_vllm_mapper = _make_deepseek_v4_weights_mapper(
+        "fp4"
+    )
+    vl_mod._make_deepseek_v4_weights_mapper = _make_deepseek_v4_weights_mapper
+    vl_mod._make_deepseek_v4_vl_weights_mapper = _make_deepseek_v4_vl_weights_mapper
+
     def register(parent, name, mod):
         sys.modules[f"{parent.__name__}.{name}"] = mod
         parent.__dict__[name] = mod
@@ -184,12 +263,11 @@ def _fake_vllm() -> types.ModuleType:
     vutils = types.ModuleType("vllm.utils")
     sys.modules["vllm.utils"] = vutils
     register(vutils, "flashinfer", fi_mod)
-    models = types.ModuleType("vllm.model_executor.models")
-    ds41 = types.ModuleType("vllm.model_executor.models.deepseek_v4_1")
-    register(pkg_me, "models", models)
-    register(models, "deepseek_v4_1", ds41)
-    register(ds41, "nvidia", nvidia)
+    register(vllm, "models", types.ModuleType("vllm.models"))
+    register(vllm.models, "deepseek_v4_1", types.ModuleType("vllm.models.deepseek_v4_1"))
+    register(vllm.models.deepseek_v4_1, "nvidia", nvidia)
     register(nvidia, "model", model_mod)
+    register(nvidia, "vl_model", vl_mod)
     sys.modules["vllm"] = vllm
     return vllm, model_mod.DeepseekV41LLMForCausalLM, mxfp8_utils
 
@@ -307,8 +385,8 @@ class TestLMHeadMxfp8(unittest.TestCase):
                 bf = bf.view(N, K)
                 return (af @ bf.t()).to(out_dtype)
 
-            fi = sys.modules["vllm.utils.flashinfer"]
-            fi.vllm_flashinfer.mm_mxfp8 = staticmethod(fake_mm)
+            fi = sys.modules["flashinfer"]
+            fi.mm_mxfp8 = staticmethod(fake_mm)
 
             out = lm.quant_method.apply(lm, x)
             self.assertEqual(out.dtype, torch.bfloat16)
@@ -339,6 +417,70 @@ class TestLMHeadMxfp8(unittest.TestCase):
             cfg.model = types.SimpleNamespace(path=td)
             model = self.Cls(vllm_config=vllm_config)
             self.assertEqual(model.lm_head.weight.dtype, torch.bfloat16)
+
+    def test_mapper_routing_real_keys(self):
+        """Round-30 regression: the real VL-wrapper mapper rule set.
+
+        Stock rules corrupt lm_head.weight (suffix rule keeps the prefix:
+        'lm_language_model.lm_head.weight') and drop lm_head.weight_scale at
+        the wrapper root. install() must add regex rules that route BOTH keys
+        to language_model.lm_head.*, while leaving stock keys (head.weight,
+        mtp.*, layers.*) untouched.
+        """
+        from vllm.models.deepseek_v4_1.nvidia import vl_model
+
+        def mapped(mapper, k):
+            return mapper._map_name_with_shard(k)[0]
+
+        # BEFORE install: reproduce the boot crash paths.
+        stock = vl_model._make_deepseek_v4_vl_weights_mapper("fp4", "weight_scale")
+        self.assertEqual(
+            mapped(stock, "lm_head.weight"),
+            "lm_language_model.lm_head.weight",  # corrupted (boot bug #1)
+        )
+        self.assertEqual(
+            mapped(stock, "lm_head.weight_scale"),
+            "lm_head.weight_scale",  # unmapped -> wrapper root ValueError
+        )
+        self.assertEqual(
+            mapped(stock, "head.weight"), "language_model.lm_head.weight"
+        )
+
+        # install() already ran in setUpClass via the patch module import?
+        # No: call it explicitly here (idempotent).
+        self.mod.install()
+
+        fixed = vl_model._make_deepseek_v4_vl_weights_mapper("fp4", "weight_scale")
+        self.assertEqual(
+            mapped(fixed, "lm_head.weight"), "language_model.lm_head.weight"
+        )
+        self.assertEqual(
+            mapped(fixed, "lm_head.weight_scale"),
+            "language_model.lm_head.weight_scale",
+        )
+        # stock keys unchanged
+        self.assertEqual(
+            mapped(fixed, "head.weight"), "language_model.lm_head.weight"
+        )
+        self.assertEqual(
+            mapped(fixed, "layers.3.attn.wq_a.weight"),
+            "language_model.model.layers.3.attn.wq_a.weight",
+        )
+        self.assertEqual(
+            mapped(fixed, "mtp.0.embed.weight"),
+            "language_model.model.mtp.0.embed_tokens.weight",
+        )
+        self.assertEqual(
+            mapped(fixed, "norm.weight"), "language_model.model.norm.weight"
+        )
+
+        # text-side mapper (non-VL) also gains the rules
+        from vllm.models.deepseek_v4_1.nvidia import model as model_mod
+
+        tm = model_mod._make_deepseek_v4_weights_mapper("fp4")
+        self.assertEqual(mapped(tm, "lm_head.weight"), "lm_head.weight")
+        self.assertEqual(mapped(tm, "lm_head.weight_scale"), "lm_head.weight_scale")
+        self.assertEqual(mapped(tm, "head.weight"), "lm_head.weight")
 
     def test_reencode_script(self):
         mod = _load(REENC, "quantize_lmhead_mxfp8_test")
