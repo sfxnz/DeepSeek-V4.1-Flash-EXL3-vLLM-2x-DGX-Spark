@@ -61,15 +61,74 @@ ROW_NEW = '''def shard_exl3_row(loaded: torch.Tensor, suffix: str, tp_rank: int,
 '''
 
 
+# ---- phase 2 (Round 29): create_weights dest allocation ----
+# The image's exl3.py already carries phase 1 (narrow-swap) from the build.
+# But create_weights allocates STOCK-shaped Parameter buffers
+# (w13 [E,2,KT,NT_local,W], w2 [E,KT_local,NT,W]); a G8 shard
+# ([NT/8][KT][8W]) then fails the dest-vs-loaded shape check:
+#   RuntimeError: EXL3 load shape mismatch ... w13_trellis
+#   dest (320, 72, 32) != loaded (9, 320, 256)
+# Phase 2 allocates the G8 shapes under the same env flag:
+#   w13: [E, 2, NT_local/8, KT, 8W]   (n-groups on dim 2 — matches col narrow dim 0 of fold)
+#   w2:  [E, NT/8, KT_local, 8W]      (n-groups on dim 1 — matches row narrow dim 1 of fold)
+MARKER2 = "# --- pfg8-loader-reindex-alloc ---"
+
+ALLOC_W13_OLD = '''        w13_trellis = Parameter(
+            torch.empty(
+                num_experts, 2, in_tiles, out_tiles, k_words, dtype=torch.int16
+            ),
+            requires_grad=False,
+        )'''
+
+ALLOC_W13_NEW = '''        # ''' + MARKER2 + ''' G8 pack: trellis [n-groups][k-tiles][8W]
+        import os as _os_alloc
+        _g8_alloc = _os_alloc.environ.get("DSV41_LOAD_PF_G8", "0") == "1"
+        w13_trellis = Parameter(
+            torch.empty(
+                num_experts, 2,
+                (out_tiles // 8, in_tiles, k_words * 8) if _g8_alloc
+                else (in_tiles, out_tiles, k_words),
+                dtype=torch.int16,
+            ),
+            requires_grad=False,
+        )'''
+
+ALLOC_W2_OLD = '''        w2_trellis = Parameter(
+            torch.empty(
+                num_experts, out_tiles, in_tiles, k_words, dtype=torch.int16
+            ),
+            requires_grad=False,
+        )'''
+
+ALLOC_W2_NEW = '''        w2_trellis = Parameter(
+            torch.empty(
+                num_experts,
+                (in_tiles // 8, out_tiles, k_words * 8) if _g8_alloc
+                else (out_tiles, in_tiles, k_words),
+                dtype=torch.int16,
+            ),
+            requires_grad=False,
+        )'''
+
+
 def patch(text: str) -> str:
-    if MARKER in text:
-        return text  # idempotent
-    if COL_OLD not in text:
-        raise SystemExit("pfg8_loader_reindex: shard_exl3_col anchor missing")
-    if ROW_OLD not in text:
-        raise SystemExit("pfg8_loader_reindex: shard_exl3_row anchor missing")
-    text = text.replace(COL_OLD, COL_NEW, 1)
-    text = text.replace(ROW_OLD, ROW_NEW, 1)
+    if MARKER in text and MARKER2 in text:
+        return text  # idempotent (both phases)
+    if MARKER not in text:
+        if COL_OLD not in text:
+            raise SystemExit("pfg8_loader_reindex: shard_exl3_col anchor missing")
+        if ROW_OLD not in text:
+            raise SystemExit("pfg8_loader_reindex: shard_exl3_row anchor missing")
+        text = text.replace(COL_OLD, COL_NEW, 1)
+        text = text.replace(ROW_OLD, ROW_NEW, 1)
+    # phase 2: dest allocation (idempotent on its own marker)
+    if MARKER2 not in text:
+        if ALLOC_W13_OLD not in text:
+            raise SystemExit("pfg8_loader_reindex: w13_trellis alloc anchor missing")
+        if ALLOC_W2_OLD not in text:
+            raise SystemExit("pfg8_loader_reindex: w2_trellis alloc anchor missing")
+        text = text.replace(ALLOC_W13_OLD, ALLOC_W13_NEW, 1)
+        text = text.replace(ALLOC_W2_OLD, ALLOC_W2_NEW, 1)
     return text
 
 
