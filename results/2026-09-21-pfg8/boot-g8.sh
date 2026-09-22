@@ -68,7 +68,7 @@
 set -euo pipefail
 cd /home/sfxnz/projects/ai-lab/recipes/DeepSeek-V4.1-Flash-EXL3-vLLM-2x-DGX-Spark
 
-export IMAGE=dsv41-flash-exl3-sm121:canonical-e12
+export IMAGE=dsv41-flash-exl3-sm121:canonical-g8
 export SNAPSHOT_SHA=2.0bpw-mcg-g8
 export DSV41_LOAD_PF_G8=1
 

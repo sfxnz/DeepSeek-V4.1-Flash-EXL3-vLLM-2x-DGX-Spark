@@ -1,0 +1,42 @@
+# PF-G8 kernel image: canonical-e12 + G8-aware exllamav3_ext & vllm_exl3_c.
+# Boot-CHAIN-AUDIT.md components 6/7/8: prefill exl3_gemm B-load remap (the
+# bit-exact-proven harness twin port), p2b/QTIP decode G8 readers, fat-GEMM
+# fail-loud guards + loader-side fat routing gate. All G8 paths behind
+# DSV41_LOAD_PF_G8 (read once at module load; stock layout 100% untouched
+# when unset). Rebuilds both extensions from the SAME pinned refs as the base
+# image, CPU-only (no GPU in the build container).
+FROM dsv41-flash-exl3-sm121:canonical-e12
+
+COPY patch /opt/dsv41-patch
+
+# Same pins as docker/Dockerfile (canonical-e12 chain)
+ARG EXLLAMAV3_REF=5be886578ec80324c2c715269387be2058724b6e
+ARG VLLM_EXL3_REF=d3cfd394920360d69f820d2dc96f8292a9e10283
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git \
+ && git clone https://github.com/turboderp-org/exllamav3.git /opt/exllamav3 \
+ && git -C /opt/exllamav3 checkout "$EXLLAMAV3_REF" \
+ && python3 /opt/dsv41-patch/patch_exllamav3_aarch64.py /opt/exllamav3/exllamav3/exllamav3_ext \
+ && python3 /opt/dsv41-patch/pfg8_kernels_exllamav3.py /opt/exllamav3 \
+ && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps /opt/exllamav3 \
+ && python3 -c "import torch, exllamav3, exllamav3_ext; assert hasattr(exllamav3_ext, 'exl3_moe'); assert hasattr(exllamav3_ext, 'pf_g8_set'); print('exllamav3 g8 ok')" \
+ && git clone https://github.com/vcruz305/vllm-exl3.git /opt/vllm-exl3 \
+ && git -C /opt/vllm-exl3 checkout "$VLLM_EXL3_REF" \
+ && python3 /opt/dsv41-patch/fix_vllm_exl3_setup.py /opt/vllm-exl3/setup.py \
+ && python3 /opt/dsv41-patch/widen_p2b_shapes.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_mrow.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_cfg1.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_codebook.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_fshift.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/pfg8_kernels_vllm.py /opt/vllm-exl3 \
+ && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps /opt/vllm-exl3 \
+ && python3 -c "import torch, vllm_exl3, vllm_exl3_c; assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); assert hasattr(vllm_exl3_c, 'pf_g8_set'); print('vllm_exl3 g8 cuda ok')" \
+ && rm -rf /opt/exllamav3 /opt/vllm-exl3 /var/lib/apt/lists/*
+
+# Loader patch (dormant, DSV41_LOAD_PF_G8=1 to engage) — anchors match this
+# build's vllm_exl3/exl3.py (checked in via sha afc6da3e…).
+RUN python3 /opt/dsv41-patch/pfg8_loader_reindex.py /usr/local/lib/python3.12/dist-packages/vllm_exl3/exl3.py \
+ && cp /opt/dsv41-patch/sitecustomize.py /usr/lib/python3.12/sitecustomize.py \
+ && python3 -m py_compile /usr/lib/python3.12/sitecustomize.py /usr/local/lib/python3.12/dist-packages/vllm_exl3/exl3.py \
+ && echo "dsv41: g8 image wiring done"

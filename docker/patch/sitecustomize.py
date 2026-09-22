@@ -910,3 +910,28 @@ try:
     )
 except Exception as _defer_err:
     print(f"dsv41: engram defer skipped: {_defer_err!r}", flush=True)
+
+# PF-G8 fat-expert routing gate (BOOT-CHAIN-AUDIT.md R3, 2026-09-21): under
+# DSV41_LOAD_PF_G8=1 the fat-GEMM/reconstruct fallback readers are
+# stock-layout and must not run on a G8 pack. The kernel-side guard
+# (exl3_fat_gemm TORCH_CHECK) is belt-and-braces; the primary gate is here:
+# raise VLLM_EXL3_FAT_THRESHOLD to 2**30 unless the operator explicitly set
+# it, so no expert is ever routed fat and all rows go through the G8-aware
+# exl3_moe kernel. The module-level read of the env in vllm_exl3.exl3
+# happens at import time — sitecustomize runs before any vllm_exl3 import,
+# so setting os.environ here wins. Default (env unset) = untouched stock
+# behavior with the stock threshold of 256.
+try:
+    import os as _os_fat
+
+    if (
+        _os_fat.environ.get("DSV41_LOAD_PF_G8", "0") == "1"
+        and "VLLM_EXL3_FAT_THRESHOLD" not in _os_fat.environ
+    ):
+        _os_fat.environ["VLLM_EXL3_FAT_THRESHOLD"] = str(2**30)
+        print("dsv41: pfg8 fat-expert routing OFF (VLLM_EXL3_FAT_THRESHOLD=2^30)", flush=True)
+except Exception as _fat_err:
+    print(f"dsv41: FATAL pfg8 fat gate wiring error: {_fat_err!r}", flush=True)
+    import os as _os_fat_x
+
+    _os_fat_x._exit(1)
