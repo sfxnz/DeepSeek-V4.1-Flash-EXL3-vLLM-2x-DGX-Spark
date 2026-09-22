@@ -642,3 +642,29 @@ S=249 steps (SSE chunks; acc 2.056 in-window). Results/2026-09-21-trace3/.
   collapses to 22MB/s at 11ms RTT; 4 streams ≈ 400MB/s); snapshot-dir
   symlink copies must use RELATIVE links (absolute /home paths break inside
   the container's /cache/huggingface mount).
+
+## Round 30 — 2026-09-22 lmhead: lm_head MXFP8 BOOTED (+2.5%, sub-gate → reverted)
+- Key routing FIXED (two stacked bugs): (1) the model root is the VL wrapper
+  DeepseekV41ForCausalLM (vl_model.py); its suffix rule renames via rsplit
+  (prefix preserved), so staged lm_head.weight → lm_language_model.lm_head
+  .weight (garbage) and lm_head.weight_scale matched no rule (\.scale$ wants
+  a dot) → bare-key ValueError at the wrapper root. Fix: install() adds
+  REGEX rules (run before suffixes) ^lm_head\.weight$→head.weight and
+  ^lm_head\.weight_scale$→language_model.lm_head.weight_scale to both
+  mapper makers; inert for stock packs (791ef2b). (2) head_dtype is a
+  PROPERTY always returning the model dtype — the "is not None" disarm
+  always tripped; disarm now only on genuine override (1a9def4).
+- REAL-image integration test now exists: results/2026-09-22-lmhead/
+  integration_test.py (CPU-only docker run, canonical-e12): real mapper ×
+  both real pack indexes + real AutoWeightsLoader; 15/15 PASS. It caught
+  bug (1)'s weight-key corruption that code-reading missed. Lesson: mapper
+  behavior must be tested against rsplit semantics, never assumed.
+- Boot 2 (boot 1 = bug 2): both ranks 'lm_head mxfp8 enabled (b12x,
+  (64640, 5120))', smoke 323, correctness 7/7 quick, live argmax-flip
+  ≈1–2%/step (3/12 greedy completions identical; offline bound 4.5%).
+- L.A.I.L: real1 median 32.45 (n=5), real2 31.89 (n=5), pooled 32.17 (n=10)
+  = +2.5% vs 31.37 — below the +3% KEEP gate (32.31) → REVERTED. CLI prose
+  n=9 median 32.35 (twin). 35 NOT claimed (needs two medians ≥35; best 32.45).
+- Serve restored: boot-k3c-pf-gv2.sh (stock 31.37 config), smoke 323
+  post-restore. lm lever remains one flag away and boot-clean.
+- Boot cap: 3 of 4 used (boot1 disarm-bug, boot2 measure, boot3 restore).
