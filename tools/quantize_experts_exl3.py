@@ -2,9 +2,10 @@
 """Stream official V4.1 shards into an EXL3 mixed pack.
 
 Copies / hardlinks non-routed tensors as stored. Replaces backbone routed-expert
-w1/w2/w3 with EXL3 trellis (default 2.0 bpw, MCG). Engram embed tables are
+w1/w2/w3 with EXL3 trellis (default 2.0 bpw, MUL1). Engram embed tables are
 hardlinked so DSV41_ENGRAM_DISK=1 can pread them — they must not be loaded into
-RAM (each is ~100 GiB).
+RAM (each is ~100 GiB). Stay at K=2 until a Spark UMA row exists. Do not raise
+bits or pass --hq before an activation-Hessian rebuild.
 
 Uncalibrated identity Hessian (no activation capture). Same-shape experts in a
 shard share that Hessian and go through quantize_exl3_batch. Resume-safe per
@@ -26,24 +27,29 @@ if str(ROOT / "tools") not in sys.path:
     sys.path.insert(0, str(ROOT / "tools"))
 
 from pack_meta import (  # noqa: E402
+    DEFAULT_CODEBOOK,
     apply_pack_config,
     build_quantization_config,
+    get_codebook,
     is_routed_expert_tensor,
     is_routed_expert_weight,
+    revision_for,
 )
 
 SIDECAR_SKIP = {"config.json", "model.safetensors.index.json"}
 
 
-def quant_args_for(bits: int, device: str) -> dict:
-    return {
+def quant_args_for(bits: int, device: str, codebook: str = DEFAULT_CODEBOOK) -> dict:
+    cb = get_codebook(codebook)
+    args = {
         "K": int(bits),
         "seed": 0,
         "sigma_reg": 0.025,
         "devices": [device],
-        "mcg": True,
         "apply_out_scales": None,
     }
+    args[cb.quant_key] = True
+    return args
 
 
 def shard_needs_exl3(names: list[str]) -> bool:
@@ -72,11 +78,18 @@ def _load_index(src: Path) -> dict:
     return json.loads((src / "model.safetensors.index.json").read_text())
 
 
-def write_pack_config(src_config: Path, dest: Path, bits: int) -> None:
+def write_pack_config(
+    src_config: Path, dest: Path, bits: int, codebook: str = DEFAULT_CODEBOOK
+) -> None:
     cfg = json.loads(src_config.read_text())
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(
-        json.dumps(apply_pack_config(cfg, build_quantization_config(bits=bits)), indent=2)
+        json.dumps(
+            apply_pack_config(
+                cfg, build_quantization_config(bits=bits, codebook=codebook)
+            ),
+            indent=2,
+        )
         + "\n"
     )
 
@@ -101,7 +114,7 @@ def map_existing_names(names: list[str], fname: str, new_map: dict[str, str]) ->
     for n in names:
         if is_routed_expert_weight(n):
             stem = n[: -len(".weight")]
-            for suf in (".trellis", ".suh", ".svh", ".mcg"):
+            for suf in (".trellis", ".suh", ".svh", ".mcg", ".mul1"):
                 new_map[stem + suf] = fname
         elif is_routed_expert_tensor(n):
             continue
@@ -166,21 +179,45 @@ def _meta_h(in_features: int, device: str, cache: dict):
     return h
 
 
+def _pfg8_fold(trellis):
+    # --- pfg8-pack-fold (dormant; DSV41_PACK_PF_G8=1 enables) ---
+    # PF-G8 group-major layout: [KT][NT][W] -> [NT/8][KT][8*W], groups of 8
+    # n-tiles major. Bit-exact pure re-index (gate PASS 2026-09-21,
+    # kernel_study/gemv_bench/PREFILL-GATE-RESULT-2026-09-21.log). Serving
+    # kernels must be G8-aware (or the loader must un-permute) before a G8
+    # pack is booted — see results/2026-09-21-pfg8/REBUILD-PLAN.md.
+    import os
+
+    if os.environ.get("DSV41_PACK_PF_G8", "0") != "1":
+        return trellis
+    kt, nt, w = trellis.shape
+    if nt % 8:
+        raise SystemExit(f"pfg8 fold: n-tiles {nt} not divisible by 8")
+    return trellis.view(kt, nt // 8, 8 * w).permute(1, 0, 2).contiguous()
+
+
 def _pack_one(out: dict) -> dict:
     packed = {}
-    for key in ("trellis", "suh", "svh", "mcg"):
+    for key in ("trellis", "suh", "svh", "mcg", "mul1"):
         if key in out:
             packed[key] = out[key].detach().cpu()
+    if "trellis" in packed:
+        packed["trellis"] = _pfg8_fold(packed["trellis"])
     return packed
 
 
 def _quantize_greedy_tiles(
-    tiles, bits: int, device: str, passes: int = 2, beam: int = 1
+    tiles,
+    bits: int,
+    device: str,
+    passes: int = 2,
+    beam: int = 1,
+    codebook: str = DEFAULT_CODEBOOK,
 ):
     """Greedy / beam K-bit sliding-window encode. tiles: (N, 256) float32.
 
     Each step tries 2**K next symbols per surviving path, keeps min-MSE via
-    exllamav3_ext.decode (same MCG mapping as inference). beam=1 is pure
+    exllamav3_ext.decode (same codebook mapping as inference). beam=1 is pure
     greedy (4 vs 16384 Viterbi states at K=2). pack_trellis stores only the
     low K bits and unpack is tail-biting, so later passes start from the wrap
     state implied by the previous pass.
@@ -190,6 +227,9 @@ def _quantize_greedy_tiles(
 
     n, l = tiles.shape
     assert l == 256
+    cb = get_codebook(codebook)
+    mcg = cb.name == "mcg"
+    mul1 = cb.name == "mul1"
     beam = max(1, int(beam))
     n_sym = 1 << bits
     wrap = (1 << (16 - bits)) - 1
@@ -203,7 +243,7 @@ def _quantize_greedy_tiles(
         for _ in range(max(1, int(passes))):
             for i in range(l):
                 cands = ((state.unsqueeze(0) << bits) | ks) & 0xFFFF
-                ext.decode(cands.to(torch.int16), dec, True, False)
+                ext.decode(cands.to(torch.int16), dec, mcg, mul1)
                 best = (dec - tiles[:, i]).square().argmin(dim=0)
                 state = cands[best, rng_n]
                 encoded[:, i] = state
@@ -223,7 +263,7 @@ def _quantize_greedy_tiles(
             cands = ((state.unsqueeze(0) << bits) | ks) & 0xFFFF
             flat = cands.reshape(n_sym * beam, n)
             dec = torch.empty(n_sym * beam, n, dtype=torch.float32, device=device)
-            ext.decode(flat.to(torch.int16), dec, True, False)
+            ext.decode(flat.to(torch.int16), dec, mcg, mul1)
             total = score.unsqueeze(0) + (dec - tiles[:, i]).square().view(
                 n_sym, beam, n
             )
@@ -248,17 +288,19 @@ def _quantize_fast(
     h_cache: dict,
     greedy: bool = False,
     beam: int = 1,
+    codebook: str = DEFAULT_CODEBOOK,
 ) -> list[dict]:
     """All-tiles encode, no LDLQ strip walk and no global-scale search.
 
     Identity-Hessian LDLQ walks 320 K-tiles per matrix (~5.3 s/expert on GB10).
-    Uncalibrated fallback plus skip_g_scale keeps the MCG trellis the inference
+    Uncalibrated fallback plus skip_g_scale keeps the trellis the inference
     kernel expects, without the per-strip compensation GEMMs. greedy=True uses
     a 2**K sliding-window search instead of tail-biting Viterbi.
     """
     import torch
     from exllamav3.modules.quant.exl3_lib.quantize import (
         codebook_mcg_mult,
+        codebook_mul1_mult,
         finalize_capture_H,
         pack_trellis,
         quantize_tiles,
@@ -269,7 +311,9 @@ def _quantize_fast(
     if not weights:
         return []
     dev = torch.device(device)
-    qa = quant_args_for(bits, device)
+    qa = quant_args_for(bits, device, codebook)
+    cb = get_codebook(codebook)
+    marker = codebook_mul1_mult if cb.name == "mul1" else codebook_mcg_mult
     perm = tensor_core_perm(dev)
     packed_list = []
     chunk = 256
@@ -294,7 +338,7 @@ def _quantize_fast(
         tiles = tiles[:, perm]
         if greedy:
             encoded = _quantize_greedy_tiles(
-                tiles, bits, device, beam=beam
+                tiles, bits, device, beam=beam, codebook=codebook
             ).view(tiles_k, tiles_n, 256)
         else:
             idxs = []
@@ -304,12 +348,13 @@ def _quantize_fast(
             encoded = torch.cat(idxs, 0).view(tiles_k, tiles_n, 256)
             del idxs
         trellis = pack_trellis(encoded, qa)
+        trellis = _pfg8_fold(trellis)
         packed_list.append(
             {
                 "trellis": trellis.detach().cpu(),
                 "suh": su.flatten().contiguous().to(dtype=torch.half).cpu(),
                 "svh": sv.flatten().contiguous().to(dtype=torch.half).cpu(),
-                "mcg": torch.tensor(codebook_mcg_mult, dtype=torch.uint32).view(torch.int).cpu(),
+                cb.suffix: torch.tensor(marker, dtype=torch.uint32).view(torch.int).cpu(),
             }
         )
         del wf, wr, tiles, encoded, trellis
@@ -324,6 +369,7 @@ def _quantize_group(
     fast: bool = True,
     greedy: bool = False,
     beam: int = 1,
+    codebook: str = DEFAULT_CODEBOOK,
 ) -> list[dict]:
     """weights: CPU/GPU float32 (in, out), same shape. Returns packed dicts."""
     from exllamav3.modules.quant.exl3_lib.quantize import (
@@ -335,11 +381,17 @@ def _quantize_group(
         return []
     if fast:
         return _quantize_fast(
-            weights, bits, device, h_cache, greedy=greedy, beam=beam
+            weights,
+            bits,
+            device,
+            h_cache,
+            greedy=greedy,
+            beam=beam,
+            codebook=codebook,
         )
     in_features = int(weights[0].shape[0])
     h_data = _identity_h(in_features, device, h_cache)
-    qargs = [quant_args_for(bits, device) for _ in weights]
+    qargs = [quant_args_for(bits, device, codebook) for _ in weights]
     h_list = [h_data] * len(weights)
     if len(weights) == 1:
         _, _, out = quantize_exl3(
@@ -372,6 +424,7 @@ def convert_shards(
     fast: bool = True,
     greedy: bool = False,
     beam: int = 1,
+    codebook: str = DEFAULT_CODEBOOK,
 ) -> int:
     from safetensors.torch import safe_open, save_file
 
@@ -452,6 +505,7 @@ def convert_shards(
                         fast=fast,
                         greedy=greedy,
                         beam=beam,
+                        codebook=codebook,
                     )
                     del ws
                     for stem, packed in zip(stems, packed_list):
@@ -508,9 +562,15 @@ def main() -> int:
         type=Path,
         default=Path.home()
         / ".cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3"
-        / "snapshots/2.0bpw-mcg",
+        / f"snapshots/{revision_for()}",
     )
     ap.add_argument("--bits", type=int, default=2)
+    ap.add_argument(
+        "--codebook",
+        default=DEFAULT_CODEBOOK,
+        choices=sorted(("mcg", "mul1")),
+        help="EXL3 trellis codebook. Default mul1. Serve still pins 2.0bpw-mcg.",
+    )
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--batch", type=int, default=8)
     ap.add_argument(
@@ -550,14 +610,28 @@ def main() -> int:
     if not (args.src / "config.json").is_file():
         print(f"missing official snapshot: {args.src}", file=sys.stderr)
         return 1
-    write_pack_config(args.src / "config.json", args.dst / "config.json", args.bits)
+    get_codebook(args.codebook)
+    if args.bits != 2:
+        print(
+            "bits!=2 needs a new Spark UMA row after a calibrated K=2 MUL1 pack. "
+            "Refusing to raise bits here.",
+            file=sys.stderr,
+        )
+        return 1
+    write_pack_config(
+        args.src / "config.json",
+        args.dst / "config.json",
+        args.bits,
+        codebook=args.codebook,
+    )
     copy_sidecars(args.src, args.dst)
     idx = _load_index(args.src)
     expert = [n for n in idx["weight_map"] if is_routed_expert_tensor(n)]
     weights = [n for n in expert if is_routed_expert_weight(n)]
     print(
         f"routed expert tensors={len(expert)} weights={len(weights)} "
-        f"bits={args.bits} greedy={args.greedy} beam={args.beam if args.greedy else 0}"
+        f"bits={args.bits} codebook={args.codebook} "
+        f"greedy={args.greedy} beam={args.beam if args.greedy else 0}"
     )
     print(f"wrote {args.dst / 'config.json'}")
     if args.dry_run:
@@ -593,6 +667,7 @@ def main() -> int:
         fast=not args.ldlq,
         greedy=args.greedy,
         beam=args.beam if args.greedy else 1,
+        codebook=args.codebook,
     )
 
 

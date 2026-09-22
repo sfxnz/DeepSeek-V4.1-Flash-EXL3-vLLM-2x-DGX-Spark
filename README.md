@@ -56,6 +56,8 @@ Stock `vllm/vllm-openai` wheels do not load `DeepseekV41ForCausalLM`. The image 
 
 If the image `dsv41-flash-exl3-sm121` is already present, skip the pull and the build on that node.
 
+`dsv41-flash-exl3-sm121` is the base build tag — the derived experiment Dockerfiles (`docker/Dockerfile.e10`, `docker/Dockerfile.mma`) chain `FROM` it. The promoted serve image carrying the E10+E11 keeps is `dsv41-flash-exl3-sm121:canonical-e12` (build chain `docker/Dockerfile.e10` → `docker/Dockerfile.e11`, promoted in `results/RESULTS.md` round 7), and that is what both nodes run: `IMAGE=dsv41-flash-exl3-sm121:canonical-e12 ./run.sh`.
+
 ## Run
 
 If another `--gpus all` container is up, stop it first.
@@ -65,13 +67,14 @@ On the head node:
 ```bash
 ./run.sh
 python3 smoke_chat.py
+python3 smoke_vision.py
 python3 bench_decode.py --phase prose --concurrency 1
 python3 tools/measure_lail_prose.py
 ```
 
 The API is `http://127.0.0.1:8000/v1`. The served model is `deepseek-ai/DeepSeek-V4.1-Flash`. Cap is `MAX_NUM_SEQS=2`. Do not send a third stream.
 
-The `smoke_chat.py` default prompt is `What is 17*19? Return only the integer.` Thinking is off. Non-empty `content` is the pass. `323` is enough. `bench_decode.py` is streamed greedy, thinking off, 200 completion tokens, 3-run median.
+The `smoke_chat.py` default prompt is `What is 17*19? Return only the integer.` Thinking is off. Non-empty `content` is the pass. `323` is enough. `smoke_vision.py` sends OpenAI `image_url` and must not return HTTP 400 `is not a multimodal model`. `bench_decode.py` is streamed greedy, thinking off, 200 completion tokens, 3-run median.
 
 If `ORCHESTRATE=auto` (the default) and SSH to `WORKER_HOST` fails, `run.sh` exits 1. It does not start a TP=2 head rank alone.
 
@@ -93,7 +96,7 @@ When you are done:
 | `--max-num-seqs` | 2 |
 | `--max-num-batched-tokens` | 2048 |
 | `--kv-cache-dtype` | `fp8` |
-| `--kv-cache-memory` | 4294967296 |
+| `--kv-cache-memory` | 8589934592 |
 | `--quantization` | `exl3` |
 | Engram | disk (`DSV41_ENGRAM_DISK=1`) |
 | `--block-size` | 64 |
@@ -101,6 +104,7 @@ When you are done:
 | CUDA graphs | `FULL_AND_PIECEWISE` (`ENFORCE_EAGER=0`, `DSV41_ALLOW_CUDA_GRAPHS=1`) |
 | Tokenizers / tools / reasoning | `deepseek_v41` |
 | Vision | on (`LANGUAGE_MODEL_ONLY=0`) |
+| `--mm-encoder-tp-mode` | data |
 | Default thinking | `thinking=false`, `reasoning_effort=low` |
 | API | `http://<head>:8000/v1` |
 | Container | `dsv41-flash-exl3` |
@@ -109,18 +113,24 @@ When you are done:
 
 ## Measured on 2× DGX Spark
 
-`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median. `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2). Default is DSpark-5 with CUDA graphs. Smoke is `python3 smoke_chat.py` with thinking off.
+`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median. `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2). Default is DSpark-5 with CUDA graphs. Smoke is `python3 smoke_chat.py` and `python3 smoke_vision.py` with thinking off. These cells are the published MCG pack (`2.0bpw-mcg`) on native p2b `cb=1`. A MUL1 pack is unmeasured. The KV pool is 8 GiB (2,289,205 tokens — 2.18× concurrency at the 1M window). Split prefill/decode cells at 512/4k/16k/64k context and every accepted/rejected experiment live in `results/RESULTS.md`; run `benches/micro.sh` and `benches/e2e.sh` to reproduce them, and `tests/correctness.sh --full` for the quality gate.
+
+spark1+spark2 TP=2 A/B of PR 6 (`e507021`, batched 8192, `--mm-encoder-tp-mode data`) vs `main` (`dcac67a`, batched 2048), still `2.0bpw-mcg`: prose c=1 decode 33.05 vs 27.98 tok/s (overlap in run spread, not a win); 12,712-token prefill 755 vs 797 tok/s (−5%). A 3,182-token prefill was 797 vs 719 (+11%, one batch). Default `--max-num-batched-tokens` stays 2048. `MAX_NUM_BATCHED_TOKENS=8192` remains an override, not a proven upgrade. See `evidence/pr6-batched-8192/`.
+
+MUL1 + p2b `cb=2` (`2.0bpw-mul1` K=2 on `dsv41-flash-exl3-sm121:cb2`) lost prose decode: 23.52 vs 27.98 MCG. Runs 26.43 / 23.52 / 23.17 vs baseline 26.34 / 27.98 / 31.77. MUL1 median and two of three runs sit below the worst baseline run. 12,712-token prefill 792 vs 797 (flat). Rebuild tools stay. Serve stays `2.0bpw-mcg`. See `evidence/pr6-mul1-cb2/`.
 
 <!-- BEGIN generated measured from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
 |---|---|---:|---:|---:|
-| prose | 1 | 21.2 | 21.2 | 0.365 s |
-| lail_prose | 1 | 23.4 | 23.4 | 0.420 s |
+| prose | 1 | 34.3 | 34.3 | 0.29 s |
+| lail_prose | 1 | 25.4 | 25.4 | 0.34 s |
 <!-- END generated measured -->
 
 ## Rebuild the pack
 
-If you already downloaded `sfxnz/DeepSeek-V4.1-Flash-EXL3` at revision `2.0bpw-mcg`, skip this section. The published pack is the serve path.
+If you already downloaded `sfxnz/DeepSeek-V4.1-Flash-EXL3` at revision `2.0bpw-mcg`, skip this section. The published pack is the serve path. Rebuild writes a different revision (`2.0bpw-mul1`) and needs an image that includes `widen_p2b_codebook.py`. Pack-only MUL1 without p2b `cb=2` drops native fused MoE onto generic `exl3_moe` and is a decode regression. MUL1 + p2b `cb=2` was measured and lost prose decode (23.52 vs 27.98). Do not point `SNAPSHOT_SHA` at `2.0bpw-mul1`.
+
+Stay at K=2. Calibrate (activation Hessian / official convert) before raising bits. Do not pass `--hq` or `bits!=2` here. This recipe does not ship a calibration harness.
 
 Exclusive GPU. Stop any quant container before `./run.sh`.
 
@@ -132,24 +142,24 @@ python3 tools/download_official.py
 
 The commit is `dba1be0a40aa45a94ad051997016db3960a90277`. The two Engram shards are about 95 GiB each and need `hf_xet`. Do not set `HF_HUB_DISABLE_XET`.
 
-2. Hardlink the non-expert shards on the host. Quantize routed experts inside image `dsv41-flash-exl3-sm121` with exclusive GPU. Host Python does not have ExLlamaV3. Use `--greedy --beam 16`. Split expert shards 3-22 and 23-42 across the two Sparks.
+2. Hardlink the non-expert shards on the host. Quantize routed experts inside image `dsv41-flash-exl3-sm121` with exclusive GPU. Host Python does not have ExLlamaV3. Use `--codebook mul1 --greedy --beam 16`. Split expert shards 3-22 and 23-42 across the two Sparks. Destination is `snapshots/2.0bpw-mul1`.
 
 ```bash
-python3 tools/quantize_experts_exl3.py --link-only
+python3 tools/quantize_experts_exl3.py --codebook mul1 --link-only
 
 # spark1: expert shards 3-22, inside the recipe image
 python3 tools/quantize_experts_exl3.py \
-  --allow-partial --batch 8 --greedy --beam 16 --only-files $(python3 -c "print(' '.join(f'model-{i:05d}-of-00048.safetensors' for i in range(3,23)))")
+  --codebook mul1 --allow-partial --batch 8 --greedy --beam 16 --only-files $(python3 -c "print(' '.join(f'model-{i:05d}-of-00048.safetensors' for i in range(3,23)))")
 
 # spark2: expert shards 23-42, inside the recipe image
 python3 tools/quantize_experts_exl3.py \
-  --allow-partial --batch 8 --greedy --beam 16 --only-files $(python3 -c "print(' '.join(f'model-{i:05d}-of-00048.safetensors' for i in range(23,43)))")
+  --codebook mul1 --allow-partial --batch 8 --greedy --beam 16 --only-files $(python3 -c "print(' '.join(f'model-{i:05d}-of-00048.safetensors' for i in range(23,43)))")
 ```
 
 3. Merge the two node outputs.
 
 ```bash
-bash tools/assemble_pack.sh
+CODEBOOK=mul1 bash tools/assemble_pack.sh
 ```
 
 ## License

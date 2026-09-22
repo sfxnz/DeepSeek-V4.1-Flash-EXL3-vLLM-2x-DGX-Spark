@@ -37,7 +37,7 @@ def main() -> int:
         type=Path,
         default=Path.home()
         / ".cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3"
-        / "snapshots/2.0bpw-mcg",
+        / "snapshots/2.0bpw-mul1",
     )
     args = ap.parse_args()
     wm = rebuild(args.dst)

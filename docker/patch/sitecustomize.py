@@ -11,6 +11,77 @@ import sys
 if "/opt/dsv41-patch" not in sys.path:
     sys.path.insert(0, "/opt/dsv41-patch")
 
+# --- pfg8 load tracer (Round 31): when DSV41_LOAD_PF_G8=1, sample the worker
+# process every 10s during weight load: RSS, gc type census (top objects by
+# retained count), torch tensor count, and main-thread stack. Writes
+# /tmp/g8trace.log inside the container. Zero-risk: pure reads, env-gated.
+try:
+    import os as _os_tr
+
+    if _os_tr.environ.get("DSV41_LOAD_PF_G8", "0") == "1":
+        import threading as _th_tr
+        import time as _t_tr
+
+        def _g8_tracer_loop():
+            path = "/tmp/g8trace.log"
+            with open(path, "a") as _fh:
+                _fh.write(f"tracer start {_t_tr.time()}\n")
+            while True:
+                try:
+                    _t_tr.sleep(10)
+                    lines = []
+                    with open("/proc/self/status") as _st:
+                        for _ln in _st:
+                            if _ln.startswith(("VmRSS:", "VmSwap:")):
+                                lines.append(_ln.strip())
+                    import gc
+
+                    _stats = {}
+                    for _o in gc.get_objects():
+                        _t = type(_o).__name__
+                        if _t in ("Tensor", "Parameter", "Storage", "dict", "list"):
+                            _stats[_t] = _stats.get(_t, 0) + 1
+                    lines.append("gc: " + repr(_stats))
+                    try:
+                        import torch as _torch_tr
+
+                        lines.append(
+                            f"torch cuda alloc={_torch_tr.cuda.memory_allocated()//2**20}MiB"
+                        )
+                    except Exception:
+                        pass
+                    # main thread stack
+                    try:
+                        for _th in _th_tr.enumerate():
+                            if _th is not _th_tr.current_thread() and getattr(_th, "__dict__", None):
+                                _f = sys._current_frames().get(_th.ident)
+                                if _f is not None and _th.name == "MainThread":
+                                    lines.append(
+                                        "stack: "
+                                        + "".join(
+                                            f"{_fr.f_code.co_filename}:{_fr.f_lineno}:{_fr.f_code.co_name} "
+                                            for _fr in [
+                                                _f,
+                                                *(_f.f_back for _ in range(0))
+                                            ][:1]
+                                        )
+                                    )
+                    except Exception:
+                        pass
+                    with open(path, "a") as _fh:
+                        _fh.write(f"--- {_t_tr.time()}\n" + "\n".join(lines) + "\n")
+                except Exception as _e:
+                    try:
+                        with open(path, "a") as _fh:
+                            _fh.write(f"tracer err {_e!r}\n")
+                    except Exception:
+                        pass
+
+        _th_tr.Thread(target=_g8_tracer_loop, daemon=True).start()
+except Exception:
+    pass
+
+
 # c1_graph_safe_adaptive is unwired. Extra-graphs and pin-budget=2 both
 # failed L.A.I.L (22.5 and 21.1). 6-token-verify family is closed.
 
@@ -26,6 +97,18 @@ try:
     )
 except Exception:
     pass
+
+# Indexer prefill gather workspace: stock max_model_len*40 entries (~5.3 GiB
+# per rank at 1M ctx) locked for process life. DSV41_INDEXER_PREFILL_FACTOR=1
+# right-sizes it to max_model_len*1 (~130 MB). Unset = stock no-op.
+try:
+    from pathlib import Path as _Pw
+
+    from indexer_workspace import apply as _apply_idx_ws
+
+    _apply_idx_ws(_Pw("/usr/local/lib/python3.12/dist-packages/vllm"))
+except Exception as _idx_ws_err:
+    print(f"dsv41: indexer workspace patch skipped: {_idx_ws_err!r}", flush=True)
 
 # sm120_wo_a unwired. b12x wo_a_dense_gemm_mxfp8 waves 21.23/23.00; not
 # faster than Emulation torch.bmm. wo_a is not the remaining 22ms.
@@ -86,6 +169,41 @@ try:
 except Exception:
     pass
 
+# PF-G8 loader re-index (results/2026-09-21-pfg8/BOOT-CHAIN-AUDIT.md):
+# DSV41_LOAD_PF_G8=1 serves a G8 pack (trellis [NT/8][KT][8W]) — the loader
+# must narrow the G8 dims (gate/up dim0, down dim1) or TP sharding reads the
+# pack wrong. Install is idempotent; failure here means the image's
+# vllm_exl3/exl3.py no longer matches the patch anchors — serving on would
+# produce garbage, so abort the boot instead of falling back silently.
+try:
+    import os as _os_g8
+
+    if _os_g8.environ.get("DSV41_LOAD_PF_G8", "0") == "1":
+        from pathlib import Path as _Pg8
+
+        from pfg8_loader_reindex import patch as _pfg8_patch
+
+        _exl3_py = _Pg8(
+            "/usr/local/lib/python3.12/dist-packages/vllm_exl3/exl3.py"
+        )
+        _t = _exl3_py.read_text()
+        _out = _pfg8_patch(_t)
+        if _out != _t:
+            _exl3_py.write_text(_out)
+            print("dsv41: pfg8 loader re-index installed", flush=True)
+        else:
+            print("dsv41: pfg8 loader re-index already present", flush=True)
+except SystemExit as _g8_exit:
+    print(f"dsv41: FATAL pfg8 loader re-index failed: {_g8_exit}", flush=True)
+    import os as _os_g8x
+
+    _os_g8x._exit(1)
+except Exception as _g8_err:
+    print(f"dsv41: FATAL pfg8 loader wiring error: {_g8_err!r}", flush=True)
+    import os as _os_g8x
+
+    _os_g8x._exit(1)
+
 # Load vLLM general plugins in every process (API, EngineCore, workers).
 # VLLM_PLUGINS=vllm_exl3 is not enough on this image: EngineCore can resolve
 # --quantization exl3 before load_general_plugins() runs.
@@ -140,6 +258,25 @@ try:
         Worker.compile_or_warm_up_model = lambda self: CompilationTimes(0.0, 0.0)
 except Exception:
     pass
+
+# mem-hygiene bundle (env-guarded no-ops when their envs are unset):
+# 1) fadvise DONTNEED on shard files after weight load — the GB10 driver
+#    allocates from MemFree and does not reclaim clean page cache
+#    (DSV41_DROP_PAGE_CACHE=1).
+# 2) torch.cuda.empty_cache() after long prefill chunks while MemAvailable is
+#    under the floor (DSV41_PREFILL_EMPTY_CACHE_TOKENS / _MEMAVAIL_GIB).
+try:
+    from drop_page_cache import install as _install_dpc
+
+    _install_dpc()
+except Exception as _dpc_err:
+    print(f"dsv41: drop-page-cache install skipped: {_dpc_err!r}", flush=True)
+try:
+    from prefill_empty_cache import install as _install_pec
+
+    _install_pec()
+except Exception as _pec_err:
+    print(f"dsv41: prefill-empty-cache install skipped: {_pec_err!r}", flush=True)
 
 # FlashInfer SM120 DSV4 decode is compiled only for page_block_size=64.
 # Upstream V4.1 hardcodes SWA pages to 32 (DeepGEMM paged-MQA).
@@ -285,6 +422,20 @@ try:
         _v41_attn.write_text(patch_indexer_short_context_source(_v41_attn.read_text()))
 except Exception:
     pass
+
+# lm_head MXFP8 (b12x): DSV41_LMHEAD_MXFP8=1 + quantized tensor in the
+# snapshot. Default-off; self-disarms (one line, never a crash) when the
+# snapshot keeps the bf16 head. Halves the ~735 MB/call vocab-head weight
+# stream (5.35 ms/step bf16 pair, DRAFT-AUX-13MS lever #1).
+try:
+    import os as _os_lmh
+
+    from lmhead_mxfp8 import enabled_from_env as _lmh_enabled, install as _lmh_install
+
+    if _lmh_enabled(_os_lmh.environ):
+        _lmh_install()
+except Exception as _lmh_err:
+    print(f"dsv41: lm_head mxfp8 hook skipped: {_lmh_err!r}", flush=True)
 
 # DSpark Markov scale. 1 = stock sequential bias. 0 = parallel backbone drafts.
 try:
@@ -726,3 +877,151 @@ except Exception as _mla_cpb_err:
         f"dsv41: SM120 MLA chunks_per_block wrap skipped: {_mla_cpb_err!r}",
         flush=True,
     )
+
+# Engram disk stager census: time the per-step NVMe gather phases. The
+# inter-step gap is dominated by EngramDiskStager.stage (15-28 ms/step at
+# L.A.I.L shapes); this census names the phase so the fast-stager patch can
+# target it. Diagnostic only; enable with DSV41_ENGRAM_CENSUS=1.
+try:
+    from pathlib import Path as _Pc
+
+    from engram_stage_census import apply as _apply_engram_census
+
+    _apply_engram_census(
+        _Pc("/usr/local/lib/python3.12/dist-packages/vllm")
+    )
+except Exception as _engram_census_err:
+    print(f"dsv41: engram census skipped: {_engram_census_err!r}", flush=True)
+
+# Engram fast stage: the 13 per-layer disk gathers run concurrently instead
+# of serially. Trace forensics: ~25.6 ms/step of GPU idle is
+# _read_rows Future.result lock-wait (cold NVMe rows in the serial loop).
+# DSV41_ENGRAM_FAST_STAGE=1 default; self-check reverts on any mismatch.
+try:
+    from pathlib import Path as _Pf
+
+    from engram_stage_fast import apply as _apply_engram_fast
+
+    _apply_engram_fast(
+        _Pf("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1")
+    )
+except Exception as _engram_fast_err:
+    print(f"dsv41: engram fast stage skipped: {_engram_fast_err!r}", flush=True)
+
+# Engram next-step prefetch: fadvise WILLNEED for the next decode chunk's
+# rows, hashed on CPU at postprocess time so kernel readahead overlaps the
+# draft graph. Advisory only (correctness never depends on it). Requires
+# engram_stage_fast. DSV41_ENGRAM_PREFETCH=1 enables.
+try:
+    from pathlib import Path as _Pp
+
+    from engram_prefetch_v3 import apply as _apply_engram_pf
+
+    _apply_engram_pf(
+        _Pp("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"),
+        _Pp("/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py"),
+        _Pp("/usr/local/lib/python3.12/dist-packages/vllm"),
+    )
+except Exception as _engram_pf_err:
+    print(f"dsv41: engram prefetch skipped: {_engram_pf_err!r}", flush=True)
+
+# Engram CPU-side hash (Round 18 attribution fix): compute the next step's
+# n-gram hashes on the host from a post-propose snapshot and delete the
+# prepare_inputs D2H + hashes_ready.synchronize() (99.9% of the ~14.2
+# ms/step GPU-idle pool). Bit-exact warmup verify + async canary; any
+# mismatch self-disables to the stock path. DSV41_ENGRAM_CPU_HASH=1
+# enables (default off). Requires the engram_stage_fast chain.
+try:
+    from pathlib import Path as _Pch
+
+    from engram_cpu_hash import apply as _apply_cpu_hash
+
+    _apply_cpu_hash(
+        _Pch("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"),
+        _Pch("/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py"),
+    )
+except Exception as _cpu_hash_err:
+    print(f"dsv41: engram cpu-hash skipped: {_cpu_hash_err!r}", flush=True)
+
+# Engram gather v2 (Round 22 attribution fix): replace the stock chunk-pool
+# _read_rows inside DiskEngramTable.gather_dequant with inline preadv
+# per contiguous row run + the stock dequant math verbatim. The Round-22
+# trace attributes ~7.5 ms/step of GPU idle to host execution of the
+# gather loop (pool dispatch + per-row syscalls), NOT IO waits (read_w
+# 0.1 ms, page-cached). DSV41_ENGRAM_GATHER_V2=1 enables (default off);
+# one-shot bit-exact self-check, any error disarms to stock with one line.
+# Requires the engram_stage_census chain (applies after it).
+try:
+    from pathlib import Path as _Pg
+
+    from engram_gather_v2 import apply as _apply_gather_v2
+
+    _apply_gather_v2(_Pg("/usr/local/lib/python3.12/dist-packages/vllm"))
+except Exception as _gather_v2_err:
+    print(f"dsv41: engram gather v2 skipped: {_gather_v2_err!r}", flush=True)
+
+# Engram stage defer (Round 23 chain): ONE persistent worker per rank
+# gathers the NEXT step's rows off the critical path (v3-rule prediction,
+# cpu-hash numpy mirror, v2 preadv gather into double-buffered pinned
+# slots + side-stream H2D with proper wait-before-with ordering); stage()
+# consumes the signaled buffer with a per-table DtoD at replay time and
+# falls back to the sync v2 path on ANY anomaly (miss / late / mismatch ->
+# ONE warning line, never a crash, never slower than sync).
+# DSV41_ENGRAM_DEFER=1 enables (default off). Requires the full chain
+# (prestage -> census -> fast -> v3 -> cpu-hash -> gather v2).
+try:
+    from pathlib import Path as _Pd
+
+    from engram_defer import apply as _apply_defer
+
+    _apply_defer(
+        _Pd("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"),
+        _Pd("/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py"),
+        _Pd("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/nvidia/model_state.py"),
+    )
+except Exception as _defer_err:
+    print(f"dsv41: engram defer skipped: {_defer_err!r}", flush=True)
+
+# PF-G8 fat-expert routing gate (BOOT-CHAIN-AUDIT.md R3, 2026-09-21): under
+# DSV41_LOAD_PF_G8=1 the fat-GEMM/reconstruct fallback readers are
+# stock-layout and must not run on a G8 pack. The kernel-side guard
+# (exl3_fat_gemm TORCH_CHECK) is belt-and-braces; the primary gate is here:
+# raise VLLM_EXL3_FAT_THRESHOLD to 2**30 unless the operator explicitly set
+# it, so no expert is ever routed fat and all rows go through the G8-aware
+# exl3_moe kernel. The module-level read of the env in vllm_exl3.exl3
+# happens at import time — sitecustomize runs before any vllm_exl3 import,
+# so setting os.environ here wins. Default (env unset) = untouched stock
+# behavior with the stock threshold of 256.
+try:
+    import os as _os_fat
+
+    if (
+        _os_fat.environ.get("DSV41_LOAD_PF_G8", "0") == "1"
+        and "VLLM_EXL3_FAT_THRESHOLD" not in _os_fat.environ
+    ):
+        _os_fat.environ["VLLM_EXL3_FAT_THRESHOLD"] = str(2**30)
+        print("dsv41: pfg8 fat-expert routing OFF (VLLM_EXL3_FAT_THRESHOLD=2^30)", flush=True)
+except Exception as _fat_err:
+    print(f"dsv41: FATAL pfg8 fat gate wiring error: {_fat_err!r}", flush=True)
+    import os as _os_fat_x
+
+    _os_fat_x._exit(1)
+
+# G8 stream feed (g8final r31): env-gated DSV41_LOAD_PF_G8=1 — drain the VL
+# wrapper's sorted mapped list in place during load_weights so per-tensor H2D
+# page pins are released as consumed (G8 boot OOM root cause; see
+# docker/patch/g8_stream_feed.py). Idempotent; no-op for stock boots.
+try:
+    import os as _os_sf
+
+    if _os_sf.environ.get("DSV41_LOAD_PF_G8", "0") == "1":
+        from g8_stream_feed import install as _g8sf_install
+
+        _g8sf_install()
+except SystemExit as _g8sf_exit:
+    print(f"dsv41: FATAL g8 stream feed failed: {_g8sf_exit}", flush=True)
+    import os as _os_sfx
+
+    _os_sfx._exit(1)
+except Exception as _g8sf_err:
+    print(f"dsv41: g8 stream feed skipped: {_g8sf_err!r}", flush=True)

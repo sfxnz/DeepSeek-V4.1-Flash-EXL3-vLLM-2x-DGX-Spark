@@ -11,11 +11,12 @@ image:
   base: vllm/vllm-openai:deepseekv41-flash-0909
   digest: sha256:d84a123255b822fc22508635218000187221794f59c0694c33b0650d1e377d58
   local_tag: &image dsv41-flash-exl3-sm121
+  canonical_tag: dsv41-flash-exl3-sm121:canonical-e12
   build: docker/Dockerfile
 
 engine:
   name: vllm
-  version: dsv41-flash-0909 + vllm-exl3 native p2b + Engram-on-disk
+  version: dsv41-flash-0909 + vllm-exl3 native p2b (cb=1 MCG / cb=2 MUL1) + Engram-on-disk
 
 hardware:
   shape: 2x DGX Spark (GB10)
@@ -40,7 +41,7 @@ serve:
     MAX_NUM_SEQS: 2
     UTIL: 0.75
     KV_CACHE_DTYPE: fp8
-    KV_CACHE_MEMORY: 4294967296
+    KV_CACHE_MEMORY: 8589934592
     BLOCK_SIZE: 64
     NUM_SPECULATIVE_TOKENS: 5
     SPEC: dspark
@@ -48,6 +49,7 @@ serve:
     QUANTIZATION: exl3
     DSV41_ENGRAM_DISK: 1
     LANGUAGE_MODEL_ONLY: 0
+    MM_ENCODER_TP_MODE: data
     MAX_NUM_BATCHED_TOKENS: 2048
     FORCE_UNSAFE_CTX: 0
     FORCE_UNSAFE_ENGRAM: 0
@@ -78,6 +80,7 @@ readme:
     - CUDA graphs: "`FULL_AND_PIECEWISE` (`ENFORCE_EAGER={ENFORCE_EAGER}`, `DSV41_ALLOW_CUDA_GRAPHS={DSV41_ALLOW_CUDA_GRAPHS}`)"
     - Tokenizers / tools / reasoning: "`deepseek_v41`"
     - Vision: "on (`LANGUAGE_MODEL_ONLY={LANGUAGE_MODEL_ONLY}`)"
+    - "`--mm-encoder-tp-mode`": "{MM_ENCODER_TP_MODE}"
     - Default thinking: "`thinking=false`, `reasoning_effort=low`"
     - API: "`http://<head>:{PORT}/v1`"
     - Container: "`{CONTAINER_NAME}`"
@@ -85,11 +88,11 @@ readme:
 
 measured:
   decode:
-    conditions: streamed greedy 200-token recipe bench, and L.A.I.L prose c=1 512 tokens temperature 0.2 thinking off; vision on (LANGUAGE_MODEL_ONLY=0); DSpark-5 greedy; Engram on disk; CFG=1 native p2b; b12x MXFP8 Q/O; CUDA graphs FULL_AND_PIECEWISE. Second independent L.A.I.L wave was 22.37 tok/s.
+    conditions: "Capture 2026-09-19 rounds 6-11 on the E11 config (E10+E11 keeps: p2b funnelshift extraction, b12x (16,64) small-m tiles, o_proj wo_a exact-requant onto the fp8 einsum) plus round-11 parallel Engram staging (DSV41_ENGRAM_FAST_STAGE=1, default on since run.sh). KV pool 8 GiB, DSpark-5 greedy, CUDA graphs, vision on, Engram on disk, native p2b CFG=1. bench_decode.py prose phase = streamed greedy 200 tokens thinking off; L.A.I.L prose = 512 tokens temperature 0.2. Prose evidence: results/2026-09-19-e11/cells.log; lail_prose evidence after round-11 fast staging: results/2026-09-19-faststage/02-e2e.log; history in results/RESULTS.md."
     units: {decode: tok/s per stream (median), aggregate: tok/s, ttft_p50: s}
     rows:
-      - {phase: prose, concurrency: 1, decode: "21.2", aggregate: "21.2", ttft_p50: "0.365", evidence: evidence/h1-dspark/bench-wave2.txt}
-      - {phase: lail_prose, concurrency: 1, decode: "23.4", aggregate: "23.4", ttft_p50: "0.420", evidence: evidence/b12x-mxfp8/lail-w1.txt}
+      - {phase: prose, concurrency: 1, decode: "34.3", aggregate: "34.3", ttft_p50: "0.29", evidence: results/2026-09-19-e11/cells.log}
+      - {phase: lail_prose, concurrency: 1, decode: "25.4", aggregate: "25.4", ttft_p50: "0.34", evidence: results/2026-09-19-faststage/02-e2e.log}
 
 links:
   model: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash

@@ -29,7 +29,7 @@ class PackMetaTests(unittest.TestCase):
         cfg = self.meta.build_quantization_config(bits=2)
         self.assertEqual(cfg["quant_method"], "exl3")
         self.assertEqual(cfg["bits"], 2)
-        self.assertEqual(cfg["codebook"], "mcg")
+        self.assertEqual(cfg["codebook"], "mul1")
         self.assertEqual(cfg["mtp_experts"], "source")
         self.assertEqual(cfg["mtp_experts_start_layer"], 40)
         self.assertNotIn("non_routed_dtype_policy", cfg)
@@ -40,6 +40,16 @@ class PackMetaTests(unittest.TestCase):
         self.assertEqual(cfg["non_routed_quantization"]["scale_fmt"], "ue8m0")
         self.assertEqual(cfg["non_routed_quantization"]["expert_dtype"], "fp4")
         self.assertEqual(cfg["weight_block_size"], [32, 32])
+
+    def test_serve_revision_stays_mcg_rebuild_defaults_mul1(self) -> None:
+        self.assertEqual(self.meta.DEFAULT_CODEBOOK, "mul1")
+        self.assertEqual(self.meta.SERVE_REVISION, "2.0bpw-mcg")
+        self.assertEqual(self.meta.revision_for(), "2.0bpw-mul1")
+        self.assertEqual(self.meta.revision_for(codebook="mcg"), "2.0bpw-mcg")
+        self.assertEqual(self.meta.get_codebook("mul1").cb, 2)
+        self.assertEqual(self.meta.get_codebook("mcg").cb, 1)
+        with self.assertRaises(ValueError):
+            self.meta.get_codebook("3inst")
 
     def test_apply_pack_config_keeps_nested_text_config(self) -> None:
         src = {
@@ -123,6 +133,82 @@ class CheckExl3ShardTests(unittest.TestCase):
                 fh.write(b"\x00" * 396)
             self.assertEqual(chk.check_shard(shard), [])
 
+    def test_accepts_mul1_trellis_expert_shard(self) -> None:
+        chk = _load("tools/check_exl3_shard.py", "check_exl3_shard")
+        with tempfile.TemporaryDirectory() as d:
+            hdr = {
+                "layers.6.ffn.experts.0.w1.trellis": {
+                    "dtype": "I16",
+                    "shape": [2, 2, 32],
+                    "data_offsets": [0, 256],
+                },
+                "layers.6.ffn.experts.0.w1.suh": {
+                    "dtype": "F16",
+                    "shape": [32],
+                    "data_offsets": [256, 320],
+                },
+                "layers.6.ffn.experts.0.w1.svh": {
+                    "dtype": "F16",
+                    "shape": [32],
+                    "data_offsets": [320, 384],
+                },
+                "layers.6.ffn.experts.0.w1.mul1": {
+                    "dtype": "I32",
+                    "shape": [],
+                    "data_offsets": [384, 388],
+                },
+                "__metadata__": {"format": "pt"},
+            }
+            hb = json.dumps(hdr).encode()
+            hb += b" " * ((8 - len(hb) % 8) % 8)
+            shard = Path(d) / "model-00003-of-00048.safetensors"
+            with shard.open("wb") as fh:
+                fh.write(struct.pack("<Q", len(hb)))
+                fh.write(hb)
+                fh.write(b"\x00" * 388)
+            self.assertEqual(chk.check_shard(shard), [])
+
+    def test_rejects_mixed_mcg_and_mul1_markers(self) -> None:
+        chk = _load("tools/check_exl3_shard.py", "check_exl3_shard")
+        with tempfile.TemporaryDirectory() as d:
+            hdr = {
+                "layers.6.ffn.experts.0.w1.trellis": {
+                    "dtype": "I16",
+                    "shape": [2, 2, 32],
+                    "data_offsets": [0, 256],
+                },
+                "layers.6.ffn.experts.0.w1.suh": {
+                    "dtype": "F16",
+                    "shape": [32],
+                    "data_offsets": [256, 320],
+                },
+                "layers.6.ffn.experts.0.w1.svh": {
+                    "dtype": "F16",
+                    "shape": [32],
+                    "data_offsets": [320, 384],
+                },
+                "layers.6.ffn.experts.0.w1.mcg": {
+                    "dtype": "I32",
+                    "shape": [],
+                    "data_offsets": [384, 388],
+                },
+                "layers.6.ffn.experts.0.w1.mul1": {
+                    "dtype": "I32",
+                    "shape": [],
+                    "data_offsets": [388, 392],
+                },
+                "__metadata__": {"format": "pt"},
+            }
+            hb = json.dumps(hdr).encode()
+            hb += b" " * ((8 - len(hb) % 8) % 8)
+            shard = Path(d) / "model-00003-of-00048.safetensors"
+            with shard.open("wb") as fh:
+                fh.write(struct.pack("<Q", len(hb)))
+                fh.write(hb)
+                fh.write(b"\x00" * 392)
+            probs = chk.check_shard(shard)
+            self.assertTrue(any("mixes" in p for p in probs))
+
 
 class AssemblePackTests(unittest.TestCase):
     def test_assemble_pulls_spark2_shards_and_rebuilds_index(self) -> None:
@@ -133,6 +219,8 @@ class AssemblePackTests(unittest.TestCase):
         self.assertIn('quant_method")=="exl3"', src)
         self.assertIn('WORKER:-10.100.8.2', src)
         self.assertIn("rsync -rltD", src)
+        self.assertIn('CODEBOOK="${CODEBOOK:-mul1}"', src)
+        self.assertIn("2.0bpw-${CODEBOOK}", src)
         self.assertNotIn("chgrp", src)
 
 
@@ -153,7 +241,7 @@ class QuantizeFastTests(unittest.TestCase):
             "del wf, wr, tiles, encoded, trellis, idxs",
             src,
         )
-        self.assertEqual(q.convert_shards.__defaults__[-3:], (True, False, 1))
+        self.assertEqual(q.convert_shards.__defaults__[-4:], (True, False, 1, "mul1"))
 
 
 class RebuildIndexTests(unittest.TestCase):
@@ -198,12 +286,16 @@ class QuantizeHelpersTests(unittest.TestCase):
     def setUp(self) -> None:
         self.q = _load("tools/quantize_experts_exl3.py", "quantize_experts_exl3")
 
-    def test_quant_args_include_out_scales_and_mcg(self) -> None:
+    def test_quant_args_include_out_scales_and_mul1(self) -> None:
         args = self.q.quant_args_for(2, "cuda:0")
         self.assertEqual(args["K"], 2)
-        self.assertTrue(args["mcg"])
+        self.assertTrue(args["mul1"])
+        self.assertNotIn("mcg", args)
         self.assertIsNone(args["apply_out_scales"])
         self.assertEqual(args["devices"], ["cuda:0"])
+        mcg = self.q.quant_args_for(2, "cuda:0", "mcg")
+        self.assertTrue(mcg["mcg"])
+        self.assertNotIn("mul1", mcg)
 
     def test_shard_needs_exl3(self) -> None:
         self.assertTrue(

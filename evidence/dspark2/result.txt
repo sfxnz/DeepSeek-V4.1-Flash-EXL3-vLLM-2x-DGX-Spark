@@ -1,0 +1,13 @@
+hyp: DSpark num_speculative_tokens=2 greedy, capture includes 2/3, no adaptive, b12x Q/O
+image: sha256:f1fbdaaec37f
+vision: LANGUAGE_MODEL_ONLY=0 vit FLASH_ATTN encoder 1 image next_n=3
+graphs: 15s, 0.01 GiB
+smoke: 323
+wave1 median_lail_tok_s: 23.168167060090866 accept 1.958
+wave2 median_lail_tok_s: 24.076434115759486 accept 2.008
+oom: false ~22/23 GiB UMA remaining
+step: accept/tok_s ≈ 84 ms (vs DSpark-5 ≈ 102 ms)
+verdict: REVERT as recipe default (tok/s within noise of b12x 23.44/22.37, not 30). Keep as architecture: m=3 step is 84ms.
+why: draft-2 plus verify-3 saved ~18ms. Accept fell 2.4→2.0 so tok/s flat. Need 67ms at accept 2.0 or accept 2.52 at 84ms.
+live: FlashInferCutlassMxfp8 AND EmulationMxfp8; TP all-reduce is PYNCCL not FLASHINFER.
+next: why FLASHINFER AR skipped; why EmulationMxfp8 GEMM.

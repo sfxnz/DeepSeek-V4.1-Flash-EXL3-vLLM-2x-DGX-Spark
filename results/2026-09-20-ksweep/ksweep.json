@@ -1,0 +1,34 @@
+{
+  "arm": "ksweep-k3-best",
+  "ts": "2026-09-21T09:25:00Z",
+  "host": "spark1",
+  "serve_image": "dsv41-flash-exl3-sm121:canonical-e12",
+  "question": "DSpark num_speculative_tokens sweep on MCG lane; L.A.I.L app bench cell primary",
+  "lail_app_tok_s_median": {
+    "k3": 27.27,
+    "k4": 25.87,
+    "k5": 26.32
+  },
+  "lail_app_runs": {
+    "k3": [26.92, 29.44, 27.27],
+    "k4": [25.25, 28.17, 25.87],
+    "k5": [28.25, 26.32, 24.83]
+  },
+  "lail_cli_twin_tok_s_median": {"k3": 28.57, "k4": 25.86, "k5": 25.57},
+  "lail_cli_acceptance_len": {"k3": 2.25, "k4": 2.18, "k5": 2.30},
+  "prose_greedy_9x_median": {"k3": 35.55, "k5": 33.03},
+  "prose_greedy_acceptance": {"k3": 2.62, "k5": 2.90},
+  "prefill_tok_s": {"k3": {"8k": 655.1, "32k": 727.9}, "k5_2026_09_20": {"8k": 687.3, "32k": 733.0}},
+  "memavail_post_32k_gib": {"k3": {"spark1": 21, "spark2": 23}, "k5_2026_09_20": {"spark1": 22.29, "spark2": 23.84}},
+  "lail_job_ids": {
+    "k3_real": ["1e542db2889d", "e398e2358cf3", "9a3d37e2308f"],
+    "k3_final_boot_confirm": "65933ed0ddd7",
+    "k4_real": ["6f65613487b6", "46ad10107a25", "349f2750be43"],
+    "k5_real_sameday": ["32618cdfff9e", "51ce15261173", "31ffd1ce607b"],
+    "discarded_contaminated": "1b2fa6c0fc52"
+  },
+  "decision": "best k=3; serve left UP at k=3 via results/2026-09-20-ksweep/boot-k3.sh (FORCE_UNSAFE_CTX=1 for %5 guard); k5 restorable with bash results/2026-09-20-nccl/boot-arm.sh",
+  "k7_skipped_because": "k4 acceptance 2.18 < k3 2.25 (no depth gain at t=0.2) and E6 k=10 collapsed to 12.1",
+  "gap_to_35": "27.27 best arm median; 7.7 tok/s short; next lever: k3 + capture sizes [1,3,4,6,8] (verify batch 4 currently pads to 5)",
+  "notes": "Same-day same-env single-lever sweep; logs in results/2026-09-20-ksweep/*.log (gitignored); zero OOMs, mem floors enforced every boot/smoke."
+}

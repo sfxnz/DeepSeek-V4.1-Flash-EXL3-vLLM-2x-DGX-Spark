@@ -1,0 +1,10 @@
+hyp: c=1 graph-safe adaptive verify, snap draft budget to {0,4,5}, varlen_decode=False
+image: sha256:f1fbdaaec37f (b12x Q/O KEEP, no tile32)
+vision: LANGUAGE_MODEL_ONLY=0 vision_n_layers=32 vision_max_n_token=1024
+smoke: 323
+wave1 median_lail_tok_s: 23.077678238815782 accept 2.476
+wave2 median_lail_tok_s: 21.54853399288608 accept 2.295
+oom: false both ranks, ~20/22 GiB UMA remaining
+verdict: REVERT
+why: budgets 1-3 snapped to AR (draft 0). Wave2 more chunks (225 vs ~209 on b12x). Not 30. Keep b12x 23.44/22.37.
+next: capture query sizes 2,3,4 so snap can keep draft 1-3.

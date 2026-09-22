@@ -177,6 +177,7 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("SNAPSHOT_SHA='$SNAPSHOT_SHA'", ssh_block)
         self.assertIn("HF_CACHE='$HF_CACHE'", ssh_block)
         self.assertIn("MODEL='$MODEL'", ssh_block)
+        self.assertIn("MM_ENCODER_TP_MODE='$MM_ENCODER_TP_MODE'", ssh_block)
         self.assertIn("QUANTIZATION='$QUANTIZATION'", ssh_block)
         self.assertIn("DSV41_ENGRAM_DISK='$DSV41_ENGRAM_DISK'", ssh_block)
         self.assertIn("DSV41_PATCH_DIR='/tmp/dsv41-patch'", ssh_block)
@@ -243,12 +244,18 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertTrue((ROOT / "docker/patch/sm120_page.py").is_file())
         self.assertIn("prefer_b12x_mxfp8", site)
         self.assertTrue((ROOT / "docker/patch/prefer_b12x_mxfp8.py").is_file())
-        self.assertIn('b12x==1.3.0', df)
+        # The b12x pip package is deliberately NOT installed: with it,
+        # vLLM routes dense MXFP8 through the package kernels and prose
+        # decode measured 5-9% slower (2026-09-19 A/B).
+        self.assertNotIn('b12x==1.3.0', df)
+        self.assertIn('b12x package kernels', df)
         self.assertIn("libcusparse-dev-13-0", df)
         self.assertIn("VLLM_EXL3_MOE_KERNEL=native", df)
         self.assertIn("widen_p2b_shapes.py", df)
         self.assertIn("widen_p2b_mrow.py", df)
         self.assertIn("widen_p2b_cfg1.py", df)
+        self.assertIn("widen_p2b_codebook.py", df)
+        self.assertLess(df.find("widen_p2b_cfg1.py"), df.find("widen_p2b_codebook.py"))
         self.assertNotIn("widen_p2b_fma.py", df)
         self.assertNotIn("widen_p2b_pf4.py", df)
         self.assertNotIn("widen_p2b_nocoop.py", df)
@@ -342,6 +349,14 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("content", smoke)
         self.assertIn("thinking", smoke)
 
+    def test_smoke_vision_uses_image_url(self) -> None:
+        smoke = _read("smoke_vision.py")
+        self.assertIn("image_url", smoke)
+        self.assertIn("deepseek-ai/DeepSeek-V4.1-Flash", smoke)
+        self.assertIn("is not a multimodal model", smoke)
+        self.assertNotIn("from PIL", smoke)
+        self.assertNotIn("import PIL", smoke)
+
     def test_parsers_are_v41(self) -> None:
         run = _read("run.sh")
         self.assertIn("--tokenizer-mode deepseek_v41", run)
@@ -375,10 +390,31 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn('lm_args+=(--language-model-only)', body)
         self.assertIn('LANGUAGE_MODEL_ONLY" == "1"', body)
         self.assertIn('LANGUAGE_MODEL_ONLY=$LANGUAGE_MODEL_ONLY', body)
+        self.assertIn('--mm-encoder-tp-mode', body)
+        self.assertIn('MM_ENCODER_TP_MODE', body)
         proc = _run_sh()
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("lm_only=0", proc.stdout)
         self.assertNotIn("--language-model-only", proc.stdout)
+
+    def test_default_prefill_batch_stays_2048_and_hub_rev_stays_mcg(self) -> None:
+        self.assertEqual(_recipe()["serve"]["env"]["MAX_NUM_BATCHED_TOKENS"], "2048")
+        self.assertEqual(_recipe()["serve"]["env"]["MM_ENCODER_TP_MODE"], "data")
+        self.assertEqual(_recipe()["serve"]["env"]["SNAPSHOT_SHA"], HUB_REV)
+        self.assertEqual(HUB_REV, "2.0bpw-mcg")
+        run = _read("run.sh")
+        self.assertIn('MAX_NUM_BATCHED_TOKENS="${MAX_NUM_BATCHED_TOKENS:-2048}"', run)
+        self.assertIn('MM_ENCODER_TP_MODE="${MM_ENCODER_TP_MODE:-data}"', run)
+        row = _defaults_row("`--max-num-batched-tokens`")
+        self.assertIn("2048", row)
+        self.assertNotIn("8192", row)
+        self.assertIn("data", _defaults_row("`--mm-encoder-tp-mode`"))
+        readme = _read("README.md")
+        self.assertIn("−5%", readme)
+        self.assertIn("12,712", readme)
+        self.assertIn("23.52", readme)
+        self.assertIn("27.98", readme)
+        self.assertIn("2.0bpw-mcg", _recipe()["serve"]["env"]["SNAPSHOT_SHA"])
 
     def test_locator_prefers_refs_commit_over_named_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as d:
@@ -468,7 +504,11 @@ class ReadmeHowToTests(unittest.TestCase):
         self.assertIn("docker build", readme)
         self.assertIn("./run.sh", readme)
         self.assertIn("python3 smoke_chat.py", readme)
+        self.assertIn("python3 smoke_vision.py", readme)
         self.assertIn("python3 bench_decode.py", readme)
+        self.assertIn("--codebook mul1", readme)
+        self.assertIn("2.0bpw-mul1", readme)
+        self.assertIn("pack-only", readme.lower())
         self.assertNotIn("once published", readme)
         self.assertNotIn("docker exec dsv41-quant", readme)
 

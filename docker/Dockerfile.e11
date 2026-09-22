@@ -1,0 +1,7 @@
+# Experiment image E11: E10 + o_proj wo_a exact-requant onto the fp8 einsum.
+# Self-guarding: eager self-test with permanent bf16 fallback on failure.
+FROM dsv41-flash-exl3-sm121:e10
+
+COPY patch /opt/dsv41-patch
+
+RUN python3 /opt/dsv41-patch/fix_o_proj_woa_fp8.py /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py

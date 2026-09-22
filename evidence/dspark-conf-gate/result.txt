@@ -1,0 +1,6 @@
+REVERT. DSpark confidence-gated Markov: logits=base+conf*bias. Image f1fbdaae + DSV41_DSPARK_CONF_GATE=1
+wave1 median_lail_tok_s=19.92 accept=2.14
+wave2 median_lail_tok_s=21.97
+KEEP f1fbdaae was 23.44/22.37 accept 2.4. smoke 323. no OOM.
+Gating Markov with P(accept) dropped accept. Official TileLang inference/ is FP4 TP=8 AR and does not fit 121Gi UMA. Env default 0. Helper stays.
+Restore: DSV41_DSPARK_CONF_GATE=0 ./run.sh on f1fbdaae

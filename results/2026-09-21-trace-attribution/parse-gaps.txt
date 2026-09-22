@@ -1,0 +1,29 @@
+.. streamed 1M events
+.. streamed 2M events
+.. streamed 3M events
+.. streamed 4M events
+.. streamed 5M events
+events streamed: 5023062
+device 0: 638297 kernels, busy computing…
+
+device 0: window 20570.0 ms, busy 16699.5 ms, idle 3870.5 ms, 256108 busy spans
+gaps >= 1.0 ms: 256, total 3374.4 ms
+
+== idle-gap ownership (device 0, gaps >= 1.0 ms) ==
+  3370.86 ms  STREAM_SYNC_EVENT
+     3.55 ms  HOST_SCHED_INPUT_PREP
+
+== examples per class ==
+-- STREAM_SYNC_EVENT
+   gap  40.28 ms @+    14.1 ms : cudaEventSynchronize <- <built-in method synchronize of Event object at 0xf6600c79c360> <- torch/cuda/streams.py(245): synchronize
+   gap   6.43 ms @+   354.9 ms : cudaEventSynchronize <- <built-in method synchronize of Event object at 0xf6600c79c360> <- torch/cuda/streams.py(245): synchronize
+   gap   6.43 ms @+   426.9 ms : cudaEventSynchronize <- <built-in method synchronize of Event object at 0xf6600c79c360> <- torch/cuda/streams.py(245): synchronize
+   gap   5.77 ms @+   497.7 ms : cudaEventSynchronize <- <built-in method synchronize of Event object at 0xf6600c79c360> <- torch/cuda/streams.py(245): synchronize
+   gap  21.44 ms @+   568.9 ms : cudaEventSynchronize <- <built-in method synchronize of Event object at 0xf6600c79c360> <- torch/cuda/streams.py(245): synchronize
+   gap   6.66 ms @+   655.3 ms : cudaEventSynchronize <- <built-in method synchronize of Event object at 0xf6600c79c360> <- torch/cuda/streams.py(245): synchronize
+-- HOST_SCHED_INPUT_PREP
+   gap   1.38 ms @+    59.0 ms : <built-in function getattr> <- vllm/compilation/breakable_cudagraph.py(144): current <- vllm/compilation/breakable_cudagraph.py(100): wrapper
+   gap   1.06 ms @+  5523.7 ms : cudaGraphLaunch <- <built-in method replay of pybind11_builtins.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_ <- torch/cuda/graphs.py(182): replay <- vllm/v1/worker/gpu/cudagraph_utils.py(449): run_fullgraph <- vllm/v1/worker/gpu/cudagraph_utils.py(639): run_fullgraph
+   gap   1.11 ms @+ 16186.2 ms : cudaGraphLaunch <- <built-in method replay of pybind11_builtins.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_ <- torch/cuda/graphs.py(182): replay <- vllm/v1/worker/gpu/cudagraph_utils.py(449): run_fullgraph <- vllm/v1/worker/gpu/cudagraph_utils.py(639): run_fullgraph
+
+(detailed kernel table: run parse_trace_safe.py on the same trace)

@@ -30,6 +30,8 @@ RUN apt-get update \
  && python3 /opt/dsv41-patch/widen_p2b_shapes.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_mrow.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_cfg1.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_codebook.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_fshift.py /opt/vllm-exl3 \
  && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps /opt/vllm-exl3 \
  && python3 -c "import torch, vllm_exl3, vllm_exl3_c; assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); print('vllm_exl3 cuda ok')" \
  && rm -rf /opt/exllamav3 /opt/vllm-exl3 /var/lib/apt/lists/*
@@ -38,8 +40,16 @@ ENV VLLM_PLUGINS=vllm_exl3
 ENV VLLM_EXL3_MOE_KERNEL=native
 ENV DSV41_ENGRAM_DISK=1
 COPY patch/sitecustomize.py /usr/lib/python3.12/sitecustomize.py
-# Native SM120 grouped MXFP8 BMM / WO projection (CuTe DSL). The extra is a
-# py3-none-any wheel; cutlass-dsl is already in the FlashInfer b12x Q/O path.
-RUN python3 -m pip install --no-deps "b12x==1.3.0" \
- && python3 -c "import b12x; print('b12x', getattr(b12x, '__version__', 'ok'))"
+# E10: (16,64) tiles for decode-sized m in the flashinfer b12x dense GEMM
+# (2x CTAs at n<=8192; no K-split exists in that kernel), and a boot log of
+# the o_proj wo_a runtime dtype (pack stores F8; loader hands over bf16 ->
+# torch.bmm -> sm_80 WMMA, the next decode target).
+RUN python3 /opt/dsv41-patch/widen_b12x_smalls.py /usr/local/lib/python3.12/dist-packages/flashinfer/gemm/kernels/dense_blockscaled_gemm_sm120_b12x.py \
+ && python3 /opt/dsv41-patch/probe_wo_a.py /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py \
+ && python3 /opt/dsv41-patch/fix_o_proj_woa_fp8.py /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+# NOTE: the optional `pip install b12x` extra is deliberately NOT installed:
+# with the package present, vLLM routes dense MXFP8 projections through the
+# b12x package kernels and prose decode measured 5-9% slower than the
+# flashinfer cute-dsl path at equal acceptance (2026-09-19 A/B, two 5-run
+# batches per image). Revisit only with a proper kernel-level A/B.
 ENTRYPOINT ["vllm", "serve"]

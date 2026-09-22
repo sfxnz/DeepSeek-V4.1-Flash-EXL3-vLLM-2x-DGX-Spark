@@ -1,0 +1,17 @@
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=512 temperature=0.2 runs=3 phase=lail_prose c=1
+run=1 {"ttft_s": 0.3922779649947188, "decode_s": 25.75723356200615, "prompt_tokens": 61, "completion_tokens": 512, "chunks": 223, "lail_tok_s": 19.877911141639, "recipe_tok_s": 19.839087096440487, "tokens_per_chunk": 2.295964125560538, "repeat_ratio": 0.0024390243902439024, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On unified memory, the distinction between \"resident\" and \"recently touched\" collapses into a single physical budget, and the scheduler's job becomes allocation, not eviction. A long s", "acceptance_len": 2.301801801801802, "draft_acceptance_rate": 0.26036036036036037}
+run=2 {"ttft_s": 0.4336579739974695, "decode_s": 25.683356913999887, "prompt_tokens": 61, "completion_tokens": 512, "chunks": 225, "lail_tok_s": 19.93508877030444, "recipe_tok_s": 19.896153050049936, "tokens_per_chunk": 2.2755555555555556, "repeat_ratio": 0.002403846153846154, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. That inversion matters because it changes what you optimize. In a conventional serving stack, you treat cache occupancy as a tax on the memory budget you would otherwise spend on weigh", "acceptance_len": 2.294642857142857, "draft_acceptance_rate": 0.25892857142857145}
+run=3 {"ttft_s": 0.419373133998306, "decode_s": 25.01594329100044, "prompt_tokens": 61, "completion_tokens": 512, "chunks": 222, "lail_tok_s": 20.466947579953683, "recipe_tok_s": 20.426973072961584, "tokens_per_chunk": 2.3063063063063063, "repeat_ratio": 0.0024752475247524753, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On a DGX Spark with unified memory, the boundary between \"resident\" and \"paged\" is not a hardware cliff but a scheduling surface \u2014 the same physical pages back both the prefix that eve", "acceptance_len": 2.3167420814479636, "draft_acceptance_rate": 0.26334841628959277}
+SUMMARY {
+  "phase": "lail_prose",
+  "concurrency": 1,
+  "max_tokens": 512,
+  "temperature": 0.2,
+  "n": 3,
+  "median_lail_tok_s": 19.93508877030444,
+  "median_recipe_tok_s": 19.896153050049936,
+  "median_ttft_s": 0.419373133998306,
+  "median_completion_tokens": 512,
+  "median_acceptance_len": 2.301801801801802,
+  "median_draft_acceptance_rate": 0.26036036036036037
+}
