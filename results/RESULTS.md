@@ -708,3 +708,22 @@ to span the remaining gap to 35 alone. SOFTMAX_VERIFY A/B on k3c:
 median 27.14 (−5.6% vs 28.76; acc_len 2.20) → REVERT, knob dead.
 Best unchanged: **28.76** (k3c), serve left up on boot-k3c.sh. Evidence:
 results/2026-09-21-trace-attribution/.
+
+## Campaign close (2026-09-22, rounds 15-33) — FINAL: 33.23 L.A.I.L, lm_head KEEP, serve UP
+
+Target was 35+ tok/s in the L.A.I.L cell (decode/prose c=1 t=0.2). Final
+best: **33.23 pooled n=10 median** (rounds 15-33 scoreboard: 26.4 → 27.27
+(k3) → 28.76 (capture match) → 30.10 (prefetch v3 re-arm) → 31.37 (gather
+v2) → 33.23 (lm_head MXFP8, round-33 high-n KEEP — round-30's +2.5% miss
+was a low-band sample; fresh n=10 shows +5.9%)). Serve left UP on
+results/2026-09-22-endgame2/boot-lm.sh (canonical-e12 + pack
+2.0bpw-mcg-lmhead-mxfp8 + DSV41_LMHEAD_MXFP8=1 on the round-23 keep set).
+Four numbers (fresh): prose 9-run 39.60, prefill 8k 240.1 / 32k 589.6,
+MemAvail post-32k 21.6/23.2 GiB. 35 NOT crossed: the box is device-bound
+(trace3: device-busy 65.25 ms vs 65.7 ms bar at acc 2.3); named path =
+p2b MoE 22.4 ms (G8 fold −1.34 ms projected, blocked on the G8 post-load
+host-memory site — lane closed, evidence in results/2026-09-22-g8final/)
++ dense b12x 17.6 ms (CUDA kernel work) + banked lm_head −2.6 ms + staged
+fadvise cap ~3.1 ms. Zero OOM the whole campaign (floors logged every
+boot). Full round-by-round table + honest ceiling statement + artifact
+index: results/2026-09-22-close/VERDICT.md.

@@ -713,3 +713,24 @@ S=249 steps (SSE chunks; acc 2.056 in-window). Results/2026-09-21-trace3/.
   the 31.37 baseline; noise band ±1). 35 NOT reached (best-ever 32.45).
 - Best serve = stock 31.37 config. Full story + artifact index:
   results/2026-09-22-g8final/VERDICT.md.
+
+## Round 33 — 2026-09-22 close: lm_head high-n KEEP (+5.9%, 33.23) — CAMPAIGN FINAL BEST; serve UP
+- Fresh n=10 re-measure (warmup 32.82 discarded; batches 33.78 / 32.67
+  independent n=5): pooled median 33.23 ≥ 32.31 gate → **KEEP**, reversing
+  Round-30's 0.14-miss revert — the round-30 sample sat in the
+  acceptance-lottery low band. CLI twin 33.56 (acc 2.21, no collapse).
+  Serve LEFT UP: results/2026-09-22-endgame2/boot-lm.sh (k3c-pf-gv2 base
+  + SNAPSHOT 2.0bpw-mcg-lmhead-mxfp8 + DSV41_LMHEAD_MXFP8=1).
+- Four numbers (fresh, final serve): prose 9-run 39.60 (acc 2.61), cold
+  prefill 8k 240.1 / 32k 589.6, MemAvail post-32k 21.6/23.2 GiB.
+- G8 post-load site CLOSED with evidence (no boot spent): saved boot-g8-6
+  log has no worker-side stack (died with container); watcher v3 anon
+  unreadable (root procs); source-read of all DSV41-reachable post-load
+  allocs (pwaf .contiguous() no-ops, ngram .cpu().tolist() small) finds
+  no named ≥30GiB alloc with an env/flag mitigation — blocker is host
+  memory physics under the real engine (NCCL/EngineCore/cudagraph);
+  fix = vLLM-build-level = out of scope per stop rule.
+- 35 NOT crossed. Ceiling ~33-34 at acc 2.26 with lm_head banked; 35
+  needs p2b 22.4ms (G8 stack blocked) + dense 17.6ms CUDA work. Full
+  table rounds 15-33 + artifacts: results/2026-09-22-close/VERDICT.md.
+- Scoreboard: 26.4 → 27.27 → 28.76 → 30.10 → 31.37 → 33.23. Boots 2/4.
