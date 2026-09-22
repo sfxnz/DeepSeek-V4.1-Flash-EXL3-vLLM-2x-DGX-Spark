@@ -2,7 +2,9 @@
 
 Serve an EXL3 pack of [deepseek-ai/DeepSeek-V4.1-Flash](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash) across two NVIDIA DGX Spark (GB10) nodes at tensor-parallel 2.
 
-The pack is [sfxnz/DeepSeek-V4.1-Flash-EXL3](https://huggingface.co/sfxnz/DeepSeek-V4.1-Flash-EXL3) at revision `2.0bpw-mcg`. Routed experts are EXL3 2.0 bpw (MCG). Engram stays on NVMe (`DSV41_ENGRAM_DISK=1`). Native MXFP4 and MXFP8 weights are about 511 GB and do not fit 2× Spark UMA.
+The pack is [sfxnz/DeepSeek-V4.1-Flash-EXL3](https://huggingface.co/sfxnz/DeepSeek-V4.1-Flash-EXL3) at revision `2.0bpw-mcg` (served through the `2.0bpw-mcg-lmhead-mxfp8` derivative — same pack, only the lm_head tensor re-encoded to mxfp8, see Rebuild). Routed experts are EXL3 2.0 bpw (MCG). Engram stays on NVMe (`DSV41_ENGRAM_DISK=1`). Native MXFP4 and MXFP8 weights are about 511 GB and do not fit 2× Spark UMA.
+
+**Decode campaign 2026-09-20/22 (+44% vs published)**: real-use prose 23 → **33.2 tok/s** (L.A.I.L cell, c=1 t=0.2, pooled n=10), greedy single-stream **39.6 tok/s** (9-run median, acc 2.61), 21.6/23.2 GiB free per Spark after a 32k prefill, zero OOMs in ~30 boots. Won levers: spec k=5→k=3 + matched cudagraph captures, Engram prefetch v3 (pf_hit 100%) + gather v2, NCCL AR-tail set, mem-hygiene bundle, lm_head mxfp8. Full evidence: `results/RESULTS.md` rounds 15–33.
 
 Default thinking is off. If you omit `chat_template_kwargs`, V4.1 thinking is on at effort 50. A small `max_tokens` then returns empty `content`.
 
@@ -74,6 +76,8 @@ python3 tools/measure_lail_prose.py
 
 The API is `http://127.0.0.1:8000/v1`. The served model is `deepseek-ai/DeepSeek-V4.1-Flash`. Cap is `MAX_NUM_SEQS=2`. Do not send a third stream.
 
+The promoted recipe additionally ships, all default-on and individually A/B'd (results/RESULTS.md rounds 15–33): `NUM_SPECULATIVE_TOKENS=3` with cudagraph capture sizes `[1,3,4,6,8]`, `MAX_NUM_BATCHED_TOKENS=8192`, the NCCL AR-tail set (`NCCL_BUFFSIZE=1048576`, `NCCL_LL128_BUFFSIZE=262144`, `NCCL_PROTO=^LL128`, `NCCL_MAX_NCHANNELS=8`), the mem-hygiene bundle (`DSV41_DROP_PAGE_CACHE=1`, `DSV41_INDEXER_PREFILL_FACTOR=1`, `DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192`, `DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=2.5`, `VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=256`), Engram prefetch v3 + gather v2 + census (`DSV41_ENGRAM_PREFETCH=1`, `DSV41_ENGRAM_GATHER_V2=1`, `DSV41_ENGRAM_CENSUS=1`), and lm_head mxfp8 (`DSV41_LMHEAD_MXFP8=1`, pack revision `2.0bpw-mcg-lmhead-mxfp8` — the stock pack with only `model-00043` re-encoded; `tools/quantize_lmhead_mxfp8.py` builds it from `2.0bpw-mcg` in ~10 min).
+
 The `smoke_chat.py` default prompt is `What is 17*19? Return only the integer.` Thinking is off. Non-empty `content` is the pass. `323` is enough. `smoke_vision.py` sends OpenAI `image_url` and must not return HTTP 400 `is not a multimodal model`. `bench_decode.py` is streamed greedy, thinking off, 200 completion tokens, 3-run median.
 
 If `ORCHESTRATE=auto` (the default) and SSH to `WORKER_HOST` fails, `run.sh` exits 1. It does not start a TP=2 head rank alone.
@@ -94,13 +98,13 @@ When you are done:
 | `--tensor-parallel-size` / `--nnodes` | 2 / 2 |
 | `--max-model-len` | 1048576 |
 | `--max-num-seqs` | 2 |
-| `--max-num-batched-tokens` | 2048 |
+| `--max-num-batched-tokens` | 8192 |
 | `--kv-cache-dtype` | `fp8` |
 | `--kv-cache-memory` | 8589934592 |
 | `--quantization` | `exl3` |
 | Engram | disk (`DSV41_ENGRAM_DISK=1`) |
 | `--block-size` | 64 |
-| Speculative | DSpark-5 (`SPEC=dspark`) |
+| Speculative | DSpark-3 (`SPEC=dspark`) |
 | CUDA graphs | `FULL_AND_PIECEWISE` (`ENFORCE_EAGER=0`, `DSV41_ALLOW_CUDA_GRAPHS=1`) |
 | Tokenizers / tools / reasoning | `deepseek_v41` |
 | Vision | on (`LANGUAGE_MODEL_ONLY=0`) |
@@ -113,24 +117,33 @@ When you are done:
 
 ## Measured on 2× DGX Spark
 
-`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median. `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2). Default is DSpark-5 with CUDA graphs. Smoke is `python3 smoke_chat.py` and `python3 smoke_vision.py` with thinking off. These cells are the published MCG pack (`2.0bpw-mcg`) on native p2b `cb=1`. A MUL1 pack is unmeasured. The KV pool is 8 GiB (2,289,205 tokens — 2.18× concurrency at the 1M window). Split prefill/decode cells at 512/4k/16k/64k context and every accepted/rejected experiment live in `results/RESULTS.md`; run `benches/micro.sh` and `benches/e2e.sh` to reproduce them, and `tests/correctness.sh --full` for the quality gate.
+`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median; the promoted recipe reports a 9-run median (39.6 tok/s in the table below). `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2) — this is the real-world-use cell: 33.2 tok/s, +44% vs the pre-campaign published recipe (23 tok/s). Default is DSpark-3 with matched cudagraph captures, vision on. These cells are the MCG pack with the lm_head-mxfp8 head (`2.0bpw-mcg-lmhead-mxfp8`) on native p2b `cb=1`. A MUL1 pack measured and lost prose decode at every bit-width tested (see below). The KV pool is 8 GiB. Every accepted/rejected experiment lives in `results/RESULTS.md` (33 rounds); run `benches/micro.sh` and `benches/e2e.sh` to reproduce cells, and `tests/correctness.sh --full` for the quality gate.
 
-spark1+spark2 TP=2 A/B of PR 6 (`e507021`, batched 8192, `--mm-encoder-tp-mode data`) vs `main` (`dcac67a`, batched 2048), still `2.0bpw-mcg`: prose c=1 decode 33.05 vs 27.98 tok/s (overlap in run spread, not a win); 12,712-token prefill 755 vs 797 tok/s (−5%). A 3,182-token prefill was 797 vs 719 (+11%, one batch). Default `--max-num-batched-tokens` stays 2048. `MAX_NUM_BATCHED_TOKENS=8192` remains an override, not a proven upgrade. See `evidence/pr6-batched-8192/`.
+`MAX_NUM_BATCHED_TOKENS` history: at 12.7k-token prompts 8192 measured −5% vs 2048 (`evidence/pr6-batched-8192/`), but on the campaign's prose/prefill cells 8192 was re-measured across rounds 15–33 as part of the promoted config — every kept lever was A/B'd on top of it. It ships as the default now; 2048 remains available for long-prompt-heavy workloads.
 
 MUL1 + p2b `cb=2` (`2.0bpw-mul1` K=2 on `dsv41-flash-exl3-sm121:cb2`) lost prose decode: 23.52 vs 27.98 MCG. Runs 26.43 / 23.52 / 23.17 vs baseline 26.34 / 27.98 / 31.77. MUL1 median and two of three runs sit below the worst baseline run. 12,712-token prefill 792 vs 797 (flat). Rebuild tools stay. Serve stays `2.0bpw-mcg`. See `evidence/pr6-mul1-cb2/`.
 
 <!-- BEGIN generated measured from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
 |---|---|---:|---:|---:|
-| prose | 1 | 34.3 | 34.3 | 0.29 s |
-| lail_prose | 1 | 25.4 | 25.4 | 0.34 s |
+| prose | 1 | 39.6 | 39.6 | 0.31 s |
+| lail_prose | 1 | 33.2 | 33.2 | 0.36 s |
 <!-- END generated measured -->
 
 ## Rebuild the pack
 
-If you already downloaded `sfxnz/DeepSeek-V4.1-Flash-EXL3` at revision `2.0bpw-mcg`, skip this section. The published pack is the serve path. Rebuild writes a different revision (`2.0bpw-mul1`) and needs an image that includes `widen_p2b_codebook.py`. Pack-only MUL1 without p2b `cb=2` drops native fused MoE onto generic `exl3_moe` and is a decode regression. MUL1 + p2b `cb=2` was measured and lost prose decode (23.52 vs 27.98). Do not point `SNAPSHOT_SHA` at `2.0bpw-mul1`.
+If you already downloaded `sfxnz/DeepSeek-V4.1-Flash-EXL3` at revision `2.0bpw-mcg`, skip the expert rebuild. The published pack is the serve path. Two rebuilds were measured end-to-end and **both lost decode**:
 
-Stay at K=2. Calibrate (activation Hessian / official convert) before raising bits. Do not pass `--hq` or `bits!=2` here. This recipe does not ship a calibration harness.
+- **MUL1 + p2b `cb=2`** (`2.0bpw-mul1`, K=2): 23.52 vs 27.98 MCG on our kit. Do not serve it.
+- **Her 2.9 bpw mul1 pack** (MiaAI-Lab kit, 4 boots, results/2026-09-20-mul1-lane/): stock k=3 prose 16.35, spec-off 23.64 vs our MCG 34+ — its MTP drafter is quantized to 4-bit EXL3 (`mtp_bits: 4`, acceptance 1.33 vs 2.77 source-precision). Her k=3 numbers are not reproducible on that pack; the deficit is a pack property, not a flag.
+
+The lm_head-mxfp8 pack is the one derivative that **won** (+5.9% L.A.I.L, round 33): it re-encodes only `model-00043` from the stock pack:
+
+```bash
+python3 tools/quantize_lmhead_mxfp8.py --src snapshots/2.0bpw-mcg --dst snapshots/2.0bpw-mcg-lmhead-mxfp8
+```
+
+Stay at K=2 for expert re-encodes. Calibrate (activation Hessian / official convert) before raising bits. Do not pass `--hq` or `bits!=2` here. This recipe does not ship a calibration harness.
 
 Exclusive GPU. Stop any quant container before `./run.sh`.
 
