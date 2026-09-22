@@ -87,12 +87,17 @@ failures = []
 
 
 def check(name: str, a: torch.Tensor, b: torch.Tensor) -> bool:
-    ok = torch.equal(a, b)
+    # NaN-aware bit equality: random-garbage trellis inputs can overflow fp16
+    # accumulation to inf/nan IDENTICALLY in both legs; torch.equal (NaN != NaN)
+    # would fail a bit-identical pair. NaN positions must still match exactly.
+    eq = (a == b) | (a.isnan() & b.isnan())
+    ok = bool(eq.all().item())
     print(f"[{'PASS' if ok else 'FAIL'}] {name}: {'bit-exact' if ok else 'MISMATCH'}")
     if not ok:
         failures.append(name)
         d = (a.float() - b.float()).abs()
-        print(f"       max abs diff {d.max().item():.6f}  n_mismatch {(d > 0).sum().item()}")
+        print(f"       max abs diff {d.max().item():.6f}  n_mismatch {(~eq).sum().item()}"
+              f"  nan_a {int(a.isnan().sum())} nan_b {int(b.isnan().sum())}")
     return ok
 
 
@@ -186,6 +191,10 @@ def stage_g8(dev) -> int:
     ones_inter = torch.ones(n, dtype=torch.float16, device=dev)    # 2304
 
     def ptrs(*ts):
+        # One table entry per tensor. NOTE: the kernel dereferences
+        # gt_ptrs[src] with src = ids value — the table must have an entry for
+        # EVERY id used (Round-29 bug 2: a 1-entry table with ids=[0,1] read
+        # past the end -> garbage pointer -> the illegal memory access).
         return torch.tensor([int(t.data_ptr()) for t in ts],
                             dtype=torch.int64, device=dev)
 
@@ -198,9 +207,9 @@ def stage_g8(dev) -> int:
             g, d = (g8_g, g8_d) if layout == "g8" else (stock_g, stock_d)
             out = torch.zeros_like(x)
             vllm_exl3_c.p2b_fused_moe(
-                x, out, ptrs(g), ptrs(ones_hidden), ptrs(ones_inter),
-                ptrs(g), ptrs(ones_hidden), ptrs(ones_inter),
-                ptrs(d), ptrs(ones_inter), ptrs(ones_hidden),
+                x, out, ptrs(g, g), ptrs(ones_hidden, ones_hidden), ptrs(ones_inter, ones_inter),
+                ptrs(g, g), ptrs(ones_hidden, ones_hidden), ptrs(ones_inter, ones_inter),
+                ptrs(d, d), ptrs(ones_inter, ones_inter), ptrs(ones_hidden, ones_hidden),
                 ids, rw, 2, 2, 2, True, n, 0.0,
             )
             torch.cuda.synchronize()

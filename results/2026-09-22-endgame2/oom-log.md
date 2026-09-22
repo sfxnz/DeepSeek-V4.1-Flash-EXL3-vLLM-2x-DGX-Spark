@@ -38,3 +38,6 @@ Mem:           121Gi       4.0Gi        99Gi       2.4Mi        19Gi       117Gi
 === 2026-09-22T07:40:18+01:00 POST-RESTORE (serve UP, smoke 323) ===
 Mem:           121Gi        96Gi        24Gi       251Mi       2.3Gi        25Gi
 Mem:           121Gi        94Gi        26Gi       252Mi       2.1Gi        27Gi
+=== 2026-09-22T07:47:15+01:00 SESSION CLOSE (serve UP stock 31.37 config) ===
+Mem:           121Gi        99Gi        17Gi       251Mi       6.2Gi        22Gi
+Mem:           121Gi        97Gi        18Gi       252Mi       7.4Gi        24Gi
