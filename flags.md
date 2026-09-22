@@ -668,3 +668,48 @@ S=249 steps (SSE chunks; acc 2.056 in-window). Results/2026-09-21-trace3/.
 - Serve restored: boot-k3c-pf-gv2.sh (stock 31.37 config), smoke 323
   post-restore. lm lever remains one flag away and boot-clean.
 - Boot cap: 3 of 4 used (boot1 disarm-bug, boot2 measure, boot3 restore).
+
+## Round 31 — 2026-09-22 g8final: root cause of the G8 boot OOM found + fixed (load phase)
+- Wrapper-in-loop diag (the layer every prior diag skipped): diag_v4 CPU
+  (real VL mapper.apply + sorted feed + real shard fns + G8 consume) —
+  REFUTES the prime hypothesis: per-step new anon storage 0 on all legs,
+  sharded views CONTIGUOUS in both stock and G8; the tracer's "2 tensors per
+  key" are both file-backed mmap views (mapper rename = second view on the
+  same storage, reclaimable). Feed exonerated on CPU.
+- diag_v5 FULL GPU topology (spark2, 40 layers / 184,320 keys, real CUDA
+  dests + H2D + pwaf): the balloon is the CONSUME phase with CUDA dests —
+  each dest.copy_ H2D pins the pageable mmap source pages until tensor free;
+  the wrapper retains the whole sorted mapped list → pins accumulate: stock
+  peaks 17.9 GiB anon + 9.6 swap (survives), G8 39.3 + 14.0 (dies at 59.4
+  in the real boot). Site: vl_model.py DeepseekV41ForCausalLM.load_weights
+  `mapped = sorted(...)` retained; AutoWeightsLoader itself is fully
+  streaming (verified).
+- FIX (de51315): docker/patch/g8_stream_feed.py — env-gated
+  DSV41_LOAD_PF_G8, drain-in-place generator (identical order, each slot
+  None'd as yielded). diag_v6 A/B: G8 consume anon peak 39.3 → 1.9 GiB
+  FLAT, swap 14.0 → 0.6, MemAvail flat 51.9 GiB. Stock path untouched
+  (marker absent without env, verified on e12 + g8 images).
+
+## Round 32 — 2026-09-22 g8final: G8 LANE CLOSED; stock restored
+- boot-g8-6 (fix live, both ranks 'g8 stream feed installed'): THE LOAD-
+  PHASE OOM IS GONE — both ranks loaded 48/48 shards for the first time
+  (previously killed ×3 at 45.5 GiB anon mid-load). ~7-8 min AFTER load
+  completion, during post-load engine init (no log line between 48/48 and
+  engine teardown), worker TP0 died with NO traceback (spark1 avail 0.6 GiB
+  at death) — a SECOND, distinct host balloon in the real-engine post-load
+  path (pwaf was measured lean at 2.2 GiB single-process in diag_v5; the
+  residual is under NCCL/EngineCore/cudagraph, not reachable within boot
+  budget). Per the one-fix-iteration rule: G8 LANE CLOSED with the
+  evidence chain complete.
+- Ops: watcher v2's abort on rss+swap TOTAL was wrong (counts ~79 GiB/rank
+  reclaimable pack mmap pages — a normal stock load too); it killed
+  boot-g8-5 at 43 GiB, not an OOM. watcher v3 (anon-only smaps_rollup)
+  can't read root-owned container procs; MemAvail floors are the usable
+  signal. Boot budget 5/5 used.
+- lm_head: stays REVERTED (round 30: +2.5% pooled < +3% gate). No
+  re-measure spent — same pack, same gate, nothing could change.
+- Serve restored: boot-k3c-pf-gv2.sh, health green, smoke 323, MemAvail
+  26.3/28.3 GB. L.A.I.L stock confirm n=5 pooled 31.89 (consistent with
+  the 31.37 baseline; noise band ±1). 35 NOT reached (best-ever 32.45).
+- Best serve = stock 31.37 config. Full story + artifact index:
+  results/2026-09-22-g8final/VERDICT.md.
