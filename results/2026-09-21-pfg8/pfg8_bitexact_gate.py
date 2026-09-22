@@ -1,27 +1,39 @@
 #!/usr/bin/env python3
-"""GPU bit-exactness gate for the G8 kernel PORT (audit R2) — run AFTER the
-pack rebuild finishes (~04:00 BST) in a throwaway GPU container.
+"""GPU bit-exactness gate for the G8 kernel PORT (audit R2).
 
-Compares, on real pack shapes, G8-layout trellis + G8 kernels vs stock-layout
-trellis + stock kernels, for every reader that serving can reach:
-  - exl3_gemm   (prefill GEMM; m in {64,128,256,512})          [exllamav3_ext]
-  - exl3_gemv   (QTIP small-m;  m in {1,2,4,8})                [exllamav3_ext]
-  - p2b_fused_moe (decode fused MoE, m in {1,2,4,8})           [vllm_exl3_c]
-  - exl3_moe    (standard MoE path, m in {64,128,256,512})     [exllamav3_ext]
-torch.equal REQUIRED at every point (the harness twins already proved the
-math; this proves the port).
+Two-process design (2026-09-22): the image's HOST-side shape checks and
+LinearEXL3.K derive read `DSV41_LOAD_PF_G8` via pfg8::env_value()
+(static-cached per process) — pybind `pf_g8_set` only drives the DEVICE
+constants. So the linear-kernel A/B must be two container invocations:
 
-Usage (GPU window, after the rebuild containers exit):
-  docker run --rm --gpus all --network none -v $PWD:/w -w /w \
-    <canonical-g8-image> python3 pfg8_bitexact_gate.py
+  docker run --rm --gpus all --network none --entrypoint python3 \
+    -v $PWD/results/2026-09-21-pfg8:/g -w /g <canonical-g8> /g/pfg8_bitexact_gate.py ref
+  docker run --rm --gpus all --network none -e DSV41_LOAD_PF_G8=1 \
+    --entrypoint python3 -v $PWD/results/2026-09-21-pfg8:/g -w /g \
+    <canonical-g8> /g/pfg8_bitexact_gate.py g8
 
-The script uses the pf_g8_set(1) A/B lever (same kernels both sides), so it
-validates the PORTED kernels + flag plumbing, not just the harness twins.
+  ref : stock-layout trellis, stock kernels -> saves seeded inputs+outputs /g/gate_ref.pt
+  g8  : G8-layout trellis, env-gated kernels -> compares torch.equal vs saved refs
+        (also runs the in-process p2b_fused_moe A/B via pf_g8_set, which needs
+        no env: explicit dims + device-constant flag only)
+
+Kernels covered through the REAL serving entry (vllm_exl3.exl3.make_linear_exl3
+-> LinearEXL3.forward -> BC_LinearEXL3 dispatch):
+  - exl3_gemm  (prefill GEMM;  m in {64,128,256,512})   [exllamav3_ext]
+  - exl3_gemv  (QTIP small-m; m in {1,2,4,8})           [exllamav3_ext]
+  - p2b_fused_moe (decode fused MoE, m in {1,2,4,8})     [vllm_exl3_c]
 """
 import os
 import sys
 
 import torch
+
+# module-scope imports (an in-function `from vllm_exl3 import exl3` proved
+# fragile inside this container — failed after heavy CUDA allocs)
+from vllm_exl3 import exl3 as vexl3  # noqa: E402
+import exllamav3.modules.quant.exl3 as _exl3mod  # noqa: E402
+
+REF_PT = "/g/gate_ref.pt"
 
 # ---- layout helpers (must match tools/quantize_experts_exl3.py pfg8_fold) ----
 
@@ -36,10 +48,9 @@ def fold_g8(trellis: torch.Tensor) -> torch.Tensor:
         .view(nt // 8, kt, 8 * w)
     )
 
-
 SHAPES = [
     # (name, k, n) — real pack shapes per rank (TP=2, 2bpw mcg)
-    ("gate_up", 5120, 2304),   # stock (320,144,32) per rank: k=5120 n=2304
+    ("gate_up", 5120, 2304),   # stock (320,144,32) per rank
     ("down", 2304, 5120),      # stock (144,320,32) per rank
 ]
 
@@ -59,50 +70,80 @@ def check(name: str, a: torch.Tensor, b: torch.Tensor) -> bool:
     return ok
 
 
-def main() -> int:
-    assert torch.cuda.is_available(), "needs a GPU window"
-    dev = torch.device("cuda:0")
+def gen_inputs(dev):
+    """Deterministic inputs — identical draw order in BOTH processes."""
     torch.manual_seed(20260921)
-
-    import exllamav3_ext as ext
-    import vllm_exl3_c
-
-    # env read once at import; the A/B lever must agree with it
-    assert ext.pf_g8_get() == 0 and vllm_exl3_c.pf_g8_get() == 0, "flag should default to 0"
-
+    data = {}
     for sname, k, n in SHAPES:
         kt, nt = k // 16, n // 16
-        stock = torch.randint(
-            -32768, 32767, (kt, nt, 32), dtype=torch.int16, device=dev
-        )
-        g8 = fold_g8(stock)
+        data[sname] = {
+            "k": k, "n": n,
+            "stock": torch.randint(-32768, 32767, (kt, nt, 32),
+                                   dtype=torch.int16, device=dev),
+            "x": {m: torch.randn(m, k, dtype=torch.float16, device=dev)
+                  for m in PREFILL_M + DECODE_M},
+        }
+    return data
+
+
+def run_linear(trellis, suh, svh, x):
+    # Force the trellis-kernel path for ALL m: above AUTO_RECONSTRUCT_THRESHOLD
+    # (144) stock would route to reconstruct_hgemm — a different algorithm —
+    # which is not the A/B under test (serving sets no_reconstruct for experts).
+    _exl3mod.AUTO_RECONSTRUCT_THRESHOLD = 10 ** 9
+    inner = vexl3.make_linear_exl3(
+        trellis, suh, svh, None, None, out_dtype=torch.float16,
+    )
+    return inner.forward(x.contiguous().half(), {}, out_dtype=torch.float32).clone()
+
+
+def stage_ref(dev) -> int:
+    data = gen_inputs(dev)
+    refs = {}
+    for sname, k, n in SHAPES:
+        d = data[sname]
         suh = torch.ones(k, dtype=torch.float16, device=dev)
         svh = torch.ones(n, dtype=torch.float16, device=dev)
-
-        # ---------------- prefill exl3_gemm ----------------
         for m in PREFILL_M:
-            x = torch.randn(m, k, dtype=torch.float16, device=dev)
-            ext.pf_g8_set(0)
-            ref = ext.exl3_gemm(x, stock, suh, svh, 2, True)
-            ext.pf_g8_set(1)
-            out = ext.exl3_gemm(x, g8, suh, svh, 2, True)
+            refs[f"gemm {sname} m={m}"] = run_linear(d["stock"], suh, svh, d["x"][m])
             torch.cuda.synchronize()
-            check(f"exl3_gemm {sname} m={m}", ref, out)
-
-        # ---------------- QTIP exl3_gemv (decode m) ----------------
         for m in DECODE_M:
-            x = torch.randn(m, k, dtype=torch.float16, device=dev)
-            ext.pf_g8_set(0)
-            ref = ext.exl3_gemv(x, stock, suh, svh, 2, True)
-            ext.pf_g8_set(1)
-            out = ext.exl3_gemv(x, g8, suh, svh, 2, True)
+            refs[f"gemv {sname} m={m}"] = run_linear(d["stock"], suh, svh, d["x"][m])
             torch.cuda.synchronize()
-            check(f"exl3_gemv {sname} m={m}", ref, out)
+    torch.save({"refs": refs}, REF_PT)
+    print(f"ref stage: saved {len(refs)} reference outputs + inputs to {REF_PT}")
+    return 0
 
-    # ---------------- p2b_fused_moe (decode, both shapes at once) ----------
-    # gate/up from gate_up shape; down from down shape
+
+def stage_g8(dev) -> int:
+    import exllamav3_ext as ext
+    import vllm_exl3_c
+    assert ext.pf_g8_get() == 1 and vllm_exl3_c.pf_g8_get() == 1, \
+        "g8 stage must run with DSV41_LOAD_PF_G8=1"
+
+    data = gen_inputs(dev)
+    saved = torch.load(REF_PT, map_location=dev, weights_only=True)
+    refs = saved["refs"]
+
+    # ---------------- exl3_gemm + exl3_gemv via the real LinearEXL3 path ----
+    for sname, k, n in SHAPES:
+        d = data[sname]
+        g8 = fold_g8(d["stock"])
+        suh = torch.ones(k, dtype=torch.float16, device=dev)
+        svh = torch.ones(n, dtype=torch.float16, device=dev)
+        for m in PREFILL_M:
+            out = run_linear(g8, suh, svh, d["x"][m])
+            torch.cuda.synchronize()
+            check(f"exl3_gemm {sname} m={m}", refs[f"gemm {sname} m={m}"], out)
+        for m in DECODE_M:
+            out = run_linear(g8, suh, svh, d["x"][m])
+            torch.cuda.synchronize()
+            check(f"exl3_gemv {sname} m={m}", refs[f"gemv {sname} m={m}"], out)
+
+    # ---------------- p2b_fused_moe (in-process pf_g8_set A/B) --------------
     k, n = 5120, 2304
     kt, nt = k // 16, n // 16
+    torch.manual_seed(999)
     stock_g = torch.randint(-32768, 32767, (kt, nt, 32), dtype=torch.int16, device=dev)
     stock_d = torch.randint(-32768, 32767, (nt, kt, 32), dtype=torch.int16, device=dev)
     g8_g, g8_d = fold_g8(stock_g), fold_g8(stock_d)
@@ -116,39 +157,47 @@ def main() -> int:
     for m in DECODE_M:
         x = torch.randn(m, k, dtype=torch.float16, device=dev)
         ids = torch.arange(2, dtype=torch.int32, device=dev).repeat(m, 1).contiguous()
-        rw = torch.full_like(ids, 0.5, dtype=torch.float16)
+        rw = torch.full((m, 2), 0.5, dtype=torch.float16, device=dev)
 
         def run(layout: str):
             g, d = (g8_g, g8_d) if layout == "g8" else (stock_g, stock_d)
-            gt, gu = ptrs(g), ptrs(g)
-            gv, uv = ptrs(ones_n), ptrs(ones_n)
-            uu = ptrs(ones_k)
-            dt, du = ptrs(d), ptrs(ones_n)
-            dv = ptrs(ones_k)
-            out = torch.empty_like(x)
+            out = torch.zeros_like(x)
             vllm_exl3_c.p2b_fused_moe(
-                x, out, gt, gu, gv, gu, uu, uv, dt, du, dv,
+                x, out, ptrs(g), ptrs(ones_n), ptrs(ones_n),
+                ptrs(g), ptrs(ones_k), ptrs(ones_n),
+                ptrs(d), ptrs(ones_k), ptrs(ones_n),
                 ids, rw, 2, 2, 2, True, n, 0.0,
             )
             torch.cuda.synchronize()
             return out
 
-        # flag lives in BOTH .so registries; set both to the same phase
         ext.pf_g8_set(0); vllm_exl3_c.pf_g8_set(0)
         ref = run("stock")
         ext.pf_g8_set(1); vllm_exl3_c.pf_g8_set(1)
         out = run("g8")
         check(f"p2b_fused_moe m={m}", ref, out)
 
-    # restore
-    ext.pf_g8_set(0)
-    vllm_exl3_c.pf_g8_set(0)
+    # restore device flags (process exits anyway)
+    ext.pf_g8_set(1)
+    vllm_exl3_c.pf_g8_set(1)
 
     if failures:
         print(f"\nVERDICT: FAIL ({len(failures)} mismatches): {failures}")
         return 1
     print("\nVERDICT: PASS — G8 port is bit-exact on every reachable reader")
     return 0
+
+
+def main() -> int:
+    assert torch.cuda.is_available(), "needs a GPU window"
+    dev = torch.device("cuda:0")
+    mode = sys.argv[1] if len(sys.argv) > 1 else "ref"
+    if mode == "ref":
+        return stage_ref(dev)
+    if mode == "g8":
+        return stage_g8(dev)
+    print(f"unknown mode {mode!r} (use 'ref' | 'g8')")
+    return 2
 
 
 if __name__ == "__main__":

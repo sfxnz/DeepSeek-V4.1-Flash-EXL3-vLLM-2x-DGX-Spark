@@ -578,3 +578,35 @@ S=249 steps (SSE chunks; acc 2.056 in-window). Results/2026-09-21-trace3/.
 - Serve restored on boot-k3c-pf-gv2.sh: smoke '17 * 19 = ? Step by step,
   then answer.' → 323, env levers PREFETCH=1 CENSUS=1 GATHER_V2=1 live,
   gv2 self-check bit-exact, MemAvail 25/27 GiB post-smoke.
+
+## Round 28 — 2026-09-22 endgame: G8 lane ABORTED at the GPU bit-exact gate
+
+- Rebuild finished clean both ranks (Exited 0, 20/20 shards each, 46,080
+  trellis tensors, zero error lines). Pack assembled on spark1: 48/48,
+  334 GB, index 188,245 tensors; layout verified 46080/46080 folded shapes
+  (18,320,256)/(40,144,256) via shard-header scan.
+- Staged pfg8_bitexact_gate.py was WRONG for the shipped image on three
+  counts: (1) pybind exl3_gemm/gemv signatures differ (C-out + A_had +
+  force_num_sms); (2) pf_g8_set drives only the DEVICE constants — host
+  TORCH_CHECKs and LinearEXL3.K read env-cached pfg8::env_value(), so the
+  A/B must be two processes (ref env-unset vs g8 DSV41_LOAD_PF_G8=1);
+  (3) m>144 silently routed to reconstruct_hgemm (AUTO_RECONSTRUCT_
+  THRESHOLD=144) — the staged script would have compared gemm-vs-hgemm.
+  Rewritten (two-process, real serving entry make_linear_exl3.forward,
+  determinism control 16/16 SAME) — kept in results/2026-09-21-pfg8/.
+- GATE VERDICT (4 independent runs): exl3_gemm ALL PASS (both shapes,
+  m∈{64,128,256,512}); exl3_gemv gate_up ALL PASS; exl3_gemv DOWN
+  NON-DETERMINISTIC MISMATCH m∈{1,2,4} (m=4 failed 4/4 runs; m=1,2 failed
+  2/4) — same inputs, different outputs ⇒ race/edge in the ported QTIP
+  small-m reader at NT=144 (gate_up NT=320 is exact; suspect the DEC5
+  8-tile pack-group addressing at non-warp-multiple NT). p2b_fused_moe
+  harness leg crashed with CUDA illegal memory access (stock-flag ref run)
+  ⇒ decode fused path UNPROVEN in-image. ANY mismatch = ABORT per mandate.
+- Abort executed: spark2 push killed (~8%), rebuild containers removed,
+  rollback pack verified 48/48 both ranks, serve restored via
+  boot-k3c-pf-gv2.sh (canonical-e12 + 2.0bpw-mcg + all four levers), health
+  green, smoke 323, MemAvail 25/27 GiB post-smoke.
+- NOT measured: G8, lm_head stack, fadvise cap — 35 tok/s not reached;
+  baseline 31.37 stands. G8 pack intact on spark1; resume = fix gemv reader
+  (down NT=144, m≤4) + prove p2b in-image + re-run gate + assemble_pack.sh
+  (resumable) then Phase 3+. Details: results/2026-09-22-endgame/VERDICT.md.
