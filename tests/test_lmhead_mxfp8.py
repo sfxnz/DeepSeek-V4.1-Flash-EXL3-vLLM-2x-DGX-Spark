@@ -311,7 +311,10 @@ class TestLMHeadMxfp8(unittest.TestCase):
         cfg = types.SimpleNamespace(
             vocab_size=V,
             hidden_size=H,
-            head_dtype=None,
+            # Real build: head_dtype is a property returning the model dtype
+            # (config/model.py:1970); simulate dtype==head_dtype (swap active).
+            head_dtype=torch.bfloat16,
+            dtype=torch.bfloat16,
             model=types.SimpleNamespace(path=None),
         )
         vllm_config = types.SimpleNamespace(
@@ -402,7 +405,8 @@ class TestLMHeadMxfp8(unittest.TestCase):
         cfg = types.SimpleNamespace(
             vocab_size=V,
             hidden_size=H,
-            head_dtype=None,
+            head_dtype=torch.bfloat16,
+            dtype=torch.bfloat16,
             model=types.SimpleNamespace(path=None),
         )
         vllm_config = types.SimpleNamespace(
@@ -415,6 +419,24 @@ class TestLMHeadMxfp8(unittest.TestCase):
                 json.dumps({"weight_map": {"head.weight": "x.safetensors"}})
             )
             cfg.model = types.SimpleNamespace(path=td)
+            model = self.Cls(vllm_config=vllm_config)
+            self.assertEqual(model.lm_head.weight.dtype, torch.bfloat16)
+
+        # A genuine head_dtype override (float32 for RL parity) disarms even
+        # when the snapshot carries the quantized tensors.
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / "model.safetensors.index.json").write_text(
+                json.dumps(
+                    {
+                        "weight_map": {
+                            "lm_head.weight": "x.safetensors",
+                            "lm_head.weight_scale": "x.safetensors",
+                        }
+                    }
+                )
+            )
+            cfg.model = types.SimpleNamespace(path=td)
+            cfg.head_dtype = torch.float32
             model = self.Cls(vllm_config=vllm_config)
             self.assertEqual(model.lm_head.weight.dtype, torch.bfloat16)
 

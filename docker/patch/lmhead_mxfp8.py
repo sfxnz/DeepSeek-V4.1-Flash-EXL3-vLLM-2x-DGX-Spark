@@ -312,9 +312,21 @@ def install() -> bool:
             if lm_head is None or not hasattr(lm_head, "weight_loader"):
                 return  # PP non-last rank: PPMissingLayer, stock path
             model_config = vllm_config.model_config
-            if getattr(model_config, "head_dtype", None) is not None:
+            # Round-30 fix: head_dtype is a PROPERTY in this build
+            # (config/model.py:1970) that always returns a dtype — the model
+            # dtype for generation models (bfloat16 here), never None. The
+            # real branch is in LogitsProcessor._apply_head
+            # (logits_processor.py:143): quant_method.apply() runs whenever
+            # head_dtype == hidden_states.dtype. Only a genuine OVERRIDE
+            # (head_dtype != model dtype, e.g. --hf-overrides float32 for
+            # RL parity, which would .to(float32) a plain lm_head.weight)
+            # must disarm.
+            head_dtype = getattr(model_config, "head_dtype", None)
+            model_dtype = getattr(model_config, "dtype", None)
+            if head_dtype is not None and head_dtype != model_dtype:
                 print(
-                    "dsv41: lm_head mxfp8 self-disarmed (head_dtype override)",
+                    f"dsv41: lm_head mxfp8 self-disarmed "
+                    f"(head_dtype override {head_dtype} != {model_dtype})",
                     flush=True,
                 )
                 return
