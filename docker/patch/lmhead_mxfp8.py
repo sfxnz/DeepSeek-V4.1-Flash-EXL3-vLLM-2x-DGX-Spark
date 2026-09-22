@@ -113,7 +113,11 @@ def _model_snapshot_dir(model_config) -> str | None:
 # ---------------------------------------------------------------------------
 
 def install() -> bool:
-    from vllm.model_executor.models.deepseek_v4_1.nvidia.model import (
+    # Round-29 fix: this vllm build keeps the model classes under
+    # vllm.models.deepseek_v4_1 (NOT vllm.model_executor.models.deepseek_v4_1
+    # as the c32be56 draft assumed) — the old import raised ModuleNotFoundError
+    # in sitecustomize and the hook silently never installed.
+    from vllm.models.deepseek_v4_1.nvidia.model import (
         DeepseekV41LLMForCausalLM,
     )
     from vllm.model_executor.layers.quantization.base_config import (
@@ -123,7 +127,10 @@ def install() -> bool:
     from vllm.model_executor.layers.quantization.utils.mxfp8_utils import (
         swizzle_mxfp8_scale,
     )
-    from vllm.utils.flashinfer import vllm_flashinfer
+    # Round-29 fix: this build has no vllm.utils.flashinfer.vllm_flashinfer
+    # wrapper — flashinfer.mm_mxfp8 is imported directly (present, verified).
+    import flashinfer as _flashinfer
+    vllm_flashinfer = _flashinfer
 
     class Mxfp8LMHeadMethod(QuantizeMethodBase):
         """ParallelLMHead quant method riding the b12x mm_mxfp8 kernel.
