@@ -83,13 +83,12 @@ ALLOC_W13_OLD = '''        w13_trellis = Parameter(
 ALLOC_W13_NEW = '''        # ''' + MARKER2 + ''' G8 pack: trellis [n-groups][k-tiles][8W]
         import os as _os_alloc
         _g8_alloc = _os_alloc.environ.get("DSV41_LOAD_PF_G8", "0") == "1"
+        _w13_shape = (
+            (out_tiles // 8, in_tiles, k_words * 8) if _g8_alloc
+            else (in_tiles, out_tiles, k_words)
+        )
         w13_trellis = Parameter(
-            torch.empty(
-                num_experts, 2,
-                (out_tiles // 8, in_tiles, k_words * 8) if _g8_alloc
-                else (in_tiles, out_tiles, k_words),
-                dtype=torch.int16,
-            ),
+            torch.empty(num_experts, 2, *_w13_shape, dtype=torch.int16),
             requires_grad=False,
         )'''
 
@@ -100,13 +99,12 @@ ALLOC_W2_OLD = '''        w2_trellis = Parameter(
             requires_grad=False,
         )'''
 
-ALLOC_W2_NEW = '''        w2_trellis = Parameter(
-            torch.empty(
-                num_experts,
-                (in_tiles // 8, out_tiles, k_words * 8) if _g8_alloc
-                else (out_tiles, in_tiles, k_words),
-                dtype=torch.int16,
-            ),
+ALLOC_W2_NEW = '''        _w2_shape = (
+            (in_tiles // 8, out_tiles, k_words * 8) if _g8_alloc
+            else (out_tiles, in_tiles, k_words)
+        )
+        w2_trellis = Parameter(
+            torch.empty(num_experts, *_w2_shape, dtype=torch.int16),
             requires_grad=False,
         )'''
 
