@@ -69,7 +69,10 @@ def _load_tool(rel: str, name: str):
 
 
 HUB_MODEL = "sfxnz/DeepSeek-V4.1-Flash-EXL3"
-HUB_REV = "2.0bpw-mcg"
+HUB_REV = "2.0bpw-mcg-lmhead-mxfp8"
+STOCK_REV = "2.0bpw-mcg"
+IMAGE_TAG = "dsv41-flash-exl3-sm121:canonical-e12"
+PROMOTED_BOOT = "results/2026-09-22-endgame2/boot-lm.sh"
 HUB_DIRNAME = "models--sfxnz--DeepSeek-V4.1-Flash-EXL3"
 HUB_PACK_URL = "https://huggingface.co/sfxnz/DeepSeek-V4.1-Flash-EXL3"
 DEFAULTS_BEGIN = (
@@ -478,6 +481,59 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         self.assertIn("Engram", proc.stderr)
 
+    def test_image_default_is_the_readme_build_tag(self) -> None:
+        env = _recipe()["serve"]["env"]
+        self.assertEqual(env["IMAGE"], IMAGE_TAG)
+        self.assertEqual(_recipe()["image"]["local_tag"], IMAGE_TAG)
+        self.assertIn(f"docker build -f docker/Dockerfile -t {IMAGE_TAG} docker", _read("README.md"))
+        self.assertIn('LABEL dsv41.recipe.patches="', _read("docker/Dockerfile"))
+        self.assertIn('"dsv41.recipe.patches"', _func_body(_read("run.sh"), "ensure_image"))
+
+    def test_image_without_recipe_label_warns_but_boots(self) -> None:
+        container_env, dry_run, image_and_args = _harness()
+        res = dry_run()
+        self.assertEqual(res["returncode"], 0, res["stderr"])
+        self.assertIn("WARNING", res["stderr"])
+        self.assertIn("dsv41.recipe.patches", res["stderr"])
+        res = dry_run(STUB_IMAGE_LABELS='{"dsv41.recipe.patches":"x"}')
+        self.assertEqual(res["returncode"], 0, res["stderr"])
+        self.assertNotIn("dsv41.recipe.patches", res["stderr"])
+
+    def test_defaults_match_promoted_boot(self) -> None:
+        """A plain ./run.sh reproduces the measured 39.6/33.2 boot (results/2026-09-22-endgame2/boot-lm.sh).
+
+        Only intentional delta: FORCE_UNSAFE_CTX. The campaign set it per boot to get k=3 past the old
+        %5 spec guard; the default stays 0 (ARMS.md: never commit it).
+        """
+        import json
+        import shlex
+
+        allowed = {"FORCE_UNSAFE_CTX"}
+        boot = {}
+        for line in _read(PROMOTED_BOOT).splitlines():
+            if line.startswith("export "):
+                name, _, value = line[len("export ") :].partition("=")
+                boot[name] = shlex.split(value)[0]
+        self.assertIn("NCCL_PROTO", boot)
+        container_env, dry_run, image_and_args = _harness()
+        res = dry_run()
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        image, args = image_and_args(res["head"])
+        effective = container_env(res["head"])
+        effective.update(
+            IMAGE=image,
+            SNAPSHOT_SHA=Path(args[1]).name,
+            MAX_NUM_BATCHED_TOKENS=args[args.index("--max-num-batched-tokens") + 1],
+            COMPILATION_CONFIG=args[args.index("--compilation-config") + 1],
+            NUM_SPECULATIVE_TOKENS=str(
+                json.loads(args[args.index("--speculative-config") + 1])["num_speculative_tokens"]
+            ),
+        )
+        for name, value in boot.items():
+            if name in allowed:
+                continue
+            self.assertEqual(effective.get(name), value, name)
+
     def test_force_unsafe_defaults_are_off(self) -> None:
         env = _recipe()["serve"]["env"]
         for name in ("FORCE_UNSAFE_CTX", "FORCE_UNSAFE_ENGRAM", "FORCE_UNSAFE_QUANT"):
@@ -550,11 +606,12 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("lm_only=0", proc.stdout)
         self.assertNotIn("--language-model-only", proc.stdout)
 
-    def test_default_prefill_batch_is_8192_and_hub_rev_stays_mcg(self) -> None:
+    def test_default_prefill_batch_is_8192_and_hub_rev_is_mcg_lmhead(self) -> None:
         self.assertEqual(_recipe()["serve"]["env"]["MAX_NUM_BATCHED_TOKENS"], "8192")
         self.assertEqual(_recipe()["serve"]["env"]["MM_ENCODER_TP_MODE"], "data")
         self.assertEqual(_recipe()["serve"]["env"]["SNAPSHOT_SHA"], HUB_REV)
-        self.assertEqual(HUB_REV, "2.0bpw-mcg")
+        self.assertTrue(HUB_REV.startswith(STOCK_REV + "-"))
+        self.assertNotIn("mul1", HUB_REV)
         run = _read("run.sh")
         self.assertIn('MAX_NUM_BATCHED_TOKENS="${MAX_NUM_BATCHED_TOKENS:-8192}"', run)
         self.assertIn('MM_ENCODER_TP_MODE="${MM_ENCODER_TP_MODE:-data}"', run)
@@ -566,7 +623,8 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("12,712", readme)
         self.assertIn("23.52", readme)
         self.assertIn("27.98", readme)
-        self.assertIn("2.0bpw-mcg", _recipe()["serve"]["env"]["SNAPSHOT_SHA"])
+        self.assertIn(f"hf download {HUB_MODEL} --revision {HUB_REV}", readme)
+        self.assertIn(f"--revision {STOCK_REV}", readme)
 
     def test_locator_prefers_refs_commit_over_named_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as d:

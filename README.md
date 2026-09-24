@@ -38,10 +38,10 @@ Run the download on both nodes. Keep Hugging Face xet enabled. Do not set `HF_HU
 ```bash
 unset HF_HUB_DISABLE_XET
 export HF_XET_HIGH_PERFORMANCE=1
-hf download sfxnz/DeepSeek-V4.1-Flash-EXL3 --revision 2.0bpw-mcg
+hf download sfxnz/DeepSeek-V4.1-Flash-EXL3 --revision 2.0bpw-mcg-lmhead-mxfp8
 ```
 
-`hf download` writes `refs/2.0bpw-mcg` and `snapshots/<commit>/`. `./run.sh` resolves that layout. An assembled pack at `snapshots/2.0bpw-mcg` still works. If both exist, `run.sh` uses the Hub commit snapshot.
+`2.0bpw-mcg-lmhead-mxfp8` is the serve pin: the stock `2.0bpw-mcg` pack with only `model-00043` re-encoded (lm_head to MXFP8). `hf download` writes `refs/2.0bpw-mcg-lmhead-mxfp8` and `snapshots/<commit>/`. `./run.sh` resolves that layout. An assembled pack at `snapshots/2.0bpw-mcg-lmhead-mxfp8` still works. If both exist, `run.sh` uses the Hub commit snapshot. To serve the stock pack, download `--revision 2.0bpw-mcg` and run `SNAPSHOT_SHA=2.0bpw-mcg ./run.sh`; the lm_head MXFP8 path then turns itself off.
 
 If the pack is already in the Hub cache on a node, skip the download on that node.
 
@@ -51,12 +51,12 @@ On both nodes, from this repo:
 
 ```bash
 docker pull vllm/vllm-openai:deepseekv41-flash-0909@sha256:d84a123255b822fc22508635218000187221794f59c0694c33b0650d1e377d58
-docker build -f docker/Dockerfile -t dsv41-flash-exl3-sm121 docker
+docker build -f docker/Dockerfile -t dsv41-flash-exl3-sm121:canonical-e12 docker
 ```
 
 Stock `vllm/vllm-openai` wheels do not load `DeepseekV41ForCausalLM`. The image starts from the pinned `deepseekv41-flash-0909` digest and overlays Engram-on-disk plus `vllm-exl3`.
 
-If the image `dsv41-flash-exl3-sm121` is already present, skip the pull and the build on that node.
+If the image `dsv41-flash-exl3-sm121:canonical-e12` is already present, skip the pull and the build on that node.
 
 `dsv41-flash-exl3-sm121` is the base build tag — the derived experiment Dockerfiles (`docker/Dockerfile.e10`, `docker/Dockerfile.mma`) chain `FROM` it. The promoted serve image carrying the E10+E11 keeps is `dsv41-flash-exl3-sm121:canonical-e12` (build chain `docker/Dockerfile.e10` → `docker/Dockerfile.e11`, promoted in `results/RESULTS.md` round 7), and that is what both nodes run: `IMAGE=dsv41-flash-exl3-sm121:canonical-e12 ./run.sh`.
 
@@ -93,8 +93,8 @@ When you are done:
 <!-- BEGIN generated defaults from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Setting | Value |
 |---|---|
-| Image | `dsv41-flash-exl3-sm121` |
-| Model | `sfxnz/DeepSeek-V4.1-Flash-EXL3` revision `2.0bpw-mcg` |
+| Image | `dsv41-flash-exl3-sm121:canonical-e12` |
+| Model | `sfxnz/DeepSeek-V4.1-Flash-EXL3` revision `2.0bpw-mcg-lmhead-mxfp8` |
 | `--tensor-parallel-size` / `--nnodes` | 2 / 2 |
 | `--max-model-len` | 1048576 |
 | `--max-num-seqs` | 2 |
@@ -105,7 +105,11 @@ When you are done:
 | Engram | disk (`DSV41_ENGRAM_DISK=1`) |
 | `--block-size` | 64 |
 | Speculative | DSpark-3 (`SPEC=dspark`) |
-| CUDA graphs | `FULL_AND_PIECEWISE` (`ENFORCE_EAGER=0`, `DSV41_ALLOW_CUDA_GRAPHS=1`) |
+| CUDA graphs | `FULL_AND_PIECEWISE`, capture sizes {1} ∪ {s·k, s·(k+1)} for s ≤ `--max-num-seqs` (`[1,3,4,6,8]` at k=3) (`ENFORCE_EAGER=0`, `DSV41_ALLOW_CUDA_GRAPHS=1`) |
+| Engram prefetch / census / gather | `DSV41_ENGRAM_PREFETCH=1` `DSV41_ENGRAM_CENSUS=1` `DSV41_ENGRAM_GATHER_V2=1` |
+| lm_head | MXFP8 (`DSV41_LMHEAD_MXFP8=1`), needs the `2.0bpw-mcg-lmhead-mxfp8` pack; self-disarms on stock `2.0bpw-mcg` |
+| NCCL AR-tail set | `NCCL_BUFFSIZE=1048576` `NCCL_LL128_BUFFSIZE=262144` `NCCL_PROTO=^LL128` `NCCL_MAX_NCHANNELS=8` |
+| Memory hygiene | `DSV41_DROP_PAGE_CACHE=1` `DSV41_INDEXER_PREFILL_FACTOR=1` `DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192` `DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=2.5` `VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=256` |
 | Tokenizers / tools / reasoning | `deepseek_v41` |
 | Vision | on (`LANGUAGE_MODEL_ONLY=0`) |
 | `--mm-encoder-tp-mode` | data |
