@@ -82,6 +82,16 @@ class AuditTests(unittest.TestCase):
         problems = ea.audit({"head": bad}, DEFAULT_ENV)
         self.assertEqual(len(problems), 5, problems)
 
+    def test_decode_lever_off_lines_are_disarms(self) -> None:
+        # Printed by docker/patch/decode_levers.py (image dry-run, scenario B).
+        bad = ENGAGED + (
+            "dsv41: decode lever sparse-markov FAILED, lever is OFF: ValueError('x')\n"
+            "dsv41: WARNING DSV41_WOA_PREPACK=1 but this image's o_proj.py has no "
+            "prepack stage; the lever is OFF. Build docker/Dockerfile.woa-prepack.\n"
+        )
+        problems = ea.audit({"head": bad}, DEFAULT_ENV)
+        self.assertEqual(len(problems), 2, problems)
+
     def test_gates_off_expect_nothing(self) -> None:
         env = dict(DEFAULT_ENV, DSV41_LMHEAD_MXFP8="0", ENFORCE_EAGER="1")
         log = ENGAGED.replace("dsv41: lm_head mxfp8 enabled", "").replace("Breakable CUDA graph enabled", "")

@@ -27,6 +27,9 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+# Boot-log marker for tools/engagement_audit.py: an armed lever that did not engage.
+LOG_DISARMED = "lever is OFF"
+
 MHC_DECODE_MAX_TOKENS = 64
 SPARSE_MARKOV_TOPK_DEFAULT = 256
 O_PROJ_PY = Path(
