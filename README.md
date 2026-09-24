@@ -58,7 +58,7 @@ Stock `vllm/vllm-openai` wheels do not load `DeepseekV41ForCausalLM`. The image 
 
 If the image `dsv41-flash-exl3-sm121:canonical-e12` is already present, skip the pull and the build on that node.
 
-`dsv41-flash-exl3-sm121` is the base build tag — the derived experiment Dockerfiles (`docker/Dockerfile.e10`, `docker/Dockerfile.mma`) chain `FROM` it. The promoted serve image carrying the E10+E11 keeps is `dsv41-flash-exl3-sm121:canonical-e12` (build chain `docker/Dockerfile.e10` → `docker/Dockerfile.e11`, promoted in `results/RESULTS.md` round 7), and that is what both nodes run: `IMAGE=dsv41-flash-exl3-sm121:canonical-e12 ./run.sh`.
+`docker/Dockerfile` builds the canonical serve image `dsv41-flash-exl3-sm121:canonical-e12`, which is the `IMAGE` default. It already applies the E10+E11 keeps (p2b mrow/cfg1/codebook/fshift, b12x smalls, `fix_o_proj_woa_fp8`) that the historical `docker/Dockerfile.e10` → `docker/Dockerfile.e11` chain added. `results/RESULTS.md` round 7 records the rebuild as content-equivalent. The image carries a `dsv41.recipe.patches` label. `run.sh` warns, but still boots, when `IMAGE` lacks the label: a stale local `:latest`, or a canonical-e12 built before the label existed. The experiment Dockerfiles (`docker/Dockerfile.e10`, `docker/Dockerfile.mma`) chain `FROM` the untagged base and are history.
 
 ## Run
 
@@ -78,7 +78,7 @@ The API is `http://127.0.0.1:8000/v1`. The served model is `deepseek-ai/DeepSeek
 
 The promoted recipe additionally ships, all default-on and individually A/B'd (results/RESULTS.md rounds 15–33): `NUM_SPECULATIVE_TOKENS=3` with cudagraph capture sizes `[1,3,4,6,8]`, `MAX_NUM_BATCHED_TOKENS=8192`, the NCCL AR-tail set (`NCCL_BUFFSIZE=1048576`, `NCCL_LL128_BUFFSIZE=262144`, `NCCL_PROTO=^LL128`, `NCCL_MAX_NCHANNELS=8`), the mem-hygiene bundle (`DSV41_DROP_PAGE_CACHE=1`, `DSV41_INDEXER_PREFILL_FACTOR=1`, `DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192`, `DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=2.5`, `VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=256`), Engram prefetch v3 + gather v2 + census (`DSV41_ENGRAM_PREFETCH=1`, `DSV41_ENGRAM_GATHER_V2=1`, `DSV41_ENGRAM_CENSUS=1`), and lm_head mxfp8 (`DSV41_LMHEAD_MXFP8=1`, pack revision `2.0bpw-mcg-lmhead-mxfp8` — the stock pack with only `model-00043` re-encoded; `tools/quantize_lmhead_mxfp8.py` builds it from `2.0bpw-mcg` in ~10 min).
 
-The `smoke_chat.py` default prompt is `What is 17*19? Return only the integer.` Thinking is off. Non-empty `content` is the pass. `323` is enough. `smoke_vision.py` sends OpenAI `image_url` and must not return HTTP 400 `is not a multimodal model`. `bench_decode.py` is streamed greedy, thinking off, 200 completion tokens, 3-run median.
+The `smoke_chat.py` default prompt is `What is 17*19? Return only the integer.` Thinking is off. Non-empty `content` is the pass. `323` is enough. `smoke_vision.py` sends OpenAI `image_url` and must not return HTTP 400 `is not a multimodal model`. `bench_decode.py` is streamed greedy, thinking off, 200 completion tokens, 3-run median by default (the headline cell uses `--runs 9`).
 
 If `ORCHESTRATE=auto` (the default) and SSH to `WORKER_HOST` fails, `run.sh` exits 1. It does not start a TP=2 head rank alone.
 
@@ -125,7 +125,7 @@ When you are done:
 
 `MAX_NUM_BATCHED_TOKENS` history: at 12.7k-token prompts 8192 measured −5% vs 2048 (`evidence/pr6-batched-8192/`), but on the campaign's prose/prefill cells 8192 was re-measured across rounds 15–33 as part of the promoted config — every kept lever was A/B'd on top of it. It ships as the default now; 2048 remains available for long-prompt-heavy workloads.
 
-MUL1 + p2b `cb=2` (`2.0bpw-mul1` K=2 on `dsv41-flash-exl3-sm121:cb2`) lost prose decode: 23.52 vs 27.98 MCG. Runs 26.43 / 23.52 / 23.17 vs baseline 26.34 / 27.98 / 31.77. MUL1 median and two of three runs sit below the worst baseline run. 12,712-token prefill 792 vs 797 (flat). Rebuild tools stay. Serve stays `2.0bpw-mcg`. See `evidence/pr6-mul1-cb2/`.
+MUL1 + p2b `cb=2` (`2.0bpw-mul1` K=2 on `dsv41-flash-exl3-sm121:cb2`) lost prose decode: 23.52 vs 27.98 MCG. Runs 26.43 / 23.52 / 23.17 vs baseline 26.34 / 27.98 / 31.77. MUL1 median and two of three runs sit below the worst baseline run. 12,712-token prefill 792 vs 797 (flat). Rebuild tools stay. Serve stays on the MCG pack (`2.0bpw-mcg-lmhead-mxfp8`). See `evidence/pr6-mul1-cb2/`.
 
 <!-- BEGIN generated measured from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
@@ -141,10 +141,12 @@ If you already downloaded `sfxnz/DeepSeek-V4.1-Flash-EXL3` at revision `2.0bpw-m
 - **MUL1 + p2b `cb=2`** (`2.0bpw-mul1`, K=2): 23.52 vs 27.98 MCG on our kit. Do not serve it. Pack-only MUL1 without p2b `cb=2` drops native fused MoE onto generic `exl3_moe` and is a decode regression.
 - **Her 2.9 bpw mul1 pack** (MiaAI-Lab kit, 4 boots, results/2026-09-20-mul1-lane/): stock k=3 prose 16.35, spec-off 23.64 vs our MCG 34+ — its MTP drafter is quantized to 4-bit EXL3 (`mtp_bits: 4`, acceptance 1.33 vs 2.77 source-precision). Her k=3 numbers are not reproducible on that pack; the deficit is a pack property, not a flag.
 
-The lm_head-mxfp8 pack is the one derivative that **won** (+5.9% L.A.I.L, round 33): it re-encodes only `model-00043` from the stock pack:
+The lm_head-mxfp8 pack is the one derivative that **won** (+5.9% L.A.I.L, round 33). It re-encodes only `model-00043` of the stock pack and is published as the Hub branch `2.0bpw-mcg-lmhead-mxfp8`, which `./run.sh` downloads by default. To rebuild it, run the tool on a copy of the stock snapshot (it edits in place; needs torch + safetensors, e.g. inside the image):
 
 ```bash
-python3 tools/quantize_lmhead_mxfp8.py --src snapshots/2.0bpw-mcg --dst snapshots/2.0bpw-mcg-lmhead-mxfp8
+S=~/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots
+cp -a "$S/<stock 2.0bpw-mcg snapshot>" "$S/2.0bpw-mcg-lmhead-mxfp8"
+python3 tools/quantize_lmhead_mxfp8.py --snapshot "$S/2.0bpw-mcg-lmhead-mxfp8"
 ```
 
 Stay at K=2 for expert re-encodes. Calibrate (activation Hessian / official convert) before raising bits. Do not pass `--hq` or `bits!=2` here. This recipe does not ship a calibration harness.
@@ -159,7 +161,7 @@ python3 tools/download_official.py
 
 The commit is `dba1be0a40aa45a94ad051997016db3960a90277`. The two Engram shards are about 95 GiB each and need `hf_xet`. Do not set `HF_HUB_DISABLE_XET`.
 
-2. Hardlink the non-expert shards on the host. Quantize routed experts inside image `dsv41-flash-exl3-sm121` with exclusive GPU. Host Python does not have ExLlamaV3. Use `--codebook mul1 --greedy --beam 16`. Split expert shards 3-22 and 23-42 across the two Sparks. Destination is `snapshots/2.0bpw-mul1`.
+2. Hardlink the non-expert shards on the host. Quantize routed experts inside image `dsv41-flash-exl3-sm121:canonical-e12` with exclusive GPU. Host Python does not have ExLlamaV3. Use `--codebook mul1 --greedy --beam 16`. Split expert shards 3-22 and 23-42 across the two Sparks. Destination is `snapshots/2.0bpw-mul1`.
 
 ```bash
 python3 tools/quantize_experts_exl3.py --codebook mul1 --link-only
