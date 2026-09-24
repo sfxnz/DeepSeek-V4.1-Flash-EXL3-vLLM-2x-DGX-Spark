@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "docker/patch/sitecustomize.py"
-HELPERS = ("_PatchSkip", "_PatchAbsent", "_patch","_rewrite", "_sm120_rewrite", "_PATCH_STRICT", "_VLLM")
+HELPERS = ("_PatchSkip", "_PatchAbsent", "_patch", "_rewrite", "_sm120_rewrite", "_PATCH_STRICT", "_VLLM")
 REQUIRED = {
     "persistent_topk",
     "kpool_persistent_topk",
