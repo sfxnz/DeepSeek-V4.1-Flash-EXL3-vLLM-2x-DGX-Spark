@@ -129,6 +129,8 @@ FORWARD_ENVS=(
   NCCL_LL128_BUFFSIZE=
   NCCL_PROTO=
   NCCL_LAUNCH_CACHE=
+  NCCL_CROSS_NIC=1
+  NCCL_IB_MERGE_NICS=
 )
 for fwd in "${FORWARD_ENVS[@]}"; do
   fwd_name="${fwd%%=*}"
@@ -386,7 +388,6 @@ start_local() {
     -e "NCCL_IB_HCA=$HCA"
     -e "NCCL_NET=IB"
     -e "NCCL_IB_DISABLE=0"
-    -e "NCCL_CROSS_NIC=1"
     -e "NCCL_NVLS_ENABLE=0"
     -e "NCCL_CUMEM_ENABLE=0"
     -e "NCCL_DEBUG=WARN"

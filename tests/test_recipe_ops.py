@@ -158,6 +158,8 @@ FORWARDED_ENGINE_ENVS = {
     "NCCL_LL128_BUFFSIZE",
     "NCCL_PROTO",
     "NCCL_LAUNCH_CACHE",
+    "NCCL_CROSS_NIC",
+    "NCCL_IB_MERGE_NICS",
 }
 _ENV_READ = re.compile(
     r"""(?:environ\.get|getenv|env\.get)\(\s*\\?["']([A-Z][A-Z0-9_]*)\\?["']"""
@@ -263,6 +265,24 @@ class EnvForwardingTests(unittest.TestCase):
                 ["--override-generation-config", '{"note":"it\'s"}', "--enable-prompt-tokens-details"],
                 role,
             )
+
+    def test_dual_rail_nccl_env_reaches_both_ranks(self) -> None:
+        """dual-rail-nccl: rail-matched CROSS_NIC=0 and MERGE_NICS must match on both ranks."""
+        container_env, dry_run, _ = _harness()
+
+        res = dry_run()
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        for role in ("head", "worker"):
+            env = container_env(res[role])
+            self.assertEqual(env["NCCL_CROSS_NIC"], "1", role)
+            self.assertNotIn("NCCL_IB_MERGE_NICS", env, role)
+        res = dry_run(HCA="rocep1s0f1,roceP2p1s0f1", NCCL_CROSS_NIC="0", NCCL_IB_MERGE_NICS="0")
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        for role in ("head", "worker"):
+            env = container_env(res[role])
+            self.assertEqual(env["NCCL_IB_HCA"], "rocep1s0f1,roceP2p1s0f1", role)
+            self.assertEqual(env["NCCL_CROSS_NIC"], "0", role)
+            self.assertEqual(env["NCCL_IB_MERGE_NICS"], "0", role)
 
 
 def _docker(res: dict, role: str, verb: str) -> list[list[str]]:
