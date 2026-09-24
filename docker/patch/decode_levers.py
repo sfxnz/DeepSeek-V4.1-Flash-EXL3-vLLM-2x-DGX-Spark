@@ -18,6 +18,9 @@
   output exact; only acceptance can move (a winner outside the base top-k).
 - DSV41_WOA_PREPACK=1 lives in the image's o_proj.py (fix_o_proj_woa_fp8.py
   stage 2). Here: a loud warning when the image lacks that stage.
+- DSV41_P2B_SRC_SORT=1 is read by the compiled vllm_exl3_c (widen_p2b_srcsort
+  in docker/Dockerfile). Here: a loud warning when that .so has no srcsort
+  code (built before the patch), where the env would silently do nothing.
 
 Top-level imports are stdlib only, so importing this module cannot fail.
 """
@@ -133,12 +136,32 @@ def _check_woa_prepack(env) -> None:
         )
 
 
+def _check_p2b_src_sort(env) -> None:
+    if (env.get("DSV41_P2B_SRC_SORT", "0") or "0") != "1":
+        return
+    import importlib.util
+    import mmap
+
+    spec = importlib.util.find_spec("vllm_exl3_c")
+    if spec is None or not spec.origin:
+        raise RuntimeError("vllm_exl3_c extension not found")
+    # The patched host code reads the env by name; the literal is in .rodata.
+    with open(spec.origin, "rb") as fh, mmap.mmap(fh.fileno(), 0, access=mmap.ACCESS_READ) as so:
+        if so.find(b"DSV41_P2B_SRC_SORT") < 0:
+            print(
+                f"dsv41: decode lever p2b_src_sort: {spec.origin} has no srcsort code; "
+                "the lever is OFF. Rebuild docker/Dockerfile.",
+                flush=True,
+            )
+
+
 def install(env=None) -> None:
     env = os.environ if env is None else env
     for name, step in (
         ("mhc-prenorm-splits", _install_mhc_splits),
         ("sparse-markov", _install_sparse_markov),
         ("woa-prepack", _check_woa_prepack),
+        ("p2b_src_sort", _check_p2b_src_sort),
     ):
         try:
             step(env)

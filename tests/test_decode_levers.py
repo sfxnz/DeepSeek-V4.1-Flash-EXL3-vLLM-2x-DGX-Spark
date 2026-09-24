@@ -287,6 +287,32 @@ class WiringTests(unittest.TestCase):
                 dl.install({"DSV41_WOA_PREPACK": "1"})
             self.assertEqual(out.getvalue(), "")
 
+    def test_p2b_src_sort_warns_on_extension_without_srcsort(self):
+        import importlib.util
+        import tempfile
+
+        sys.path.insert(0, str(ROOT / "tools"))
+        from engagement_audit import audit
+
+        with tempfile.TemporaryDirectory() as td:
+            so = Path(td) / "vllm_exl3_c.so"
+            spec = types.SimpleNamespace(origin=str(so))
+            with mock.patch.object(importlib.util, "find_spec", lambda name: spec):
+                so.write_bytes(b"\x7fELF" + b"\0" * 4096 + b"p2b_fused_moe\0")  # pre-srcsort build
+                with redirect_stdout(StringIO()) as out:
+                    dl.install({"DSV41_P2B_SRC_SORT": "1"})
+                line = out.getvalue()
+                self.assertIn("decode lever p2b_src_sort", line)
+                self.assertTrue(any("p2b_src_sort" in x for x in audit({"head": line}, {})), "the audit reports it")
+                so.write_bytes(b"\x7fELF" + b"\0" * 4096 + b"DSV41_P2B_SRC_SORT\0")
+                with redirect_stdout(StringIO()) as out:
+                    dl.install({"DSV41_P2B_SRC_SORT": "1"})
+                    dl.install({})  # off: the .so is never opened
+                self.assertEqual(out.getvalue(), "")
+            with mock.patch.object(importlib.util, "find_spec", lambda name: None), redirect_stdout(StringIO()) as out:
+                dl.install({"DSV41_P2B_SRC_SORT": "1"})
+            self.assertIn("decode lever p2b_src_sort FAILED, lever is OFF", out.getvalue())
+
 
 class TraceKernelsTests(unittest.TestCase):
     def test_streamed_per_step_sums(self):
