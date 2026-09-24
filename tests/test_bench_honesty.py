@@ -91,6 +91,19 @@ class MicroPhaseTests(unittest.TestCase):
         self.assertEqual(rows[0]["median_rate_tok_s"], 500.0)
         self.assertNotIn("DSV41", docs[1])  # pp_novel doc is not repo text
 
+    def test_fresh_doc_tops_up_when_build_undershoots(self) -> None:
+        # Live s0 baseline: pp_warm@32768 docs landed at 30.8k (0.94x) because
+        # the calibrated ratio overestimates tokens/char and nothing topped
+        # the doc back up. A ratio of 0.3 against a len//4 tokenizer makes
+        # build_doc land ~0.875x; fresh_doc must still hit [0.97, 1.0]x.
+        micro = _load("benches/micro.py", "micro_t2")
+        tok = lambda t: len(t) // 4  # noqa: E731
+        for novel in (False, True):
+            for target in (8192, 32768):
+                _, ntok = micro.fresh_doc(target, 0.3, tok, seed=13, novel=novel)
+                self.assertGreaterEqual(ntok, 0.97 * target, (novel, target))
+                self.assertLessEqual(ntok, target, (novel, target))
+
 
 class FourNumbersParseTests(unittest.TestCase):
     @classmethod

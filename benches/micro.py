@@ -41,7 +41,8 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
 from bench_decode import acceptance, decode_rate, spec_counters  # noqa: E402
-from corpus import build_doc, char_ratio, make_tokenizer, trim_to_tokens  # noqa: E402
+from corpus import (build_doc, char_ratio, make_tokenizer,  # noqa: E402
+                    novel_segments, trim_to_tokens)
 
 CHAT_KWARGS = {"thinking": False, "reasoning_effort": "low"}
 # Above this pp tok/s the run was served from the prefix cache, not the
@@ -98,7 +99,11 @@ def stream_once(url, model, prompt, max_tokens, timeout):
 
 def fresh_doc(target, ratio, tok, seed, novel=False):
     doc = build_doc(target, ratio, seed=seed, novel=novel)
-    doc = trim_to_tokens(doc, target, tok)
+    # build_doc sizes from a 40-segment ratio sample and can land ~6% short;
+    # give trim_to_tokens extra segments to top the doc up to [0.97, 1.0]x.
+    extra = (novel_segments(seed * 1000 + 999, 256) if novel
+             else build_doc(target // 4, ratio, seed=seed + 1).split("\n\n"))
+    doc = trim_to_tokens(doc, target, tok, ratio=ratio, more_segs=extra)
     return doc, tok(doc)
 
 
