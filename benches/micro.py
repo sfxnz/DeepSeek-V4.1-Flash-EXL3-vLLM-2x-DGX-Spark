@@ -102,7 +102,7 @@ def fresh_doc(target, ratio, tok, seed, novel=False):
     # build_doc sizes from a 40-segment ratio sample and can land ~6% short;
     # give trim_to_tokens extra segments to top the doc up to [0.97, 1.0]x.
     extra = (novel_segments(seed * 1000 + 999, 256) if novel
-             else build_doc(target // 4, ratio, seed=seed + 1).split("\n\n"))
+             else build_doc(target, ratio, seed=-seed - 1).split("\n\n"))
     doc = trim_to_tokens(doc, target, tok, ratio=ratio, more_segs=extra)
     return doc, tok(doc)
 

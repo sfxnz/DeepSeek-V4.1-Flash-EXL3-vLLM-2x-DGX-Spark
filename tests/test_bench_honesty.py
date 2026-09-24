@@ -104,6 +104,15 @@ class MicroPhaseTests(unittest.TestCase):
                 self.assertGreaterEqual(ntok, 0.97 * target, (novel, target))
                 self.assertLessEqual(ntok, target, (novel, target))
 
+    def test_trim_never_returns_over_target_when_pool_runs_out(self) -> None:
+        # Exhausting more_segs used to return right after the append, unmeasured
+        # (live /tokenize: 9595 tokens for an 8192 target).
+        corpus = _load("tools/corpus.py", "corpus_t2")
+        tok = lambda t: len(t) // 4  # noqa: E731
+        out = corpus.trim_to_tokens("a" * 400, 1000, tok, ratio=0.25,
+                                    more_segs=["b" * 400, "c" * 8000])
+        self.assertLessEqual(tok(out), 1000)
+
 
 class FourNumbersParseTests(unittest.TestCase):
     @classmethod

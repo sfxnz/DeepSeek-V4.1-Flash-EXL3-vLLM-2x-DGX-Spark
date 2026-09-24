@@ -173,15 +173,13 @@ def trim_to_tokens(text: str, target_tokens: int, tokenize,
             drop = max(1, min(len(paras), int(over * cpt / avg_chars) + 1))
             del paras[-drop:]
             continue
-        if exact >= 0.97 * target_tokens or not more_segs:
+        if exact >= 0.97 * target_tokens or take >= len(more_segs or []):
             return "\n\n".join(paras)
         need = target_tokens - exact
         add = max(1, int(need * cpt / avg_chars) + 1)
         for seg in more_segs[take:take + add]:
             paras.append(seg)
         take += add
-        if take >= len(more_segs):
-            return "\n\n".join(paras)
 
 
 def make_tokenizer(url: str = "http://127.0.0.1:8000", model: str = "deepseek-ai/DeepSeek-V4.1-Flash"):
