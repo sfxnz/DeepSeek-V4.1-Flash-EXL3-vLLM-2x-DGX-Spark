@@ -605,7 +605,11 @@ def _p_mhc_decode_splits():
         _mhc_tl.compute_mhc_pre_num_splits = _mhc_splits_decode
         print("dsv41: MHC decode prenorm splits collapsed to 1", flush=True)
     else:
-        raise _PatchSkip("DSV41_MHC_DECODE_SPLITS is not 1")
+        # N >= 2 is decode_levers' forced split-K (its own log line); 0 is stock.
+        raise _PatchSkip(
+            f"DSV41_MHC_DECODE_SPLITS={os.environ.get('DSV41_MHC_DECODE_SPLITS') or '0'}: "
+            "this block only collapses at =1 (N >= 2 is decode_levers)"
+        )
 
 
 _patch("mhc_decode_splits", _p_mhc_decode_splits)
