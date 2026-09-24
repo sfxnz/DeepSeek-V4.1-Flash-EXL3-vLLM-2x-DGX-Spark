@@ -2,7 +2,7 @@
 """Live OpenAI-compat vision smoke against a running serve.
 
 Sends a 64x64 solid-red PNG. Fails on HTTP 400 "is not a multimodal model"
-and when the answer does not contain "red". The PNG is built with stdlib
+and when the answer does not say "red" as a word. The PNG is built with stdlib
 zlib/struct, so the host does not need an image library.
 """
 from __future__ import annotations
@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import re
 import struct
 import sys
 import urllib.error
@@ -33,6 +34,11 @@ def solid_png(width: int = 64, height: int = 64, rgb: tuple = (255, 0, 0)) -> by
 
 # 64x64 solid red. The old fixture was a mislabeled 1x1 gray pixel.
 RED_PNG_B64 = base64.b64encode(solid_png()).decode()
+
+
+def says_red(text: str) -> bool:
+    """'red' as a whole word: 'shared', 'colored', 'rendered' do not count."""
+    return re.search(r"\bred\b", text or "", re.I) is not None
 
 
 def main() -> int:
@@ -90,7 +96,7 @@ def main() -> int:
     if "is not a multimodal model" in text:
         print("result=fail reason=not_multimodal", file=sys.stderr)
         return 1
-    if "red" not in (msg.get("content") or "").lower():
+    if not says_red(msg.get("content")):
         print("result=fail reason=wrong_color", file=sys.stderr)
         return 1
     return 0

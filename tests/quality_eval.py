@@ -22,7 +22,7 @@ Components (vendored data in tests/quality/, see tests/quality/README.md):
   selfcons   greedy control: 12 prompts x 2 runs. Reports the A/A flip rate
              and, with --baseline, first divergence vs the baseline's run A.
   c2         two concurrent requests that must both be right.
-  vision     64x64 solid-red PNG must be answered "red".
+  vision     64x64 solid-red PNG must be answered "red" (whole word).
   gsm8k      GSM8K-100, temperature 0, thinking off            (--full only)
   gsm8k_think  first 40 GSM8K items, thinking on (effort high) (--full only)
   mmlu       MMLU 4 x 57 subjects                               (--full only)
@@ -58,7 +58,7 @@ ROOT = HERE.parent
 DATA = HERE / "quality"
 sys.path.insert(0, str(ROOT))
 
-from smoke_vision import RED_PNG_B64  # noqa: E402
+from smoke_vision import RED_PNG_B64, says_red  # noqa: E402
 
 BOS_TEXT = "<｜begin▁of▁sentence｜>"
 CHAT_KWARGS = {"thinking": False, "reasoning_effort": "low"}
@@ -91,7 +91,7 @@ NEEDLE_LENGTHS = {"quick": (8192, 32768), "full": (8192, 32768, 131072)}
 
 GATE_RULES = {
     "error": "every component ran without an exception",
-    "vision": "answer contains 'red'",
+    "vision": "answer says 'red' as a whole word",
     "c2": "both concurrent answers correct",
     "nll": "mean_nll <= base + max(0.01, 3 * base.repeat_abs_delta) nats",
     "decode.median": "median |dlogprob| <= base + 0.05",
@@ -578,7 +578,7 @@ def run_vision(c: Client) -> dict:
         {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{RED_PNG_B64}"}},
     ], max_tokens=16)
     text = out["choices"][0]["message"].get("content") or ""
-    return {"pass": "red" in text.lower(), "content": text.strip()[:40]}
+    return {"pass": says_red(text), "content": text.strip()[:40]}
 
 
 GSM_SUFFIX = ("\n\nSolve the problem step by step. End with a final line of the "

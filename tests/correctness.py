@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
 from corpus import make_tokenizer, needle_prompt  # noqa: E402
-from smoke_vision import RED_PNG_B64  # noqa: E402
+from smoke_vision import RED_PNG_B64, says_red  # noqa: E402
 
 CHAT_KWARGS = {"thinking": False, "reasoning_effort": "low"}
 SEED = 20260918
@@ -208,7 +208,7 @@ def run_suite(url: str, model: str, full: bool) -> tuple[list[dict], bool]:
             {"type": "image_url",
              "image_url": {"url": f"data:image/png;base64,{RED_PNG_B64}"}},
         ]}], max_tokens=16)
-        assert "red" in text.lower(), f"want red in {text!r}"
+        assert says_red(text), f"want red in {text!r}"
         return text.strip()[:40]
 
     check("math_small", math_small)

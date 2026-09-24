@@ -97,6 +97,31 @@ class SmokeVisionTests(unittest.TestCase):
             httpd.shutdown()
             httpd.server_close()
 
+    def test_cli_fails_when_red_is_only_inside_a_word(self) -> None:
+        # A dropped image: "shared" contains "red" but is not an answer.
+        httpd, url = _serve({"choices": [{"message": {"content": "It seems no image was shared."}}]})
+        try:
+            proc = subprocess.run(
+                [sys.executable, str(ROOT / "smoke_vision.py"), "--url", url],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(proc.returncode, 1)
+            self.assertIn("wrong_color", proc.stderr)
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
+    def test_says_red_is_whole_word(self) -> None:
+        sys.path.insert(0, str(ROOT))
+        import smoke_vision
+
+        for text in ("red", "Red.", "It is RED", "**Red**"):
+            self.assertTrue(smoke_vision.says_red(text), text)
+        for text in ("Colored", "shared", "rendered", "hundred", "", None):
+            self.assertFalse(smoke_vision.says_red(text), text)
+
     def test_fixture_is_64x64_solid_red_png(self) -> None:
         sys.path.insert(0, str(ROOT))
         import smoke_vision
