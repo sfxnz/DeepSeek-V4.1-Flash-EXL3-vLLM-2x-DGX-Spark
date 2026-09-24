@@ -2,9 +2,10 @@
 # Four-numbers capture for ONE campaign arm — HTTP-only, serialized, zero GPU
 # state change. Run from anywhere; cds to the repo root.
 #
-#   1. prose decode c=1 tok/s   — 9-run median   (bench_decode.py, unmodified)
+#   1. prose decode c=1 tok/s   — 9-run median   (bench_decode.py frozen cell)
 #   2. cold prefill tok/s @8k/@32k — 3 runs each (benches/micro.py; fresh doc
-#      per run, prefix-cache bust built in)
+#      per run, prefix-cache bust built in); pp_warm = repo text, pp_novel
+#      = seeded pseudo-words (fresh Engram n-grams, cold path)
 #   3. MoE/attention ms per layer — NO live probe exists; recorded as a
 #      documented fallback + TODO in the JSON notes. Do NOT build a profiler
 #      here; profiling is a separate gated step.
@@ -12,6 +13,10 @@
 #      prefill (free -h / free -b — never nvidia-smi)
 # Plus DSpark acceptance (/metrics deltas) and L.A.I.L prose median
 # (tools/measure_lail_prose.py — CLI twin of L.A.I.L's own bench math).
+# Honesty cells: prose_long c=1 + c=2 (natural length >= max_tokens, so no
+# post-EOS tokens), warm-prefix (same ~2k prompt twice, nonce at the end),
+# and provenance: filtered NCCL|DSV41|VLLM container env + digest on both
+# ranks, container start time, host uptime, page-cache state before benches.
 #
 # Usage: tools/four_numbers.sh --arm NAME [--out DIR]
 #   DIR default: results/$(date +%Y-%m-%d)-NAME
@@ -21,8 +26,8 @@
 #
 # Capture order is serialized on purpose (MAX_NUM_SEQS=2; concurrent
 # prefill chunks contaminate each other): provenance -> prose 9x -> micro
-# 8k+32k -> free both nodes (right after the 32k prefill) -> L.A.I.L 3x.
-# Runtime budget ~10-15 min.
+# 8k+32k -> free both nodes (right after the 32k prefill) -> L.A.I.L 3x ->
+# prose_long c=1/c=2 5x -> warm-prefix. Runtime budget ~15-20 min.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -61,6 +66,24 @@ docker inspect dsv41-flash-exl3 --format '{{.Config.Image}}' \
 docker inspect dsv41-flash-exl3 --format '{{json .Config.Cmd}}' \
   >"$out/serve_cmd.json" 2>/dev/null \
   || echo "[]" >"$out/serve_cmd.json"
+# Env is filtered BEFORE it touches disk (the raw Env carries HF_TOKEN).
+on_node() {  # on_node NODE 'command string'
+  if [[ "$1" == spark1 ]]; then bash -c "$2"
+  else ssh -o ConnectTimeout=10 -o BatchMode=yes spark2 "$2"; fi
+}
+meminfo_re='^(MemAvailable|Buffers|Cached|Dirty|Active.file.|Inactive.file.):'
+for node in spark1 spark2; do
+  { on_node "$node" "docker inspect dsv41-flash-exl3 --format '{{json .Config.Env}}'" \
+      2>/dev/null || echo "[]"; } \
+    | python3 tools/four_numbers_parse.py filter-env >"$out/serve_env_$node.json"
+  on_node "$node" "docker inspect dsv41-flash-exl3 --format '{{.State.StartedAt}}'" \
+    >"$out/serve_started_$node.txt" 2>/dev/null \
+    || echo "" >"$out/serve_started_$node.txt"
+  # Host uptime + page-cache state before any bench touches the disk.
+  { echo "== $node =="
+    on_node "$node" "echo uptime_s \$(cut -d' ' -f1 /proc/uptime); grep -E '$meminfo_re' /proc/meminfo"
+  } 2>&1 | tee -a "$out/00-host-state.log"
+done
 
 # --- 1) prose decode, c=1, 9 runs (median) --------------------------------
 python3 bench_decode.py --phase prose --concurrency 1 --max-tokens 200 \
@@ -82,6 +105,13 @@ python3 benches/micro.py --contexts 8192 32768 --runs 3 2>&1 \
 
 # --- L.A.I.L prose 3x (the user-visible number) ---------------------------
 python3 tools/measure_lail_prose.py --runs 3 2>&1 | tee "$out/04-lail.log"
+
+# --- prose_long c=1 + c=2 (no post-EOS tokens; natural probe per phase) ----
+python3 bench_decode.py --phase prose_long --concurrency 1 2 --max-tokens 200 \
+  --runs 5 2>&1 | tee "$out/06-prose-long.log"
+
+# --- warm-prefix: same ~2k prompt twice, nonce at the end ----------------
+python3 tools/warm_prefix.py --tokens 2048 2>&1 | tee "$out/07-warm-prefix.log"
 
 # --- parse everything into one JSON ----------------------------------------
 python3 tools/four_numbers_parse.py "$arm" "$ts" "$out" complete \
