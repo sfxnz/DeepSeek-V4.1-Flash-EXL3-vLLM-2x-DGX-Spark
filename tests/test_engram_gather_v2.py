@@ -13,9 +13,12 @@ import io
 import json
 import os
 import random
+import re
 import struct
 import sys
 import tempfile
+import threading
+import types
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -239,6 +242,46 @@ class GatherV2ReadTests(unittest.TestCase):
                     except Stock:
                         got = "stock"
                 self.assertEqual(got, want, (limit, n))
+
+    def test_census_is_consistent_under_13_stage_threads(self) -> None:
+        # The stage pool runs one gather per table concurrently. Unlocked,
+        # a thread could test st[0] after another reset it (0 % 32 == 0,
+        # then // 0): ZeroDivisionError disarmed gv2 for the process.
+        threads, per_thread, every = 13, 400, 4
+        tables = [types.SimpleNamespace(_pf_expected=None) for _ in range(threads)]
+        rows = list(range(96))
+        owned = types.SimpleNamespace(tolist=lambda: [True] * len(rows))
+        errors, out = [], io.StringIO()
+        census = self.mod.DiskEngramTable._gv2_census
+
+        def stage(tbl):
+            try:
+                for _ in range(per_thread):
+                    tbl._pf_expected = set(range(0, 96, 2))
+                    census(tbl, len(rows), 96, 96, 1e-4, 0, rows, owned)
+            except Exception as exc:  # noqa: BLE001
+                errors.append(exc)
+
+        old = sys.getswitchinterval()
+        self.mod._ENG_GV2_SEEN[:] = [0, 0, 0, 0, 0.0, 0, 0, 0, 0]
+        sys.setswitchinterval(1e-6)
+        try:
+            with mock.patch.object(self.mod, "_ENG_GV2_CENSUS", True), mock.patch.object(
+                self.mod, "_ENG_GV2_EVERY", every
+            ), contextlib.redirect_stdout(out):
+                ts = [threading.Thread(target=stage, args=(tb,)) for tb in tables]
+                for th in ts:
+                    th.start()
+                for th in ts:
+                    th.join()
+        finally:
+            sys.setswitchinterval(old)
+        self.assertEqual(errors, [])
+        lines = out.getvalue().splitlines()
+        self.assertEqual(len(lines), threads * per_thread // every)
+        self.assertEqual(sum(int(re.search(r"calls=(\d+)", ln).group(1)) for ln in lines),
+                         threads * per_thread, "no call lost or double-counted")
+        self.assertTrue(all(" pf_hit=100%(" in ln for ln in lines), lines[:2])
 
     def test_v2_matches_stock_with_census_pf_hit(self) -> None:
         try:

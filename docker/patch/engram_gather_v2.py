@@ -92,6 +92,7 @@ GV2_MODULE = (
     MARKER
     + """
 import os as _gv2_os
+import threading as _gv2_threading
 import time as _gv2_time
 
 _ENG_GATHER_V2 = [_gv2_os.environ.get("DSV41_ENGRAM_GATHER_V2", "0") == "1"]
@@ -107,8 +108,10 @@ _ENG_GV2_WILLNEED_MIN = int(
 _ENG_GV2_CENSUS = _gv2_os.environ.get("DSV41_ENGRAM_CENSUS", "0") == "1"
 _ENG_GV2_EVERY = int(_gv2_os.environ.get("DSV41_ENGRAM_CENSUS_EVERY", "32"))
 # window counters: calls, rows, runs, preads, read seconds, fadvise calls,
-# pf hits, pf predicted rows, pf paired calls
+# pf hits, pf predicted rows, pf paired calls. The stage threads (one per
+# table) share them: update, test and reset only under _ENG_GV2_LOCK.
 _ENG_GV2_SEEN = [0, 0, 0, 0, 0.0, 0, 0, 0, 0]
+_ENG_GV2_LOCK = _gv2_threading.Lock()
 
 
 """
@@ -234,43 +237,56 @@ GV2_METHODS = (
         out = (vals * scale[:, :, None]).reshape(r, self.dim)
         out[~owned] = 0
         out = out.to(torch.bfloat16)
-        st = _ENG_GV2_SEEN
-        st[0] += 1
-        st[1] += r
-        st[2] += rw + rs_
-        st[3] += pw + ps_
-        st[4] += t1 - t0
-        st[5] += fadv
+        self._gv2_census(r, rw + rs_, pw + ps_, t1 - t0, fadv, rel_l, owned)
+        return out
+
+    def _gv2_census(self, r, runs, preads, secs, fadv, rel_l, owned):
+        # Up to 13 stage threads call this at once. Unlocked, a thread could
+        # test st[0] right after another thread reset it and divide by zero,
+        # which disarmed gv2 for the process (ZeroDivisionError, 2/12157
+        # steps in a CPU stress copy of the old block).
+        hit = None
         if _ENG_GV2_CENSUS:
             # pf_hit = share of prefetch-v3 predicted rows this call consumed
             # (owned rows only; unowned slots read file row 0).
             exp = getattr(self, "_pf_expected", None)
             if exp is not None:
                 got = {x for x, o in zip(rel_l, owned.tolist()) if o}
-                st[6] += len(got & exp)
-                st[7] += len(exp)
-                st[8] += 1
+                hit = (len(got & exp), len(exp))
                 self._pf_expected = None
-        if _ENG_GV2_CENSUS and st[0] % _ENG_GV2_EVERY == 0:
-            print(
-                "[gv2-census] calls=%d rows/call=%d runs/call=%.1f "
-                "preads/call=%.1f read=%.3fms fadv/call=%.1f%s"
-                % (
-                    st[0],
-                    st[1] // st[0],
-                    st[2] / st[0],
-                    st[3] / st[0],
-                    1000.0 * st[4] / st[0],
-                    st[5] / st[0],
-                    " pf_hit=%.0f%%(%d)" % (100.0 * st[6] / st[7], st[8])
-                    if st[7] > 0
-                    else "",
-                ),
-                flush=True,
-            )
-            st[0] = st[1] = st[2] = st[3] = st[5] = st[6] = st[7] = st[8] = 0
-            st[4] = 0.0
-        return out
+        line = None
+        with _ENG_GV2_LOCK:
+            st = _ENG_GV2_SEEN
+            st[0] += 1
+            st[1] += r
+            st[2] += runs
+            st[3] += preads
+            st[4] += secs
+            st[5] += fadv
+            if hit is not None:
+                st[6] += hit[0]
+                st[7] += hit[1]
+                st[8] += 1
+            if _ENG_GV2_CENSUS and st[0] % _ENG_GV2_EVERY == 0:
+                line = (
+                    "[gv2-census] calls=%d rows/call=%d runs/call=%.1f "
+                    "preads/call=%.1f read=%.3fms fadv/call=%.1f%s"
+                    % (
+                        st[0],
+                        st[1] // st[0],
+                        st[2] / st[0],
+                        st[3] / st[0],
+                        1000.0 * st[4] / st[0],
+                        st[5] / st[0],
+                        " pf_hit=%.0f%%(%d)" % (100.0 * st[6] / st[7], st[8])
+                        if st[7] > 0
+                        else "",
+                    )
+                )
+                st[0] = st[1] = st[2] = st[3] = st[5] = st[6] = st[7] = st[8] = 0
+                st[4] = 0.0
+        if line is not None:
+            print(line, flush=True)
 
     def _gv2_checked(self, rel, owned):
         # First v2 call verifies bit-exactness against the stock path
