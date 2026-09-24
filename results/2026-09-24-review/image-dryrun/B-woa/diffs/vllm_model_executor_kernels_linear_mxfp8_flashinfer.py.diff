@@ -1,0 +1,33 @@
+--- /tmp/orig/vllm/model_executor/kernels/linear/mxfp8/flashinfer.py	2026-09-19 13:27:39.000000000 +0000
++++ /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/mxfp8/flashinfer.py	2026-09-24 15:14:02.095905813 +0000
+@@ -23,6 +23,12 @@
+ 
+ from .Mxfp8LinearKernel import Mxfp8LinearKernel, Mxfp8LinearLayerConfig
+ 
++try:  # dsv41 dense_mxfp8_deepgemm (DSV41_DENSE_DG_SMALLM)
++    from dense_mxfp8_deepgemm import maybe_apply as _dsv41_dg_apply
++    from dense_mxfp8_deepgemm import prepare as _dsv41_dg_prepare
++except ImportError:
++    _dsv41_dg_apply = _dsv41_dg_prepare = lambda *a, **k: None
++
+ 
+ class FlashInferCutlassMxfp8LinearKernel(Mxfp8LinearKernel):
+     """MXFP8 W8A8 GEMM via FlashInfer CUTLASS (SM100+)."""
+@@ -59,6 +65,7 @@
+         layer.weight_scale = Parameter(
+             weight_scale_swizzled.contiguous(), requires_grad=False
+         )
++        _dsv41_dg_prepare(self, layer, weight_scale_2d)
+ 
+     def apply_weights(
+         self,
+@@ -66,6 +73,9 @@
+         x: torch.Tensor | QuantizedActivation,
+         bias: torch.Tensor | None = None,
+     ) -> torch.Tensor:
++        _dsv41_dg_out = _dsv41_dg_apply(layer, x, bias)
++        if _dsv41_dg_out is not None:
++            return _dsv41_dg_out
+         weight = layer.weight
+         weight_scale = layer.weight_scale
+         N, K = weight.shape

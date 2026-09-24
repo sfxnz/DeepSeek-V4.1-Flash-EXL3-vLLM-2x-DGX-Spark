@@ -1,0 +1,1071 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: applied (/usr/local/lib/python3.12/dist-packages/vllm/v1/attention/backends/mla/indexer.py)
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+INFO 09-24 15:01:07 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-24 15:01:07 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 09-24 15:01:07 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+W0924 15:01:07.521000 9 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+WARNING 09-24 15:01:08 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-24 15:01:08 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+test_acceptance_empty_when_counters_missing (test_bench_decode.BenchDecodeArithmeticTests.test_acceptance_empty_when_counters_missing) ... ok
+test_aggregate_rate_on_fixture_wave (test_bench_decode.BenchDecodeArithmeticTests.test_aggregate_rate_on_fixture_wave) ... ok
+test_decode_rate_on_fixture_stream (test_bench_decode.BenchDecodeArithmeticTests.test_decode_rate_on_fixture_stream) ... ok
+test_decode_tokens_drops_first_completion_token (test_bench_decode.BenchDecodeArithmeticTests.test_decode_tokens_drops_first_completion_token) ... ok
+test_median_key_matches_statistics_median (test_bench_decode.BenchDecodeArithmeticTests.test_median_key_matches_statistics_median) ... ok
+test_thinking_kwargs_are_v41 (test_bench_decode.BenchDecodeArithmeticTests.test_thinking_kwargs_are_v41) ... ok
+test_cell_summary_per_run_acceptance_and_percentiles (test_bench_decode.BenchDecodeHonestyTests.test_cell_summary_per_run_acceptance_and_percentiles) ... ok
+test_cell_summary_without_metrics (test_bench_decode.BenchDecodeHonestyTests.test_cell_summary_without_metrics) ... ok
+test_inter_chunk_gaps_in_ms (test_bench_decode.BenchDecodeHonestyTests.test_inter_chunk_gaps_in_ms) ... ok
+test_main_probes_natural_length_after_measured_runs (test_bench_decode.BenchDecodeHonestyTests.test_main_probes_natural_length_after_measured_runs) ... ok
+test_ms_per_step_matches_live_step_time (test_bench_decode.BenchDecodeHonestyTests.test_ms_per_step_matches_live_step_time) ... ok
+test_natural_fields (test_bench_decode.BenchDecodeHonestyTests.test_natural_fields) ... ok
+test_percentile_is_linear_interpolation (test_bench_decode.BenchDecodeHonestyTests.test_percentile_is_linear_interpolation) ... ok
+test_phase_groups_keep_both_meaning (test_bench_decode.BenchDecodeHonestyTests.test_phase_groups_keep_both_meaning) ... ok
+test_post_eos_fraction_on_audit_probe (test_bench_decode.BenchDecodeHonestyTests.test_post_eos_fraction_on_audit_probe) ... ok
+test_stream_one_records_finish_reason_and_chunk_gaps (test_bench_decode.BenchDecodeHonestyTests.test_stream_one_records_finish_reason_and_chunk_gaps) ... ok
+test_summary_json_shape_is_documented (test_bench_decode.BenchDecodeStreamParseTests.test_summary_json_shape_is_documented) ... ok
+test_bench_shapes_match_patch_defaults (test_bench_dense_gemm.BenchTests.test_bench_shapes_match_patch_defaults) ... ok
+test_gate_ignores_failed_rows (test_bench_dense_gemm.BenchTests.test_gate_ignores_failed_rows) ... ok
+test_gate_promotes_only_ten_percent_dg_wins_with_sane_error (test_bench_dense_gemm.BenchTests.test_gate_promotes_only_ten_percent_dg_wins_with_sane_error) ... ok
+test_split_k_only_on_underfilled_shapes (test_bench_dense_gemm.BenchTests.test_split_k_only_on_underfilled_shapes) ... ok
+test_target_m (test_bench_dense_gemm.BenchTests.test_target_m) ... ok
+test_wq_b_benched_but_never_promoted (test_bench_dense_gemm.BenchTests.test_wq_b_benched_but_never_promoted) ... ok
+setUpClass (test_bench_honesty.E2eExitTests) ... ERROR
+test_env_rank_diff_ignores_host_ip (test_bench_honesty.FourNumbersParseTests.test_env_rank_diff_ignores_host_ip) ... ok
+test_filter_env_cli (test_bench_honesty.FourNumbersParseTests.test_filter_env_cli) ... ok
+test_filter_env_keeps_levers_and_drops_secrets (test_bench_honesty.FourNumbersParseTests.test_filter_env_keeps_levers_and_drops_secrets) ... ok
+test_four_numbers_sh_runs_new_cells_and_filters_env (test_bench_honesty.FourNumbersParseTests.test_four_numbers_sh_runs_new_cells_and_filters_env) ... ok
+test_parse_empty_dir_is_partial_not_crash (test_bench_honesty.FourNumbersParseTests.test_parse_empty_dir_is_partial_not_crash) ... ok
+test_parse_full_capture_with_canned_logs (test_bench_honesty.FourNumbersParseTests.test_parse_full_capture_with_canned_logs) ... ok
+test_parse_host_state (test_bench_honesty.FourNumbersParseTests.test_parse_host_state) ... ok
+test_parse_time_docker_ns (test_bench_honesty.FourNumbersParseTests.test_parse_time_docker_ns) ... ok
+test_micro_reports_pp_warm_and_pp_novel (test_bench_honesty.MicroPhaseTests.test_micro_reports_pp_warm_and_pp_novel) ... ok
+test_char_ratio_novel_uses_novel_sample (test_bench_honesty.NovelCorpusTests.test_char_ratio_novel_uses_novel_sample) ... ok
+test_default_mode_unchanged_repo_text (test_bench_honesty.NovelCorpusTests.test_default_mode_unchanged_repo_text) ... ok
+test_novel_doc_is_deterministic_and_seeded (test_bench_honesty.NovelCorpusTests.test_novel_doc_is_deterministic_and_seeded) ... ok
+test_novel_doc_is_not_repo_text (test_bench_honesty.NovelCorpusTests.test_novel_doc_is_not_repo_text) ... ok
+test_novel_seeds_share_few_word_trigrams (test_bench_honesty.NovelCorpusTests.test_novel_seeds_share_few_word_trigrams) ... ok
+test_expected_hits_whole_blocks_minus_last_token (test_bench_honesty.WarmPrefixTests.test_expected_hits_whole_blocks_minus_last_token) ... ok
+test_parse_prefix_counters_ignores_external (test_bench_honesty.WarmPrefixTests.test_parse_prefix_counters_ignores_external) ... ok
+test_apply_rewrites_tree (test_c1_graph_safe_adaptive.TestC1GraphSafeAdaptive.test_apply_rewrites_tree) ... ok
+test_patch_adaptive_skips_sm120_gates_and_pins_budget (test_c1_graph_safe_adaptive.TestC1GraphSafeAdaptive.test_patch_adaptive_skips_sm120_gates_and_pins_budget) ... ok
+test_patch_runner_disables_varlen_decode (test_c1_graph_safe_adaptive.TestC1GraphSafeAdaptive.test_patch_runner_disables_varlen_decode) ... ok
+test_snap_uses_captured_query_sizes_only (test_c1_graph_safe_adaptive.TestC1GraphSafeAdaptive.test_snap_uses_captured_query_sizes_only) ... ok
+test_dispatch_imports_splits_at_call_time (test_decode_levers.MhcSplitsTests.test_dispatch_imports_splits_at_call_time) ... ok
+test_env_values (test_decode_levers.MhcSplitsTests.test_env_values) ... ok
+test_forced_at_decode_stock_above_64 (test_decode_levers.MhcSplitsTests.test_forced_at_decode_stock_above_64) ... ok
+test_install_patches_warmup_module (test_decode_levers.MhcSplitsTests.test_install_patches_warmup_module) ... ok
+test_kblock_cap (test_decode_levers.MhcSplitsTests.test_kblock_cap) ... ok
+test_legacy_block_only_takes_1 (test_decode_levers.MhcSplitsTests.test_legacy_block_only_takes_1) ... ok
+test_warmup_keys_see_forced_value (test_decode_levers.MhcSplitsTests.test_warmup_keys_see_forced_value) ... ok
+test_conflict_refuses_loudly (test_decode_levers.SparseMarkovTests.test_conflict_refuses_loudly) ... ok
+test_conflicts (test_decode_levers.SparseMarkovTests.test_conflicts) ... ok
+test_deepseek_drafter_lacks_hook_and_shares_head (test_decode_levers.SparseMarkovTests.test_deepseek_drafter_lacks_hook_and_shares_head) ... ok
+test_env_values (test_decode_levers.SparseMarkovTests.test_env_values) ... ok
+test_install_sets_topk_and_hook (test_decode_levers.SparseMarkovTests.test_install_sets_topk_and_hook) ... ok
+test_off_by_default_touches_nothing (test_decode_levers.SparseMarkovTests.test_off_by_default_touches_nothing) ... ok
+test_speculator_topk_path_anchors (test_decode_levers.SparseMarkovTests.test_speculator_topk_path_anchors) ... ok
+test_streamed_per_step_sums (test_decode_levers.TraceKernelsTests.test_streamed_per_step_sums) ... ok
+test_dry_run_forwards_levers_to_both_ranks (test_decode_levers.WiringTests.test_dry_run_forwards_levers_to_both_ranks) ... FAIL
+test_new_envs_forwarded_off_by_default (test_decode_levers.WiringTests.test_new_envs_forwarded_off_by_default) ... ok
+test_sitecustomize_calls_install_once_at_the_end (test_decode_levers.WiringTests.test_sitecustomize_calls_install_once_at_the_end) ... ok
+test_woa_prepack_warns_on_image_without_stage (test_decode_levers.WiringTests.test_woa_prepack_warns_on_image_without_stage) ... ok
+test_bad_shape_entry_raises (test_dense_mxfp8_deepgemm.EnvTests.test_bad_shape_entry_raises) ... ok
+test_default_off (test_dense_mxfp8_deepgemm.EnvTests.test_default_off) ... ok
+test_default_shapes_are_the_five_wireable_decode_shapes (test_dense_mxfp8_deepgemm.EnvTests.test_default_shapes_are_the_five_wireable_decode_shapes) ... ok
+test_maybe_apply_is_inert_without_prepared_scales (test_dense_mxfp8_deepgemm.EnvTests.test_maybe_apply_is_inert_without_prepared_scales) ... ok
+test_prepare_bad_shape_list_keeps_b12x (test_dense_mxfp8_deepgemm.EnvTests.test_prepare_bad_shape_list_keeps_b12x) ... dsv41: engram disk gather census instrumented
+dsv41: engram parallel stage installed
+dsv41: engram prefetch v3 stager installed
+dsv41: engram prefetch v3 runner hook installed
+dsv41: engram census pf_hit accounting fixed (v3)
+dsv41: engram gather v2 installed (DSV41_ENGRAM_GATHER_V2)
+patched /tmp/tmpvp4fcfnj/v1/worker/gpu/spec_decode/adaptive_verification.py
+patched /tmp/tmpvp4fcfnj/v1/worker/gpu/model_runner.py
+[dense-dg] rank? K5120xN1792 rejected (ValueError("DSV41_DENSE_DG_SHAPES: bad entry '5120*1792' (want KxN)")); b12x stays
+ok
+test_prepare_is_inert_when_off (test_dense_mxfp8_deepgemm.EnvTests.test_prepare_is_inert_when_off) ... ok
+test_shape_list_parses_k_by_n (test_dense_mxfp8_deepgemm.EnvTests.test_shape_list_parses_k_by_n) ... ok
+test_anchor_drift_refuses (test_dense_mxfp8_deepgemm.PatchTests.test_anchor_drift_refuses) ... ok
+test_apply_rewrites_tree (test_dense_mxfp8_deepgemm.PatchTests.test_apply_rewrites_tree) ... dsv41: dense deep_gemm small-M hooks patched into /tmp/tmpkzxeigye/model_executor/kernels/linear/mxfp8/flashinfer.py
+ok
+test_hooks_land_in_the_cutlass_kernel_only (test_dense_mxfp8_deepgemm.PatchTests.test_hooks_land_in_the_cutlass_kernel_only) ... ok
+test_import_fallback_is_a_noop (test_dense_mxfp8_deepgemm.PatchTests.test_import_fallback_is_a_noop) ... ok
+test_patch_idempotent (test_dense_mxfp8_deepgemm.PatchTests.test_patch_idempotent) ... ok
+test_pin_is_stock (test_dense_mxfp8_deepgemm.PatchTests.test_pin_is_stock) ... ok
+test_works_before_or_after_prefer_b12x (test_dense_mxfp8_deepgemm.PatchTests.test_works_before_or_after_prefer_b12x) ... ok
+test_maybe_apply_falls_through (test_dense_mxfp8_deepgemm.TorchRuntimeTests.test_maybe_apply_falls_through) ... [dense-dg] rank? K128xN16 armed but got torch.float32 input; b12x runs
+ok
+test_both_envs_forwarded_default_off (test_dense_mxfp8_deepgemm.WiringTests.test_both_envs_forwarded_default_off) ... ok
+test_sitecustomize_applies_only_when_enabled (test_dense_mxfp8_deepgemm.WiringTests.test_sitecustomize_applies_only_when_enabled) ... ok
+test_committed_research_results_are_small_json (test_draft_subvocab.ResultsTests.test_committed_research_results_are_small_json) ... ok
+test_alpha_roundtrip_and_loss (test_draft_subvocab.SubvocabTests.test_alpha_roundtrip_and_loss) ... ok
+test_coverage (test_draft_subvocab.SubvocabTests.test_coverage) ... ok
+test_rank_breaks_ties_by_lower_id (test_draft_subvocab.SubvocabTests.test_rank_breaks_ties_by_lower_id) ... ok
+test_tp_topn_stays_inside_each_shard (test_draft_subvocab.SubvocabTests.test_tp_topn_stays_inside_each_shard) ... ok
+test_conf_one_is_full_markov (test_dspark_conf_gate.DsparkConfGateTests.test_conf_one_is_full_markov) ... ok
+test_conf_zero_is_backbone_only (test_dspark_conf_gate.DsparkConfGateTests.test_conf_zero_is_backbone_only) ... ok
+test_env_flag (test_dspark_conf_gate.DsparkConfGateTests.test_env_flag) ... ok
+test_per_row_gate (test_dspark_conf_gate.DsparkConfGateTests.test_per_row_gate) ... ok
+test_env_flag (test_dspark_refine_pass.DsparkRefinePassTests.test_env_flag) ... ok
+test_fill_writes_draft_into_noise_slots (test_dspark_refine_pass.DsparkRefinePassTests.test_fill_writes_draft_into_noise_slots) ... ok
+test_indices_skip_offset_zero (test_dspark_refine_pass.DsparkRefinePassTests.test_indices_skip_offset_zero) ... ok
+test_n_spec_one_is_noop (test_dspark_refine_pass.DsparkRefinePassTests.test_n_spec_one_is_noop) ... ok
+test_benign_prefill_skip_is_not_a_disarm (test_engagement_audit.AuditTests.test_benign_prefill_skip_is_not_a_disarm) ... ok
+test_cli_warn_exits_0_strict_exits_1 (test_engagement_audit.AuditTests.test_cli_warn_exits_0_strict_exits_1) ... ok
+test_disarm_lines_are_reported_once (test_engagement_audit.AuditTests.test_disarm_lines_are_reported_once) ... ok
+test_gates_off_expect_nothing (test_engagement_audit.AuditTests.test_gates_off_expect_nothing) ... ok
+test_live_like_logs_pass_on_both_ranks (test_engagement_audit.AuditTests.test_live_like_logs_pass_on_both_ranks) ... ok
+test_missing_marker_names_rank_and_patch (test_engagement_audit.AuditTests.test_missing_marker_names_rank_and_patch) ... ok
+test_every_marker_is_printed_by_its_patch (test_engagement_audit.MarkerSourceTests.test_every_marker_is_printed_by_its_patch) ... ok
+test_gated_patches_define_an_engaged_marker (test_engagement_audit.MarkerSourceTests.test_gated_patches_define_an_engaged_marker) ... ok
+test_gates_are_forwarded_env_names (test_engagement_audit.MarkerSourceTests.test_gates_are_forwarded_env_names) ... ok
+test_chain_applies_once_idempotent_and_compiles (test_engram_chain.EngramChainTests.test_chain_applies_once_idempotent_and_compiles) ... ok
+test_fixtures_carry_build_time_patches (test_engram_chain.EngramChainTests.test_fixtures_carry_build_time_patches) ... ok
+test_env_set_wraps_worker_once (test_engram_chain.MemHygieneInstallTests.test_env_set_wraps_worker_once) ... ok
+test_env_unset_installs_nothing (test_engram_chain.MemHygieneInstallTests.test_env_unset_installs_nothing) ... ok
+test_max_rows_gate_routes_large_calls_to_stock (test_engram_gather_v2.GatherV2ReadTests.test_max_rows_gate_routes_large_calls_to_stock) ... ok
+test_partial_preadv_resumes_mid_row (test_engram_gather_v2.GatherV2ReadTests.test_partial_preadv_resumes_mid_row) ... ok
+test_read_runs_match_per_row_reference (test_engram_gather_v2.GatherV2ReadTests.test_read_runs_match_per_row_reference) ... ok
+test_stock_read_rows_agrees (test_engram_gather_v2.GatherV2ReadTests.test_stock_read_rows_agrees) ... ok
+test_v2_matches_stock_with_census_pf_hit (test_engram_gather_v2.GatherV2ReadTests.test_v2_matches_stock_with_census_pf_hit) ... ok
+test_willneed_defaults (test_engram_gather_v2.GatherV2ReadTests.test_willneed_defaults) ... ok
+test_willneed_gate (test_engram_gather_v2.GatherV2ReadTests.test_willneed_gate) ... ok
+test_willneed_spans_cover_every_row_once (test_engram_gather_v2.GatherV2ReadTests.test_willneed_spans_cover_every_row_once) ... ok
+test_willneed_then_read_is_byte_identical (test_engram_gather_v2.GatherV2ReadTests.test_willneed_then_read_is_byte_identical) ... ok
+test_enqueue_bumps_gen_before_overwriting_snapshot (test_engram_prefetch_v3.PrefetchV3WorkerTests.test_enqueue_bumps_gen_before_overwriting_snapshot) ... ok
+test_superseded_generation_is_dropped (test_engram_prefetch_v3.PrefetchV3WorkerTests.test_superseded_generation_is_dropped) ... ok
+test_worker_fadvises_every_predicted_row (test_engram_prefetch_v3.PrefetchV3WorkerTests.test_worker_fadvises_every_predicted_row) ... ok
+test_missing_anchor_raises (test_fix_o_proj_woa_fp8.TestFixOProjWoaFp8.test_missing_anchor_raises) ... ok
+test_patch_inserts_guard_and_helper (test_fix_o_proj_woa_fp8.TestFixOProjWoaFp8.test_patch_inserts_guard_and_helper) ... ok
+test_pinned_e12_o_proj_gets_prepack_only (test_fix_o_proj_woa_fp8.TestFixOProjWoaFp8.test_pinned_e12_o_proj_gets_prepack_only) ... ok
+test_prepack_helper_contract (test_fix_o_proj_woa_fp8.TestFixOProjWoaFp8.test_prepack_helper_contract) ... ok
+test_prepack_is_env_gated_and_after_scale_pick (test_fix_o_proj_woa_fp8.TestFixOProjWoaFp8.test_prepack_is_env_gated_and_after_scale_pick) ... ok
+test_mismatch_keeps_fp32_scale (test_fix_o_proj_woa_fp8.TestWoaPrepackLogic.test_mismatch_keeps_fp32_scale) ... patched /tmp/tmp4jmobv_w/o_proj.py
+patched /tmp/tmpnp72_udx/o_proj.py
+patched /tmp/tmpxkq736ta/o_proj.py
+[woa-prepack] REJECTED (ValueError('self-test not bitwise equal (maxabs 1192.0)')); this layer keeps the fp32 scale (per-call repack)
+ok
+test_packs_once_and_caches (test_fix_o_proj_woa_fp8.TestWoaPrepackLogic.test_packs_once_and_caches) ... [woa-prepack] packed ue8m0 scale engaged: (2, 8, 2) stride=(16, 1, 8) dtype=torch.float32
+ok
+test_skips_mid_capture_and_non_fp32 (test_fix_o_proj_woa_fp8.TestWoaPrepackLogic.test_skips_mid_capture_and_non_fp32) ... ok
+test_collapse_sample_is_detected (test_lail_prose.LailProseHarnessTests.test_collapse_sample_is_detected) ... ok
+test_frozen_protocol_is_512_tokens_temperature_0_2 (test_lail_prose.LailProseHarnessTests.test_frozen_protocol_is_512_tokens_temperature_0_2) ... ok
+test_lail_tok_s_is_completion_tokens_over_post_ttft_wall (test_lail_prose.LailProseHarnessTests.test_lail_tok_s_is_completion_tokens_over_post_ttft_wall) ... ok
+test_main_probe_reports_post_eos_fraction (test_lail_prose.LailProseHarnessTests.test_main_probe_reports_post_eos_fraction)
+Measured runs force 512 tokens; the probe stops at 128 -> 0.75 post-EOS. ... ok
+test_natural_probe_body_drops_ignore_eos_and_min_tokens (test_lail_prose.LailProseHarnessTests.test_natural_probe_body_drops_ignore_eos_and_min_tokens) ... ok
+test_stream_one_fixture_matches_lail_arithmetic (test_lail_prose.LailProseHarnessTests.test_stream_one_fixture_matches_lail_arithmetic) ... ok
+test_env_gate (test_lmhead_mxfp8.TestLMHeadMxfp8.test_env_gate) ... ok
+test_index_probe (test_lmhead_mxfp8.TestLMHeadMxfp8.test_index_probe) ... ok
+test_mapper_routing_real_keys (test_lmhead_mxfp8.TestLMHeadMxfp8.test_mapper_routing_real_keys)
+Round-30 regression: the real VL-wrapper mapper rule set. ... ok
+test_reencode_script (test_lmhead_mxfp8.TestLMHeadMxfp8.test_reencode_script) ... ok
+test_self_disarm_without_tensor (test_lmhead_mxfp8.TestLMHeadMxfp8.test_self_disarm_without_tensor) ... dsv41: lm_head mxfp8 self-disarmed (no lm_head.weight_scale under /tmp/tmpbxh3ebp7)
+dsv41: lm_head mxfp8 self-disarmed (head_dtype override torch.float32 != torch.bfloat16)
+ok
+test_swap_and_apply (test_lmhead_mxfp8.TestLMHeadMxfp8.test_swap_and_apply) ... dsv41: lm_head mxfp8 enabled (b12x, (512, 512))
+dsv41: lm_head mxfp8 enabled (b12x, (512, 512))
+ok
+test_routed_experts_flag_reaches_both_ranks (test_moe_census.CensusBootTests.test_routed_experts_flag_reaches_both_ranks) ... FAIL
+test_census_per_layer_and_verdict (test_moe_census.CensusTests.test_census_per_layer_and_verdict) ... ok
+test_decode_b64_roundtrip (test_moe_census.CensusTests.test_decode_b64_roundtrip) ... ok
+test_impact_numbers (test_moe_census.CensusTests.test_impact_numbers) ... ok
+test_random_routing_says_stop (test_moe_census.CensusTests.test_random_routing_says_stop) ... ok
+test_routed_layers_drop_zero_layers (test_moe_census.CensusTests.test_routed_layers_drop_zero_layers) ... ok
+test_exact_dup_rates (test_moe_census.SynthRoutingTests.test_exact_dup_rates) ... ok
+test_too_many_repeats (test_moe_census.SynthRoutingTests.test_too_many_repeats) ... ok
+test_disjoint_rows (test_moe_census.WindowDupTests.test_disjoint_rows) ... ok
+test_identical_rows (test_moe_census.WindowDupTests.test_identical_rows) ... ok
+test_random_baseline_matches_monte_carlo (test_moe_census.WindowDupTests.test_random_baseline_matches_monte_carlo) ... ok
+test_sliding_windows (test_moe_census.WindowDupTests.test_sliding_windows) ... ok
+test_busbw_two_ranks_equals_algbw (test_nccl_dualrail.NcclSweepTests.test_busbw_two_ranks_equals_algbw) ... ok
+test_gate (test_nccl_dualrail.NcclSweepTests.test_gate) ... ok
+test_script_arms_pin_active_rails_and_cross_nic (test_nccl_dualrail.NcclSweepTests.test_script_arms_pin_active_rails_and_cross_nic) ... ok
+test_sizes_span_8b_to_256mib (test_nccl_dualrail.NcclSweepTests.test_sizes_span_8b_to_256mib) ... ok
+test_disk_lookup_uses_global_file_rows (test_pack_and_engram.ApplyEngramDiskTests.test_disk_lookup_uses_global_file_rows) ... ok
+test_patch_engram_is_idempotent_and_inserts_disk (test_pack_and_engram.ApplyEngramDiskTests.test_patch_engram_is_idempotent_and_inserts_disk) ... ok
+test_patch_weight_utils_skips_embed (test_pack_and_engram.ApplyEngramDiskTests.test_patch_weight_utils_skips_embed) ... ok
+test_assemble_pulls_spark2_shards_and_rebuilds_index (test_pack_and_engram.AssemblePackTests.test_assemble_pulls_spark2_shards_and_rebuilds_index) ... ok
+test_accepts_mul1_trellis_expert_shard (test_pack_and_engram.CheckExl3ShardTests.test_accepts_mul1_trellis_expert_shard) ... ok
+test_accepts_trellis_expert_shard (test_pack_and_engram.CheckExl3ShardTests.test_accepts_trellis_expert_shard) ... ok
+test_rejects_leftover_mxfp4_expert_weights (test_pack_and_engram.CheckExl3ShardTests.test_rejects_leftover_mxfp4_expert_weights) ... ok
+test_rejects_mixed_mcg_and_mul1_markers (test_pack_and_engram.CheckExl3ShardTests.test_rejects_mixed_mcg_and_mul1_markers) ... ok
+test_enables_xet_and_pins_revision (test_pack_and_engram.DownloadOfficialTests.test_enables_xet_and_pins_revision) ... ok
+test_gather_dequant_matches_reference (test_pack_and_engram.EngramDiskTests.test_gather_dequant_matches_reference) ... ok
+test_is_engram_embed_tensor (test_pack_and_engram.EngramDiskTests.test_is_engram_embed_tensor) ... ok
+test_rewrites_absolute_cuda_sources (test_pack_and_engram.FixVllmExl3SetupTests.test_rewrites_absolute_cuda_sources) ... ok
+test_dequant_scale_one (test_pack_and_engram.Mxfp4Tests.test_dequant_scale_one) ... ok
+test_unpack_zero (test_pack_and_engram.Mxfp4Tests.test_unpack_zero) ... ok
+test_apply_pack_config_keeps_nested_text_config (test_pack_and_engram.PackMetaTests.test_apply_pack_config_keeps_nested_text_config) ... ok
+test_build_quantization_config_is_exl3 (test_pack_and_engram.PackMetaTests.test_build_quantization_config_is_exl3) ... ok
+test_routed_expert_names (test_pack_and_engram.PackMetaTests.test_routed_expert_names) ... ok
+test_serve_revision_is_mcg_lmhead_rebuild_defaults_mul1 (test_pack_and_engram.PackMetaTests.test_serve_revision_is_mcg_lmhead_rebuild_defaults_mul1) ... ok
+test_default_convert_uses_fast_fallback (test_pack_and_engram.QuantizeFastTests.test_default_convert_uses_fast_fallback) ... ok
+test_link_or_copy_hardlinks_same_fs (test_pack_and_engram.QuantizeHelpersTests.test_link_or_copy_hardlinks_same_fs) ... ok
+test_link_or_copy_resolves_snapshot_symlink (test_pack_and_engram.QuantizeHelpersTests.test_link_or_copy_resolves_snapshot_symlink) ... ok
+test_quant_args_include_out_scales_and_mul1 (test_pack_and_engram.QuantizeHelpersTests.test_quant_args_include_out_scales_and_mul1) ... ok
+test_shard_needs_exl3 (test_pack_and_engram.QuantizeHelpersTests.test_shard_needs_exl3) ... ok
+test_rebuild_index_from_safetensors_headers (test_pack_and_engram.RebuildIndexTests.test_rebuild_index_from_safetensors_headers) ... ok
+test_apply_rewrites_tree (test_prefer_b12x_bmm.TestPreferB12xBmm.test_apply_rewrites_tree) ... ok
+test_patch_idempotent (test_prefer_b12x_bmm.TestPreferB12xBmm.test_patch_idempotent) ... ok
+test_patch_inserts_b12x_before_emulation (test_prefer_b12x_bmm.TestPreferB12xBmm.test_patch_inserts_b12x_before_emulation) ... ok
+test_pin_is_deepgemm_then_emulation (test_prefer_b12x_bmm.TestPreferB12xBmm.test_pin_is_deepgemm_then_emulation) ... ok
+test_apply_rewrites_tree (test_prefer_b12x_mxfp8.TestPreferB12xMxfp8.test_apply_rewrites_tree) ... ok
+test_patch_idempotent (test_prefer_b12x_mxfp8.TestPreferB12xMxfp8.test_patch_idempotent) ... ok
+test_patch_switches_cutlass_to_auto (test_prefer_b12x_mxfp8.TestPreferB12xMxfp8.test_patch_switches_cutlass_to_auto) ... ok
+test_pin_hardcodes_cutlass (test_prefer_b12x_mxfp8.TestPreferB12xMxfp8.test_pin_hardcodes_cutlass) ... ok
+test_copies_both_ranks_and_never_stops_the_serve (test_profile_window.ProfileWindowTests.test_copies_both_ranks_and_never_stops_the_serve) ... ok
+test_syntax (test_profile_window.ProfileWindowTests.test_syntax) ... ok
+test_worker_without_trace_dir_still_copies_rank0 (test_profile_window.ProfileWindowTests.test_worker_without_trace_dir_still_copies_rank0) ... ok
+test_absolute_gates_without_baseline (test_quality_eval.GateTests.test_absolute_gates_without_baseline) ... ok
+test_add_golden (test_quality_eval.GateTests.test_add_golden) ... ok
+test_decode_gates (test_quality_eval.GateTests.test_decode_gates) ... ok
+test_needle_and_selfcons_gates (test_quality_eval.GateTests.test_needle_and_selfcons_gates) ... ok
+test_nll_gate_uses_floor_and_noise (test_quality_eval.GateTests.test_nll_gate_uses_floor_and_noise) ... ok
+test_rate_gate_is_wilson_upper_vs_base (test_quality_eval.GateTests.test_rate_gate_is_wilson_upper_vs_base) ... ok
+test_main_writes_json_and_gates (test_quality_eval.MainWiringTests.test_main_writes_json_and_gates) ... ok
+test_args_match (test_quality_eval.PureLogicTests.test_args_match) ... ok
+test_divergence_and_hazard (test_quality_eval.PureLogicTests.test_divergence_and_hazard) ... ok
+test_filler_is_deterministic_novel_text (test_quality_eval.PureLogicTests.test_filler_is_deterministic_novel_text) ... ok
+test_gsm_extraction (test_quality_eval.PureLogicTests.test_gsm_extraction) ... ok
+test_letter_extraction (test_quality_eval.PureLogicTests.test_letter_extraction) ... ok
+test_percentile (test_quality_eval.PureLogicTests.test_percentile) ... ok
+test_score_tool_items (test_quality_eval.PureLogicTests.test_score_tool_items) ... ok
+test_token_logprobs_skips_bos_and_prefix (test_quality_eval.PureLogicTests.test_token_logprobs_skips_bos_and_prefix) ... ok
+test_wilson_known_values (test_quality_eval.PureLogicTests.test_wilson_known_values) ... ok
+test_sets (test_quality_eval.VendoredDataTests.test_sets) ... ok
+test_anchor_scan_finds_known_anchors (test_rebase_dryrun.RebaseDryrunTests.test_anchor_scan_finds_known_anchors) ... ok
+test_check_refs_on_fake_tree (test_rebase_dryrun.RebaseDryrunTests.test_check_refs_on_fake_tree) ... ok
+test_every_step_names_a_real_patch_and_function (test_rebase_dryrun.RebaseDryrunTests.test_every_step_names_a_real_patch_and_function) ... ok
+test_outcome (test_rebase_dryrun.RebaseDryrunTests.test_outcome) ... ok
+test_dry_run_forwards_overrides_and_quoted_values (test_recipe_ops.EnvForwardingTests.test_dry_run_forwards_overrides_and_quoted_values) ... FAIL
+test_dry_run_head_and_worker_get_the_same_env (test_recipe_ops.EnvForwardingTests.test_dry_run_head_and_worker_get_the_same_env) ... FAIL
+test_dual_rail_nccl_env_reaches_both_ranks (test_recipe_ops.EnvForwardingTests.test_dual_rail_nccl_env_reaches_both_ranks)
+dual-rail-nccl: rail-matched CROSS_NIC=0 and MERGE_NICS must match on both ranks. ... FAIL
+test_every_patch_env_read_is_forwarded (test_recipe_ops.EnvForwardingTests.test_every_patch_env_read_is_forwarded) ... ok
+test_every_recipe_knob_reaches_the_worker (test_recipe_ops.EnvForwardingTests.test_every_recipe_knob_reaches_the_worker) ... ok
+test_forward_envs_are_unique (test_recipe_ops.EnvForwardingTests.test_forward_envs_are_unique) ... ok
+test_forwarded_names_are_read_by_something (test_recipe_ops.EnvForwardingTests.test_forwarded_names_are_read_by_something) ... ok
+test_patch_strict_is_forwarded_to_both_ranks (test_recipe_ops.EnvForwardingTests.test_patch_strict_is_forwarded_to_both_ranks) ... ERROR
+test_container_gets_no_hub_token_and_runs_offline (test_recipe_ops.OrchestrationTests.test_container_gets_no_hub_token_and_runs_offline) ... FAIL
+test_head_failure_trap_saves_worker_logs_then_removes_worker (test_recipe_ops.OrchestrationTests.test_head_failure_trap_saves_worker_logs_then_removes_worker) ... FAIL
+test_head_preflight_failure_starts_nothing (test_recipe_ops.OrchestrationTests.test_head_preflight_failure_starts_nothing) ... FAIL
+test_post_ready_audit_warn_strict_and_clean (test_recipe_ops.OrchestrationTests.test_post_ready_audit_warn_strict_and_clean) ... FAIL
+test_preflight_both_nodes_before_any_container (test_recipe_ops.OrchestrationTests.test_preflight_both_nodes_before_any_container) ... FAIL
+test_refuse_busy_port_points_at_stop_sh (test_recipe_ops.OrchestrationTests.test_refuse_busy_port_points_at_stop_sh) ... ok
+test_run_state_follows_the_script_not_cwd (test_recipe_ops.OrchestrationTests.test_run_state_follows_the_script_not_cwd) ... ok
+test_validate_only_rejects_unknown_audit_mode (test_recipe_ops.OrchestrationTests.test_validate_only_rejects_unknown_audit_mode) ... ok
+test_warmup_failure_warns_but_keeps_the_serve (test_recipe_ops.OrchestrationTests.test_warmup_failure_warns_but_keeps_the_serve) ... FAIL
+test_worker_death_during_wait_ready_fails_fast (test_recipe_ops.OrchestrationTests.test_worker_death_during_wait_ready_fails_fast) ... FAIL
+test_worker_exit_before_launch_saves_logs_and_removes_it (test_recipe_ops.OrchestrationTests.test_worker_exit_before_launch_saves_logs_and_removes_it) ... FAIL
+test_worker_patch_dir_is_per_user (test_recipe_ops.OrchestrationTests.test_worker_patch_dir_is_per_user) ... FAIL
+test_worker_preflight_failure_starts_nothing (test_recipe_ops.OrchestrationTests.test_worker_preflight_failure_starts_nothing) ... FAIL
+test_allow_omits_official_non_serve_trees (test_recipe_ops.PublishPackTests.test_allow_omits_official_non_serve_trees) ... ok
+test_generated_speculative_row_matches_recipe (test_recipe_ops.ReadmeHowToTests.test_generated_speculative_row_matches_recipe) ... ok
+test_measured_lail_prose_c1_has_evidence (test_recipe_ops.ReadmeHowToTests.test_measured_lail_prose_c1_has_evidence) ... ok
+test_measured_prose_c1_is_a_number_with_evidence (test_recipe_ops.ReadmeHowToTests.test_measured_prose_c1_is_a_number_with_evidence) ... ok
+test_readme_clone_uses_github_default_main (test_recipe_ops.ReadmeHowToTests.test_readme_clone_uses_github_default_main) ... ok
+test_readme_stranger_serve_path (test_recipe_ops.ReadmeHowToTests.test_readme_stranger_serve_path) ... ok
+test_assemble_pack_is_executable_and_wired (test_recipe_ops.RecipeOpsTests.test_assemble_pack_is_executable_and_wired) ... ok
+test_default_language_model_only_is_off (test_recipe_ops.RecipeOpsTests.test_default_language_model_only_is_off) ... ok
+test_default_prefill_batch_is_8192_and_hub_rev_is_mcg_lmhead (test_recipe_ops.RecipeOpsTests.test_default_prefill_batch_is_8192_and_hub_rev_is_mcg_lmhead) ... ok
+test_defaults_match_promoted_boot (test_recipe_ops.RecipeOpsTests.test_defaults_match_promoted_boot)
+A plain ./run.sh reproduces the measured 39.6/33.2 boot (results/2026-09-22-endgame2/boot-lm.sh). ... FAIL
+test_dockerfile_from_is_digest_pinned (test_recipe_ops.RecipeOpsTests.test_dockerfile_from_is_digest_pinned) ... ok
+test_dspark_default_draft_sample_method_is_greedy (test_recipe_ops.RecipeOpsTests.test_dspark_default_draft_sample_method_is_greedy) ... ok
+test_force_unsafe_defaults_are_off (test_recipe_ops.RecipeOpsTests.test_force_unsafe_defaults_are_off) ... ok
+test_gitignore_run_state (test_recipe_ops.RecipeOpsTests.test_gitignore_run_state) ... ok
+test_head_preflight_before_worker_scp (test_recipe_ops.RecipeOpsTests.test_head_preflight_before_worker_scp) ... ok
+test_image_default_is_the_readme_build_tag (test_recipe_ops.RecipeOpsTests.test_image_default_is_the_readme_build_tag) ... ok
+test_image_without_recipe_label_warns_but_boots (test_recipe_ops.RecipeOpsTests.test_image_without_recipe_label_warns_but_boots) ... FAIL
+test_locator_falls_back_to_named_snapshot_when_commit_dir_missing (test_recipe_ops.RecipeOpsTests.test_locator_falls_back_to_named_snapshot_when_commit_dir_missing) ... ok
+test_locator_falls_back_to_named_snapshot_when_refs_absent (test_recipe_ops.RecipeOpsTests.test_locator_falls_back_to_named_snapshot_when_refs_absent) ... ok
+test_locator_prefers_refs_commit_over_named_snapshot (test_recipe_ops.RecipeOpsTests.test_locator_prefers_refs_commit_over_named_snapshot) ... ok
+test_parsers_are_v41 (test_recipe_ops.RecipeOpsTests.test_parsers_are_v41) ... ok
+test_patch_sources_compile_without_warnings (test_recipe_ops.RecipeOpsTests.test_patch_sources_compile_without_warnings) ... ok
+test_resolve_model_does_not_fall_back_to_hub_id (test_recipe_ops.RecipeOpsTests.test_resolve_model_does_not_fall_back_to_hub_id) ... ok
+test_resolve_snapshot_only_exits_1_when_missing (test_recipe_ops.RecipeOpsTests.test_resolve_snapshot_only_exits_1_when_missing) ... ok
+test_run_sh_does_not_default_disable_xet (test_recipe_ops.RecipeOpsTests.test_run_sh_does_not_default_disable_xet) ... ok
+test_run_sh_is_tracked_executable (test_recipe_ops.RecipeOpsTests.test_run_sh_is_tracked_executable) ... ERROR
+test_run_sh_worker_ssh_forwards_snapshot_and_revision (test_recipe_ops.RecipeOpsTests.test_run_sh_worker_ssh_forwards_snapshot_and_revision) ... ok
+test_smoke_requires_content (test_recipe_ops.RecipeOpsTests.test_smoke_requires_content) ... ok
+test_smoke_vision_uses_image_url (test_recipe_ops.RecipeOpsTests.test_smoke_vision_uses_image_url) ... ok
+test_stop_sh_orchestrate_zero_is_local_only (test_recipe_ops.RecipeOpsTests.test_stop_sh_orchestrate_zero_is_local_only) ... ok
+test_stop_sh_reads_worker_host_state_then_default (test_recipe_ops.RecipeOpsTests.test_stop_sh_reads_worker_host_state_then_default) ... ok
+test_stop_sh_ssh_probe_fails_loud_when_not_spark2 (test_recipe_ops.RecipeOpsTests.test_stop_sh_ssh_probe_fails_loud_when_not_spark2) ... ok
+test_stop_sh_ssh_probe_has_else_exit_1 (test_recipe_ops.RecipeOpsTests.test_stop_sh_ssh_probe_has_else_exit_1) ... ok
+test_validate_only_capture_sizes_follow_k_and_seqs (test_recipe_ops.RecipeOpsTests.test_validate_only_capture_sizes_follow_k_and_seqs) ... ok
+test_validate_only_defaults_pass (test_recipe_ops.RecipeOpsTests.test_validate_only_defaults_pass) ... ok
+test_validate_only_refuses_26gib_kv_pin (test_recipe_ops.RecipeOpsTests.test_validate_only_refuses_26gib_kv_pin) ... ok
+test_validate_only_refuses_engram_resident (test_recipe_ops.RecipeOpsTests.test_validate_only_refuses_engram_resident) ... ok
+test_validate_only_refuses_max_num_seqs (test_recipe_ops.RecipeOpsTests.test_validate_only_refuses_max_num_seqs) ... ok
+test_validate_only_refuses_native_quant (test_recipe_ops.RecipeOpsTests.test_validate_only_refuses_native_quant) ... ok
+test_validate_only_refuses_spec_tokens_above_block (test_recipe_ops.RecipeOpsTests.test_validate_only_refuses_spec_tokens_above_block) ... ok
+test_validate_only_refuses_window_above_1m (test_recipe_ops.RecipeOpsTests.test_validate_only_refuses_window_above_1m) ... ok
+test_validate_only_spec_tokens_in_block_pass (test_recipe_ops.RecipeOpsTests.test_validate_only_spec_tokens_in_block_pass) ... ok
+test_expert_order_is_numeric (test_requant_probe.RequantProbeTests.test_expert_order_is_numeric) ... ok
+test_full_pack_hours_matches_history (test_requant_probe.RequantProbeTests.test_full_pack_hours_matches_history) ... ok
+test_refit_guards_zero_rows (test_requant_probe.RequantProbeTests.test_refit_guards_zero_rows) ... ok
+test_refit_matches_closed_form_and_never_hurts (test_requant_probe.RequantProbeTests.test_refit_matches_closed_form_and_never_hurts) ... ok
+setUpModule (test_site_gates) ... skipped 'vLLM install present; sitecustomize would patch it'
+test_anchor_miss_fails_required_and_leaves_file (test_sitecustomize_patch.PatchHelperTests.test_anchor_miss_fails_required_and_leaves_file) ... ok
+test_ok_skip_fail_lines (test_sitecustomize_patch.PatchHelperTests.test_ok_skip_fail_lines) ... ok
+test_one_anchor_miss_does_not_skip_the_next_rewrite (test_sitecustomize_patch.PatchHelperTests.test_one_anchor_miss_does_not_skip_the_next_rewrite) ... ok
+test_required_fail_exits_when_strict (test_sitecustomize_patch.PatchHelperTests.test_required_fail_exits_when_strict) ... ok
+test_rewrite_writes_once_atomically_and_keeps_mode (test_sitecustomize_patch.PatchHelperTests.test_rewrite_writes_once_atomically_and_keeps_mode) ... ok
+test_system_exit_is_labelled_then_kept_loud (test_sitecustomize_patch.PatchHelperTests.test_system_exit_is_labelled_then_kept_loud) ... ok
+test_each_sm120_rewrite_is_its_own_patch (test_sitecustomize_patch.SitecustomizeWiringTests.test_each_sm120_rewrite_is_its_own_patch) ... ok
+test_fat_threshold_env_set_before_plugins_load (test_sitecustomize_patch.SitecustomizeWiringTests.test_fat_threshold_env_set_before_plugins_load) ... ok
+test_manifest_goes_to_stderr_not_stdout (test_sitecustomize_patch.SitecustomizeWiringTests.test_manifest_goes_to_stderr_not_stdout) ... ok
+test_no_top_level_bare_except_pass (test_sitecustomize_patch.SitecustomizeWiringTests.test_no_top_level_bare_except_pass) ... ok
+test_required_set (test_sitecustomize_patch.SitecustomizeWiringTests.test_required_set) ... ok
+test_apply_markov_finetune_copies_matching_weights (test_sm120_page.Sm120PageTests.test_apply_markov_finetune_copies_matching_weights) ... ok
+test_block64_ratio2_extra_page_is_the_lail_crash (test_sm120_page.Sm120PageTests.test_block64_ratio2_extra_page_is_the_lail_crash) ... ok
+test_cache_logits_then_argmax_writes_cache_and_picks_mode (test_sm120_page.Sm120PageTests.test_cache_logits_then_argmax_writes_cache_and_picks_mode) ... ok
+test_census_skips_device_sync_while_capturing (test_sm120_page.Sm120PageTests.test_census_skips_device_sync_while_capturing) ... ok
+test_coerce_leaves_non_32_pages (test_sm120_page.Sm120PageTests.test_coerce_leaves_non_32_pages) ... ok
+test_coerce_upstream_swa_32_to_flashinfer_64 (test_sm120_page.Sm120PageTests.test_coerce_upstream_swa_32_to_flashinfer_64) ... ok
+test_compressed_extra_topk_covers_lail_without_leaving_dispatch (test_sm120_page.Sm120PageTests.test_compressed_extra_topk_covers_lail_without_leaving_dispatch) ... ok
+test_corpus_lookup_follows_longest_self_distilled_path (test_sm120_page.Sm120PageTests.test_corpus_lookup_follows_longest_self_distilled_path) ... ok
+test_decode_mhc_pre_splits_collapse_at_dspark_verify_width (test_sm120_page.Sm120PageTests.test_decode_mhc_pre_splits_collapse_at_dspark_verify_width) ... ok
+test_draft_logits_flat_index_is_req_times_n_spec_plus_step (test_sm120_page.Sm120PageTests.test_draft_logits_flat_index_is_req_times_n_spec_plus_step) ... ok
+test_dspark_draft_topk_from_env_none_is_dense_markov (test_sm120_page.Sm120PageTests.test_dspark_draft_topk_from_env_none_is_dense_markov) ... ok
+test_dspark_softmax_verify_from_env_is_opt_in (test_sm120_page.Sm120PageTests.test_dspark_softmax_verify_from_env_is_opt_in) ... ok
+test_dspark_tail_ngram_start_pos_is_opt_in (test_sm120_page.Sm120PageTests.test_dspark_tail_ngram_start_pos_is_opt_in) ... ok
+test_engram_row_cache_hits_misses_and_lru_evict (test_sm120_page.Sm120PageTests.test_engram_row_cache_hits_misses_and_lru_evict) ... ok
+test_fill_engram_cache_hits_merges_fetched_misses (test_sm120_page.Sm120PageTests.test_fill_engram_cache_hits_merges_fetched_misses) ... ok
+test_indexer_adaptive_source_patch_is_idempotent (test_sm120_page.Sm120PageTests.test_indexer_adaptive_source_patch_is_idempotent) ... ok
+test_indexer_kernel_pages_cover_ratio1_and_ratio2 (test_sm120_page.Sm120PageTests.test_indexer_kernel_pages_cover_ratio1_and_ratio2) ... ok
+test_lail_81_token_prefill_uses_orchestrator (test_sm120_page.Sm120PageTests.test_lail_81_token_prefill_uses_orchestrator) ... ok
+test_language_model_only_from_env_reads_flag_or_env (test_sm120_page.Sm120PageTests.test_language_model_only_from_env_reads_flag_or_env) ... ok
+test_language_model_only_zeros_max_image_tokens_not_layers (test_sm120_page.Sm120PageTests.test_language_model_only_zeros_max_image_tokens_not_layers) ... ok
+test_markov_table_next_prefers_trigram (test_sm120_page.Sm120PageTests.test_markov_table_next_prefers_trigram) ... ok
+test_mask_logits_keep_topk_keeps_largest_k (test_sm120_page.Sm120PageTests.test_mask_logits_keep_topk_keeps_largest_k) ... ok
+test_mla_chunks_per_block_from_env_none_is_autotune (test_sm120_page.Sm120PageTests.test_mla_chunks_per_block_from_env_none_is_autotune) ... ok
+test_overlay_markov_table_walks_left_to_right (test_sm120_page.Sm120PageTests.test_overlay_markov_table_walks_left_to_right) ... ok
+test_overlay_ngram_on_draft_tail_keeps_head_and_fills_from_prefix_plus_head (test_sm120_page.Sm120PageTests.test_overlay_ngram_on_draft_tail_keeps_head_and_fills_from_prefix_plus_head) ... ok
+test_overlay_ngram_on_drafts_replaces_only_the_lookup_prefix (test_sm120_page.Sm120PageTests.test_overlay_ngram_on_drafts_replaces_only_the_lookup_prefix) ... ok
+test_patch_persistent_topk_source_excludes_sm120 (test_sm120_page.Sm120PageTests.test_patch_persistent_topk_source_excludes_sm120) ... ok
+test_prefix_lookup_draft_returns_repeated_suffix_continuation (test_sm120_page.Sm120PageTests.test_prefix_lookup_draft_returns_repeated_suffix_continuation) ... ok
+test_ratio2_manager_bump_keeps_extra_page_64 (test_sm120_page.Sm120PageTests.test_ratio2_manager_bump_keeps_extra_page_64) ... ok
+test_scale_markov_bias_identity_and_zero (test_sm120_page.Sm120PageTests.test_scale_markov_bias_identity_and_zero) ... ok
+test_shipped_essay_corpus_has_eight_sequences (test_sm120_page.Sm120PageTests.test_shipped_essay_corpus_has_eight_sequences) ... ok
+test_shipped_essay_markov_table_is_compact_and_nonempty (test_sm120_page.Sm120PageTests.test_shipped_essay_markov_table_is_compact_and_nonempty) ... ok
+test_sitecustomize_census_is_opt_in (test_sm120_page.Sm120PageTests.test_sitecustomize_census_is_opt_in) ... ok
+test_sitecustomize_does_not_hardcode_language_model_only_true (test_sm120_page.Sm120PageTests.test_sitecustomize_does_not_hardcode_language_model_only_true) ... ok
+test_sitecustomize_does_not_zero_vision_n_layers (test_sm120_page.Sm120PageTests.test_sitecustomize_does_not_zero_vision_n_layers) ... ok
+test_skip_indexer_for_short_lail_context (test_sm120_page.Sm120PageTests.test_skip_indexer_for_short_lail_context) ... ok
+test_sm120_disables_persistent_indexer_topk (test_sm120_page.Sm120PageTests.test_sm120_disables_persistent_indexer_topk) ... ok
+test_sm120_native_indexer_decode_allows_dspark_next_n (test_sm120_page.Sm120PageTests.test_sm120_native_indexer_decode_allows_dspark_next_n) ... ok
+test_step_census_records_pre_draft_between_target_and_draft (test_sm120_page.Sm120PageTests.test_step_census_records_pre_draft_between_target_and_draft) ... ok
+test_swa_and_attention_source_patches_are_idempotent (test_sm120_page.Sm120PageTests.test_swa_and_attention_source_patches_are_idempotent) ... ok
+test_swa_dispatch_keeps_dual_prefill_topk_128 (test_sm120_page.Sm120PageTests.test_swa_dispatch_keeps_dual_prefill_topk_128) ... ok
+test_text_only_prefill_topk_hits_dsv4_dispatch (test_sm120_page.Sm120PageTests.test_text_only_prefill_topk_hits_dsv4_dispatch) ... ok
+test_text_prefill_keeps_window_topk_when_vision_weights_loaded (test_sm120_page.Sm120PageTests.test_text_prefill_keeps_window_topk_when_vision_weights_loaded) ... ok
+test_timed_call_records_name_and_elapsed (test_sm120_page.Sm120PageTests.test_timed_call_records_name_and_elapsed) ... ok
+test_vision_on_does_not_collapse_config_max_image_tokens (test_sm120_page.Sm120PageTests.test_vision_on_does_not_collapse_config_max_image_tokens) ... ok
+test_vision_prefill_1152_clamps_to_dispatch_legal_1024 (test_sm120_page.Sm120PageTests.test_vision_prefill_1152_clamps_to_dispatch_legal_1024) ... ok
+test_vision_widened_prefill_topk_misses_dsv4_dispatch (test_sm120_page.Sm120PageTests.test_vision_widened_prefill_topk_misses_dsv4_dispatch) ... ok
+test_apply_rewrites_tree (test_sm120_wo_a.TestSm120WoA.test_apply_rewrites_tree) ... ok
+test_patch_attention_clears_is_bmm (test_sm120_wo_a.TestSm120WoA.test_patch_attention_clears_is_bmm) ... ok
+test_patch_flashinfer_keeps_2d_scales (test_sm120_wo_a.TestSm120WoA.test_patch_flashinfer_keeps_2d_scales) ... ok
+test_patch_o_proj_uses_grouped_mm_on_sm120 (test_sm120_wo_a.TestSm120WoA.test_patch_o_proj_uses_grouped_mm_on_sm120) ... ok
+test_cli_default_expects_323 (test_smoke_chat.SmokeChatTests.test_cli_default_expects_323) ... ok
+test_cli_fails_on_empty_thinking_content (test_smoke_chat.SmokeChatTests.test_cli_fails_on_empty_thinking_content) ... ok
+test_cli_writes_json_out_and_prints_content (test_smoke_chat.SmokeChatTests.test_cli_writes_json_out_and_prints_content) ... FAIL
+test_cli_fails_on_not_multimodal (test_smoke_vision.SmokeVisionTests.test_cli_fails_on_not_multimodal) ... ok
+test_cli_fails_on_wrong_color (test_smoke_vision.SmokeVisionTests.test_cli_fails_on_wrong_color) ... ok
+test_cli_sends_image_url_and_prints_content (test_smoke_vision.SmokeVisionTests.test_cli_sends_image_url_and_prints_content) ... ok
+test_fixture_is_64x64_solid_red_png (test_smoke_vision.SmokeVisionTests.test_fixture_is_64x64_solid_red_png) ... ok
+test_drain_retains_o1_consumed_items (test_stream_feed.StreamFeedTests.test_drain_retains_o1_consumed_items) ... ok
+test_off_is_stock_and_retains_everything (test_stream_feed.StreamFeedTests.test_off_is_stock_and_retains_everything) ... ok
+test_forwarded_to_both_ranks_default_off (test_stream_feed.StreamFeedWiringTests.test_forwarded_to_both_ranks_default_off) ... ok
+test_sitecustomize_installs_on_stream_feed_only_when_set (test_stream_feed.StreamFeedWiringTests.test_sitecustomize_installs_on_stream_feed_only_when_set) ... FAIL
+test_extracts_only_kernel_events (test_tools_hygiene.ExtractKernelsTests.test_extracts_only_kernel_events) ... ok
+test_accepts_g8_pack_without_manifest (test_tools_hygiene.G8PackGuardTests.test_accepts_g8_pack_without_manifest) ... ok
+test_layout_detection (test_tools_hygiene.G8PackGuardTests.test_layout_detection) ... ok
+test_refuses_stock_pack (test_tools_hygiene.G8PackGuardTests.test_refuses_stock_pack) ... ok
+test_serve_model_from_argv (test_tools_hygiene.G8PackGuardTests.test_serve_model_from_argv) ... ok
+test_sitecustomize_checks_pack_before_patching (test_tools_hygiene.G8PackGuardTests.test_sitecustomize_checks_pack_before_patching) ... ok
+test_spawned_process_is_not_checked (test_tools_hygiene.G8PackGuardTests.test_spawned_process_is_not_checked) ... ok
+test_unreadable_layout_warns_only (test_tools_hygiene.G8PackGuardTests.test_unreadable_layout_warns_only) ... ok
+test_no_home_default_and_no_dead_perm_axis (test_tools_hygiene.PermuteToolTests.test_no_home_default_and_no_dead_perm_axis) ... ok
+test_pack_argument_is_required (test_tools_hygiene.PermuteToolTests.test_pack_argument_is_required) ... ok
+test_each_nonce_gives_a_different_prefill (test_warmup.WarmupRequestTests.test_each_nonce_gives_a_different_prefill) ... ok
+test_three_nonce_requests_greedy_sampled_and_long_prefill (test_warmup.WarmupRequestTests.test_three_nonce_requests_greedy_sampled_and_long_prefill) ... ok
+test_missing_anchor_raises (test_widen_b12x_smalls.TestWidenB12xSmalls.test_missing_anchor_raises) ... ok
+test_patch_switches_small_m_branches_only (test_widen_b12x_smalls.TestWidenB12xSmalls.test_patch_switches_small_m_branches_only) ... ok
+test_apply_writes_cuh (test_widen_mla_io2.WidenMlaIo2Tests.test_apply_writes_cuh) ... ok
+test_io2_linear_tid_single_expect_leader (test_widen_mla_io2.WidenMlaIo2Tests.test_io2_linear_tid_single_expect_leader) ... ok
+test_second_apply_is_noop (test_widen_mla_io2.WidenMlaIo2Tests.test_second_apply_is_noop) ... ok
+test_apply_rewrites_tree (test_widen_mla_kv_buf.TestWidenMlaKvBuf.test_apply_rewrites_tree) ... ok
+test_patch_cuh_drops_to_one_buffer (test_widen_mla_kv_buf.TestWidenMlaKvBuf.test_patch_cuh_drops_to_one_buffer) ... ok
+test_patch_cuh_idempotent (test_widen_mla_kv_buf.TestWidenMlaKvBuf.test_patch_cuh_idempotent) ... ok
+test_pin_is_double_buffered (test_widen_mla_kv_buf.TestWidenMlaKvBuf.test_pin_is_double_buffered) ... ok
+test_apply_rewrites_flashinfer_tree (test_widen_mla_tile32.TestWidenMlaTile32.test_apply_rewrites_flashinfer_tree) ... ok
+test_patch_core_workspace_splits_match_window (test_widen_mla_tile32.TestWidenMlaTile32.test_patch_core_workspace_splits_match_window) ... ok
+test_patch_cu_dyn_smem_one_w_fp8 (test_widen_mla_tile32.TestWidenMlaTile32.test_patch_cu_dyn_smem_one_w_fp8) ... ok
+test_patch_cuh_idempotent (test_widen_mla_tile32.TestWidenMlaTile32.test_patch_cuh_idempotent) ... ok
+test_patch_cuh_tile32_keeps_kv_double_buffer (test_widen_mla_tile32.TestWidenMlaTile32.test_patch_cuh_tile32_keeps_kv_double_buffer) ... ok
+test_patch_py_bi_matches_window (test_widen_mla_tile32.TestWidenMlaTile32.test_patch_py_bi_matches_window) ... ok
+test_pin_is_stock_tile64 (test_widen_mla_tile32.TestWidenMlaTile32.test_pin_is_stock_tile64) ... ok
+test_apply_rewrites_tree (test_widen_p2b_cfg1.WidenP2bCfg1Tests.test_apply_rewrites_tree) ... ok
+test_cfg1_after_shapes_then_mrow (test_widen_p2b_cfg1.WidenP2bCfg1Tests.test_cfg1_after_shapes_then_mrow) ... ok
+test_cfg1_on_stock_pin (test_widen_p2b_cfg1.WidenP2bCfg1Tests.test_cfg1_on_stock_pin) ... ok
+test_fixture_is_cfg0_512 (test_widen_p2b_cfg1.WidenP2bCfg1Tests.test_fixture_is_cfg0_512) ... ok
+test_identity_would_fail (test_widen_p2b_cfg1.WidenP2bCfg1Tests.test_identity_would_fail) ... ok
+test_second_apply_is_noop (test_widen_p2b_cfg1.WidenP2bCfg1Tests.test_second_apply_is_noop) ... ok
+test_apply_rewrites_tree (test_widen_p2b_codebook.WidenP2bCodebookTests.test_apply_rewrites_tree) ... ok
+test_full_chain_templates_cb (test_widen_p2b_codebook.WidenP2bCodebookTests.test_full_chain_templates_cb) ... ok
+test_python_reads_flags_and_passes_mcg (test_widen_p2b_codebook.WidenP2bCodebookTests.test_python_reads_flags_and_passes_mcg) ... ok
+test_second_apply_is_noop (test_widen_p2b_codebook.WidenP2bCodebookTests.test_second_apply_is_noop) ... ok
+test_apply_writes_p2b_moe_cu (test_widen_p2b_cp16.WidenP2bCp16Tests.test_apply_writes_p2b_moe_cu) ... ok
+test_cfg1_fixture_still_uses_ldcs (test_widen_p2b_cp16.WidenP2bCp16Tests.test_cfg1_fixture_still_uses_ldcs) ... ok
+test_cp16_after_cfg1_uses_16b_cg_not_4b_ca (test_widen_p2b_cp16.WidenP2bCp16Tests.test_cp16_after_cfg1_uses_16b_cg_not_4b_ca) ... ok
+test_issue_before_mma_wait_after (test_widen_p2b_cp16.WidenP2bCp16Tests.test_issue_before_mma_wait_after) ... ok
+test_refuses_stock_pin_without_cfg1 (test_widen_p2b_cp16.WidenP2bCp16Tests.test_refuses_stock_pin_without_cfg1) ... ok
+test_second_apply_is_noop (test_widen_p2b_cp16.WidenP2bCp16Tests.test_second_apply_is_noop) ... ok
+test_apply_rewrites_tree (test_widen_p2b_cpasync.WidenP2bCpasyncTests.test_apply_rewrites_tree) ... ok
+test_cpasync_after_shapes_mrow_cfg1 (test_widen_p2b_cpasync.WidenP2bCpasyncTests.test_cpasync_after_shapes_mrow_cfg1) ... ok
+test_identity_would_fail (test_widen_p2b_cpasync.WidenP2bCpasyncTests.test_identity_would_fail) ... ok
+test_issue_before_mma_wait_after (test_widen_p2b_cpasync.WidenP2bCpasyncTests.test_issue_before_mma_wait_after) ... ok
+test_pin_uses_streaming_ldcs_for_trellis (test_widen_p2b_cpasync.WidenP2bCpasyncTests.test_pin_uses_streaming_ldcs_for_trellis) ... ok
+test_second_apply_is_noop (test_widen_p2b_cpasync.WidenP2bCpasyncTests.test_second_apply_is_noop) ... ok
+test_apply_writes_p2b_moe_cu (test_widen_p2b_fma.WidenP2bFmaTests.test_apply_writes_p2b_moe_cu) ... ok
+test_cfg1_still_uses_padded_mma (test_widen_p2b_fma.WidenP2bFmaTests.test_cfg1_still_uses_padded_mma) ... ok
+test_collapsed_mapping_does_not_match_one_row_product (test_widen_p2b_fma.WidenP2bFmaTests.test_collapsed_mapping_does_not_match_one_row_product) ... ok
+test_fma_after_cfg1_drops_mma (test_widen_p2b_fma.WidenP2bFmaTests.test_fma_after_cfg1_drops_mma) ... ok
+test_fma_row_is_one_row_product (test_widen_p2b_fma.WidenP2bFmaTests.test_fma_row_is_one_row_product) ... ok
+test_ptx_warp_simulate_matches_one_row_product (test_widen_p2b_fma.WidenP2bFmaTests.test_ptx_warp_simulate_matches_one_row_product) ... ok
+test_refuses_stock_pin_without_cfg1 (test_widen_p2b_fma.WidenP2bFmaTests.test_refuses_stock_pin_without_cfg1) ... ok
+test_second_apply_is_noop (test_widen_p2b_fma.WidenP2bFmaTests.test_second_apply_is_noop) ... ok
+test_missing_call_raises (test_widen_p2b_fshift.TestWidenP2bFshift.test_missing_call_raises) ... ok
+test_patch_applies_and_is_idempotent (test_widen_p2b_fshift.TestWidenP2bFshift.test_patch_applies_and_is_idempotent) ... ok
+test_apply_writes_p2b_moe_cu (test_widen_p2b_ldg.WidenP2bLdgTests.test_apply_writes_p2b_moe_cu) ... ok
+test_ldg_after_cfg1_replaces_every_ldcs (test_widen_p2b_ldg.WidenP2bLdgTests.test_ldg_after_cfg1_replaces_every_ldcs) ... ok
+test_pin_uses_streaming_ldcs_for_trellis (test_widen_p2b_ldg.WidenP2bLdgTests.test_pin_uses_streaming_ldcs_for_trellis) ... ok
+test_second_apply_is_noop (test_widen_p2b_ldg.WidenP2bLdgTests.test_second_apply_is_noop) ... ok
+test_b_decode_is_outside_row_loop (test_widen_p2b_mma.WidenP2bMmaTests.test_b_decode_is_outside_row_loop) ... ok
+test_identity_would_fail (test_widen_p2b_mma.WidenP2bMmaTests.test_identity_would_fail) ... ok
+test_ld_b_is_outside_row_loop (test_widen_p2b_mma.WidenP2bMmaTests.test_ld_b_is_outside_row_loop) ... ok
+test_mma_on_shapes_then_mrow_pin (test_widen_p2b_mma.WidenP2bMmaTests.test_mma_on_shapes_then_mrow_pin) ... ok
+test_mma_on_stock_without_mrow (test_widen_p2b_mma.WidenP2bMmaTests.test_mma_on_stock_without_mrow) ... ok
+test_not_the_reverted_serial_moe_loop (test_widen_p2b_mma.WidenP2bMmaTests.test_not_the_reverted_serial_moe_loop) ... ok
+test_fixture_is_the_pin_kernel (test_widen_p2b_mrow.TrueMrowP2bTests.test_fixture_is_the_pin_kernel) ... ok
+test_identity_would_fail (test_widen_p2b_mrow.TrueMrowP2bTests.test_identity_would_fail) ... ok
+test_mrow_on_stock_cu_without_shapes (test_widen_p2b_mrow.TrueMrowP2bTests.test_mrow_on_stock_cu_without_shapes) ... ok
+test_python_one_launch_not_per_row (test_widen_p2b_mrow.TrueMrowP2bTests.test_python_one_launch_not_per_row) ... ok
+test_shapes_then_mrow_on_pin_cu (test_widen_p2b_mrow.TrueMrowP2bTests.test_shapes_then_mrow_on_pin_cu) ... ok
+test_apply_writes_p2b_moe_cu (test_widen_p2b_nocoop.WidenP2bNocoopTests.test_apply_writes_p2b_moe_cu) ... ok
+test_cfg1_fixture_still_cooperative (test_widen_p2b_nocoop.WidenP2bNocoopTests.test_cfg1_fixture_still_cooperative) ... ok
+test_nocoop_after_cfg1_drops_grid_sync (test_widen_p2b_nocoop.WidenP2bNocoopTests.test_nocoop_after_cfg1_drops_grid_sync) ... ok
+test_refuses_stock_pin_without_cfg1 (test_widen_p2b_nocoop.WidenP2bNocoopTests.test_refuses_stock_pin_without_cfg1) ... ok
+test_second_apply_is_noop (test_widen_p2b_nocoop.WidenP2bNocoopTests.test_second_apply_is_noop) ... ok
+test_apply_writes_p2b_moe_cu (test_widen_p2b_pf4.WidenP2bPf4Tests.test_apply_writes_p2b_moe_cu) ... ok
+test_cfg1_still_pf2 (test_widen_p2b_pf4.WidenP2bPf4Tests.test_cfg1_still_pf2) ... ok
+test_pf4_after_cfg1 (test_widen_p2b_pf4.WidenP2bPf4Tests.test_pf4_after_cfg1) ... ok
+test_refuses_stock_pin_without_cfg1 (test_widen_p2b_pf4.WidenP2bPf4Tests.test_refuses_stock_pin_without_cfg1) ... ok
+test_second_apply_is_noop (test_widen_p2b_pf4.WidenP2bPf4Tests.test_second_apply_is_noop) ... ok
+test_apply_rewrites_pin_layout_files (test_widen_p2b_shapes.WidenP2bShapesTests.test_apply_rewrites_pin_layout_files) ... ok
+test_patch_cu_is_idempotent (test_widen_p2b_shapes.WidenP2bShapesTests.test_patch_cu_is_idempotent) ... ok
+test_patch_cu_raises_on_unrelated_source (test_widen_p2b_shapes.WidenP2bShapesTests.test_patch_cu_raises_on_unrelated_source) ... ok
+test_patch_cu_widens_hidden_and_inter_and_keeps_m1 (test_widen_p2b_shapes.WidenP2bShapesTests.test_patch_cu_widens_hidden_and_inter_and_keeps_m1) ... ok
+test_patch_py_drops_glm_only_geometry_gate (test_widen_p2b_shapes.WidenP2bShapesTests.test_patch_py_drops_glm_only_geometry_gate) ... ok
+test_patch_py_is_idempotent (test_widen_p2b_shapes.WidenP2bShapesTests.test_patch_py_is_idempotent) ... ok
+test_bench_toggles_sort_without_env (test_widen_p2b_srcsort.MicrobenchSourceTests.test_bench_toggles_sort_without_env) ... ok
+test_bijection_random_routing (test_widen_p2b_srcsort.SortedItemOrderTests.test_bijection_random_routing) ... ok
+test_duplicates_are_adjacent_items (test_widen_p2b_srcsort.SortedItemOrderTests.test_duplicates_are_adjacent_items) ... ok
+test_no_duplicates_is_a_pair_permutation (test_widen_p2b_srcsort.SortedItemOrderTests.test_no_duplicates_is_a_pair_permutation) ... ok
+test_anchors_are_the_mrow_work_lists (test_widen_p2b_srcsort.SrcSortPatchTests.test_anchors_are_the_mrow_work_lists) ... ok
+test_applies_after_full_chain_and_is_idempotent (test_widen_p2b_srcsort.SrcSortPatchTests.test_applies_after_full_chain_and_is_idempotent) ... ok
+test_default_off_env_and_cap (test_widen_p2b_srcsort.SrcSortPatchTests.test_default_off_env_and_cap) ... ok
+test_loads_stay_streaming (test_widen_p2b_srcsort.SrcSortPatchTests.test_loads_stay_streaming) ... ok
+test_needs_mrow_first (test_widen_p2b_srcsort.SrcSortPatchTests.test_needs_mrow_first) ... ok
+test_off_branch_keeps_the_mrow_decode (test_widen_p2b_srcsort.SrcSortPatchTests.test_off_branch_keeps_the_mrow_decode) ... ok
+test_dockerfile_applies_srcsort_after_fshift (test_widen_p2b_srcsort.SrcSortWiringTests.test_dockerfile_applies_srcsort_after_fshift) ... ok
+test_env_reaches_both_ranks_only_when_set (test_widen_p2b_srcsort.SrcSortWiringTests.test_env_reaches_both_ranks_only_when_set) ... FAIL
+
+======================================================================
+ERROR: setUpClass (test_bench_honesty.E2eExitTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_bench_honesty.py", line 241, in setUpClass
+    cls.e2e = _load("benches/e2e.py", "e2e_t")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/repo/tests/test_bench_honesty.py", line 26, in _load
+    spec.loader.exec_module(mod)
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/tmp/repo/benches/e2e.py", line 40, in <module>
+    from tests.correctness import TOOLS  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'tests.correctness'
+
+======================================================================
+ERROR: test_patch_strict_is_forwarded_to_both_ranks (test_recipe_ops.EnvForwardingTests.test_patch_strict_is_forwarded_to_both_ranks)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 238, in test_patch_strict_is_forwarded_to_both_ranks
+    self.assertEqual(container_env(res[role])["DSV41_PATCH_STRICT"], "1", role)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/repo/tests/run_sh_harness.py", line 183, in container_env
+    for flag, val in zip(argv, argv[1:]):
+                               ~~~~^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+======================================================================
+ERROR: test_run_sh_is_tracked_executable (test_recipe_ops.RecipeOpsTests.test_run_sh_is_tracked_executable)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 626, in test_run_sh_is_tracked_executable
+    proc = subprocess.run(
+           ^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', 'ls-files', '--stage', '--', 'run.sh']' returned non-zero exit status 128.
+
+======================================================================
+FAIL: test_dry_run_forwards_levers_to_both_ranks (test_decode_levers.WiringTests.test_dry_run_forwards_levers_to_both_ranks)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_decode_levers.py", line 249, in test_dry_run_forwards_levers_to_both_ranks
+    self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+AssertionError: 1 != 0 : ==> role=head host=spark1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+W0924 15:01:13.275000 73 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.
+
+
+======================================================================
+FAIL: test_routed_experts_flag_reaches_both_ranks (test_moe_census.CensusBootTests.test_routed_experts_flag_reaches_both_ranks)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_moe_census.py", line 108, in test_routed_experts_flag_reaches_both_ranks
+    self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+AssertionError: 1 != 0 : ==> role=head host=spark1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+W0924 15:02:18.198000 1153 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.
+
+
+======================================================================
+FAIL: test_dry_run_forwards_overrides_and_quoted_values (test_recipe_ops.EnvForwardingTests.test_dry_run_forwards_overrides_and_quoted_values)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 254, in test_dry_run_forwards_overrides_and_quoted_values
+    self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+AssertionError: 1 != 0 : ==> role=head host=spark1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+W0924 15:02:58.026000 1905 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.
+
+
+======================================================================
+FAIL: test_dry_run_head_and_worker_get_the_same_env (test_recipe_ops.EnvForwardingTests.test_dry_run_head_and_worker_get_the_same_env)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 221, in test_dry_run_head_and_worker_get_the_same_env
+    self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+AssertionError: 1 != 0 : ==> role=head host=spark1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+W0924 15:03:05.137000 2144 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.
+
+
+======================================================================
+FAIL: test_dual_rail_nccl_env_reaches_both_ranks (test_recipe_ops.EnvForwardingTests.test_dual_rail_nccl_env_reaches_both_ranks)
+dual-rail-nccl: rail-matched CROSS_NIC=0 and MERGE_NICS must match on both ranks.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 274, in test_dual_rail_nccl_env_reaches_both_ranks
+    self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+AssertionError: 1 != 0 : ==> role=head host=spark1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+W0924 15:03:11.951000 2346 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.
+
+
+======================================================================
+FAIL: test_container_gets_no_hub_token_and_runs_offline (test_recipe_ops.OrchestrationTests.test_container_gets_no_hub_token_and_runs_offline)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 393, in test_container_gets_no_hub_token_and_runs_offline
+    self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+AssertionError: 1 != 0 : ==> role=head host=spark1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+W0924 15:03:25.759000 2750 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.
+
+
+======================================================================
+FAIL: test_head_failure_trap_saves_worker_logs_then_removes_worker (test_recipe_ops.OrchestrationTests.test_head_failure_trap_saves_worker_logs_then_removes_worker)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 384, in test_head_failure_trap_saves_worker_logs_then_removes_worker
+    self.assertIn("Container exited early", res["stderr"])
+AssertionError: 'Container exited early' not found in "dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1\ndsv41-patch ok prefer_b12x_mxfp8\ndsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32\ndsv41-patch ok persistent_topk: already applied\ndsv41-patch ok kpool_persistent_topk: already applied\nW0924 15:03:32.513000 2952 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'\ndsv41-patch ok load_general_plugins\ndsv41-patch ok exl3_weight_block_size\ndsv41-patch ok warmup_stubs\ndsv41-patch ok cudagraph_worker_stub\ndsv41-patch ok swa_page_coerce\ndsv41-patch ok kernel_block_sizes\ndsv41-patch ok extra_page_bump\ndsv41-patch ok v41_config_vision\ndsv41-patch ok swa_image_width: already applied\ndsv41-patch ok attention_image_width: already applied\ndsv41-patch ok native_indexer_decode: already applied\ndsv41-patch ok indexer_adaptive: already applied\ndsv41-patch ok indexer_short_context: already applied\ndsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1\ndsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1\ndsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1\ndsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1\ndsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1\ndsv41-patch ok decode_levers\ndsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.\n"
+
+======================================================================
+FAIL: test_head_preflight_failure_starts_nothing (test_recipe_ops.OrchestrationTests.test_head_preflight_failure_starts_nothing)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 348, in test_head_preflight_failure_starts_nothing
+    self.assertIn("Pinned snapshot missing", res["stderr"])
+AssertionError: 'Pinned snapshot missing' not found in "dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1\ndsv41-patch ok prefer_b12x_mxfp8\ndsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32\ndsv41-patch ok persistent_topk: already applied\ndsv41-patch ok kpool_persistent_topk: already applied\nW0924 15:03:39.350000 3154 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'\ndsv41-patch ok load_general_plugins\ndsv41-patch ok exl3_weight_block_size\ndsv41-patch ok warmup_stubs\ndsv41-patch ok cudagraph_worker_stub\ndsv41-patch ok swa_page_coerce\ndsv41-patch ok kernel_block_sizes\ndsv41-patch ok extra_page_bump\ndsv41-patch ok v41_config_vision\ndsv41-patch ok swa_image_width: already applied\ndsv41-patch ok attention_image_width: already applied\ndsv41-patch ok native_indexer_decode: already applied\ndsv41-patch ok indexer_adaptive: already applied\ndsv41-patch ok indexer_short_context: already applied\ndsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1\ndsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1\ndsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1\ndsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1\ndsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1\ndsv41-patch ok decode_levers\ndsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.\n"
+
+======================================================================
+FAIL: test_post_ready_audit_warn_strict_and_clean (test_recipe_ops.OrchestrationTests.test_post_ready_audit_warn_strict_and_clean)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 445, in test_post_ready_audit_warn_strict_and_clean
+    self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+AssertionError: 1 != 0 : ==> role=head host=spark1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+W0924 15:03:46.370000 3356 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.
+
+
+======================================================================
+FAIL: test_preflight_both_nodes_before_any_container (test_recipe_ops.OrchestrationTests.test_preflight_both_nodes_before_any_container)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 326, in test_preflight_both_nodes_before_any_container
+    self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+AssertionError: 1 != 0 : ==> role=head host=spark1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+W0924 15:03:53.333000 3558 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.
+
+
+======================================================================
+FAIL: test_warmup_failure_warns_but_keeps_the_serve (test_recipe_ops.OrchestrationTests.test_warmup_failure_warns_but_keeps_the_serve)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 467, in test_warmup_failure_warns_but_keeps_the_serve
+    self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+AssertionError: 1 != 0 : ==> role=head host=spark1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+W0924 15:04:00.159000 3798 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.
+
+
+======================================================================
+FAIL: test_worker_death_during_wait_ready_fails_fast (test_recipe_ops.OrchestrationTests.test_worker_death_during_wait_ready_fails_fast)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 371, in test_worker_death_during_wait_ready_fails_fast
+    self.assertIsNotNone(res["head"])
+AssertionError: unexpectedly None
+
+======================================================================
+FAIL: test_worker_exit_before_launch_saves_logs_and_removes_it (test_recipe_ops.OrchestrationTests.test_worker_exit_before_launch_saves_logs_and_removes_it)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 357, in test_worker_exit_before_launch_saves_logs_and_removes_it
+    self.assertIsNotNone(res["worker"])
+AssertionError: unexpectedly None
+
+======================================================================
+FAIL: test_worker_patch_dir_is_per_user (test_recipe_ops.OrchestrationTests.test_worker_patch_dir_is_per_user)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 405, in test_worker_patch_dir_is_per_user
+    self.assertTrue(any(a[-1] == "dryrun-no-such-host:.cache/dsv41-patch" for a in res["scp"]), res["scp"])
+AssertionError: False is not true : []
+
+======================================================================
+FAIL: test_worker_preflight_failure_starts_nothing (test_recipe_ops.OrchestrationTests.test_worker_preflight_failure_starts_nothing)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 340, in test_worker_preflight_failure_starts_nothing
+    self.assertIn("Preflight failed on dryrun-no-such-host", res["stderr"])
+AssertionError: 'Preflight failed on dryrun-no-such-host' not found in "dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1\ndsv41-patch ok prefer_b12x_mxfp8\ndsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32\ndsv41-patch ok persistent_topk: already applied\ndsv41-patch ok kpool_persistent_topk: already applied\nW0924 15:04:28.074000 4606 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'\ndsv41-patch ok load_general_plugins\ndsv41-patch ok exl3_weight_block_size\ndsv41-patch ok warmup_stubs\ndsv41-patch ok cudagraph_worker_stub\ndsv41-patch ok swa_page_coerce\ndsv41-patch ok kernel_block_sizes\ndsv41-patch ok extra_page_bump\ndsv41-patch ok v41_config_vision\ndsv41-patch ok swa_image_width: already applied\ndsv41-patch ok attention_image_width: already applied\ndsv41-patch ok native_indexer_decode: already applied\ndsv41-patch ok indexer_adaptive: already applied\ndsv41-patch ok indexer_short_context: already applied\ndsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1\ndsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1\ndsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1\ndsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1\ndsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1\ndsv41-patch ok decode_levers\ndsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.\n"
+
+======================================================================
+FAIL: test_defaults_match_promoted_boot (test_recipe_ops.RecipeOpsTests.test_defaults_match_promoted_boot)
+A plain ./run.sh reproduces the measured 39.6/33.2 boot (results/2026-09-22-endgame2/boot-lm.sh).
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 741, in test_defaults_match_promoted_boot
+    self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+AssertionError: 1 != 0 : ==> role=head host=spark1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+W0924 15:04:35.238000 4816 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.
+
+
+======================================================================
+FAIL: test_image_without_recipe_label_warns_but_boots (test_recipe_ops.RecipeOpsTests.test_image_without_recipe_label_warns_but_boots)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_recipe_ops.py", line 716, in test_image_without_recipe_label_warns_but_boots
+    self.assertEqual(res["returncode"], 0, res["stderr"])
+AssertionError: 1 != 0 : dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+W0924 15:04:42.326000 5018 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.
+
+
+======================================================================
+FAIL: test_cli_writes_json_out_and_prints_content (test_smoke_chat.SmokeChatTests.test_cli_writes_json_out_and_prints_content)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_smoke_chat.py", line 59, in test_cli_writes_json_out_and_prints_content
+    self.assertEqual(proc.stdout.strip(), "323")
+AssertionError: 'dsv41-indexer-workspace: already applied\[653 chars]n323' != '323'
+Diff is 702 characters long. Set self.maxDiff to None to see it.
+
+======================================================================
+FAIL: test_sitecustomize_installs_on_stream_feed_only_when_set (test_stream_feed.StreamFeedWiringTests.test_sitecustomize_installs_on_stream_feed_only_when_set)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_stream_feed.py", line 130, in test_sitecustomize_installs_on_stream_feed_only_when_set
+    self.assertIn("STUB g8_stream_feed", run_site(["g8_stream_feed"], DSV41_STREAM_FEED="1"))
+AssertionError: 'STUB g8_stream_feed' not found in 'dsv41-indexer-workspace: already applied\ndsv41: lm_head mxfp8 hook skipped: ModuleNotFoundError("No module named \'torch\'")\ndsv41: g8 stream feed installed\n'
+
+======================================================================
+FAIL: test_env_reaches_both_ranks_only_when_set (test_widen_p2b_srcsort.SrcSortWiringTests.test_env_reaches_both_ranks_only_when_set)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/repo/tests/test_widen_p2b_srcsort.py", line 131, in test_env_reaches_both_ranks_only_when_set
+    self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+AssertionError: 1 != 0 : ==> role=head host=spark1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+W0924 15:05:32.100000 6382 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-indexer-workspace: already applied is using GPUs or InfiniBand. This recipe needs exclusive GPUs on both Sparks. Do not start. Do not docker rm that container from this script.
+
+
+----------------------------------------------------------------------
+Ran 452 tests in 266.529s
+
+FAILED (failures=20, errors=3, skipped=1)
+patched /tmp/tmpnmvxcypq/model_executor/kernels/linear/__init__.py
+patched /tmp/tmphhokwp9c/model_executor/kernels/linear/mxfp8/flashinfer.py
+patched /tmp/tmpkmv67bjf/models/deepseek_v4_1/attention.py
+patched /tmp/tmpkmv67bjf/model_executor/kernels/linear/mxfp8/flashinfer.py
+patched /tmp/tmpkmv67bjf/models/deepseek_v4/nvidia/ops/o_proj.py
+patched /tmp/tmp6e1wkr6d/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh
+patched /tmp/tmpwa1bcc1a/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh
+patched /tmp/tmpuci7qe8t/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh
+patched /tmp/tmpuci7qe8t/csrc/sparse_mla_sm120_decode_dsv4.cu
+patched /tmp/tmpuci7qe8t/mla/_sparse_mla_sm120.py
+patched /tmp/tmpuci7qe8t/mla/_core.py
+patched /tmp/tmpi9mppbia/csrc/p2b_moe.cu
+patched /tmp/tmpi9mppbia/csrc/p2b_moe.cu
+patched /tmp/tmpc3xotkuo/csrc/p2b_moe.cu
+patched /tmp/tmpc3xotkuo/vllm_exl3/exl3.py
+patched /tmp/tmpc3xotkuo/csrc/p2b_moe.cu
+patched /tmp/tmpc3xotkuo/vllm_exl3/exl3.py
+patched /tmp/tmp5nmm27et/csrc/p2b_moe.cu
+patched /tmp/tmp5nmm27et/csrc/p2b_moe.cu
+patched /tmp/tmpxw1fpvft/csrc/p2b_moe.cu
+patched /tmp/tmpxw1fpvft/csrc/p2b_moe.cu
+patched /tmp/tmpkvf_i_vi/csrc/p2b_moe.cu
+patched /tmp/tmpkvf_i_vi/csrc/p2b_moe.cu
+patched /tmp/tmpbewz5te3/csrc/p2b_moe.cu
+patched /tmp/tmpfwxjk1ue/csrc/p2b_moe.cu
+patched /tmp/tmpisp1a6qk/csrc/p2b_moe.cu
+patched /tmp/tmpv5a_y9nz/csrc/p2b_moe.cu
+patched /tmp/tmpv5a_y9nz/csrc/p2b_moe.cu
+patched /tmp/tmpy7g13ija/csrc/p2b_moe.cu
+patched /tmp/tmpy7g13ija/csrc/p2b_moe.cu
+patched /tmp/tmpgven9gtf/csrc/p2b_moe.cu
+patched /tmp/tmpgven9gtf/src/vllm_exl3/exl3.py
