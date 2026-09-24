@@ -64,6 +64,7 @@ PATCH_DIR="${DSV41_PATCH_DIR:-$SCRIPT_DIR/docker/patch}"
 # Every env a docker/patch/*.py file reads must be listed (tests check it).
 FORWARD_ENVS=(
   VLLM_EXL3_MOE_KERNEL=native
+  DSV41_PATCH_STRICT=1
   DSV41_ENGRAM_DISK=
   LANGUAGE_MODEL_ONLY=
   MM_ENCODER_TP_MODE=

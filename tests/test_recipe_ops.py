@@ -226,6 +226,16 @@ class EnvForwardingTests(unittest.TestCase):
         self.assertIn("--headless", worker_args)
         self.assertEqual(head_args[head_args.index("--max-model-len") :], worker_args[worker_args.index("--max-model-len") :])
 
+    def test_patch_strict_is_forwarded_to_both_ranks(self) -> None:
+        container_env, dry_run, _ = _harness()
+        self.assertEqual(_forward_envs()["DSV41_PATCH_STRICT"], "1")
+        res = dry_run()
+        for role in ("head", "worker"):
+            self.assertEqual(container_env(res[role])["DSV41_PATCH_STRICT"], "1", role)
+        res = dry_run(DSV41_PATCH_STRICT="0")
+        for role in ("head", "worker"):
+            self.assertEqual(container_env(res[role])["DSV41_PATCH_STRICT"], "0", role)
+
     def test_dry_run_forwards_overrides_and_quoted_values(self) -> None:
         container_env, dry_run, image_and_args = _harness()
 

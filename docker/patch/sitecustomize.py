@@ -11,11 +11,72 @@ import sys
 if "/opt/dsv41-patch" not in sys.path:
     sys.path.insert(0, "/opt/dsv41-patch")
 
+import os
+
+_VLLM = "/usr/local/lib/python3.12/dist-packages/vllm"
+# run.sh sets DSV41_PATCH_STRICT=1: a required patch that fails exits the
+# process. Unset (docker build RUN steps, other images) it only prints FAIL.
+_PATCH_STRICT = os.environ.get("DSV41_PATCH_STRICT", "0") == "1"
+
+
+class _PatchSkip(Exception):
+    """A patch body raises this when it does not apply (env off, file absent)."""
+
+
+def _patch(name, fn, required=False):
+    """Run one patch; print one 'dsv41-patch ok|skip|FAIL name' line to stderr."""
+    try:
+        detail = fn()
+    except _PatchSkip as exc:
+        print(f"dsv41-patch skip {name}: {exc}", file=sys.stderr, flush=True)
+        return
+    except BaseException as exc:  # SystemExit is an apply() anchor miss
+        print(f"dsv41-patch FAIL {name}: {exc!r}", file=sys.stderr, flush=True)
+        if required and _PATCH_STRICT:
+            os._exit(1)
+        if not isinstance(exc, Exception):
+            raise
+        return
+    print(f"dsv41-patch ok {name}" + (f": {detail}" if detail else ""), file=sys.stderr, flush=True)
+
+
+def _rewrite(path, patch_source):
+    """Rewrite a source file; write (tmp + os.replace) only when the text changes."""
+    from pathlib import Path
+
+    path = Path(path)
+    if not path.is_file():
+        raise _PatchSkip(f"{path} absent")
+    src = path.read_text()
+    out = patch_source(src)
+    if out == src:
+        return "already applied"
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        tmp.write_text(out)
+        os.chmod(tmp, path.stat().st_mode & 0o7777)
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
+    return "rewritten"
+
+
+def _sm120_rewrite(rel, fn_name):
+    """_patch body: apply sm120_page.<fn_name> to <vllm>/<rel>."""
+
+    def body():
+        import sm120_page
+
+        return _rewrite(f"{_VLLM}/{rel}", getattr(sm120_page, fn_name))
+
+    return body
+
+
 # --- pfg8 load tracer (Round 31): when DSV41_LOAD_PF_G8=1, sample the worker
 # process every 10s during weight load: RSS, gc type census (top objects by
 # retained count), torch tensor count, and main-thread stack. Writes
 # /tmp/g8trace.log inside the container. Zero-risk: pure reads, env-gated.
-try:
+def _p_g8_load_tracer():
     import os as _os_tr
 
     if _os_tr.environ.get("DSV41_LOAD_PF_G8", "0") == "1":
@@ -78,8 +139,11 @@ try:
                         pass
 
         _th_tr.Thread(target=_g8_tracer_loop, daemon=True).start()
-except Exception:
-    pass
+    else:
+        raise _PatchSkip("DSV41_LOAD_PF_G8 is not 1")
+
+
+_patch("g8_load_tracer", _p_g8_load_tracer)
 
 
 # c1_graph_safe_adaptive is unwired. Extra-graphs and pin-budget=2 both
@@ -87,7 +151,7 @@ except Exception:
 
 # SM120 MXFP8 Q/O: vLLM hardcodes mm_mxfp8 backend=cutlass. auto prefers
 # b12x small-M tiles on SM120/SM121 and falls back to cutlass if needed.
-try:
+def _p_prefer_b12x_mxfp8():
     from pathlib import Path as _P2
 
     from prefer_b12x_mxfp8 import apply as _apply_b12x_mxfp8
@@ -95,8 +159,9 @@ try:
     _apply_b12x_mxfp8(
         _P2("/usr/local/lib/python3.12/dist-packages/vllm")
     )
-except Exception:
-    pass
+
+
+_patch("prefer_b12x_mxfp8", _p_prefer_b12x_mxfp8)
 
 # Indexer prefill gather workspace: stock max_model_len*40 entries (~5.3 GiB
 # per rank at 1M ctx) locked for process life. DSV41_INDEXER_PREFILL_FACTOR=1
@@ -128,7 +193,7 @@ except Exception as _mla_io2_err:
 
 # Tile32 MLA: workspace mid_out splits must match CAND_WINDOW. The JIT image
 # already has WINDOW=32; stock _core.py still sizes scratch with split_tile=64.
-try:
+def _p_mla_tile32_workspace():
     from pathlib import Path as _P
 
     from widen_mla_tile32 import apply as _apply_mla_tile32
@@ -140,34 +205,25 @@ try:
     )
     if _cuh.is_file() and "DSV4_CAND_WINDOW = 32" in _cuh.read_text():
         _apply_mla_tile32(_fi)
-except Exception:
-    pass
+    else:
+        raise _PatchSkip("image kernel has no DSV4_CAND_WINDOW = 32")
+
+
+_patch("mla_tile32_workspace", _p_mla_tile32_workspace)
 
 # GB10 (SM120) persistent_topk oversubscribes at 2 decode rows (TopK=512).
 # Patch installed vLLM before it imports. Qwen already excludes family 120
 # for cooperative topk; V4.1 indexer still calls persistent_topk.
-try:
-    from pathlib import Path
-
-    from sm120_page import (
-        patch_kpool_persistent_topk_source,
-        patch_persistent_topk_source,
-    )
-
-    _idx = Path(
-        "/usr/local/lib/python3.12/dist-packages/vllm/model_executor/layers"
-        "/sparse_attn_indexer.py"
-    )
-    if _idx.is_file():
-        _idx.write_text(patch_persistent_topk_source(_idx.read_text()))
-    _kpool = Path(
-        "/usr/local/lib/python3.12/dist-packages/vllm/model_executor/layers"
-        "/sparse_attn_indexer_kpool.py"
-    )
-    if _kpool.is_file():
-        _kpool.write_text(patch_kpool_persistent_topk_source(_kpool.read_text()))
-except Exception:
-    pass
+_patch(
+    "persistent_topk",
+    _sm120_rewrite("model_executor/layers/sparse_attn_indexer.py", "patch_persistent_topk_source"),
+    required=True,
+)
+_patch(
+    "kpool_persistent_topk",
+    _sm120_rewrite("model_executor/layers/sparse_attn_indexer_kpool.py", "patch_kpool_persistent_topk_source"),
+    required=True,
+)
 
 # PF-G8 loader re-index (results/2026-09-21-pfg8/BOOT-CHAIN-AUDIT.md):
 # DSV41_LOAD_PF_G8=1 serves a G8 pack (trellis [NT/8][KT][8W]) — the loader
@@ -207,20 +263,45 @@ except Exception as _g8_err:
 
     _os_g8x._exit(1)
 
+# PF-G8 fat-expert routing gate (BOOT-CHAIN-AUDIT.md R3, 2026-09-21): under
+# DSV41_LOAD_PF_G8=1 the fat-GEMM/reconstruct fallback readers are
+# stock-layout and must not run on a G8 pack. The kernel-side guard
+# (exl3_fat_gemm TORCH_CHECK) is belt-and-braces; the primary gate is here:
+# raise VLLM_EXL3_FAT_THRESHOLD to 2**30 unless the operator explicitly set
+# it, so no expert is ever routed fat and all rows go through the G8-aware
+# exl3_moe kernel. vllm_exl3.exl3 reads the env at import time, and
+# load_general_plugins below imports it, so this must run first. Default
+# (env unset) = untouched stock behavior with the stock threshold of 256.
+try:
+    import os as _os_fat
+
+    if (
+        _os_fat.environ.get("DSV41_LOAD_PF_G8", "0") == "1"
+        and "VLLM_EXL3_FAT_THRESHOLD" not in _os_fat.environ
+    ):
+        _os_fat.environ["VLLM_EXL3_FAT_THRESHOLD"] = str(2**30)
+        print("dsv41: pfg8 fat-expert routing OFF (VLLM_EXL3_FAT_THRESHOLD=2^30)", flush=True)
+except Exception as _fat_err:
+    print(f"dsv41: FATAL pfg8 fat gate wiring error: {_fat_err!r}", flush=True)
+    import os as _os_fat_x
+
+    _os_fat_x._exit(1)
+
 # Load vLLM general plugins in every process (API, EngineCore, workers).
 # VLLM_PLUGINS=vllm_exl3 is not enough on this image: EngineCore can resolve
 # --quantization exl3 before load_general_plugins() runs.
-try:
+def _p_load_general_plugins():
     from vllm.plugins import load_general_plugins
 
     load_general_plugins()
-except Exception:
-    pass
+
+
+_patch("load_general_plugins", _p_load_general_plugins)
 
 # DSV4.1 mapper picks weight_scale vs weight_scale_inv from
 # quant_config.weight_block_size == [32, 32]. Exl3Config keeps that field
 # inside non_routed_quantization, so copy it onto the config object.
-try:
+def _p_exl3_weight_block_size():
     from vllm_exl3.exl3 import Exl3Config
 
     _exl3_from_config = Exl3Config.from_config.__func__
@@ -235,23 +316,25 @@ try:
         return inst
 
     Exl3Config.from_config = _exl3_from_config_with_block_size
-except Exception:
-    pass
+
+
+_patch("exl3_weight_block_size", _p_exl3_weight_block_size, required=True)
 
 # DSv4 sparse-MLA mixed warmup still dummy-forwards through DeepGEMM paged-MQA
 # (block_kv must be 32 or 64) after autotune is disabled. Skip that warmup.
-try:
+def _p_warmup_stubs():
     import vllm.model_executor.warmup.kernel_warmup as _kw
 
     _kw.deepseek_v4_sparse_mla_attention_warmup = lambda worker: None
     _kw.kernel_warmup = lambda worker: None
-except Exception:
-    pass
+
+
+_patch("warmup_stubs", _p_warmup_stubs, required=True)
 
 # Graph capture still dummy-forwards DeepGEMM paged-MQA unless the warmup
 # stubs above stay. Default serve sets DSV41_ALLOW_CUDA_GRAPHS=1 and
 # ENFORCE_EAGER=0. Disk Engram rows are staged in prepare_inputs.
-try:
+def _p_cudagraph_worker_stub():
     import os
 
     from vllm.v1.worker.gpu_worker import Worker
@@ -259,8 +342,11 @@ try:
 
     if os.environ.get("DSV41_ALLOW_CUDA_GRAPHS") != "1":
         Worker.compile_or_warm_up_model = lambda self: CompilationTimes(0.0, 0.0)
-except Exception:
-    pass
+    else:
+        raise _PatchSkip("DSV41_ALLOW_CUDA_GRAPHS=1")
+
+
+_patch("cudagraph_worker_stub", _p_cudagraph_worker_stub)
 
 # mem-hygiene bundle (env-guarded no-ops when their envs are unset):
 # 1) fadvise DONTNEED on shard files after weight load — the GB10 driver
@@ -283,7 +369,7 @@ except Exception as _pec_err:
 
 # FlashInfer SM120 DSV4 decode is compiled only for page_block_size=64.
 # Upstream V4.1 hardcodes SWA pages to 32 (DeepGEMM paged-MQA).
-try:
+def _p_swa_page_coerce():
     from sm120_page import coerce_swa_block_size
     from vllm.v1.attention.backends.mla.sparse_swa import DeepseekV4SWACache
 
@@ -299,14 +385,15 @@ try:
         return _swa_init(self, *args, **kwargs)
 
     DeepseekV4SWACache.__init__ = _swa_init_sm120_page
-except Exception:
-    pass
+
+
+_patch("swa_page_coerce", _p_swa_page_coerce, required=True)
 
 # Indexer + compressed MLA share a packed KV group, so they must agree.
 # DeepGEMM paged-MQA asserts block_kv in {32, 64}; FlashInfer DSV4 decode
 # wants page 64. Upstream reports 128 on SM12, which then has no common size
 # if only the indexer is pinned to 64.
-try:
+def _p_kernel_block_sizes():
     from sm120_page import indexer_kernel_block_sizes
     from vllm.models.deepseek_v4_1.nvidia.flashinfer_sparse import (
         DeepseekV4FlashInferMLASparseBackend,
@@ -316,13 +403,14 @@ try:
     _kbs = staticmethod(lambda: list(indexer_kernel_block_sizes()))
     DeepseekV4IndexerBackend.get_supported_kernel_block_sizes = _kbs
     DeepseekV4FlashInferMLASparseBackend.get_supported_kernel_block_sizes = _kbs
-except Exception:
-    pass
+
+
+_patch("kernel_block_sizes", _p_kernel_block_sizes, required=True)
 
 # compress_ratio=2 at manager 64 yields extra_page_block_size=32. SM120
 # prefill (num_tokens>64) rejects that. Bump those specs to 128 so extra
 # pages stay 64 and DeepGEMM still sees 128/2=64 states.
-try:
+def _p_extra_page_bump():
     from dataclasses import replace
 
     from sm120_page import manager_block_for_flashinfer_extra
@@ -356,24 +444,17 @@ try:
         )
 
     DeepseekV4IndexerCache.get_kv_cache_spec = _idx_spec_extra_page
-except Exception:
-    pass
+
+
+_patch("extra_page_bump", _p_extra_page_bump, required=True)
 
 # Vision-on: keep hf_config.vision_max_n_token and vision_n_layers so VL
 # weights load. SM120 dual-cache prefill only instantiates SWA topk=128.
 # SWA index width stays window=128. Decode still uses window=128.
-try:
-    import os
-    from pathlib import Path
-
+def _p_v41_config_vision():
     from sm120_page import (
         clamp_index_topk,
         language_model_only_from_env,
-        patch_attention_image_width_source,
-        patch_indexer_adaptive_source,
-        patch_indexer_short_context_source,
-        patch_native_indexer_decode_source,
-        patch_swa_prefill_image_width_source,
         text_only_max_image_tokens,
     )
     from vllm.transformers_utils.configs.deepseek_v41 import DeepseekV41Config
@@ -398,33 +479,35 @@ try:
             )
     DeepseekV41Config.__init__ = _v41_cfg_init_vision
 
-    _swa = Path(
-        "/usr/local/lib/python3.12/dist-packages/vllm/v1/attention/backends"
-        "/mla/sparse_swa.py"
-    )
-    if _swa.is_file():
-        _swa.write_text(patch_swa_prefill_image_width_source(_swa.read_text()))
-    _attn = Path(
-        "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"
-        "/attention.py"
-    )
-    if _attn.is_file():
-        _attn.write_text(patch_attention_image_width_source(_attn.read_text()))
-    _mla_idx = Path(
-        "/usr/local/lib/python3.12/dist-packages/vllm/v1/attention/backends"
-        "/mla/indexer.py"
-    )
-    if _mla_idx.is_file():
-        _mla_idx.write_text(patch_native_indexer_decode_source(_mla_idx.read_text()))
-        _mla_idx.write_text(patch_indexer_adaptive_source(_mla_idx.read_text()))
-    _v41_attn = Path(
-        "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"
-        "/attention.py"
-    )
-    if _v41_attn.is_file():
-        _v41_attn.write_text(patch_indexer_short_context_source(_v41_attn.read_text()))
-except Exception:
-    pass
+
+_patch("v41_config_vision", _p_v41_config_vision)
+
+# Image-width rewrites only matter with vision on.
+_lm_only = "--language-model-only" in sys.argv or os.environ.get("LANGUAGE_MODEL_ONLY", "0") == "1"
+_patch(
+    "swa_image_width",
+    _sm120_rewrite("v1/attention/backends/mla/sparse_swa.py", "patch_swa_prefill_image_width_source"),
+    required=not _lm_only,
+)
+_patch(
+    "attention_image_width",
+    _sm120_rewrite("models/deepseek_v4_1/attention.py", "patch_attention_image_width_source"),
+    required=not _lm_only,
+)
+_patch(
+    "native_indexer_decode",
+    _sm120_rewrite("v1/attention/backends/mla/indexer.py", "patch_native_indexer_decode_source"),
+    required=True,
+)
+_patch(
+    "indexer_adaptive",
+    _sm120_rewrite("v1/attention/backends/mla/indexer.py", "patch_indexer_adaptive_source"),
+    required=True,
+)
+_patch(
+    "indexer_short_context",
+    _sm120_rewrite("models/deepseek_v4_1/attention.py", "patch_indexer_short_context_source"),
+)
 
 # lm_head MXFP8 (b12x): DSV41_LMHEAD_MXFP8=1 + quantized tensor in the
 # snapshot. Default-off; self-disarms (one line, never a crash) when the
@@ -441,7 +524,7 @@ except Exception as _lmh_err:
     print(f"dsv41: lm_head mxfp8 hook skipped: {_lmh_err!r}", flush=True)
 
 # DSpark Markov scale. 1 = stock sequential bias. 0 = parallel backbone drafts.
-try:
+def _p_dspark_markov_scale():
     import os
 
     from sm120_page import scale_markov_bias
@@ -455,22 +538,28 @@ try:
             return scale_markov_bias(_markov_bias(self, markov_embed), _markov_scale)
 
         DSparkDeepseekV4ForCausalLM.markov_bias = _markov_bias_scaled
-except Exception:
-    pass
+    else:
+        raise _PatchSkip("DSV41_DSPARK_MARKOV_SCALE=1")
+
+
+_patch("dspark_markov_scale", _p_dspark_markov_scale)
 
 # Optional decode-step census (draft graph, target forward, Engram staging).
-try:
+def _p_step_census():
     import os
 
     if os.environ.get("DSV41_STEP_CENSUS", "0") == "1":
         from sm120_page import install_step_census
 
         install_step_census()
-except Exception:
-    pass
+    else:
+        raise _PatchSkip("DSV41_STEP_CENSUS is not 1")
+
+
+_patch("step_census", _p_step_census)
 
 # Decode MHC prenorm split-K: DeepGEMM heuristic returns 16 at m=6.
-try:
+def _p_mhc_decode_splits():
     import os
 
     if os.environ.get("DSV41_MHC_DECODE_SPLITS", "0") == "1":
@@ -488,12 +577,15 @@ try:
         _mhc_wu.compute_mhc_pre_num_splits = _mhc_splits_decode
         _mhc_tl.compute_mhc_pre_num_splits = _mhc_splits_decode
         print("dsv41: MHC decode prenorm splits collapsed to 1", flush=True)
-except Exception:
-    pass
+    else:
+        raise _PatchSkip("DSV41_MHC_DECODE_SPLITS is not 1")
+
+
+_patch("mhc_decode_splits", _p_mhc_decode_splits)
 
 # Host LRU for disk Engram rows. Staging still hashes on GPU; this skips
 # NVMe pread+dequant on repeated file rows (overlapping n-grams).
-try:
+def _p_engram_row_cache():
     import os
 
     if os.environ.get("DSV41_ENGRAM_CACHE", "0") == "1":
@@ -536,12 +628,15 @@ try:
 
         DiskEngramTable.gather_dequant = _cached_gather_dequant
         print("dsv41: Engram disk row cache enabled", flush=True)
-except Exception:
-    pass
+    else:
+        raise _PatchSkip("DSV41_ENGRAM_CACHE is not 1")
+
+
+_patch("engram_row_cache", _p_engram_row_cache)
 
 # MHC prenorm: stock DeepGEMM uses 16 split-K at m=6. Forcing the TileLang
 # GEMM (n_splits=1) is a separate path from DSV41_MHC_DECODE_SPLITS.
-try:
+def _p_mhc_no_deepgemm():
     import os
 
     if os.environ.get("DSV41_MHC_NO_DEEPGEMM", "0") == "1":
@@ -552,8 +647,11 @@ try:
 
         _mhc_tl.is_deep_gemm_supported = _mhc_no_deep_gemm
         print("dsv41: MHC prenorm uses TileLang GEMM not DeepGEMM", flush=True)
-except Exception:
-    pass
+    else:
+        raise _PatchSkip("DSV41_MHC_NO_DEEPGEMM is not 1")
+
+
+_patch("mhc_no_deepgemm", _p_mhc_no_deepgemm)
 
 # Greedy propose, softmax verify. Allocate draft_logits on greedy DSpark
 # and cache pre-temperature U+Markov logits, then argmax. Rejection then
@@ -995,31 +1093,6 @@ try:
         )
 except Exception as _defer_err:
     print(f"dsv41: engram defer skipped: {_defer_err!r}", flush=True)
-
-# PF-G8 fat-expert routing gate (BOOT-CHAIN-AUDIT.md R3, 2026-09-21): under
-# DSV41_LOAD_PF_G8=1 the fat-GEMM/reconstruct fallback readers are
-# stock-layout and must not run on a G8 pack. The kernel-side guard
-# (exl3_fat_gemm TORCH_CHECK) is belt-and-braces; the primary gate is here:
-# raise VLLM_EXL3_FAT_THRESHOLD to 2**30 unless the operator explicitly set
-# it, so no expert is ever routed fat and all rows go through the G8-aware
-# exl3_moe kernel. The module-level read of the env in vllm_exl3.exl3
-# happens at import time — sitecustomize runs before any vllm_exl3 import,
-# so setting os.environ here wins. Default (env unset) = untouched stock
-# behavior with the stock threshold of 256.
-try:
-    import os as _os_fat
-
-    if (
-        _os_fat.environ.get("DSV41_LOAD_PF_G8", "0") == "1"
-        and "VLLM_EXL3_FAT_THRESHOLD" not in _os_fat.environ
-    ):
-        _os_fat.environ["VLLM_EXL3_FAT_THRESHOLD"] = str(2**30)
-        print("dsv41: pfg8 fat-expert routing OFF (VLLM_EXL3_FAT_THRESHOLD=2^30)", flush=True)
-except Exception as _fat_err:
-    print(f"dsv41: FATAL pfg8 fat gate wiring error: {_fat_err!r}", flush=True)
-    import os as _os_fat_x
-
-    _os_fat_x._exit(1)
 
 # G8 stream feed (g8final r31): env-gated DSV41_LOAD_PF_G8=1 — drain the VL
 # wrapper's sorted mapped list in place during load_weights so per-tensor H2D
