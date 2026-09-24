@@ -1,0 +1,22 @@
+== single: NCCL_IB_HCA=rocep1s0f1 NCCL_CROSS_NIC=1 NCCL_BUFFSIZE=1048576 NCCL_LL128_BUFFSIZE=262144 NCCL_PROTO=^LL128 NCCL_MAX_NCHANNELS=8
+  spark1:1:1 [0] NCCL INFO NET/IB : Using [0]rocep1s0f1:1/RoCE [RO]; OOB enp1s0f1np1:10.100.8.1<0>
+  channels via NET/IB: 16
+== dual_keep: NCCL_IB_HCA=rocep1s0f1,roceP2p1s0f1 NCCL_CROSS_NIC=0 NCCL_BUFFSIZE=1048576 NCCL_LL128_BUFFSIZE=262144 NCCL_PROTO=^LL128 NCCL_MAX_NCHANNELS=8
+  spark1:1:1 [0] NCCL INFO NET/IB : Using [0]rocep1s0f1:1/RoCE [1]roceP2p1s0f1:1/RoCE [RO]; OOB enp1s0f1np1:10.100.8.1<0>
+  channels via NET/IB: 16
+== dual_keep_nomerge: NCCL_IB_HCA=rocep1s0f1,roceP2p1s0f1 NCCL_CROSS_NIC=0 NCCL_IB_MERGE_NICS=0 NCCL_BUFFSIZE=1048576 NCCL_LL128_BUFFSIZE=262144 NCCL_PROTO=^LL128 NCCL_MAX_NCHANNELS=8
+  spark1:1:1 [0] NCCL INFO NET/IB : Using [0]rocep1s0f1:1/RoCE [1]roceP2p1s0f1:1/RoCE [RO]; OOB enp1s0f1np1:10.100.8.1<0>
+  channels via NET/IB: 16
+results in /home/sfxnz/projects/ai-lab/recipes/.worktrees/perf-review-0924/results/2026-09-24-review/campaign/s1-microbench/partC/nccl-dualrail/rep3
+== gate: dual_keep vs single
+busbw   32 MiB  +65.0%  (need >= +10%)
+busbw   64 MiB  +68.6%  (need >= +10%)
+busbw  128 MiB  +69.3%  (need >= +10%)
+worst small-message latency change +32.5% at 128 B (allow <= +5%)
+FAIL
+== gate: dual_keep_nomerge vs single
+busbw   32 MiB  +66.6%  (need >= +10%)
+busbw   64 MiB  +67.9%  (need >= +10%)
+busbw  128 MiB  +69.8%  (need >= +10%)
+worst small-message latency change +1.2% at 128 B (allow <= +5%)
+PASS
