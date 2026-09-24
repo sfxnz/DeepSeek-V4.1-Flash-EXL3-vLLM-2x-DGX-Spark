@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import json
+import re
+import sys
 import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -100,6 +105,60 @@ class LailProseHarnessTests(unittest.TestCase):
         )
         self.assertFalse(row["collapsed"])
         self.assertEqual(row["preview"], "A")
+
+    def test_natural_probe_body_drops_ignore_eos_and_min_tokens(self) -> None:
+        body = self.mod.completion_body("m", ignore_eos=False)
+        self.assertNotIn("ignore_eos", body)
+        self.assertNotIn("min_tokens", body)
+        self.assertEqual(body["max_tokens"], 512)
+        self.assertEqual(body["temperature"], 0.2)
+
+    def test_main_probe_reports_post_eos_fraction(self) -> None:
+        """Measured runs force 512 tokens; the probe stops at 128 -> 0.75 post-EOS."""
+        seen: list[bool] = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, format, *args):  # noqa: A003
+                return
+
+            def do_GET(self):  # /metrics absent -> no acceptance fields
+                self.send_error(404)
+
+            def do_POST(self):
+                n = int(self.headers.get("Content-Length", "0"))
+                req = json.loads(self.rfile.read(n).decode())
+                forced = bool(req.get("ignore_eos"))
+                seen.append(forced)
+                toks, reason = (512, "length") if forced else (128, "stop")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.end_headers()
+                chunk = {"choices": [{"delta": {"content": "word " * 8}}]}
+                done = {"choices": [{"delta": {}, "finish_reason": reason}],
+                        "usage": {"prompt_tokens": 40, "completion_tokens": toks}}
+                for ev in (chunk, done):
+                    self.wfile.write(f"data: {json.dumps(ev)}\n\n".encode())
+                self.wfile.write(b"data: [DONE]\n\n")
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        out = io.StringIO()
+        url = f"http://127.0.0.1:{server.server_address[1]}/v1/chat/completions"
+        try:
+            with mock.patch.object(sys, "argv", ["x", "--url", url, "--runs", "2"]), \
+                    contextlib.redirect_stdout(out):
+                self.assertEqual(self.mod.main(), 0)
+        finally:
+            server.shutdown()
+            server.server_close()
+        self.assertEqual(seen, [True, True, False])  # probe runs after the measured runs
+        text = out.getvalue()
+        self.assertEqual(len(re.findall(r"run=\d+ \{", text)), 2)
+        summary = json.loads(text[text.rindex("SUMMARY ") + 8:])
+        self.assertEqual(summary["median_completion_tokens"], 512)
+        self.assertEqual(summary["natural_completion_tokens"], 128)
+        self.assertEqual(summary["natural_finish_reason"], "stop")
+        self.assertAlmostEqual(summary["post_eos_fraction"], 0.75)
 
     def test_collapse_sample_is_detected(self) -> None:
         sample = (ROOT / "tests/fixtures/prose-collapse.txt").read_text()

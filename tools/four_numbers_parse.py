@@ -84,7 +84,8 @@ def parse(arm: str, ts: str, out: Path, mode: str) -> dict:
         "serve_cmd_digest": None, "prose_median_tok_s": None,
         "prose_runs": [], "acceptance": None, "prefill_8k_tok_s": None,
         "prefill_32k_tok_s": None, "lail_prose_median_tok_s": None,
-        "lail_runs": [], "memavail_after_prefill_gib_spark1": None,
+        "lail_runs": [], "lail_post_eos_fraction": None,
+        "memavail_after_prefill_gib_spark1": None,
         "memavail_after_prefill_gib_spark2": None,
         "prefill_novel_8k_tok_s": None, "prefill_novel_32k_tok_s": None,
         "prose_cell": None, "prose_post_eos_fraction": None,
@@ -198,6 +199,7 @@ def parse(arm: str, ts: str, out: Path, mode: str) -> dict:
     m = last_summary(log("04-lail.log"))
     if isinstance(m, dict):
         res["lail_prose_median_tok_s"] = round(m["median_lail_tok_s"], 2)
+        res["lail_post_eos_fraction"] = m.get("post_eos_fraction")
         if res["acceptance"] is None and "median_acceptance_len" in m:
             res["acceptance"] = round(m["median_acceptance_len"], 3)
     for payload in re.findall(r"run=\d+ (\{.*\})", log("04-lail.log")):

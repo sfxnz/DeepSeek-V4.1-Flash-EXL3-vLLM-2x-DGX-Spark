@@ -163,6 +163,9 @@ class FourNumbersParseTests(unittest.TestCase):
                              "ttft=[0.1] acc=2.610 ms_step=[65.9]\n"
                              f"SUMMARY {json.dumps([prose_row], indent=2)}\n"),
             "02-micro.log": f"SUMMARY {json.dumps(micro, indent=1)}\n",
+            "04-lail.log": ('run=1 {"lail_tok_s": 33.2}\n'
+                            "natural phase=lail_prose completion_tokens=512 finish_reason=length\n"
+                            'SUMMARY {"median_lail_tok_s": 33.2, "post_eos_fraction": 0.0}\n'),
             "06-prose-long.log": f"natural phase=prose_long\nSUMMARY {json.dumps(long_rows)}\n",
             "07-warm-prefix.log": f"cold ttft=1\nSUMMARY {json.dumps(warm, indent=1)}\n",
         }
@@ -178,6 +181,8 @@ class FourNumbersParseTests(unittest.TestCase):
         self.assertEqual(res["prefill_32k_tok_s"], 600.0)  # pp_warm
         self.assertEqual(res["prefill_novel_8k_tok_s"], 250.0)
         self.assertEqual(res["prefill_novel_32k_tok_s"], 240.0)
+        self.assertEqual(res["lail_runs"], [33.2])  # natural probe line is not a run
+        self.assertEqual(res["lail_post_eos_fraction"], 0.0)
         self.assertEqual(len(res["prose_long_cells"]), 2)
         self.assertEqual(res["warm_prefix"]["hits_warm"], 1920)
         self.assertTrue(res["serve_env_ranks_match"])
