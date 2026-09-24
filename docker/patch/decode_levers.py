@@ -8,6 +8,14 @@
   tilelang mhc_pre imports it at call time and MHCPreNormKernel's
   get_warmup_keys calls it at num_tokens=1, so dispatch and warmup keys both
   see N.
+- DSV41_DSPARK_SPARSE_MARKOV=1: the DSpark drafter takes the speculator's own
+  top-k path (_sample_sequential_topk) with k = DSV41_DSPARK_SPARSE_MARKOV_TOPK
+  (default 256), so the Markov bias is a k x 256 gather-dot instead of the
+  129280 x 256 bf16 GEMM. The full-vocab argmax stays. DeepSeek cannot set
+  hf_config.dspark_draft_topk (SpeculativeConfig allows it on Qwen only), so
+  _draft_topk is set after DSparkSpeculator.__init__ and DeepSeek gets the
+  apply_markov_bias_gathered hook Qwen already has. Greedy verify keeps the
+  output exact; only acceptance can move (a winner outside the base top-k).
 - DSV41_WOA_PREPACK=1 lives in the image's o_proj.py (fix_o_proj_woa_fp8.py
   stage 2). Here: a loud warning when the image lacks that stage.
 
@@ -20,6 +28,7 @@ import os
 from pathlib import Path
 
 MHC_DECODE_MAX_TOKENS = 64
+SPARSE_MARKOV_TOPK_DEFAULT = 256
 O_PROJ_PY = Path(
     "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py"
 )
@@ -37,6 +46,28 @@ def mhc_pre_num_splits(input_size: int, num_tokens: int, forced: int, stock) -> 
         return stock(input_size, num_tokens)
     kblock_cap = max(1, -(-int(input_size) // 64) // 4)
     return max(1, min(int(forced), kblock_cap))
+
+
+def sparse_markov_topk(env) -> int | None:
+    """None keeps the dense Markov GEMM. Otherwise the candidate count k."""
+    if (env.get("DSV41_DSPARK_SPARSE_MARKOV", "0") or "0") != "1":
+        return None
+    k = int(env.get("DSV41_DSPARK_SPARSE_MARKOV_TOPK", "") or SPARSE_MARKOV_TOPK_DEFAULT)
+    if not 1 <= k <= 4096:
+        raise ValueError(f"DSV41_DSPARK_SPARSE_MARKOV_TOPK={k} outside 1..4096")
+    return k
+
+
+def sparse_markov_conflicts(env) -> list[str]:
+    """Levers the gathered path would silently bypass."""
+    out = []
+    if float(env.get("DSV41_DSPARK_MARKOV_SCALE", "1") or "1") != 1.0:
+        out.append("DSV41_DSPARK_MARKOV_SCALE")  # wraps markov_bias only
+    if int(env.get("DSV41_DSPARK_CONF_GATE", "0") or "0") == 1:
+        out.append("DSV41_DSPARK_CONF_GATE")  # falls through when _draft_topk is set
+    if int(env.get("DSV41_DSPARK_DRAFT_TOPK", "0") or "0") > 0:
+        out.append("DSV41_DSPARK_DRAFT_TOPK")  # dense mask wrap, rejected lever
+    return out
 
 
 def _install_mhc_splits(env) -> None:
@@ -58,6 +89,36 @@ def _install_mhc_splits(env) -> None:
     )
 
 
+def _install_sparse_markov(env) -> None:
+    k = sparse_markov_topk(env)
+    if k is None:
+        return
+    conflicts = sparse_markov_conflicts(env)
+    if conflicts:
+        raise ValueError(f"DSV41_DSPARK_SPARSE_MARKOV=1 cannot combine with {conflicts}")
+    from vllm.models.deepseek_v4_1.nvidia.dspark import DSparkDeepseekV4ForCausalLM
+    from vllm.v1.worker.gpu.spec_decode.dspark.speculator import DSparkSpeculator
+
+    if not hasattr(DSparkDeepseekV4ForCausalLM, "apply_markov_bias_gathered"):
+
+        def apply_markov_bias_gathered(self, markov_embed, logits, values, index):
+            return self.model.markov_head.apply_bias_gathered(
+                markov_embed, logits, values, index, self.logits_processor.scale
+            )
+
+        DSparkDeepseekV4ForCausalLM.apply_markov_bias_gathered = apply_markov_bias_gathered
+
+    init = DSparkSpeculator.__init__
+
+    def __init__(self, *args, **kwargs):
+        init(self, *args, **kwargs)
+        if self._draft_topk is None:
+            self._draft_topk = k
+
+    DSparkSpeculator.__init__ = __init__
+    print(f"dsv41: DSpark sparse Markov (gathered top-k) k={k}", flush=True)
+
+
 def _check_woa_prepack(env) -> None:
     if (env.get("DSV41_WOA_PREPACK", "0") or "0") != "1" or not O_PROJ_PY.exists():
         return
@@ -73,6 +134,7 @@ def install(env=None) -> None:
     env = os.environ if env is None else env
     for name, step in (
         ("mhc-prenorm-splits", _install_mhc_splits),
+        ("sparse-markov", _install_sparse_markov),
         ("woa-prepack", _check_woa_prepack),
     ):
         try:

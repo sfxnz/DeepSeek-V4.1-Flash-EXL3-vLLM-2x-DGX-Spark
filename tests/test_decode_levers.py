@@ -4,6 +4,9 @@ Fixtures are read-only copies from image dsv41-flash-exl3-sm121:canonical-e12
 (sha256:984ea608...), vllm/ paths:
   mhc_warmup.pin.py        model_executor/kernels/mhc/warmup.py
   mhc_tilelang.pin.py      model_executor/kernels/mhc/tilelang.py
+  dspark_speculator.pin.py v1/worker/gpu/spec_decode/dspark/speculator.py
+  dsv41_dspark.pin.py      models/deepseek_v4_1/nvidia/dspark.py
+  qwen3_dspark.pin.py      model_executor/models/qwen3_dspark.py
   o_proj_e12.pin.py        models/deepseek_v4/nvidia/ops/o_proj.py (probe + requant applied)
 """
 
@@ -106,8 +109,122 @@ class MhcSplitsTests(unittest.TestCase):
         self.assertIn('os.environ.get("DSV41_MHC_DECODE_SPLITS", "0") == "1"', site)
 
 
+class SparseMarkovTests(unittest.TestCase):
+    def test_env_values(self):
+        self.assertIsNone(dl.sparse_markov_topk({}))
+        self.assertIsNone(dl.sparse_markov_topk({"DSV41_DSPARK_SPARSE_MARKOV": "0"}))
+        self.assertEqual(dl.sparse_markov_topk({"DSV41_DSPARK_SPARSE_MARKOV": "1"}), 256)
+        self.assertEqual(
+            dl.sparse_markov_topk(
+                {"DSV41_DSPARK_SPARSE_MARKOV": "1", "DSV41_DSPARK_SPARSE_MARKOV_TOPK": "128"}
+            ),
+            128,
+        )
+        for bad in ("0", "-5", "5000"):
+            with self.assertRaises(ValueError):
+                dl.sparse_markov_topk(
+                    {"DSV41_DSPARK_SPARSE_MARKOV": "1", "DSV41_DSPARK_SPARSE_MARKOV_TOPK": bad}
+                )
+
+    def test_conflicts(self):
+        self.assertEqual(dl.sparse_markov_conflicts({}), [])
+        self.assertEqual(
+            dl.sparse_markov_conflicts(
+                {"DSV41_DSPARK_MARKOV_SCALE": "1", "DSV41_DSPARK_CONF_GATE": "0", "DSV41_DSPARK_DRAFT_TOPK": "0"}
+            ),
+            [],
+        )
+        self.assertEqual(
+            dl.sparse_markov_conflicts(
+                {"DSV41_DSPARK_MARKOV_SCALE": "0.5", "DSV41_DSPARK_CONF_GATE": "1", "DSV41_DSPARK_DRAFT_TOPK": "32"}
+            ),
+            ["DSV41_DSPARK_MARKOV_SCALE", "DSV41_DSPARK_CONF_GATE", "DSV41_DSPARK_DRAFT_TOPK"],
+        )
+
+    def test_conflict_refuses_loudly(self):
+        env = {"DSV41_DSPARK_SPARSE_MARKOV": "1", "DSV41_DSPARK_CONF_GATE": "1"}
+        with redirect_stdout(StringIO()) as out:
+            dl.install(env)
+        self.assertIn("sparse-markov FAILED, lever is OFF", out.getvalue())
+        self.assertIn("DSV41_DSPARK_CONF_GATE", out.getvalue())
+
+    def test_speculator_topk_path_anchors(self):
+        spec = FIX / "dspark_speculator.pin.py"
+        init = _func_src(spec, "__init__", "DSparkSpeculator")
+        self.assertIn("self._draft_topk: int | None = getattr(", init)
+        seq = _func_src(spec, "_sample_sequential", "DSparkSpeculator")
+        self.assertIn("if self._draft_topk is not None:\n            self._sample_sequential_topk(", seq)
+        topk = _func_src(spec, "_sample_sequential_topk", "DSparkSpeculator")
+        self.assertIn("base_logits.topk(self._draft_topk, dim=-1)", topk)
+        self.assertIn("self.model.apply_markov_bias_gathered(", topk)
+        # Greedy argmax over the full-vocab buffer stays (corrections).
+        self.assertIn("self._sample_logits(", topk)
+        sample = _func_src(spec, "_sample_logits", "DSparkSpeculator")
+        self.assertIn("logits.argmax(dim=-1)", sample)
+
+    def test_deepseek_drafter_lacks_hook_and_shares_head(self):
+        dsv = (FIX / "dsv41_dspark.pin.py").read_text()
+        self.assertNotIn("apply_markov_bias_gathered", dsv)
+        self.assertIn("self.model.markov_head.bias(markov_embed, self.logits_processor)", dsv)
+        self.assertIn("self.logits_processor = LogitsProcessor(self.config.vocab_size)", dsv)
+        head = _func_src(FIX / "qwen3_dspark.pin.py", "apply_bias_gathered", "DSparkMarkovHead")
+        self.assertIn("scale: float = 1.0", head)
+        self.assertIn("weight = self.markov_w2.weight[index]", head)
+        self.assertIn("logits.scatter_(1, index, corrected.squeeze(-1))", head)
+        # decode_levers mirrors Qwen's hook one to one.
+        qwen_hook = _func_src(FIX / "qwen3_dspark.pin.py", "apply_markov_bias_gathered", "Qwen3DSparkForCausalLM")
+        self.assertIn("return self.model.markov_head.apply_bias_gathered(", qwen_hook)
+        self.assertIn("self.logits_processor.scale", qwen_hook)
+
+    def _fake_vllm(self):
+        class Head:
+            def apply_bias_gathered(self, e, logits, values, index, scale=1.0):
+                return ("gathered", e, logits, values, index, scale)
+
+        class Drafter:
+            def __init__(self):
+                self.model = types.SimpleNamespace(markov_head=Head())
+                self.logits_processor = types.SimpleNamespace(scale=1.0)
+
+        class Spec:
+            def __init__(self, topk=None):
+                self._draft_topk = topk
+
+        dspark = types.ModuleType("vllm.models.deepseek_v4_1.nvidia.dspark")
+        dspark.DSparkDeepseekV4ForCausalLM = Drafter
+        specmod = types.ModuleType("vllm.v1.worker.gpu.spec_decode.dspark.speculator")
+        specmod.DSparkSpeculator = Spec
+        names = [
+            "vllm", "vllm.models", "vllm.models.deepseek_v4_1", "vllm.models.deepseek_v4_1.nvidia",
+            "vllm.v1", "vllm.v1.worker", "vllm.v1.worker.gpu", "vllm.v1.worker.gpu.spec_decode",
+            "vllm.v1.worker.gpu.spec_decode.dspark",
+        ]
+        mods = {n: types.ModuleType(n) for n in names}
+        mods[dspark.__name__] = dspark
+        mods[specmod.__name__] = specmod
+        return mods, Drafter, Spec
+
+    def test_install_sets_topk_and_hook(self):
+        mods, Drafter, Spec = self._fake_vllm()
+        with mock.patch.dict(sys.modules, mods), redirect_stdout(StringIO()) as out:
+            dl.install({"DSV41_DSPARK_SPARSE_MARKOV": "1"})
+        self.assertIn("k=256", out.getvalue())
+        self.assertEqual(Spec()._draft_topk, 256)
+        self.assertEqual(Spec(topk=64)._draft_topk, 64)  # an explicit config value wins
+        r = Drafter().apply_markov_bias_gathered("e", "l", "v", "i")
+        self.assertEqual(r, ("gathered", "e", "l", "v", "i", 1.0))
+
+    def test_off_by_default_touches_nothing(self):
+        mods, Drafter, Spec = self._fake_vllm()
+        with mock.patch.dict(sys.modules, mods), redirect_stdout(StringIO()) as out:
+            dl.install({})
+        self.assertEqual(out.getvalue(), "")
+        self.assertIsNone(Spec()._draft_topk)
+        self.assertFalse(hasattr(Drafter, "apply_markov_bias_gathered"))
+
+
 class WiringTests(unittest.TestCase):
-    NAMES = ("DSV41_WOA_PREPACK",)
+    NAMES = ("DSV41_DSPARK_SPARSE_MARKOV", "DSV41_DSPARK_SPARSE_MARKOV_TOPK", "DSV41_WOA_PREPACK")
 
     def test_new_envs_forwarded_off_by_default(self):
         from test_recipe_ops import _forward_envs, _patch_env_reads
@@ -126,12 +243,16 @@ class WiringTests(unittest.TestCase):
         res = dry_run(
             DSV41_WOA_PREPACK="1",
             DSV41_MHC_DECODE_SPLITS="40",
+            DSV41_DSPARK_SPARSE_MARKOV="1",
+            DSV41_DSPARK_SPARSE_MARKOV_TOPK="128",
         )
         self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
         for role in ("head", "worker"):
             env = container_env(res[role])
             self.assertEqual(env["DSV41_WOA_PREPACK"], "1", role)
             self.assertEqual(env["DSV41_MHC_DECODE_SPLITS"], "40", role)
+            self.assertEqual(env["DSV41_DSPARK_SPARSE_MARKOV"], "1", role)
+            self.assertEqual(env["DSV41_DSPARK_SPARSE_MARKOV_TOPK"], "128", role)
         plain = dry_run()
         for name in self.NAMES:
             self.assertNotIn(name, container_env(plain["head"]))
