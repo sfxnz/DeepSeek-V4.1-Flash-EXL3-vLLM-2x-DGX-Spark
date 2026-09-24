@@ -22,23 +22,56 @@ One boot = one lever. Every arm produces the four numbers via
    - abort if MemAvailable **< 12 GiB at boot** (before smoke);
    - abort if MemAvailable **< 8 GiB after smoke** (`smoke_chat.py` +
      `smoke_vision.py`).
-5. **Four numbers** (serialized, ~10-15 min):
+5. **Four numbers** (serialized, ~15-20 min):
    ```bash
-   tools/four_numbers.sh --arm <name>          # prose 9x median, pp 8k/32k,
-                                               # MemAvailable both nodes, L.A.I.L 3x
+   tools/four_numbers.sh --arm <name>          # prose 9x median, pp_warm/pp_novel 8k/32k,
+                                               # MemAvailable both nodes, L.A.I.L 3x,
+                                               # prose_long c=1/c=2, warm-prefix,
+                                               # env digest per rank, page cache
    ```
    Number 3 (MoE/attention ms/layer at shipped chunk) has no live probe —
    fallback is boot knobs `DSV41_STEP_CENSUS=1` / `DSV41_ENGRAM_CENSUS=1`
    (decode-side only; E0 prefill-flush caveat); real profiling is a
    separate gated step.
-6. **Promote rule**: 9-run prose median beats baseline (or 3-run min AND
-   max both beat it). No promote on a single lucky run.
+6. **Promote rule**. The old text here ("9-run prose median beats
+   baseline") was never what decided an arm. Rounds R16-R33 used +3% on
+   the pooled L.A.I.L t=0.2 median. That gate sits inside boot-to-boot
+   noise: the identical config measured 27.40/26.13/28.01
+   (`results/2026-09-21-cpuhash/VERDICT.md`), and lm_head went from REVERT
+   at +2.5% (R30) to KEEP at +5.9% (R33). An arm promotes only when all of
+   these hold:
+   - **ABAB boots**: baseline A and arm B each boot at least twice,
+     interleaved A, B, A, B, with `four_numbers.sh` on every boot. No
+     comparison against a baseline from another day or boot sequence.
+   - **Primary metric**: `prose_median_ms_per_step`, and
+     `median_ms_per_step` of the prose_long c=1 cell (ms per verify step,
+     ~64-68 ms today; lower is better). Use it only at matched acceptance: the A and B
+     per-boot `median_run_acceptance_len` must overlap. If they do not,
+     the arm changed drafting; gate on prose_long c=1 tok/s instead with
+     the same noise rule.
+   - **Noise-aware gate**: noise = the larger boot-to-boot spread (max-min
+     of per-boot medians) of A and of B. Promote when the B-vs-A median
+     improvement exceeds that noise AND every B boot beats the A median.
+     A fixed +3% is not a gate.
+   - **Non-inferiority**: prefill `pp_warm` and `pp_novel` 8k/32k,
+     prose_long c=2 aggregate, and warm-prefix `hit_fraction_of_expected`
+     not worse than A by more than their own boot-to-boot spread; boot
+     floors (step 4) hold; `benches/e2e.py` exits 0.
+   - **Honest cells**: prose_long `natural_finish_reason` is `length`
+     (post-EOS fraction 0) and `serve_env_ranks_match` is true.
 7. **Free the box between arms**: `./stop.sh`, confirm no GPU containers on
    either node, then boot the next arm. Never stack levers on a promoted
    arm's boot without re-running the full four numbers.
 8. **Verdicts**: append to `flags.md` (per-round note), `results/RESULTS.md`
-   (row with evidence path), and the `recipes` skill ledger. Reference band
-   for prose c=1: 31-34.3 tok/s; L.A.I.L prose: 25.2-26.3 tok/s.
+   (row with evidence path), and the `recipes` skill ledger. Record per-boot
+   medians, the spread and the ms/step deltas, not only the pooled number.
+   Reference cells at close (R33): frozen prose c=1 39.60 tok/s and
+   L.A.I.L prose 33.23 tok/s. Both force `ignore_eos`: the frozen prose
+   prompt stops at 78 of 200 tokens
+   (`results/2026-09-24-review/bench-honesty/smoke-prose.txt`), so most of
+   that cell is post-EOS text. They stay for continuity only. prose_long, pp_novel,
+   c=2 and warm-prefix have no baseline until the first ABAB boot records
+   one.
 
 ## Exact restore sequence
 
