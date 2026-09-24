@@ -154,6 +154,10 @@ def _rank() -> str:
         return "?"
 
 
+# Boot-log markers for tools/engagement_audit.py: an armed shape that did not engage.
+LOG_DISARMED = ("; b12x stays", "armed but got")
+
+
 def _log(msg: str) -> None:
     print(f"[dense-dg] rank{_rank()} {msg}", flush=True)
 
