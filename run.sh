@@ -57,6 +57,9 @@ VLLM_SPARSE_INDEXER_MAX_LOGITS_MB="${VLLM_SPARSE_INDEXER_MAX_LOGITS_MB:-256}"
 HF_HOME_IN_CONTAINER="/cache/huggingface"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PATCH_DIR="${DSV41_PATCH_DIR:-$SCRIPT_DIR/docker/patch}"
+RUN_STATE="$SCRIPT_DIR/.run-state"
+# Worker copy of PATCH_DIR, relative to the worker's $HOME: per-user, not a shared /tmp name.
+WORKER_PATCH_DIR=".cache/dsv41-patch"
 
 # Container env for BOTH ranks: `docker run -e` below and the worker ssh line.
 # NAME=default; an empty value is not passed (unset in the container). Names
@@ -249,16 +252,6 @@ hf_bin() {
   fi
 }
 
-token_env() {
-  if [[ -n "${HF_TOKEN:-}" ]]; then
-    printf '%s' "$HF_TOKEN"
-    return
-  fi
-  if [[ -f "$HOME/.cache/huggingface/token" ]]; then
-    tr -d '[:space:]' <"$HOME/.cache/huggingface/token"
-  fi
-}
-
 resolve_model() {
   printf '%s\n' "$SNAPSHOT_IN_CONTAINER"
 }
@@ -331,7 +324,7 @@ refuse_foreign_serve() {
 
 refuse_busy_port() {
   if (echo >/dev/tcp/127.0.0.1/"$PORT") >/dev/null 2>&1; then
-    echo "Port $PORT is already in use" >&2
+    echo "Port $PORT is already in use. If it is this recipe's serve, stop it first: ./stop.sh" >&2
     exit 1
   fi
 }
@@ -359,10 +352,11 @@ start_local() {
   local serve_model
   serve_model="$(resolve_model)"
 
-  local tok
-  tok="$(token_env || true)"
+  # The model is always a local snapshot path (resolve_model), so the
+  # container gets no Hub token and no Hub access.
   local env_args=(
     -e "HF_HOME=$HF_HOME_IN_CONTAINER"
+    -e "HF_HUB_OFFLINE=1"
     -e "TORCH_CUDA_ARCH_LIST=12.1a"
     -e "FLASHINFER_CUDA_ARCH_LIST=12.1a"
     -e "FLASHINFER_DISABLE_VERSION_CHECK=1"
@@ -392,9 +386,6 @@ start_local() {
     host_ip="${host_ip:-10.100.8.2}"
   fi
   env_args+=(-e "VLLM_HOST_IP=$host_ip")
-  if [[ -n "$tok" ]]; then
-    env_args+=(-e "HF_TOKEN=$tok" -e "HUGGING_FACE_HUB_TOKEN=$tok")
-  fi
 
   local rank_args=()
   if [[ "$rank" == "0" ]]; then
@@ -494,9 +485,75 @@ start_local() {
     "${extra_args[@]}"
 }
 
+# Worker helpers (head side). An ssh failure is "unknown", never "exited".
+WORKER_STARTED=0
+WORKER_LOG=""
+# vLLM serve.py logs this when the headless rank starts connecting to HEAD_IP:MASTER_PORT.
+WORKER_LAUNCH_MARK="headless multiproc executor"
+
+worker_ssh() { ssh -o BatchMode=yes -o ConnectTimeout=5 "$WORKER_HOST" "$@"; }
+
+# 0 = running, 1 = not running, 2 = unknown (ssh or docker failed).
+worker_state() {
+  local names
+  names="$(worker_ssh "docker ps --format '{{.Names}}'" 2>/dev/null)" || return 2
+  grep -qx -- "$CONTAINER_NAME" <<<"$names"
+}
+
+save_worker_logs() {
+  [[ -n "$WORKER_LOG" ]] && return 0
+  mkdir -p "$RUN_STATE"
+  WORKER_LOG="$RUN_STATE/worker-$(date +%Y%m%d-%H%M%S).log"
+  if worker_ssh "docker logs $(printf '%q' "$CONTAINER_NAME")" >"$WORKER_LOG" 2>&1; then
+    echo "Worker logs saved to $WORKER_LOG" >&2
+  else
+    echo "Could not read worker logs from $WORKER_HOST (partial output in $WORKER_LOG)" >&2
+  fi
+}
+
+fail_worker_exited() {
+  echo "Worker $CONTAINER_NAME on $WORKER_HOST is not running. Last worker logs:" >&2
+  save_worker_logs
+  tail -n 120 "$WORKER_LOG" >&2
+  exit 1
+}
+
+# EXIT trap while the head is starting: keep the worker's logs, then remove it
+# so a failed head does not leave a ~75 GiB rank loaded on the worker.
+cleanup_worker_on_failure() {
+  local rc=$?
+  trap - EXIT
+  if [[ "$rc" != 0 && "$WORKER_STARTED" == 1 ]]; then
+    echo "Head start failed (exit $rc). Removing $CONTAINER_NAME on $WORKER_HOST." >&2
+    save_worker_logs
+    worker_ssh "docker rm -f $(printf '%q' "$CONTAINER_NAME")" >/dev/null 2>&1 \
+      || echo "Could not remove $CONTAINER_NAME on $WORKER_HOST. Run ./stop.sh." >&2
+  fi
+  exit "$rc"
+}
+
+# Start the head once the worker reached its rendezvous (replaces a fixed 25 s sleep).
+wait_worker_launch() {
+  local i st logs
+  for i in $(seq 1 60); do
+    st=0
+    worker_state || st=$?
+    if [[ "$st" == 1 ]]; then
+      fail_worker_exited
+    fi
+    logs="$(worker_ssh "docker logs $(printf '%q' "$CONTAINER_NAME") 2>&1" 2>/dev/null || true)"
+    if grep -qF -- "$WORKER_LAUNCH_MARK" <<<"$logs"; then
+      log "Worker is connecting to $HEAD_IP:$MASTER_PORT. Starting head."
+      return 0
+    fi
+    sleep 2
+  done
+  log "No '$WORKER_LAUNCH_MARK' in the worker log after 120s. Starting head anyway."
+}
+
 wait_ready() {
   log "Waiting for http://127.0.0.1:${PORT}/health and /v1/models"
-  local i body
+  local i body st
   for i in $(seq 1 720); do
     if curl -sf "http://127.0.0.1:${PORT}/health" >/dev/null 2>&1; then
       body="$(curl -sf "http://127.0.0.1:${PORT}/v1/models" || true)"
@@ -512,6 +569,13 @@ wait_ready() {
       docker logs "$CONTAINER_NAME" 2>&1 | tail -120 >&2
       exit 1
     fi
+    if [[ "$WORKER_STARTED" == 1 ]] && (( i % 12 == 0 )); then
+      st=0
+      worker_state || st=$?
+      if [[ "$st" == 1 ]]; then
+        fail_worker_exited
+      fi
+    fi
     sleep 5
     if (( i % 12 == 0 )); then
       log "still loading… (${i}×5s) — docker logs -f $CONTAINER_NAME"
@@ -521,6 +585,12 @@ wait_ready() {
   docker logs "$CONTAINER_NAME" 2>&1 | tail -120 >&2
   exit 1
 }
+
+if [[ "${PREFLIGHT_ONLY:-0}" == "1" ]]; then
+  ensure_image
+  ensure_weights
+  exit 0
+fi
 
 ROLE="$(detect_role)"
 log "role=$ROLE host=$(host_short)"
@@ -533,12 +603,6 @@ if [[ "$ORCHESTRATE" == "auto" && "$ROLE" == "head" ]]; then
       echo "Cannot SSH to $WORKER_HOST. Refusing to start a TP=$TP head rank alone (NNODES=$NNODES)." >&2
       exit 1
     fi
-    log "Starting worker on $WORKER_HOST first"
-    mkdir -p "${PWD}/.run-state"
-    printf '%s\n' "$WORKER_HOST" >"${PWD}/.run-state/worker_host"
-    scp -q "$0" "${WORKER_HOST}:/tmp/dsv41-exl3-run.sh"
-    ssh "$WORKER_HOST" "rm -rf /tmp/dsv41-patch"
-    scp -q -r "$PATCH_DIR" "${WORKER_HOST}:/tmp/dsv41-patch"
     # run.sh knobs the worker needs, plus FORWARD_ENVS. %q keeps quotes and JSON intact.
     worker_config=(
       IMAGE CONTAINER_NAME PORT MASTER_PORT HEAD_IP IFACE HCA
@@ -547,16 +611,34 @@ if [[ "$ORCHESTRATE" == "auto" && "$ROLE" == "head" ]]; then
       COMPILATION_CONFIG MAX_NUM_BATCHED_TOKENS FORCE_UNSAFE_CTX FORCE_UNSAFE_ENGRAM
       FORCE_UNSAFE_QUANT LOAD_FORMAT QUANTIZATION SNAPSHOT_SHA HF_CACHE MODEL EXTRA_ARGS
     )
-    worker_env="ROLE=worker ORCHESTRATE=0 DSV41_PATCH_DIR=/tmp/dsv41-patch"
+    worker_env="ROLE=worker ORCHESTRATE=0 DSV41_PATCH_DIR=\$HOME/$WORKER_PATCH_DIR"
     for name in "${worker_config[@]}" "${FORWARD_ENVS[@]%%=*}"; do
       worker_env+=" $name=$(printf '%q' "${!name:-}")"
     done
+    # Preflight both nodes (image, weights, EXL3 config) before any container starts.
+    log "Preflight $(host_short)"
+    ensure_image
+    ensure_weights
+    scp -q "$0" "${WORKER_HOST}:/tmp/dsv41-exl3-run.sh"
+    log "Preflight $WORKER_HOST"
+    if ! ssh "$WORKER_HOST" "$worker_env PREFLIGHT_ONLY=1 bash /tmp/dsv41-exl3-run.sh"; then
+      echo "Preflight failed on $WORKER_HOST. No container was started." >&2
+      exit 1
+    fi
+    mkdir -p "$RUN_STATE"
+    printf '%s\n' "$WORKER_HOST" >"$RUN_STATE/worker_host"
+    ssh "$WORKER_HOST" "rm -rf ~/$WORKER_PATCH_DIR && mkdir -p ~/.cache"
+    scp -q -r "$PATCH_DIR" "${WORKER_HOST}:$WORKER_PATCH_DIR"
+    trap cleanup_worker_on_failure EXIT
+    trap 'trap - EXIT; echo "Interrupted. Containers keep loading; ./stop.sh stops both ranks." >&2; exit 130' INT
+    WORKER_STARTED=1
+    log "Starting worker on $WORKER_HOST first"
     ssh "$WORKER_HOST" "$worker_env bash /tmp/dsv41-exl3-run.sh"
-    log "Worker container started. Waiting 25s for NCCL listen, then starting head"
-    sleep 25
+    wait_worker_launch
   fi
   start_local 0
   wait_ready
+  trap - EXIT INT
   log "Stop with: ./stop.sh"
 elif [[ "$ROLE" == "worker" ]]; then
   start_local 1

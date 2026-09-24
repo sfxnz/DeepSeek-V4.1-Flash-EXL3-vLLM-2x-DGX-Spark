@@ -248,7 +248,7 @@ class EnvForwardingTests(unittest.TestCase):
                 EXTRA_ARGS=extra,
             )
         self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
-        self.assertIn(["-q", "-r", patch_dir, "dryrun-no-such-host:/tmp/dsv41-patch"], res["scp"])
+        self.assertIn(["-q", "-r", patch_dir, "dryrun-no-such-host:.cache/dsv41-patch"], res["scp"])
         for role in ("head", "worker"):
             env = container_env(res[role])
             self.assertEqual(env["DSV41_ENGRAM_FADVISE_CAP"], "24", role)
@@ -259,6 +259,142 @@ class EnvForwardingTests(unittest.TestCase):
                 ["--override-generation-config", '{"note":"it\'s"}', "--enable-prompt-tokens-details"],
                 role,
             )
+
+
+def _docker(res: dict, role: str, verb: str) -> list[list[str]]:
+    return [c["argv"] for c in res["calls"] if c["tool"] == "docker" and c["role"] == role and c["argv"][:1] == [verb]]
+
+
+def _call_index(res: dict, pred) -> int:
+    for i, c in enumerate(res["calls"]):
+        if pred(c):
+            return i
+    return -1
+
+
+def _is_run(role: str):
+    return lambda c: c["tool"] == "docker" and c["role"] == role and c["argv"][:1] == ["run"]
+
+
+def _worker_log(res: dict) -> str:
+    logs = [text for name, text in res["run_state"].items() if name.startswith("worker-")]
+    return logs[0] if len(logs) == 1 else f"expected one worker-*.log, got {sorted(res['run_state'])}"
+
+
+class OrchestrationTests(unittest.TestCase):
+    """run.sh two-node flow with docker/ssh stubbed (tests/run_sh_harness.py)."""
+
+    def test_preflight_both_nodes_before_any_container(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run()
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        preflight = _call_index(res, lambda c: c["tool"] == "ssh" and "PREFLIGHT_ONLY=1" in " ".join(c["argv"]))
+        head_image = _call_index(res, lambda c: c["tool"] == "docker" and c["role"] == "head" and c["argv"][:2] == ["image", "inspect"])
+        worker_run, head_run = _call_index(res, _is_run("worker")), _call_index(res, _is_run("head"))
+        self.assertTrue(0 <= head_image < preflight < worker_run < head_run, (head_image, preflight, worker_run, head_run))
+        self.assertEqual(_docker(res, "worker", "rm"), [], "a good boot must not remove the worker")
+        self.assertEqual(res["run_state"].get("worker_host", "").strip(), "dryrun-no-such-host")
+        self.assertNotIn("sleep 25", _read("run.sh"))
+        self.assertIn("connecting to", res["stdout"])
+
+    def test_worker_preflight_failure_starts_nothing(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(STUB_WORKER_NO_IMAGE="1")
+        self.assertEqual(res["returncode"], 1, res["stdout"] + res["stderr"])
+        self.assertIn("Preflight failed on dryrun-no-such-host", res["stderr"])
+        self.assertIsNone(res["head"])
+        self.assertIsNone(res["worker"])
+
+    def test_head_preflight_failure_starts_nothing(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(make_snapshot=False, SKIP_DOWNLOAD="1")
+        self.assertEqual(res["returncode"], 1, res["stdout"] + res["stderr"])
+        self.assertIn("Pinned snapshot missing", res["stderr"])
+        self.assertIsNone(res["head"])
+        self.assertIsNone(res["worker"])
+        self.assertEqual(res["scp"], [])
+
+    def test_worker_exit_before_launch_saves_logs_and_removes_it(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(STUB_WORKER_PS_OK="0", STUB_LOGS_WORKER="CUDA out of memory on rank 1")
+        self.assertEqual(res["returncode"], 1, res["stdout"] + res["stderr"])
+        self.assertIsNotNone(res["worker"])
+        self.assertIsNone(res["head"], "head must not start after the worker died")
+        self.assertIn("CUDA out of memory on rank 1", _worker_log(res))
+        self.assertIn("CUDA out of memory on rank 1", res["stderr"])
+        self.assertTrue(any("rm" == a[0] and "-f" in a for a in _docker(res, "worker", "rm")))
+
+    def test_worker_death_during_wait_ready_fails_fast(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(
+            STUB_WORKER_PS_OK="1",
+            STUB_CURL_FAIL="1",
+            STUB_LOGS_WORKER="Launching vLLM headless multiproc executor\nworker died: NCCL error",
+        )
+        self.assertEqual(res["returncode"], 1, res["stdout"] + res["stderr"])
+        self.assertIsNotNone(res["head"])
+        self.assertIn("is not running", res["stderr"])
+        self.assertIn("NCCL error", _worker_log(res))
+        self.assertNotIn("Timed out", res["stderr"], "worker death must not wait out the 1 h ready loop")
+
+    def test_head_failure_trap_saves_worker_logs_then_removes_worker(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(
+            STUB_CURL_FAIL="1",
+            STUB_HEAD_EXITS="1",
+            STUB_LOGS_WORKER="Launching vLLM headless multiproc executor\nworker stack trace",
+        )
+        self.assertEqual(res["returncode"], 1, res["stdout"] + res["stderr"])
+        self.assertIn("Container exited early", res["stderr"])
+        self.assertIn("worker stack trace", _worker_log(res))
+        logs = _call_index(res, lambda c: c["tool"] == "docker" and c["role"] == "worker" and c["argv"][:1] == ["logs"] and len(c["argv"]) == 2)
+        rm = _call_index(res, lambda c: c["tool"] == "docker" and c["role"] == "worker" and c["argv"][:1] == ["rm"])
+        self.assertTrue(0 <= logs < rm, (logs, rm))
+
+    def test_container_gets_no_hub_token_and_runs_offline(self) -> None:
+        container_env, dry_run, _ = _harness()
+        res = dry_run(HF_TOKEN="hf_dummy_not_a_token")
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        for role in ("head", "worker"):
+            env = container_env(res[role])
+            self.assertNotIn("HF_TOKEN", env, role)
+            self.assertNotIn("HUGGING_FACE_HUB_TOKEN", env, role)
+            self.assertEqual(env["HF_HUB_OFFLINE"], "1", role)
+            self.assertNotIn("hf_dummy_not_a_token", " ".join(res[role]), role)
+        self.assertNotIn("token_env", _read("run.sh"))
+
+    def test_worker_patch_dir_is_per_user(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run()
+        self.assertTrue(any(a[-1] == "dryrun-no-such-host:.cache/dsv41-patch" for a in res["scp"]), res["scp"])
+        ssh_cmds = [c["argv"][-1] for c in res["calls"] if c["tool"] == "ssh"]
+        start = [c for c in ssh_cmds if c.endswith("bash /tmp/dsv41-exl3-run.sh") and "PREFLIGHT_ONLY" not in c]
+        self.assertEqual(len(start), 1)
+        self.assertIn("DSV41_PATCH_DIR=$HOME/.cache/dsv41-patch ", start[0])
+
+    def test_refuse_busy_port_points_at_stop_sh(self) -> None:
+        self.assertIn("./stop.sh", _func_body(_read("run.sh"), "refuse_busy_port"))
+
+    def test_run_state_follows_the_script_not_cwd(self) -> None:
+        self.assertIn('RUN_STATE="$SCRIPT_DIR/.run-state"', _read("run.sh"))
+        self.assertNotIn("${PWD}", _read("run.sh"))
+        with tempfile.TemporaryDirectory() as d:
+            tmp = Path(d)
+            (tmp / "repo" / ".run-state").mkdir(parents=True)
+            (tmp / "repo" / ".run-state" / "worker_host").write_text("state-host-xyz\n")
+            stop = tmp / "repo" / "stop.sh"
+            stop.write_text(_read("stop.sh"))
+            stop.chmod(0o755)
+            bindir = tmp / "bin"
+            bindir.mkdir()
+            for name, body in {"docker": "#!/bin/sh\nexit 0\n", "ssh": "#!/bin/sh\nexit 255\n", "hostname": "#!/bin/sh\necho spark1\n"}.items():
+                (bindir / name).write_text(body)
+                (bindir / name).chmod(0o755)
+            env = _env(PATH=f"{bindir}{os.pathsep}{os.environ['PATH']}", ORCHESTRATE="auto", CONTAINER_NAME="dsv41-ops-test-none")
+            env.pop("WORKER_HOST", None)
+            proc = subprocess.run([str(stop)], cwd=str(tmp), env=env, capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("state-host-xyz", proc.stderr)
 
 
 class RecipeOpsTests(unittest.TestCase):
@@ -272,8 +408,10 @@ class RecipeOpsTests(unittest.TestCase):
 
     def test_stop_sh_reads_worker_host_state_then_default(self) -> None:
         stop = _read("stop.sh")
-        self.assertIn(".run-state/worker_host", stop)
-        self.assertLess(stop.find(".run-state/worker_host"), stop.find('WORKER_HOST:-spark2'))
+        self.assertIn('RUN_STATE="$(cd "$(dirname "$0")" && pwd)/.run-state"', stop)
+        self.assertIn('"$RUN_STATE/worker_host"', stop)
+        self.assertNotIn("${PWD}", stop)
+        self.assertLess(stop.find("$RUN_STATE/worker_host"), stop.find('WORKER_HOST:-spark2'))
 
     def test_stop_sh_orchestrate_zero_is_local_only(self) -> None:
         stop = _read("stop.sh")
@@ -315,14 +453,15 @@ class RecipeOpsTests(unittest.TestCase):
         config = _worker_config()
         for name in ("SNAPSHOT_SHA", "HF_CACHE", "MODEL", "QUANTIZATION", "EXTRA_ARGS", "COMPILATION_CONFIG"):
             self.assertIn(name, config)
-        self.assertIn('worker_env="ROLE=worker ORCHESTRATE=0 DSV41_PATCH_DIR=/tmp/dsv41-patch"', run)
+        self.assertIn('worker_env="ROLE=worker ORCHESTRATE=0 DSV41_PATCH_DIR=\\$HOME/$WORKER_PATCH_DIR"', run)
         self.assertIn('ssh "$WORKER_HOST" "$worker_env bash /tmp/dsv41-exl3-run.sh"', run)
-        self.assertIn('scp -q -r "$PATCH_DIR" "${WORKER_HOST}:/tmp/dsv41-patch"', run)
+        self.assertIn('scp -q -r "$PATCH_DIR" "${WORKER_HOST}:$WORKER_PATCH_DIR"', run)
+        self.assertNotIn("/tmp/dsv41-patch", run)
         self.assertNotIn('scp -q -r "$SCRIPT_DIR/docker/patch"', run)
         self.assertIn("/opt/dsv41-patch:ro", run)
         self.assertIn("/usr/lib/python3.12/sitecustomize.py:ro", run)
         self.assertIn('--revision "$SNAPSHOT_SHA"', run)
-        self.assertIn(".run-state/worker_host", run)
+        self.assertIn('"$RUN_STATE/worker_host"', run)
         self.assertNotIn("starting local rank only", run)
 
     def test_run_sh_does_not_default_disable_xet(self) -> None:
