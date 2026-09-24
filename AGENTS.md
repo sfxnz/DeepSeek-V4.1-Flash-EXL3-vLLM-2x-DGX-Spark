@@ -50,7 +50,7 @@ python3 smoke_chat.py
 python3 smoke_vision.py
 ```
 
-`smoke_chat.py` fails unless `choices[0].message.content` matches `323` for `17*19` (`--expect ''` accepts any non-empty content). `smoke_vision.py` must not return HTTP 400 `is not a multimodal model`.
+`smoke_chat.py` fails unless `choices[0].message.content` matches `323` for `17*19` (`--expect ''` accepts any non-empty content). `smoke_vision.py` must not return HTTP 400 `is not a multimodal model`, and its answer for the solid-red PNG must contain `red`.
 
 ## Never touch
 

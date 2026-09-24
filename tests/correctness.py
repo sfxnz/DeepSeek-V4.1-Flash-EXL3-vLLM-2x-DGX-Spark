@@ -25,6 +25,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
 from corpus import make_tokenizer, needle_prompt  # noqa: E402
+from smoke_vision import RED_PNG_B64  # noqa: E402
 
 CHAT_KWARGS = {"thinking": False, "reasoning_effort": "low"}
 SEED = 20260918
@@ -200,6 +201,16 @@ def run_suite(url: str, model: str, full: bool) -> tuple[list[dict], bool]:
         assert div >= 0.80, f"8-gram diversity {div:.2f} — repetitive collapse"
         return f"ttr={ttr:.2f} div={div:.2f} words={len(text.split())}"
 
+    def vision() -> str:
+        text, _ = chat(url, model, [{"role": "user", "content": [
+            {"type": "text",
+             "text": "What color is this image? Reply with one word only."},
+            {"type": "image_url",
+             "image_url": {"url": f"data:image/png;base64,{RED_PNG_B64}"}},
+        ]}], max_tokens=16)
+        assert "red" in text.lower(), f"want red in {text!r}"
+        return text.strip()[:40]
+
     check("math_small", math_small)
     check("math_mid", math_mid)
     check("json_strict", json_strict)
@@ -207,6 +218,7 @@ def run_suite(url: str, model: str, full: bool) -> tuple[list[dict], bool]:
     check("code_trace", code_trace)
     check("recall_8k", recall_8k)
     check("prose_sanity", prose_sanity)
+    check("vision", vision)
     if full:
         check("recall_64k", recall_64k)
     return results, ok
