@@ -37,8 +37,8 @@ One boot = one lever. Every arm produces the four numbers via
    `benches/e2e.py` separately on the same boot (step 6 requires exit 0).
 6. **Promote rule**. The old text here ("9-run prose median beats
    baseline") was never what decided an arm. Rounds R16-R33 used +3% on
-   the pooled L.A.I.L t=0.2 median (flags.md:308 R16, :432, :488, :672
-   R30, :715, :725 R33). That gate sits inside boot-to-boot
+   the pooled L.A.I.L t=0.2 median (flags.md sections Round 16, Round 21,
+   Round 23, Round 30, Round 32 and Round 33). That gate sits inside boot-to-boot
    noise: the identical config measured 27.40/26.13/28.01
    (`results/2026-09-21-cpuhash/VERDICT.md`), and lm_head went from REVERT
    at +2.5% (R30) to KEEP at +5.9% (R33). An arm promotes only when all of
@@ -47,8 +47,9 @@ One boot = one lever. Every arm produces the four numbers via
      interleaved A, B, A, B, with `four_numbers.sh` on every boot. No
      comparison against a baseline from another day or boot sequence.
    - **Primary metric**: `prose_median_ms_per_step`, and
-     `median_ms_per_step` of the prose_long c=1 cell (ms per verify step,
-     ~64-68 ms today; lower is better). Use it only at matched acceptance: the A and B
+     `median_ms_per_step` of the prose_long c=1 cell (ms per verify step;
+     lower is better; the reference is the A boots of the same ABAB
+     sequence, not a number from another day). Use it only at matched acceptance: the A and B
      per-boot `median_run_acceptance_len` must overlap. If they do not,
      the arm changed drafting; gate on prose_long c=1 tok/s instead with
      the same noise rule.
