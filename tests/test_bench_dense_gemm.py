@@ -28,8 +28,17 @@ def _row(shape, backend, us, rel=0.02, M=None):
 
 class BenchTests(unittest.TestCase):
     def test_bench_shapes_match_patch_defaults(self) -> None:
-        bench = {(k, n) for _, k, n, _ in BENCH.SHAPES}
+        bench = {(k, n) for name, k, n, _ in BENCH.SHAPES if name not in BENCH.NOT_WIREABLE}
         self.assertEqual(bench, set(PATCH.shapes_from_env({})))
+
+    def test_wq_b_benched_but_never_promoted(self) -> None:
+        # Fused q/kv RMSNorm+quant feeds wq_b a QuantizedActivation in the serve.
+        self.assertEqual(set(BENCH.NOT_WIREABLE), {"wq_b"})
+        s = BENCH.summarize([_row("wq_b", "b12x", 112.1), _row("wq_b", "dg", 60.0)])
+        self.assertEqual(s["DSV41_DENSE_DG_SHAPES"], "")
+        self.assertEqual(s["est_ms_per_step_serial"], 0.0)
+        self.assertIn("dg", s["per_shape"]["wq_b"])
+        self.assertIn("not_wireable", s["per_shape"]["wq_b"])
 
     def test_target_m(self) -> None:
         ms = {name: m for name, _, _, m in BENCH.SHAPES}
@@ -45,7 +54,7 @@ class BenchTests(unittest.TestCase):
             _row("qkv_a", "b12x", 46.5),
             _row("qkv_a", "dg", 40.0),  # +16% -> promote
             _row("wq_b", "b12x", 112.1),
-            _row("wq_b", "dg", 105.0),  # +6.8% -> no
+            _row("wq_b", "dg", 80.0),  # +40% but not wireable -> no
             _row("wo_b", "b12x", 105.2),
             _row("wo_b", "dg", 90.0, rel=0.2),  # fast but error 10x -> no
             _row("shared_gate_up", "b12x", 57.9),

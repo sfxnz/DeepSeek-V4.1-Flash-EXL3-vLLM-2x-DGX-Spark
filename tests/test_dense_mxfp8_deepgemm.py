@@ -34,12 +34,12 @@ class EnvTests(unittest.TestCase):
         self.assertFalse(self.mod.enabled_from_env({"DSV41_DENSE_DG_SMALLM": "0"}))
         self.assertTrue(self.mod.enabled_from_env({"DSV41_DENSE_DG_SMALLM": "1"}))
 
-    def test_default_shapes_are_the_six_decode_shapes(self) -> None:
+    def test_default_shapes_are_the_five_wireable_decode_shapes(self) -> None:
+        # wq_b (1280x16384) is out: its input is a fused-quant QuantizedActivation.
         self.assertEqual(
             self.mod.shapes_from_env({}),
             {
                 (5120, 1792),  # qkv_a
-                (1280, 16384),  # wq_b
                 (4096, 5120),  # wo_b
                 (5120, 2304),  # shared gate_up
                 (1152, 5120),  # shared down
@@ -79,6 +79,32 @@ class EnvTests(unittest.TestCase):
             if old is not None:
                 os.environ["DSV41_DENSE_DG_SMALLM"] = old
         self.assertIsNone(layer._dsv41_dg_sf)
+
+    def test_prepare_bad_shape_list_keeps_b12x(self) -> None:
+        import os
+
+        class Layer:
+            pass
+
+        class W:
+            shape = (1792, 5120)
+
+        layer = Layer()
+        layer.weight = W()
+        saved = {k: os.environ.get(k) for k in ("DSV41_DENSE_DG_SMALLM", "DSV41_DENSE_DG_SHAPES")}
+        os.environ.update(DSV41_DENSE_DG_SMALLM="1", DSV41_DENSE_DG_SHAPES="5120*1792")
+        self.mod._shape_state.clear()
+        try:
+            self.mod.prepare(None, layer, None)  # must not raise
+        finally:
+            for k, v in saved.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+        self.assertIsNone(layer._dsv41_dg_sf)
+        self.assertIn("ValueError", self.mod._shape_state[(5120, 1792)])
+        self.mod._shape_state.clear()
 
 
 class PatchTests(unittest.TestCase):
@@ -174,14 +200,16 @@ class TorchRuntimeTests(unittest.TestCase):
 
         layer = Layer()
         layer._dsv41_dg_sf = torch.zeros(1)
+        layer.weight = torch.zeros(16, 128)
         # more than 8 rows -> stock path (prefill)
         self.assertIsNone(self.mod.maybe_apply(layer, torch.zeros(9, 128, dtype=torch.bfloat16), None))
         # 0 rows -> stock path
         self.assertIsNone(self.mod.maybe_apply(layer, torch.zeros(0, 128, dtype=torch.bfloat16), None))
         # non-bf16 -> stock path
         self.assertIsNone(self.mod.maybe_apply(layer, torch.zeros(4, 128), None))
-        # pre-quantized activation (not a tensor) -> stock path
+        # pre-quantized activation (not a tensor) -> stock path, warned once
         self.assertIsNone(self.mod.maybe_apply(layer, object(), None))
+        self.assertTrue(layer._dsv41_dg_warned)
 
 
 if __name__ == "__main__":

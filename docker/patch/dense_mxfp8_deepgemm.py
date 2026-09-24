@@ -5,8 +5,9 @@ Decode runs the dense MXFP8 projections at M = 1..8 rows through FlashInfer
 b12x (`mm_mxfp8` backend=auto), at 193-210 GB/s (trace3). The deep_gemm
 sm120 1d1d kernel family (the one the wo_a fp8 einsum uses with recipe
 (1,1,32)) reads the same e4m3 + per-32 ue8m0 format. It has an in-kernel
-split-K (kSplitKFactor + sm120_split_k_reduce) that its host heuristic picks
-for under-filled grids such as qkv_a N=1792 and shared gate_up N=2304.
+split-K (kSplitKFactor + sm120_split_k_reduce); whether its host heuristic
+picks it for under-filled grids (qkv_a N=1792, shared gate_up N=2304) is
+unconfirmed until the bench runs with DG_PRINT_CONFIGS=1.
 
 DSV41_DENSE_DG_SMALLM=1 routes the selected (K, N) shapes to
 `fp8_gemm_nt` when the input has <= 8 rows. Larger M (prefill) and
@@ -23,9 +24,14 @@ pre-quantized activations keep the stock b12x path.
   bit-for-bit. Any failure leaves that layer on b12x and logs one line.
 
 DSV41_DENSE_DG_SHAPES: comma list of KxN (per-rank in_features x
-out_features). Default: the six decode shapes (qkv_a, wq_b, wo_b, shared
+out_features). Default: the five wireable decode shapes (qkv_a, wo_b, shared
 gate_up, shared down, draft main_proj). Not bit-exact vs b12x (activation
 scale rule and accumulation order differ).
+
+wq_b (1280x16384) is not wireable here: DeepseekV4 attention fuses its
+activation quant into the q/kv RMSNorm (fused_q_kv_rmsnorm_quant) and hands
+wq_b and indexer.wq_b one shared QuantizedActivation, so maybe_apply never
+sees a bf16 input for it.
 
 Source rewrite of model_executor/kernels/linear/mxfp8/flashinfer.py in the
 prefer_b12x_mxfp8 style, applied from sitecustomize only when the flag is 1.
@@ -41,7 +47,7 @@ from pathlib import Path
 
 ENV_FLAG = "DSV41_DENSE_DG_SMALLM"
 ENV_SHAPES = "DSV41_DENSE_DG_SHAPES"
-DEFAULT_SHAPES = "5120x1792,1280x16384,4096x5120,5120x2304,1152x5120,15360x5120"
+DEFAULT_SHAPES = "5120x1792,4096x5120,5120x2304,1152x5120,15360x5120"
 MAX_M = 8
 SELFTEST_TOL = 0.1  # normwise rel diff vs b12x; a layout bug gives ~1.0+
 MARK = "_dsv41_dg_"
@@ -139,8 +145,17 @@ def apply(tree: Path) -> bool:
 _shape_state: dict[tuple[int, int], str] = {}  # (K, N) -> "ok" | reason
 
 
+def _rank() -> str:
+    try:
+        import torch.distributed as dist
+
+        return str(dist.get_rank()) if dist.is_initialized() else "?"
+    except Exception:  # noqa: BLE001 - logging only
+        return "?"
+
+
 def _log(msg: str) -> None:
-    print(f"[dense-dg] {msg}", flush=True)
+    print(f"[dense-dg] rank{_rank()} {msg}", flush=True)
 
 
 def dg_mm(x2d, weight, sf):
@@ -197,7 +212,7 @@ def _selftest(kernel, layer, sf, key) -> None:
     if not torch.equal(captured, eager):
         raise RuntimeError("cuda-graph replay != eager")
     del graph
-    _log(f"K{k}xN{n} armed (M<=8 via deep_gemm fp8_gemm_nt; graph capture ok; last rel {rel:.3g})")
+    _log(f"K{k}xN{n} armed (M<=8 via deep_gemm fp8_gemm_nt; graph capture ok at M=4; last rel {rel:.3g})")
 
 
 def prepare(kernel, layer, scale_2d) -> None:
@@ -207,9 +222,11 @@ def prepare(kernel, layer, scale_2d) -> None:
         return
     n, k = (int(d) for d in layer.weight.shape)
     key = (k, n)
-    if key not in shapes_from_env() or _shape_state.get(key, "ok") != "ok":
-        return  # not selected, or this shape already failed on an earlier layer
+    if _shape_state.get(key, "ok") != "ok":
+        return  # this shape already failed on an earlier layer
     try:
+        if key not in shapes_from_env():  # bad list -> except: b12x stays
+            return
         from vllm.utils.deep_gemm import is_deep_gemm_e8m0_used
 
         if not is_deep_gemm_e8m0_used():
@@ -234,7 +251,14 @@ def maybe_apply(layer, x, bias):
     import torch
 
     if not isinstance(x, torch.Tensor) or x.dtype != torch.bfloat16:
-        return None  # QuantizedActivation (fused producer) or other dtype
+        # QuantizedActivation (fused producer) or other dtype: an armed layer
+        # that never engages. Say so once instead of staying silent.
+        if not getattr(layer, "_dsv41_dg_warned", False):
+            layer._dsv41_dg_warned = True
+            n, k = (int(d) for d in layer.weight.shape)
+            what = x.dtype if isinstance(x, torch.Tensor) else type(x).__name__
+            _log(f"K{k}xN{n} armed but got {what} input; b12x runs")
+        return None
     x2d = x.reshape(-1, x.shape[-1])
     if not 0 < x2d.shape[0] <= MAX_M:
         return None

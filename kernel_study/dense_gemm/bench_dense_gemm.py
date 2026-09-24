@@ -6,6 +6,12 @@ qkv_a 5120x1792, wq_b 1280x16384, wo_b 4096x5120, shared gate_up 5120x2304,
 shared down 1152x5120 at M=4 (DSpark k=3 verify), and draft main_proj
 15360x5120 at M=3.
 
+wq_b is benched as a diagnostic only and never promoted or counted in the
+ms/step estimate: in the serve its activation quant is fused into the q/kv
+RMSNorm (fused_q_kv_rmsnorm_quant), so it receives a QuantizedActivation and
+the dense deep_gemm hook falls through to b12x. Its e2e rows are not like for
+like with the serve either (the serve pays no separate b12x quant for it).
+
 Backends:
   b12x  live path: mxfp8_e4m3_quantize (swizzled) + vllm mm_mxfp8 backend=auto
   dg    deep_gemm fp8_gemm_nt, recipe (1,1,32), weight scales packed once
@@ -62,6 +68,8 @@ CALLS_PER_STEP = {
     "main_proj": 1.0,
 }
 SHARED = {"shared_gate_up", "shared_down"}
+# Shapes the serve hook cannot reach (see module docstring).
+NOT_WIREABLE = {"wq_b": "fused_q_kv_rmsnorm_quant feeds a QuantizedActivation"}
 WIN_GATE = 0.10  # promote a shape to the serve arm only at >= 10% e2e
 
 
@@ -241,7 +249,9 @@ def summarize(rows: list[dict]) -> dict:
             err_ok = r["rel_fro"] <= 1.5 * base["rel_fro"] + 1e-3
             entry[be] = {"us": r["us_e2e"], "gain": gain, "err_ok": err_ok}
         dg = entry.get("dg")
-        if dg and dg["gain"] >= WIN_GATE and dg["err_ok"]:
+        if name in NOT_WIREABLE:
+            entry["not_wireable"] = NOT_WIREABLE[name]
+        elif dg and dg["gain"] >= WIN_GATE and dg["err_ok"]:
             shapes_ok.append(f"{K}x{N}")
             dms = (entry["b12x_us"] - dg["us"]) * CALLS_PER_STEP[name] / 1000.0
             if name in SHARED:
