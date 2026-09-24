@@ -99,10 +99,13 @@ class FourNumbersParseTests(unittest.TestCase):
 
     def test_filter_env_keeps_levers_and_drops_secrets(self) -> None:
         env = ["HF_TOKEN=hf_x", "PATH=/bin", "VLLM_API_KEY=s", "NCCL_IB_HCA=rocep1s0f1",
-               "DSV41_LMHEAD_MXFP8=1", "VLLM_HOST_IP=10.0.0.1", "HUGGING_FACE_HUB_TOKEN=y"]
+               "DSV41_LMHEAD_MXFP8=1", "VLLM_HOST_IP=10.0.0.1", "HUGGING_FACE_HUB_TOKEN=y",
+               "DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192", "DSV41_DSPARK_REFINE_PASS=0",
+               "VLLM_X_SECRET=s", "NCCL_X_PASSWORD=s"]
         got = self.fn.filter_env(env)
-        self.assertEqual(got, ["DSV41_LMHEAD_MXFP8=1", "NCCL_IB_HCA=rocep1s0f1",
-                               "VLLM_HOST_IP=10.0.0.1"])
+        self.assertEqual(got, ["DSV41_DSPARK_REFINE_PASS=0", "DSV41_LMHEAD_MXFP8=1",
+                               "DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192",
+                               "NCCL_IB_HCA=rocep1s0f1", "VLLM_HOST_IP=10.0.0.1"])
         self.assertEqual(self.fn.env_digest(got), self.fn.env_digest(list(reversed(got))))
 
     def test_filter_env_cli(self) -> None:

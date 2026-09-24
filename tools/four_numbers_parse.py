@@ -17,7 +17,9 @@ from datetime import datetime
 from pathlib import Path
 
 ENV_KEEP = re.compile(r"^(NCCL|DSV41|VLLM)_")
-ENV_SECRET = re.compile(r"TOKEN|KEY|SECRET|PASS")
+# Anchored at the end: "PASS" / "TOKEN" mid-name are real levers
+# (DSV41_DSPARK_REFINE_PASS, DSV41_PREFILL_EMPTY_CACHE_TOKENS).
+ENV_SECRET = re.compile(r"(TOKEN|KEY|SECRET|PASSWORD|PASSWD)$")
 
 
 def filter_env(env: list[str]) -> list[str]:
