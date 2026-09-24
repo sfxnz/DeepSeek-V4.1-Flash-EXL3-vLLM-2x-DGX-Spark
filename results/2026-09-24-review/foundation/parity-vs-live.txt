@@ -11,3 +11,14 @@ vllm argv diff (live -> dry):
   @@ -18 +18 @@
   -8000
   +40939
+
+# Branch HEAD after the review fixes (tests/run_sh_harness.py dry run) vs the foundation dry run above:
+vllm argv: identical except the test port.
+container env adds (none turns on a lever the live serve lacks):
+  DSV41_PATCH_STRICT=1                  a required patch that FAILs exits the boot; no effect on a clean boot
+  HF_HUB_OFFLINE=1                      the model is a local snapshot path; no effect
+  DSV41_ENGRAM_WILLNEED=0               gv2 prefill WILLNEED pre-pass off (live code has no such path)
+  DSV41_ENGRAM_WILLNEED_MIN_ROWS=512    inert while WILLNEED=0
+  DSV41_STREAM_FEED=0                   stream-feed not installed (live: not present)
+  DSV41_DENSE_DG_SMALLM=0               dense deep_gemm hooks not installed (live: not present)
+patch code differs (prefetch v3.1, gv2.1 census lock, ...); see results/RESULTS.md "2026-09-24 review s0".
