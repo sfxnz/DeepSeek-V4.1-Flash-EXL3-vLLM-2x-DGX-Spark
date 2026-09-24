@@ -34,7 +34,17 @@ Safety: first v2 call ALSO runs the stock path and torch.equal's the two
 outputs (self-check, one line); ANY error disarms v2 permanently with one
 warning line and falls through to the stock body — the serve never crashes.
 Adds a [gv2-census] line (when DSV41_ENGRAM_CENSUS=1) reporting
-runs/call + preads/call so engagement (pread count drop) is observable.
+runs/call + preads/call so engagement (pread count drop) is observable,
+plus fadv/call (WILLNEED pre-pass calls).
+
+Prefill (2026-09-24): the serial preadv loop is queue depth 1, so a cold
+prefill call (5k-98k rows) waits ~350 us per NVMe row. Calls with at least
+DSV41_ENGRAM_WILLNEED_MIN_ROWS rows (default 512; decode is 48-96) first
+issue one posix_fadvise(WILLNEED) per merged 4 KiB page span in both
+files, so the reads are in flight together. Advisory only: the bytes read
+do not change. DSV41_ENGRAM_WILLNEED=0 turns it off.
+DSV41_ENGRAM_GATHER_V2_MAX_ROWS=N (unset/0 = off) is the fallback arm:
+calls with more than N rows take the stock 32-thread pool instead.
 
 Apply AFTER engram_stage_census (reads the chained text). Idempotent.
 """
@@ -63,7 +73,7 @@ DISPATCH_NEW = (
     'Returns [R, dim] bf16 CPU."""\n'
     + MARKER
     + """
-        if _ENG_GATHER_V2[0]:
+        if _ENG_GATHER_V2[0] and int(rel.numel()) <= _ENG_GV2_MAX_ROWS:
             # Round-22 fix: run-batched preadv + stock dequant math. Any
             # error disarms to the stock path below with ONE warning line.
             try:
@@ -86,10 +96,18 @@ import time as _gv2_time
 
 _ENG_GATHER_V2 = [_gv2_os.environ.get("DSV41_ENGRAM_GATHER_V2", "0") == "1"]
 _ENG_GV2_SELFCHECK = [True]
+# Above this many rows the stock 32-thread pool reads instead. Unset/0 = off.
+_ENG_GV2_MAX_ROWS = int(
+    _gv2_os.environ.get("DSV41_ENGRAM_GATHER_V2_MAX_ROWS", "0") or 0
+) or (1 << 62)
+_ENG_GV2_WILLNEED = _gv2_os.environ.get("DSV41_ENGRAM_WILLNEED", "1") == "1"
+_ENG_GV2_WILLNEED_MIN = int(
+    _gv2_os.environ.get("DSV41_ENGRAM_WILLNEED_MIN_ROWS", "512") or 512
+)
 _ENG_GV2_CENSUS = _gv2_os.environ.get("DSV41_ENGRAM_CENSUS", "0") == "1"
 _ENG_GV2_EVERY = int(_gv2_os.environ.get("DSV41_ENGRAM_CENSUS_EVERY", "32"))
-# window counters: calls, rows, runs, preads, read seconds
-_ENG_GV2_SEEN = [0, 0, 0, 0, 0.0]
+# window counters: calls, rows, runs, preads, read seconds, fadvise calls
+_ENG_GV2_SEEN = [0, 0, 0, 0, 0.0, 0]
 
 
 """
@@ -161,6 +179,36 @@ GV2_METHODS = (
             i = j + 1
         return preads, runs
 
+    def _gv2_willneed(self, rel: list) -> int:
+        # Prefill pre-pass: one WILLNEED per merged 4 KiB page span of the
+        # unique rows, w file then s file, before any serial preadv. Small
+        # (decode) calls skip it. Returns the number of fadvise calls.
+        import os as _os
+
+        if not _ENG_GV2_WILLNEED or len(rel) < _ENG_GV2_WILLNEED_MIN:
+            return 0
+        keys = sorted(set(rel))
+        calls = 0
+        for fd, base, row_bytes in (
+            (self.w_fd, self.w_off, self.dim),
+            (self.s_fd, self.s_off, self.sb),
+        ):
+            lo = hi = -1
+            for k in keys:
+                start = (base + k * row_bytes) & -4096
+                end = (base + (k + 1) * row_bytes + 4095) & -4096
+                if start <= hi:
+                    hi = max(hi, end)
+                    continue
+                if hi > lo:
+                    _os.posix_fadvise(fd, lo, hi - lo, _os.POSIX_FADV_WILLNEED)
+                    calls += 1
+                lo, hi = start, end
+            if hi > lo:
+                _os.posix_fadvise(fd, lo, hi - lo, _os.POSIX_FADV_WILLNEED)
+                calls += 1
+        return calls
+
     def _gather_dequant_v2(self, rel, owned):
         # Same contract as gather_dequant; only the read strategy changes.
         # Dequant chain copied VERBATIM from the stock body.
@@ -170,6 +218,7 @@ GV2_METHODS = (
         s = torch.empty((r, self.sb), dtype=torch.uint8)
         rel_l = rel.tolist()
         t0 = _gv2_time.perf_counter()
+        fadv = self._gv2_willneed(rel_l)
         pw, rw = self._gv2_read_runs(
             self.w_fd, self.w_off, rel_l, self.dim,
             memoryview(w.numpy()).cast("B"),
@@ -190,20 +239,22 @@ GV2_METHODS = (
         st[2] += rw + rs_
         st[3] += pw + ps_
         st[4] += t1 - t0
+        st[5] += fadv
         if _ENG_GV2_CENSUS and st[0] % _ENG_GV2_EVERY == 0:
             print(
                 "[gv2-census] calls=%d rows/call=%d runs/call=%.1f "
-                "preads/call=%.1f read=%.3fms"
+                "preads/call=%.1f read=%.3fms fadv/call=%.1f"
                 % (
                     st[0],
                     st[1] // st[0],
                     st[2] / st[0],
                     st[3] / st[0],
                     1000.0 * st[4] / st[0],
+                    st[5] / st[0],
                 ),
                 flush=True,
             )
-            st[0] = st[1] = st[2] = st[3] = 0
+            st[0] = st[1] = st[2] = st[3] = st[5] = 0
             st[4] = 0.0
         return out
 

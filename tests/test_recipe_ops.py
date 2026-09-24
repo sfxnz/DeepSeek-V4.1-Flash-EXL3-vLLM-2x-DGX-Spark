@@ -190,7 +190,9 @@ class EnvForwardingTests(unittest.TestCase):
 
     def test_every_patch_env_read_is_forwarded(self) -> None:
         reads = _patch_env_reads()
-        self.assertIn("DSV41_ENGRAM_FADVISE_CAP", reads)
+        self.assertIn("DSV41_ENGRAM_WILLNEED", reads)
+        self.assertIn("DSV41_ENGRAM_WILLNEED_MIN_ROWS", reads)
+        self.assertIn("DSV41_ENGRAM_GATHER_V2_MAX_ROWS", reads)
         self.assertIn("LANGUAGE_MODEL_ONLY", reads)
         self.assertIn("DSV41_LMHEAD_MXFP8", reads)
         missing = sorted(reads - set(_forward_envs()) - set(PATCH_ENV_NOT_FORWARDED))
@@ -243,7 +245,7 @@ class EnvForwardingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as patch_dir:
             res = dry_run(
                 DSV41_PATCH_DIR=patch_dir,
-                DSV41_ENGRAM_FADVISE_CAP="24",
+                DSV41_ENGRAM_GATHER_V2_MAX_ROWS="256",
                 NCCL_NTHREADS="128",
                 EXTRA_ARGS=extra,
             )
@@ -251,7 +253,9 @@ class EnvForwardingTests(unittest.TestCase):
         self.assertIn(["-q", "-r", patch_dir, "dryrun-no-such-host:.cache/dsv41-patch"], res["scp"])
         for role in ("head", "worker"):
             env = container_env(res[role])
-            self.assertEqual(env["DSV41_ENGRAM_FADVISE_CAP"], "24", role)
+            self.assertEqual(env["DSV41_ENGRAM_GATHER_V2_MAX_ROWS"], "256", role)
+            self.assertEqual(env["DSV41_ENGRAM_WILLNEED"], "1", role)
+            self.assertEqual(env["DSV41_ENGRAM_WILLNEED_MIN_ROWS"], "512", role)
             self.assertEqual(env["NCCL_NTHREADS"], "128", role)
             _, args = image_and_args(res[role])
             self.assertEqual(
