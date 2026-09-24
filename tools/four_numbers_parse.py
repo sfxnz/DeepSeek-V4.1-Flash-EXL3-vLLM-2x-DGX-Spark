@@ -246,8 +246,9 @@ def parse(arm: str, ts: str, out: Path, mode: str) -> dict:
         "serve_env_digest = sha256(json.dumps(sorted NCCL_/DSV41_/VLLM_ env, "
         "secrets dropped)) per rank; serve_env_ranks_match ignores "
         "VLLM_HOST_IP. host_state is read before the benches. "
-        "MemAvailable read on both nodes immediately after the 32k prefill, "
-        "before the L.A.I.L runs."
+        "MemAvailable read on both nodes right after benches/micro.py ends "
+        "(its last phase is 32k tg: fresh ~32k prompts, 32 decode tokens "
+        "each), before the L.A.I.L runs."
     )
     return res
 

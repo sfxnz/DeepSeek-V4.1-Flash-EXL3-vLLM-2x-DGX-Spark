@@ -9,8 +9,10 @@
 #   3. MoE/attention ms per layer — NO live probe exists; recorded as a
 #      documented fallback + TODO in the JSON notes. Do NOT build a profiler
 #      here; profiling is a separate gated step.
-#   4. MemAvailable GiB on spark1 AND spark2, read immediately after the 32k
-#      prefill (free -h / free -b — never nvidia-smi)
+#   4. MemAvailable GiB on spark1 AND spark2, read right after micro.py ends,
+#      i.e. after its 32k tg phase (fresh ~32k prompts prefilled, then 32
+#      decode tokens each), not straight after a prefill (free -h / free -b —
+#      never nvidia-smi)
 # Plus DSpark acceptance (/metrics deltas) and L.A.I.L prose median
 # (tools/measure_lail_prose.py — CLI twin of L.A.I.L's own bench math).
 # Honesty cells: prose_long c=1 + c=2 (natural length >= max_tokens, so no
@@ -29,7 +31,7 @@
 #
 # Capture order is serialized on purpose (MAX_NUM_SEQS=2; concurrent
 # prefill chunks contaminate each other): provenance -> prose 9x -> micro
-# 8k+32k -> free both nodes (right after the 32k prefill) -> L.A.I.L 3x ->
+# 8k+32k -> free both nodes (after micro's 32k tg phase) -> L.A.I.L 3x ->
 # prose_long c=1/c=2 5x -> warm-prefix -> disarm scan. Runtime budget ~20-25 min (estimate;
 # re-measure on the first campaign run).
 set -euo pipefail
@@ -97,7 +99,7 @@ python3 bench_decode.py --phase prose --concurrency 1 --max-tokens 200 \
 python3 benches/micro.py --contexts 8192 32768 --runs 3 2>&1 \
   | tee "$out/02-micro.log"
 
-# --- 4) MemAvailable BOTH nodes, immediately after the 32k prefill --------
+# --- 4) MemAvailable BOTH nodes, right after micro's 32k tg phase ---------
 {
   echo "== spark1 $(hostname -s) $(date -u +%Y-%m-%dT%H:%M:%SZ) =="
   free -h
