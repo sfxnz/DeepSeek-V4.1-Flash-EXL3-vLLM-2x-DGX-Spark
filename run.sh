@@ -29,7 +29,7 @@ DSV41_ENGRAM_DISK="${DSV41_ENGRAM_DISK:-1}"
 LANGUAGE_MODEL_ONLY="${LANGUAGE_MODEL_ONLY:-0}"
 MM_ENCODER_TP_MODE="${MM_ENCODER_TP_MODE:-data}"
 MAX_NUM_BATCHED_TOKENS="${MAX_NUM_BATCHED_TOKENS:-8192}"
-FORCE_UNSAFE_CTX="${FORCE_UNSAFE_CTX:-1}"
+FORCE_UNSAFE_CTX="${FORCE_UNSAFE_CTX:-0}"
 FORCE_UNSAFE_ENGRAM="${FORCE_UNSAFE_ENGRAM:-0}"
 FORCE_UNSAFE_QUANT="${FORCE_UNSAFE_QUANT:-0}"
 ENFORCE_EAGER="${ENFORCE_EAGER:-0}"
@@ -103,10 +103,6 @@ if [[ -z "${SPEC_CONFIG:-}" ]]; then
   esac
 fi
 
-if [[ -z "${COMPILATION_CONFIG:-}" ]]; then
-  COMPILATION_CONFIG='{"cudagraph_mode":"FULL_AND_PIECEWISE","cudagraph_capture_sizes":[1,3,4,6,8],"custom_ops":["all"]}'
-fi
-
 if [[ "$QUANTIZATION" != exl3 && "$FORCE_UNSAFE_QUANT" != 1 ]]; then
   echo "QUANTIZATION=$QUANTIZATION. Native MXFP4 experts plus Engram do not fit 2x Spark UMA. This recipe serves an EXL3 pack. FORCE_UNSAFE_QUANT=1 overrides." >&2
   exit 1
@@ -127,14 +123,29 @@ if [[ "$KV_CACHE_MEMORY" -gt 8589934592 && "$FORCE_UNSAFE_CTX" != 1 ]]; then
   echo "KV_CACHE_MEMORY=$KV_CACHE_MEMORY exceeds 8 GiB pin 8589934592. CSA2 is 890 B/token; 4 GiB holds 1M x 2. FORCE_UNSAFE_CTX=1 overrides." >&2
   exit 1
 fi
-if [[ "$SPEC" == dspark && $((NUM_SPECULATIVE_TOKENS % 5)) -ne 0 && "$FORCE_UNSAFE_CTX" != 1 ]]; then
-  echo "NUM_SPECULATIVE_TOKENS=$NUM_SPECULATIVE_TOKENS is not divisible by 5 (DSpark block size). FORCE_UNSAFE_CTX=1 overrides." >&2
+if [[ "$SPEC" == dspark && ! "$NUM_SPECULATIVE_TOKENS" =~ ^[1-5]$ && "$FORCE_UNSAFE_CTX" != 1 ]]; then
+  echo "NUM_SPECULATIVE_TOKENS=$NUM_SPECULATIVE_TOKENS must be an integer 1..5 (DSpark block size 5). E6: k=10 collapsed L.A.I.L to 12.1 vs 22.6. FORCE_UNSAFE_CTX=1 overrides." >&2
   exit 1
 fi
 
+# Cudagraph capture sizes match the verify batch: {1} + {s*k, s*(k+1)} for s in 1..MAX_NUM_SEQS.
+# k=3, 2 seqs gives [1,3,4,6,8] (R16: +5.5% vs padded k5-era sizes).
+if [[ -z "${COMPILATION_CONFIG:-}" ]]; then
+  spec_k=0
+  if [[ "$SPEC" == dspark ]]; then
+    spec_k="$NUM_SPECULATIVE_TOKENS"
+  fi
+  capture_sizes=(1)
+  for ((s = 1; s <= MAX_NUM_SEQS; s++)); do
+    capture_sizes+=($((s * spec_k)) $((s * (spec_k + 1))))
+  done
+  capture_list="$(printf '%s\n' "${capture_sizes[@]}" | awk '$1 > 0' | sort -nu | paste -sd, -)"
+  COMPILATION_CONFIG='{"cudagraph_mode":"FULL_AND_PIECEWISE","cudagraph_capture_sizes":['"$capture_list"'],"custom_ops":["all"]}'
+fi
+
 if [[ "${VALIDATE_ONLY:-0}" == "1" ]]; then
-  printf '==> validate-only spec=%s seqs=%s spec_tokens=%s quant=%s engram_disk=%s eager=%s lm_only=%s image=%s\n' \
-    "$SPEC" "$MAX_NUM_SEQS" "$NUM_SPECULATIVE_TOKENS" "$QUANTIZATION" "$DSV41_ENGRAM_DISK" "$ENFORCE_EAGER" "$LANGUAGE_MODEL_ONLY" "$IMAGE"
+  printf '==> validate-only spec=%s seqs=%s spec_tokens=%s quant=%s engram_disk=%s eager=%s lm_only=%s image=%s compilation_config=%s\n' \
+    "$SPEC" "$MAX_NUM_SEQS" "$NUM_SPECULATIVE_TOKENS" "$QUANTIZATION" "$DSV41_ENGRAM_DISK" "$ENFORCE_EAGER" "$LANGUAGE_MODEL_ONLY" "$IMAGE" "$COMPILATION_CONFIG"
   exit 0
 fi
 

@@ -305,7 +305,10 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("quant=exl3", proc.stdout)
         self.assertIn("engram_disk=1", proc.stdout)
         self.assertIn("spec=dspark", proc.stdout)
-        self.assertIn("spec_tokens=5", proc.stdout)
+        k = _recipe()["serve"]["env"]["NUM_SPECULATIVE_TOKENS"]
+        self.assertEqual(k, "3")
+        self.assertIn(f"spec_tokens={k}", proc.stdout)
+        self.assertIn('"cudagraph_capture_sizes":[1,3,4,6,8]', proc.stdout)
         self.assertIn("eager=0", proc.stdout)
         self.assertIn("lm_only=0", proc.stdout)
         self.assertNotIn("--language-model-only", proc.stdout)
@@ -315,10 +318,34 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         self.assertIn("exceeds 2", proc.stderr)
 
-    def test_validate_only_refuses_spec_tokens_not_divisible_by_5(self) -> None:
-        proc = _run_sh(SPEC="dspark", NUM_SPECULATIVE_TOKENS="3")
-        self.assertNotEqual(proc.returncode, 0)
-        self.assertIn("not divisible by 5", proc.stderr)
+    def test_validate_only_refuses_spec_tokens_above_block(self) -> None:
+        for k in ("10", "6", "0", "3.5"):
+            proc = _run_sh(SPEC="dspark", NUM_SPECULATIVE_TOKENS=k)
+            self.assertNotEqual(proc.returncode, 0, k)
+            self.assertIn("integer 1..5", proc.stderr)
+            self.assertIn("E6", proc.stderr)
+
+    def test_validate_only_spec_tokens_in_block_pass(self) -> None:
+        for k in ("1", "3", "5"):
+            proc = _run_sh(SPEC="dspark", NUM_SPECULATIVE_TOKENS=k)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertIn(f"spec_tokens={k}", proc.stdout)
+
+    def test_validate_only_capture_sizes_follow_k_and_seqs(self) -> None:
+        cases = {
+            ("3", "2"): "[1,3,4,6,8]",
+            ("5", "2"): "[1,5,6,10,12]",
+            ("2", "2"): "[1,2,3,4,6]",
+            ("3", "1"): "[1,3,4]",
+        }
+        for (k, seqs), sizes in cases.items():
+            proc = _run_sh(NUM_SPECULATIVE_TOKENS=k, MAX_NUM_SEQS=seqs)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertIn(f'"cudagraph_capture_sizes":{sizes}', proc.stdout, (k, seqs))
+        explicit = '{"cudagraph_mode":"PIECEWISE","cudagraph_capture_sizes":[1,2]}'
+        proc = _run_sh(COMPILATION_CONFIG=explicit)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn(f"compilation_config={explicit}", proc.stdout)
 
     def test_validate_only_refuses_26gib_kv_pin(self) -> None:
         proc = _run_sh(KV_CACHE_MEMORY="27917287424")
@@ -339,6 +366,19 @@ class RecipeOpsTests(unittest.TestCase):
         proc = _run_sh(DSV41_ENGRAM_DISK="0")
         self.assertNotEqual(proc.returncode, 0)
         self.assertIn("Engram", proc.stderr)
+
+    def test_force_unsafe_defaults_are_off(self) -> None:
+        env = _recipe()["serve"]["env"]
+        for name in ("FORCE_UNSAFE_CTX", "FORCE_UNSAFE_ENGRAM", "FORCE_UNSAFE_QUANT"):
+            self.assertEqual(env[name], "0", name)
+
+    def test_patch_sources_compile_without_warnings(self) -> None:
+        import warnings
+
+        for path in sorted((ROOT / "docker/patch").glob("*.py")):
+            with warnings.catch_warnings():
+                warnings.simplefilter("error")
+                compile(path.read_text(), str(path), "exec")
 
     def test_gitignore_run_state(self) -> None:
         self.assertIn(".run-state/", _read(".gitignore"))
@@ -372,7 +412,9 @@ class RecipeOpsTests(unittest.TestCase):
         spec = _recipe()["serve"]["env"]["SPEC"]
         self.assertIn(f'SPEC="${{SPEC:-{spec}}}"', run)
         self.assertEqual(spec, "dspark")
-        self.assertIn('NUM_SPECULATIVE_TOKENS="${NUM_SPECULATIVE_TOKENS:-5}"', run)
+        k = _recipe()["serve"]["env"]["NUM_SPECULATIVE_TOKENS"]
+        self.assertEqual(k, "3")
+        self.assertIn(f'NUM_SPECULATIVE_TOKENS="${{NUM_SPECULATIVE_TOKENS:-{k}}}"', run)
         self.assertIn('ENFORCE_EAGER="${ENFORCE_EAGER:-0}"', run)
         self.assertIn('LANGUAGE_MODEL_ONLY="${LANGUAGE_MODEL_ONLY:-0}"', run)
         self.assertIn("enable_flashinfer_autotune", run)
@@ -397,17 +439,16 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("lm_only=0", proc.stdout)
         self.assertNotIn("--language-model-only", proc.stdout)
 
-    def test_default_prefill_batch_stays_2048_and_hub_rev_stays_mcg(self) -> None:
-        self.assertEqual(_recipe()["serve"]["env"]["MAX_NUM_BATCHED_TOKENS"], "2048")
+    def test_default_prefill_batch_is_8192_and_hub_rev_stays_mcg(self) -> None:
+        self.assertEqual(_recipe()["serve"]["env"]["MAX_NUM_BATCHED_TOKENS"], "8192")
         self.assertEqual(_recipe()["serve"]["env"]["MM_ENCODER_TP_MODE"], "data")
         self.assertEqual(_recipe()["serve"]["env"]["SNAPSHOT_SHA"], HUB_REV)
         self.assertEqual(HUB_REV, "2.0bpw-mcg")
         run = _read("run.sh")
-        self.assertIn('MAX_NUM_BATCHED_TOKENS="${MAX_NUM_BATCHED_TOKENS:-2048}"', run)
+        self.assertIn('MAX_NUM_BATCHED_TOKENS="${MAX_NUM_BATCHED_TOKENS:-8192}"', run)
         self.assertIn('MM_ENCODER_TP_MODE="${MM_ENCODER_TP_MODE:-data}"', run)
         row = _defaults_row("`--max-num-batched-tokens`")
-        self.assertIn("2048", row)
-        self.assertNotIn("8192", row)
+        self.assertIn("8192", row)
         self.assertIn("data", _defaults_row("`--mm-encoder-tp-mode`"))
         readme = _read("README.md")
         self.assertIn("−5%", readme)

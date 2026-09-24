@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""lm_head MXFP8: route the vocab head through the in-image b12x dense path.
+r"""lm_head MXFP8: route the vocab head through the in-image b12x dense path.
 
 The bf16 lm_head GEMM pair (DSpark draft propose m=1 + target verify m=4-6,
 `cutlass_80_wmma` bf16, 2692us each, 5.35 ms/step, 100% in decode graphs) is
