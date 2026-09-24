@@ -186,6 +186,17 @@ class GateTests(unittest.TestCase):
         cur["components"]["selfcons"]["golden"]["hazard"] = 0.05
         self.assertFalse(self._gate(q.gates(cur, _base()), "selfcons.golden_hazard")["pass"])
 
+    def test_selfcons_limit_comes_from_the_baseline_only(self) -> None:
+        # Candidate diverging early on every prompt, also from itself: its own
+        # A/A hazard must not lift the golden limit, and fails on its own.
+        cur = {"components": {"selfcons": {"aa": {"hazard": 0.159}, "golden": {"hazard": 0.159}}}}
+        rows = q.gates(cur, _base())
+        golden, aa = self._gate(rows, "selfcons.golden_hazard"), self._gate(rows, "selfcons.aa_hazard")
+        self.assertEqual((golden["pass"], golden["limit"]), (False, 0.034))
+        self.assertEqual((aa["pass"], aa["limit"]), (False, 0.034))
+        cur["components"]["selfcons"]["aa"]["hazard"] = 0.03
+        self.assertTrue(self._gate(q.gates(cur, _base()), "selfcons.aa_hazard")["pass"])
+
     def test_add_golden(self) -> None:
         sc = {"runs": [[[1, 2, 3]], [[1, 2, 4]]]}
         q.add_golden(sc, {"components": {"selfcons": {"runs": [[[1, 2, 3]], [[9]]]}}})

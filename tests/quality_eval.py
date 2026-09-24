@@ -96,7 +96,8 @@ GATE_RULES = {
     "nll": "mean_nll <= base + max(0.01, 3 * base.repeat_abs_delta) nats",
     "decode.median": "median |dlogprob| <= base + 0.05",
     "decode.gen_nll": "prefill NLL of greedy text <= base + 0.15",
-    "selfcons": "golden hazard <= 2 * max(base aa_hazard, aa_hazard, 0.005)",
+    "selfcons": "golden hazard <= 2 * max(base aa_hazard, 0.005)",
+    "selfcons.aa": "A/A hazard <= 2 * max(base aa_hazard, 0.005)",
     "rate": "Wilson 95% upper bound >= base rate",
     "needle": "found count >= base found count on shared cells",
 }
@@ -343,11 +344,16 @@ def gates(cur: dict, base: dict | None) -> list[dict]:
         v, b = _get(comps, f"decode.{key}"), _get(bc, f"decode.{key}")
         if v is not None and b is not None:
             add(f"decode.{key}", v <= b + slack, v, round(b + slack, 5), rule)
+    # Floor from the baseline only: a candidate that adds nondeterminism must
+    # not raise its own limit.
+    b_aa = _get(bc, "selfcons.aa.hazard")
+    lim = 2 * max(b_aa or 0.0, 0.005)
     v = _get(comps, "selfcons.golden.hazard")
     if v is not None:
-        floor = max(_get(bc, "selfcons.aa.hazard") or 0.0,
-                    _get(comps, "selfcons.aa.hazard") or 0.0, 0.005)
-        add("selfcons.golden_hazard", v <= 2 * floor, v, round(2 * floor, 5), "selfcons")
+        add("selfcons.golden_hazard", v <= lim, v, round(lim, 5), "selfcons")
+    v = _get(comps, "selfcons.aa.hazard")
+    if v is not None and b_aa is not None:
+        add("selfcons.aa_hazard", v <= lim, v, round(lim, 5), "selfcons.aa")
     for path in ("tools.json_valid", "tools.exact_args", "tools.no_call",
                  "gsm8k.acc", "gsm8k_think.acc", "mmlu.acc"):
         v, b = _get(comps, path), _get(bc, path)

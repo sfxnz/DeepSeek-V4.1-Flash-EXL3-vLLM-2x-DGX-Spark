@@ -115,7 +115,7 @@ With `--baseline`, it gates on the following:
 | Decode probe | median \|Δlogprob\| ≤ baseline + 0.05, and greedy-text NLL ≤ baseline + 0.15 |
 | Rates | Wilson 95% upper bound ≥ baseline rate |
 | Needle | found ≥ baseline |
-| Golden flip hazard | ≤ 2× the A/A control |
+| Golden flip hazard | ≤ 2× max(baseline A/A hazard, 0.005); the run's own A/A hazard has the same limit |
 
 Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-gates two saved runs offline with no traffic, which is how an A/B compares two boots. Run it serialized: never next to a bench, and never with a third stream. The vendored data and licenses are in `tests/quality/README.md`. The baseline numbers are in `results/2026-09-24-review/quality-baseline/README.md`.
 
