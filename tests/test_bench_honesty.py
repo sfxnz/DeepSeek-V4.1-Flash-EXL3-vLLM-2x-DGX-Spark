@@ -227,5 +227,52 @@ class WarmPrefixTests(unittest.TestCase):
         self.assertIsNone(self.wp.hits_delta(None, {"hits": 1.0}))
 
 
+class E2eExitTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.e2e = _load("benches/e2e.py", "e2e_t")
+
+    def _run(self, tool_ok: bool):
+        seen = {}
+
+        def fake_post(url, model, messages, *, max_tokens, tools=None, stream=True,
+                      timeout=900, ignore_eos=True):
+            text = messages[-1]["content"]
+            if tools:
+                seen["tool_ignore_eos"] = ignore_eos
+                name = "get_weather" if tool_ok else "nope"
+                calls = [{"id": "1", "function": {"name": name,
+                                                  "arguments": '{"city": "Paris"}'}}]
+                content = ""
+            elif "passcode" in text:
+                seen["recall_ignore_eos"] = ignore_eos
+                calls, content = [], "VERDIGRIS-4200"
+            else:
+                seen["coding_ignore_eos"] = ignore_eos
+                calls = []
+                content = "```bash\nif UTIL -gt 0.90 FORCE_UNSAFE_UTIL\n```"
+            return {"ttft_s": 0.1, "wall_s": 1.0, "decode_s": 0.9, "content": content,
+                    "tool_calls": calls, "prompt_tokens": 10, "completion_tokens": 20}
+
+        out = io.StringIO()
+        with mock.patch.object(self.e2e, "post_chat", fake_post), \
+                mock.patch.object(self.e2e, "make_tokenizer", lambda *a: lambda t: 1), \
+                mock.patch.object(self.e2e, "needle_prompt", lambda *a, **k: ("doc", 1)), \
+                mock.patch.object(sys, "argv", ["e2e.py"]), contextlib.redirect_stdout(out):
+            rc = self.e2e.main()
+        return rc, seen
+
+    def test_all_pass_exits_zero(self) -> None:
+        rc, seen = self._run(tool_ok=True)
+        self.assertEqual(rc, 0)
+        self.assertFalse(seen["tool_ignore_eos"])
+        self.assertTrue(seen["recall_ignore_eos"])
+        self.assertTrue(seen["coding_ignore_eos"])
+
+    def test_any_failed_phase_exits_one(self) -> None:
+        rc, _ = self._run(tool_ok=False)
+        self.assertEqual(rc, 1)
+
+
 if __name__ == "__main__":
     unittest.main()

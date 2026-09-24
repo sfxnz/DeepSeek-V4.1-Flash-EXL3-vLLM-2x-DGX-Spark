@@ -3,6 +3,8 @@
 # Usage: tools/capture_cells.sh <label>
 # Serializes micro, correctness, and e2e — never run them concurrently
 # (MAX_NUM_SEQS=2 and shared prefill chunks contaminate each other).
+# benches/e2e.py exits 1 when a phase fails its quality check; with pipefail
+# that aborts the capture after 02-e2e on purpose (fast garbage is no cell).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
