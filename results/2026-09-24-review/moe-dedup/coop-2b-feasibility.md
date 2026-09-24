@@ -109,5 +109,6 @@ Build the harness only if both hold:
   dup x 0.78 ceiling.
 
 Boot only if coop is >= 5% faster cold at m=4 at the census dup, and the
-one-hot tolerance check passes. Then accept on L.A.I.L n=10 >= 33.23 +
-noise, smoke 323 and NLL unchanged.
+one-hot tolerance check passes. Then accept under ARMS.md step 6 (ABAB
+boots, ms/step at matched acceptance, noise-aware gate, quality quick and
+full), with smoke 323. Not against a fixed number from another day.
