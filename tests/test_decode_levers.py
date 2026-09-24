@@ -260,7 +260,9 @@ class WiringTests(unittest.TestCase):
     def test_sitecustomize_calls_install_once_at_the_end(self):
         site = (ROOT / "docker/patch/sitecustomize.py").read_text()
         self.assertEqual(site.count('__import__("decode_levers").install()'), 1)
-        self.assertTrue(site.rstrip().endswith('__import__("decode_levers").install()'))
+        self.assertTrue(
+            site.rstrip().endswith('_patch("decode_levers", lambda: __import__("decode_levers").install())')
+        )
         # Importing the module must not pull anything beyond the stdlib.
         tree = ast.parse((ROOT / "docker/patch/decode_levers.py").read_text())
         top = [n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]

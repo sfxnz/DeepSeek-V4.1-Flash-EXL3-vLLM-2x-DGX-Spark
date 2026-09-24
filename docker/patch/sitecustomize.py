@@ -1131,4 +1131,4 @@ except Exception as _g8sf_err:
     print(f"dsv41: g8 stream feed skipped: {_g8sf_err!r}", flush=True)
 
 # Env-gated decode levers (docker/patch/decode_levers.py; each is off by default).
-__import__("decode_levers").install()
+_patch("decode_levers", lambda: __import__("decode_levers").install())
