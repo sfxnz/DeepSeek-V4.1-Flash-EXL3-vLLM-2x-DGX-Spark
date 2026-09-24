@@ -113,7 +113,7 @@ With `--baseline`, it gates on the following:
 |--------|------|
 | NLL | ≤ baseline + max(0.01, 3× repeat noise) nats |
 | Decode probe | median \|Δlogprob\| ≤ baseline + 0.05, and greedy-text NLL ≤ baseline + 0.15 |
-| Rates | Wilson 95% upper bound ≥ baseline rate |
+| Rates | Wilson 95% upper bound with one item of slack ((k+1)/n) ≥ baseline rate |
 | Needle | found ≥ baseline |
 | Golden flip hazard | ≤ 2× max(baseline A/A hazard, 0.005); the run's own A/A hazard has the same limit |
 

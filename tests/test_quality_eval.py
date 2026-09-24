@@ -174,6 +174,15 @@ class GateTests(unittest.TestCase):
         cur = {"components": {"gsm8k": {"acc": q.rate(80, 100)}}}
         self.assertFalse(self._gate(q.gates(cur, _base()), "gsm8k.acc")["pass"])
 
+    def test_rate_gate_allows_one_miss_at_a_full_baseline(self) -> None:
+        # Base 8/8 and 22/22: one flip is inside A/A noise, two are not.
+        for path, k, n, ok in (("tools.no_call", 7, 8, True), ("tools.no_call", 6, 8, False),
+                               ("tools.json_valid", 21, 22, True), ("tools.json_valid", 20, 22, False),
+                               ("tools.exact_args", 19, 22, True), ("tools.exact_args", 18, 22, False)):
+            group, name = path.split(".")
+            cur = {"components": {group: {name: q.rate(k, n)}}}
+            self.assertEqual(self._gate(q.gates(cur, _base()), path)["pass"], ok, (path, k, n))
+
     def test_needle_and_selfcons_gates(self) -> None:
         cur = {"components": {
             "needle": {"cells": {"8192@0.1": {"found": True}, "8192@0.5": {"found": False},

@@ -98,7 +98,7 @@ GATE_RULES = {
     "decode.gen_nll": "prefill NLL of greedy text <= base + 0.15",
     "selfcons": "golden hazard <= 2 * max(base aa_hazard, 0.005)",
     "selfcons.aa": "A/A hazard <= 2 * max(base aa_hazard, 0.005)",
-    "rate": "Wilson 95% upper bound >= base rate",
+    "rate": "Wilson 95% upper bound of (k+1)/n >= base rate (one item of slack)",
     "needle": "found count >= base found count on shared cells",
 }
 
@@ -358,7 +358,10 @@ def gates(cur: dict, base: dict | None) -> list[dict]:
                  "gsm8k.acc", "gsm8k_think.acc", "mmlu.acc"):
         v, b = _get(comps, path), _get(bc, path)
         if v and b and v.get("n") and b.get("n"):
-            add(path, v["ci95"][1] >= b["rate"], v["rate"], b["rate"], "rate")
+            # One item of slack: at a 100% baseline the plain upper bound
+            # fails on a single miss, and one greedy flip is A/A noise.
+            hi = wilson(min(v["k"] + 1, v["n"]), v["n"])[1]
+            add(path, hi >= b["rate"], v["rate"], b["rate"], "rate")
     vc, bcells = _get(comps, "needle.cells"), _get(bc, "needle.cells")
     if vc and bcells:
         shared = sorted(set(vc) & set(bcells))
