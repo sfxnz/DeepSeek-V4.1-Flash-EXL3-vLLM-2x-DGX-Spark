@@ -1,0 +1,11 @@
+# Campaign image: canonical-e12 + woa-scale-prepack (fix_o_proj_woa_fp8.py
+# stage 2). The code is inert unless DSV41_WOA_PREPACK=1. A full rebuild of
+# docker/Dockerfile carries the same stage; this thin layer avoids rebuilding
+# the exllamav3 / vllm-exl3 wheels for the A/B.
+#   docker build -f docker/Dockerfile.woa-prepack -t dsv41-flash-exl3-sm121:e12-woa-prepack docker
+FROM dsv41-flash-exl3-sm121:canonical-e12
+
+COPY patch/fix_o_proj_woa_fp8.py /opt/dsv41-patch/fix_o_proj_woa_fp8.py
+RUN python3 /opt/dsv41-patch/fix_o_proj_woa_fp8.py /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py \
+ && grep -q "_woa_prepacked_scale" /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+LABEL dsv41.recipe.patches="shapes,mrow,cfg1,codebook,fshift,b12x_smalls,fix_o_proj_woa_fp8,woa_prepack"
