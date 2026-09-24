@@ -240,6 +240,27 @@ class GatherV2ReadTests(unittest.TestCase):
                         got = "stock"
                 self.assertEqual(got, want, (limit, n))
 
+    def test_v2_matches_stock_with_census_pf_hit(self) -> None:
+        try:
+            import torch
+        except ImportError:
+            raise unittest.SkipTest("torch not installed")
+        rel = [r for _, r in self._cases()][0]
+        owned = torch.tensor([r != 0 for r in rel])
+        rel_t = torch.tensor(rel, dtype=torch.int64)
+        out = io.StringIO()
+        with mock.patch.object(self.mod, "_ENG_GATHER_V2", [False]):
+            ref = self.tbl.gather_dequant(rel_t, owned)
+        self.tbl._pf_expected = {r for r in rel[:10] if r} | {self.N + 5}
+        with mock.patch.object(self.mod, "_ENG_GV2_CENSUS", True), mock.patch.object(
+            self.mod, "_ENG_GV2_EVERY", 1
+        ), mock.patch.object(self.mod, "_ENG_GV2_WILLNEED_MIN", 4), contextlib.redirect_stdout(out):
+            got = self.tbl._gather_dequant_v2(rel_t, owned)
+        self.assertTrue(torch.equal(got.view(torch.int16), ref.view(torch.int16)))
+        self.assertIn("[gv2-census]", out.getvalue())
+        self.assertIn(" pf_hit=", out.getvalue())
+        self.assertIsNone(self.tbl._pf_expected)
+
 
 if __name__ == "__main__":
     unittest.main()

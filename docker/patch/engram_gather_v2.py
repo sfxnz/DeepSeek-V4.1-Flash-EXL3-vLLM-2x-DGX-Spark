@@ -35,7 +35,7 @@ outputs (self-check, one line); ANY error disarms v2 permanently with one
 warning line and falls through to the stock body — the serve never crashes.
 Adds a [gv2-census] line (when DSV41_ENGRAM_CENSUS=1) reporting
 runs/call + preads/call so engagement (pread count drop) is observable,
-plus fadv/call (WILLNEED pre-pass calls).
+plus fadv/call and pf_hit (prefetch-v3 predicted rows consumed).
 
 Prefill (2026-09-24): the serial preadv loop is queue depth 1, so a cold
 prefill call (5k-98k rows) waits ~350 us per NVMe row. Calls with at least
@@ -106,8 +106,9 @@ _ENG_GV2_WILLNEED_MIN = int(
 )
 _ENG_GV2_CENSUS = _gv2_os.environ.get("DSV41_ENGRAM_CENSUS", "0") == "1"
 _ENG_GV2_EVERY = int(_gv2_os.environ.get("DSV41_ENGRAM_CENSUS_EVERY", "32"))
-# window counters: calls, rows, runs, preads, read seconds, fadvise calls
-_ENG_GV2_SEEN = [0, 0, 0, 0, 0.0, 0]
+# window counters: calls, rows, runs, preads, read seconds, fadvise calls,
+# pf hits, pf predicted rows, pf paired calls
+_ENG_GV2_SEEN = [0, 0, 0, 0, 0.0, 0, 0, 0, 0]
 
 
 """
@@ -240,10 +241,20 @@ GV2_METHODS = (
         st[3] += pw + ps_
         st[4] += t1 - t0
         st[5] += fadv
+        if _ENG_GV2_CENSUS:
+            # pf_hit = share of prefetch-v3 predicted rows this call consumed
+            # (owned rows only; unowned slots read file row 0).
+            exp = getattr(self, "_pf_expected", None)
+            if exp is not None:
+                got = {x for x, o in zip(rel_l, owned.tolist()) if o}
+                st[6] += len(got & exp)
+                st[7] += len(exp)
+                st[8] += 1
+                self._pf_expected = None
         if _ENG_GV2_CENSUS and st[0] % _ENG_GV2_EVERY == 0:
             print(
                 "[gv2-census] calls=%d rows/call=%d runs/call=%.1f "
-                "preads/call=%.1f read=%.3fms fadv/call=%.1f"
+                "preads/call=%.1f read=%.3fms fadv/call=%.1f%s"
                 % (
                     st[0],
                     st[1] // st[0],
@@ -251,10 +262,13 @@ GV2_METHODS = (
                     st[3] / st[0],
                     1000.0 * st[4] / st[0],
                     st[5] / st[0],
+                    " pf_hit=%.0f%%(%d)" % (100.0 * st[6] / st[7], st[8])
+                    if st[7] > 0
+                    else "",
                 ),
                 flush=True,
             )
-            st[0] = st[1] = st[2] = st[3] = st[5] = 0
+            st[0] = st[1] = st[2] = st[3] = st[5] = st[6] = st[7] = st[8] = 0
             st[4] = 0.0
         return out
 

@@ -75,6 +75,9 @@ STAGER_METHODS = MARKER + '''
         import torch as _torch
 
         self._pf_tm = hs.token_map.to("cpu").to(_torch.int64)
+        # Converted once: tolist() of the 129k-entry map held the GIL for
+        # ~1.8 ms on every worker call.
+        self._pf_tm_list = self._pf_tm.tolist()
         self._pf_mult = hs.multipliers.to("cpu").to(_torch.int64)
         self._pf_primes = (
             hs.primes.to("cpu").to(_torch.int64).reshape(-1).tolist()
@@ -171,6 +174,10 @@ STAGER_METHODS = MARKER + '''
             ):
                 return
             k = min(int(draft_tokens.shape[1]), self._pf_kmax)
+            # Bump the generation BEFORE overwriting the pinned snapshot: a
+            # worker that still sees its own gen after copying the snapshot
+            # out read a buffer no newer enqueue had touched (seqlock).
+            self._pf_gen += 1
             # Order the side stream behind main-stream work queued so far.
             # MUST be issued while the MAIN stream is current — inside the
             # with-block below current_stream() IS the side stream and
@@ -201,7 +208,6 @@ STAGER_METHODS = MARKER + '''
                     num_sampled[:num_reqs].to(_torch.int64), non_blocking=True
                 )
                 self._pf_event.record()
-            self._pf_gen += 1
             self._pf_pool.submit(
                 self._prefetch_worker, self._pf_gen, num_reqs, num_tokens, k
             )
@@ -218,39 +224,6 @@ STAGER_METHODS = MARKER + '''
         start_a = start & -4096
         end_a = (start + row_bytes + 4095) & -4096
         _os.posix_fadvise(fd, start_a, end_a - start_a, _os.POSIX_FADV_WILLNEED)
-
-    def _fadvise_rows_capped(self, fd: int, base: int, rows, row_bytes: int) -> None:
-        # --- engram-prefetch-fadvise-cap ---
-        # Round-25 trace: 191 posix_fadvise(WILLNEED)/step (~3.1 ms of
-        # off-thread gap time) with pf_hit 100% — the pages are already
-        # resident, so per-row calls are pure waste. DORMANT by default:
-        # DSV41_ENGRAM_FADVISE_CAP unset/empty = exact legacy per-row
-        # behavior. Set to coalesce sorted rows into contiguous page runs,
-        # ONE fadvise per run, at most DSV41_ENGRAM_FADVISE_CAP calls per
-        # table (~24 = 2 tables x 12 rows); "0" issues none.
-        import os as _os
-
-        env = _os.environ.get("DSV41_ENGRAM_FADVISE_CAP")
-        if env is None or env == "":
-            for row in rows:
-                self._fadvise_row(fd, base, row, row_bytes)
-            return
-        try:
-            cap = int(env)
-        except ValueError:
-            cap = 24
-        if cap == 0 or not rows:
-            return
-        spans = []
-        for row in sorted(rows):
-            start = (base + row * row_bytes) & -4096
-            end = (base + row * row_bytes + row_bytes + 4095) & -4096
-            if spans and start <= spans[-1][1]:
-                spans[-1][1] = max(spans[-1][1], end)
-            else:
-                spans.append([start, end])
-        for start, end in spans[:cap]:
-            _os.posix_fadvise(fd, start, end - start, _os.POSIX_FADV_WILLNEED)
 
     def _pf_set_id(self, rows) -> int:
         import zlib as _zlib
@@ -301,7 +274,12 @@ STAGER_METHODS = MARKER + '''
             )
             drs = self._pf_pin_draft[: num_reqs * k].reshape(num_reqs, k)
             ns = self._pf_pin_ns[:num_reqs].tolist()
-            tm = self._pf_tm.tolist()
+            win2 = win2.tolist()
+            outs = outs.tolist()
+            drs = drs.tolist()
+            if gen != self._pf_gen:
+                return  # superseded: a newer enqueue may have overwritten
+            tm = self._pf_tm_list
             depth = self._pf_depth
             tables = [
                 (
@@ -339,8 +317,8 @@ STAGER_METHODS = MARKER + '''
                 S = int(pos[q0])
                 chunk, cpos, hist = self._pf_next_chunk(
                     r, A, ids, q0, None,
-                    outs[r].tolist(), drs[r].tolist(),
-                    win2[r].tolist(), S,
+                    outs[r], drs[r],
+                    win2[r], S,
                 )
                 if not chunk:
                     continue
@@ -372,10 +350,10 @@ STAGER_METHODS = MARKER + '''
                         v1,
                     )
                     # fadvise FIRST (pages start landing), then publish.
-                    # --- engram-prefetch-fadvise-cap --- coalesced + capped
-                    # (191/step per-row calls were pure waste at pf_hit 100%)
-                    self._fadvise_rows_capped(w_fd, w_off, rows, dim)
-                    self._fadvise_rows_capped(s_fd, s_off, rows, sb)
+                    for row in rows:
+                        self._fadvise_row(w_fd, w_off, row, dim)
+                    for row in rows:
+                        self._fadvise_row(s_fd, s_off, row, sb)
                     # Publish gen-stamped; only the newest generation wins.
                     if gen >= self._pf_pub_gen:
                         self._pf_pub_gen = gen
