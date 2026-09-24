@@ -1025,7 +1025,7 @@ except Exception as _fat_err:
 # wrapper's sorted mapped list in place during load_weights so per-tensor H2D
 # page pins are released as consumed (G8 boot OOM root cause; see
 # docker/patch/g8_stream_feed.py). DSV41_STREAM_FEED=1 engages it on stock
-# packs (default off). Idempotent; no-op for stock boots.
+# packs (default off). Idempotent; no-op unless one of the two flags is 1.
 try:
     import os as _os_sf
 

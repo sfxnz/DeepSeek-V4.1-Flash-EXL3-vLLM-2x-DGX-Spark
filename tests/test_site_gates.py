@@ -48,6 +48,12 @@ def run_site(stubs: list[str], **env: str) -> str:
 ENGRAM = ["engram_cpu_hash", "engram_defer"]
 
 
+def setUpModule() -> None:
+    # Inside the image the real blocks would rewrite dist-packages files.
+    if Path("/usr/local/lib/python3.12/dist-packages/vllm").exists():
+        raise unittest.SkipTest("vLLM install present; sitecustomize would patch it")
+
+
 class EngramCpuHashDeferGateTests(unittest.TestCase):
     """R20/R24 reverted levers: no text install unless one is enabled."""
 
