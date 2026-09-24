@@ -137,6 +137,22 @@ class SrcSortWiringTests(unittest.TestCase):
             self.assertEqual(h.container_env(res[role]).get("DSV41_P2B_SRC_SORT"), "1", role)
 
 
+class MicrobenchSourceTests(unittest.TestCase):
+    def test_bench_toggles_sort_without_env(self) -> None:
+        spec = importlib.util.spec_from_file_location("make_bench", ROOT / "kernel_study/p2b_srcsort/make_bench.py")
+        assert spec is not None and spec.loader is not None
+        mb = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mb)
+        srcs = mb.build()
+        self.assertEqual(sorted(srcs), ["bench_srcsort.cu", "chain_base.cu", "chain_srcsort.cu"])
+        self.assertNotIn("widen_p2b_srcsort", srcs["chain_base.cu"])
+        self.assertEqual(srcs["chain_srcsort.cu"], _load("widen_p2b_srcsort").patch_cu(srcs["chain_base.cu"]))
+        bench = srcs["bench_srcsort.cu"]
+        self.assertIn("g_bench_sort && m * e <= P2B_SORT_CAP", bench)
+        self.assertNotIn("p2b_src_sort_enabled() && m * e", bench)
+        self.assertIn('mod.def("set_sort"', bench)
+
+
 class SortedItemOrderTests(unittest.TestCase):
     """Index math of p2b_sort_pair, mirrored in Python."""
 

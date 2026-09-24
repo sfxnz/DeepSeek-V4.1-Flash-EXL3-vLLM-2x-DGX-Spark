@@ -99,6 +99,7 @@ Do not retry row batching or threshold tuning; those axes are closed.
 | `VLLM_EXL3_MOE_KERNEL` | `native` (run.sh sets) | Native p2b fused MoE vs generic | **measured** ~23 vs 15 tok/s decode |
 | `VLLM_EXL3_FAT_THRESHOLD` | 256 | Rows above which an expert takes the per-expert 128×128 fat GEMM loop instead of the standard kernel | **measured** (E3): 96 → pp@16k −11%, pp@64k noise; keep 256 |
 | `VLLM_EXL3_PREFILL_SYNC` | unset | CPU/device sync workaround for 33..144-row prefill wedges | not needed at 8192 chunks; leave unset |
+| `DSV41_P2B_SRC_SORT` | unset (off) | `=1`: p2b gate/up + down work items walk a src-sorted pair order so verify-row duplicate experts stream together (`widen_p2b_srcsort.py`); bit-exact, off = byte-identical SASS | **pending** GPU campaign (census `tools/moe_census.py`, microbench `kernel_study/p2b_srcsort/`) |
 | `TEMP_ROWS_FUSED` | 2048 (const) | Fused-kernel per-expert row cap; chunks with a hotter expert are re-sliced | **measured** (E1): avoiding re-slice via 2048 chunks does not improve pp — not a bottleneck |
 
 ## Experiment knobs — present, default OFF, with verdicts
