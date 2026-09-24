@@ -120,6 +120,134 @@ def _resolve(hf_cache: str, **extra: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _bash_array(name: str) -> list[str]:
+    run = _read("run.sh")
+    m = re.search(rf"^\s*{name}=\((.*?)^\s*\)", run, re.M | re.S)
+    if m is None:
+        raise AssertionError(f"run.sh has no {name}=( ... ) array")
+    return m.group(1).split()
+
+
+def _forward_envs() -> dict[str, str]:
+    """FORWARD_ENVS in run.sh as {NAME: default}."""
+    return dict(item.split("=", 1) for item in _bash_array("FORWARD_ENVS"))
+
+
+def _worker_config() -> list[str]:
+    return _bash_array("worker_config")
+
+
+# Env names read under docker/patch/ that are deliberately NOT forwarded.
+PATCH_ENV_NOT_FORWARDED = {
+    "DSV41_VL_MODEL_PATH": "g8_stream_feed install-time path override (offline tests), not a serve knob",
+}
+# Forwarded names nothing under docker/patch/ reads: vLLM, vllm_exl3 or NCCL read them.
+FORWARDED_ENGINE_ENVS = {
+    "VLLM_EXL3_MOE_KERNEL",
+    "VLLM_SPARSE_INDEXER_MAX_LOGITS_MB",
+    "VLLM_USE_BREAKABLE_CUDAGRAPH",
+    "VLLM_ADAPTIVE_VERIFICATION_PROFILE_CONTEXT_LEN",
+    "MM_ENCODER_TP_MODE",
+    "NCCL_MIN_NCHANNELS",
+    "NCCL_MAX_NCHANNELS",
+    "NCCL_NTHREADS",
+    "NCCL_BUFFSIZE",
+    "NCCL_LL128_BUFFSIZE",
+    "NCCL_PROTO",
+    "NCCL_LAUNCH_CACHE",
+}
+_ENV_READ = re.compile(
+    r"""(?:environ\.get|getenv|env\.get)\(\s*\\?["']([A-Z][A-Z0-9_]*)\\?["']"""
+    r"""|environ\[\s*\\?["']([A-Z][A-Z0-9_]*)"""
+    r"""|\\?["']([A-Z][A-Z0-9_]*)\\?["']\s+(?:not\s+)?in\s+[\w.]*environ"""
+    r"""|^\w*ENV\w*\s*=\s*["']([A-Z][A-Z0-9_]*)["']""",
+    re.M,
+)
+
+
+def _patch_env_reads() -> set[str]:
+    names = set()
+    for path in (ROOT / "docker/patch").glob("*.py"):
+        for m in _ENV_READ.finditer(path.read_text()):
+            names.add(next(g for g in m.groups() if g))
+    return names
+
+
+def _harness():
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import run_sh_harness as h
+
+    return h.container_env, h.dry_run, h.image_and_args
+
+
+class EnvForwardingTests(unittest.TestCase):
+    """Other packages extend FORWARD_ENVS in run.sh; these keep it honest."""
+
+    def test_every_patch_env_read_is_forwarded(self) -> None:
+        reads = _patch_env_reads()
+        self.assertIn("DSV41_ENGRAM_FADVISE_CAP", reads)
+        self.assertIn("LANGUAGE_MODEL_ONLY", reads)
+        self.assertIn("DSV41_LMHEAD_MXFP8", reads)
+        missing = sorted(reads - set(_forward_envs()) - set(PATCH_ENV_NOT_FORWARDED))
+        self.assertEqual(missing, [], "add these to FORWARD_ENVS in run.sh")
+
+    def test_forwarded_names_are_read_by_something(self) -> None:
+        dead = sorted(set(_forward_envs()) - _patch_env_reads() - FORWARDED_ENGINE_ENVS)
+        self.assertEqual(dead, [], "nothing reads these; drop them or name the reader")
+
+    def test_forward_envs_are_unique(self) -> None:
+        names = [item.split("=", 1)[0] for item in _bash_array("FORWARD_ENVS")]
+        self.assertEqual(len(names), len(set(names)))
+
+    def test_every_recipe_knob_reaches_the_worker(self) -> None:
+        head_only = {"WORKER_HOST", "ORCHESTRATE"}
+        reach = set(_worker_config()) | set(_forward_envs())
+        missing = sorted(set(_recipe()["serve"]["env"]) - reach - head_only)
+        self.assertEqual(missing, [])
+
+    def test_dry_run_head_and_worker_get_the_same_env(self) -> None:
+        container_env, dry_run, image_and_args = _harness()
+
+        res = dry_run()
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        head, worker = container_env(res["head"]), container_env(res["worker"])
+        self.assertNotEqual(head.pop("VLLM_HOST_IP"), worker.pop("VLLM_HOST_IP"))
+        self.assertEqual(head, worker)
+        for name, default in _forward_envs().items():
+            if default:
+                self.assertEqual(head.get(name), default, name)
+        self.assertNotIn("HF_TOKEN", head)
+        (_, head_args), (_, worker_args) = image_and_args(res["head"]), image_and_args(res["worker"])
+        self.assertIn("--headless", worker_args)
+        self.assertEqual(head_args[head_args.index("--max-model-len") :], worker_args[worker_args.index("--max-model-len") :])
+
+    def test_dry_run_forwards_overrides_and_quoted_values(self) -> None:
+        container_env, dry_run, image_and_args = _harness()
+
+        extra = '--override-generation-config {"note":"it\'s"} --enable-prompt-tokens-details'
+        with tempfile.TemporaryDirectory() as patch_dir:
+            res = dry_run(
+                DSV41_PATCH_DIR=patch_dir,
+                DSV41_ENGRAM_FADVISE_CAP="24",
+                NCCL_NTHREADS="128",
+                EXTRA_ARGS=extra,
+            )
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        self.assertIn(["-q", "-r", patch_dir, "dryrun-no-such-host:/tmp/dsv41-patch"], res["scp"])
+        for role in ("head", "worker"):
+            env = container_env(res[role])
+            self.assertEqual(env["DSV41_ENGRAM_FADVISE_CAP"], "24", role)
+            self.assertEqual(env["NCCL_NTHREADS"], "128", role)
+            _, args = image_and_args(res[role])
+            self.assertEqual(
+                args[-3:],
+                ["--override-generation-config", '{"note":"it\'s"}', "--enable-prompt-tokens-details"],
+                role,
+            )
+
+
 class RecipeOpsTests(unittest.TestCase):
     def test_stop_sh_ssh_probe_has_else_exit_1(self) -> None:
         stop = _read("stop.sh")
@@ -171,32 +299,15 @@ class RecipeOpsTests(unittest.TestCase):
 
     def test_run_sh_worker_ssh_forwards_snapshot_and_revision(self) -> None:
         run = _read("run.sh")
-        ssh_idx = run.find('ssh "$WORKER_HOST"')
-        self.assertGreater(ssh_idx, 0)
-        ssh_block = run[ssh_idx : ssh_idx + 3500]
-        self.assertIn("SNAPSHOT_SHA='$SNAPSHOT_SHA'", ssh_block)
-        self.assertIn("HF_CACHE='$HF_CACHE'", ssh_block)
-        self.assertIn("MODEL='$MODEL'", ssh_block)
-        self.assertIn("MM_ENCODER_TP_MODE='$MM_ENCODER_TP_MODE'", ssh_block)
-        self.assertIn("QUANTIZATION='$QUANTIZATION'", ssh_block)
-        self.assertIn("DSV41_ENGRAM_DISK='$DSV41_ENGRAM_DISK'", ssh_block)
-        self.assertIn("DSV41_PATCH_DIR='/tmp/dsv41-patch'", ssh_block)
-        self.assertIn('scp -q -r "$SCRIPT_DIR/docker/patch"', run)
+        config = _worker_config()
+        for name in ("SNAPSHOT_SHA", "HF_CACHE", "MODEL", "QUANTIZATION", "EXTRA_ARGS", "COMPILATION_CONFIG"):
+            self.assertIn(name, config)
+        self.assertIn('worker_env="ROLE=worker ORCHESTRATE=0 DSV41_PATCH_DIR=/tmp/dsv41-patch"', run)
+        self.assertIn('ssh "$WORKER_HOST" "$worker_env bash /tmp/dsv41-exl3-run.sh"', run)
+        self.assertIn('scp -q -r "$PATCH_DIR" "${WORKER_HOST}:/tmp/dsv41-patch"', run)
+        self.assertNotIn('scp -q -r "$SCRIPT_DIR/docker/patch"', run)
         self.assertIn("/opt/dsv41-patch:ro", run)
         self.assertIn("/usr/lib/python3.12/sitecustomize.py:ro", run)
-        self.assertIn("DSV41_STEP_CENSUS=", run)
-        self.assertIn("DSV41_INDEX_TOPK=", run)
-        self.assertIn("DSV41_MHC_DECODE_SPLITS=", run)
-        self.assertIn("DSV41_ENGRAM_CACHE=", run)
-        self.assertIn("DSV41_MHC_NO_DEEPGEMM=", run)
-        self.assertIn("DSV41_DSPARK_DRAFT_TOPK=", run)
-        self.assertIn("DSV41_DSPARK_TAIL_NGRAM=", run)
-        self.assertIn("DSV41_DSPARK_TAIL_NGRAM_POS=", run)
-        self.assertIn("DSV41_DSPARK_SOFTMAX_VERIFY=", run)
-        self.assertIn("DSV41_DSPARK_REFINE_PASS=", run)
-        self.assertIn("DSV41_DSPARK_CONF_GATE=", run)
-        self.assertIn("DSV41_MLA_IO_WARPS=", run)
-        self.assertIn("DSV41_MLA_CHUNKS_PER_BLOCK=", run)
         self.assertIn('--revision "$SNAPSHOT_SHA"', run)
         self.assertIn(".run-state/worker_host", run)
         self.assertNotIn("starting local rank only", run)
@@ -431,7 +542,7 @@ class RecipeOpsTests(unittest.TestCase):
         body = _func_body(run, "start_local")
         self.assertIn('lm_args+=(--language-model-only)', body)
         self.assertIn('LANGUAGE_MODEL_ONLY" == "1"', body)
-        self.assertIn('LANGUAGE_MODEL_ONLY=$LANGUAGE_MODEL_ONLY', body)
+        self.assertIn("LANGUAGE_MODEL_ONLY", _forward_envs())
         self.assertIn('--mm-encoder-tp-mode', body)
         self.assertIn('MM_ENCODER_TP_MODE', body)
         proc = _run_sh()
