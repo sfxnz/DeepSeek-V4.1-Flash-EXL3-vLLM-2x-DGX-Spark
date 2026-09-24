@@ -934,15 +934,25 @@ except Exception as _engram_pf_err:
 # ms/step GPU-idle pool). Bit-exact warmup verify + async canary; any
 # mismatch self-disables to the stock path. DSV41_ENGRAM_CPU_HASH=1
 # enables (default off). Requires the engram_stage_fast chain.
+# cpu-hash (R20) and defer (R24) are reverted: their text installs only when
+# one of them is enabled. Defer anchors on the cpu-hash stage text, so either
+# flag installs both.
+import os as _os_chd
+
+_ENGRAM_CH_DEFER = (
+    _os_chd.environ.get("DSV41_ENGRAM_CPU_HASH", "0") == "1"
+    or _os_chd.environ.get("DSV41_ENGRAM_DEFER", "0") == "1"
+)
 try:
-    from pathlib import Path as _Pch
+    if _ENGRAM_CH_DEFER:
+        from pathlib import Path as _Pch
 
-    from engram_cpu_hash import apply as _apply_cpu_hash
+        from engram_cpu_hash import apply as _apply_cpu_hash
 
-    _apply_cpu_hash(
-        _Pch("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"),
-        _Pch("/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py"),
-    )
+        _apply_cpu_hash(
+            _Pch("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"),
+            _Pch("/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py"),
+        )
 except Exception as _cpu_hash_err:
     print(f"dsv41: engram cpu-hash skipped: {_cpu_hash_err!r}", flush=True)
 
@@ -973,15 +983,16 @@ except Exception as _gather_v2_err:
 # DSV41_ENGRAM_DEFER=1 enables (default off). Requires the full chain
 # (prestage -> census -> fast -> v3 -> cpu-hash -> gather v2).
 try:
-    from pathlib import Path as _Pd
+    if _ENGRAM_CH_DEFER:
+        from pathlib import Path as _Pd
 
-    from engram_defer import apply as _apply_defer
+        from engram_defer import apply as _apply_defer
 
-    _apply_defer(
-        _Pd("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"),
-        _Pd("/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py"),
-        _Pd("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/nvidia/model_state.py"),
-    )
+        _apply_defer(
+            _Pd("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1"),
+            _Pd("/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py"),
+            _Pd("/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/nvidia/model_state.py"),
+        )
 except Exception as _defer_err:
     print(f"dsv41: engram defer skipped: {_defer_err!r}", flush=True)
 
