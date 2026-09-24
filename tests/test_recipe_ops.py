@@ -335,6 +335,7 @@ class OrchestrationTests(unittest.TestCase):
         self.assertIn("CUDA out of memory on rank 1", _worker_log(res))
         self.assertIn("CUDA out of memory on rank 1", res["stderr"])
         self.assertTrue(any("rm" == a[0] and "-f" in a for a in _docker(res, "worker", "rm")))
+        self.assertEqual(_docker(res, "head", "rm"), [], "no head was started, none is removed")
 
     def test_worker_death_during_wait_ready_fails_fast(self) -> None:
         _, dry_run, _ = _harness()
@@ -342,12 +343,20 @@ class OrchestrationTests(unittest.TestCase):
             STUB_WORKER_PS_OK="1",
             STUB_CURL_FAIL="1",
             STUB_LOGS_WORKER="Launching vLLM headless multiproc executor\nworker died: NCCL error",
+            STUB_LOGS_HEAD="head waiting on the rendezvous",
         )
         self.assertEqual(res["returncode"], 1, res["stdout"] + res["stderr"])
         self.assertIsNotNone(res["head"])
         self.assertIn("is not running", res["stderr"])
         self.assertIn("NCCL error", _worker_log(res))
         self.assertNotIn("Timed out", res["stderr"], "worker death must not wait out the 1 h ready loop")
+        # The loaded head rank goes too, after its logs are saved.
+        head_logs = [text for name, text in res["run_state"].items() if name.startswith("head-")]
+        self.assertEqual(head_logs, ["head waiting on the rendezvous\n"])
+        logs = _call_index(res, lambda c: c["tool"] == "docker" and c["role"] == "head" and c["argv"][:1] == ["logs"])
+        rm = _call_index(res, lambda c: c["tool"] == "docker" and c["role"] == "head" and c["argv"][:2] == ["rm", "-f"])
+        self.assertTrue(0 <= logs < rm, (logs, rm))
+        self.assertIn("dsv41-dryrun-harness", res["calls"][rm]["argv"])
 
     def test_head_failure_trap_saves_worker_logs_then_removes_worker(self) -> None:
         _, dry_run, _ = _harness()

@@ -527,8 +527,10 @@ fail_worker_exited() {
   exit 1
 }
 
-# EXIT trap while the head is starting: keep the worker's logs, then remove it
-# so a failed head does not leave a ~75 GiB rank loaded on the worker.
+# EXIT trap while the head is starting: keep both ranks' logs, then remove
+# both containers so a failed boot does not leave a ~75 GiB rank loaded on
+# either node (a started head keeps waiting on the rendezvous otherwise).
+HEAD_STARTED=0
 cleanup_worker_on_failure() {
   local rc=$?
   trap - EXIT
@@ -537,6 +539,15 @@ cleanup_worker_on_failure() {
     save_worker_logs
     worker_ssh "docker rm -f $(printf '%q' "$CONTAINER_NAME")" >/dev/null 2>&1 \
       || echo "Could not remove $CONTAINER_NAME on $WORKER_HOST. Run ./stop.sh." >&2
+    if [[ "$HEAD_STARTED" == 1 ]] && docker ps -a --format '{{.Names}}' | grep -qx -- "$CONTAINER_NAME"; then
+      local head_log
+      head_log="$RUN_STATE/head-$(date +%Y%m%d-%H%M%S).log"
+      mkdir -p "$RUN_STATE"
+      docker logs "$CONTAINER_NAME" >"$head_log" 2>&1 || true
+      echo "Head logs saved to $head_log. Removing $CONTAINER_NAME here." >&2
+      docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 \
+        || echo "Could not remove $CONTAINER_NAME here. Run ./stop.sh." >&2
+    fi
   fi
   exit "$rc"
 }
@@ -674,6 +685,7 @@ if [[ "$ORCHESTRATE" == "auto" && "$ROLE" == "head" ]]; then
     ssh "$WORKER_HOST" "$worker_env bash /tmp/dsv41-exl3-run.sh"
     wait_worker_launch
   fi
+  HEAD_STARTED=1
   start_local 0
   wait_ready
   trap - EXIT INT
