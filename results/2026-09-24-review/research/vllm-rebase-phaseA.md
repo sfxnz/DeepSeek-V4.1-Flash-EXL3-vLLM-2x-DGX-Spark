@@ -78,7 +78,7 @@ Expected decode gain is ≤ 1-2%, which is inside the 2-3% noise band. This is m
 | Re-port Engram-on-disk onto `BaseParallelEngramEmbedding._allocate_weights` / nvidia `ParallelEngramEmbedding`, and decide how prestage/prefetch_v3/defer relate to upstream `_start_prefetch`. Re-verify 16 chain anchors. Fix the `_once` partial-apply bug. | 2-3 days |
 | Replace persistent_topk with the kernel-config knob in run.sh/recipe.yaml | 0.5 day |
 | Path retarget: 16-17 patch files hardcode `deepseek_v4_1` | 0.5-1 day |
-| Rebuild image (same plugin lines; torch unchanged), boot, smoke 323 + vision, correctness --full, four numbers vs 39.6 / 33.2 | ~4 h GPU (serve down) |
+| Rebuild image (same plugin lines; torch unchanged), boot, smoke 323 + vision, correctness --full, four numbers under ARMS.md step 6 (ABAB vs the current image, not vs 39.6 / 33.2) | ~4 h GPU (serve down) |
 
 Re-run Phase A (about 1 minute per image once pulled) when any of these happens: a vLLM release ships FlashInfer ≥ 0.7, SM12x Mega-mHC lands, or the pin blocks a needed fix.
 

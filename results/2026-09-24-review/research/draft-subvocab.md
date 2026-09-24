@@ -25,7 +25,7 @@
 - **Layouts:**
   - `global`: one replicated top-N head, no draft AllGather.
   - `tp2`: each rank keeps its top N/2 ids inside its own half of the vocab (correction 3), so each draft shard is a row subset of the local target shard.
-- **Acceptance model:** τ = 1 + Σᵢ₌₁³ (α·c)ⁱ with τ = 2.3 at c = 1, so α = 0.637. This treats positions as independent, which overstates the loss somewhat because out-of-vocab tokens are also the rare ones the drafter misses anyway. The rejected `DSV41_DSPARK_DRAFT_TOPK=32` mask measured 4-6% acceptance loss (flags.md:117), which is the same order.
+- **Acceptance model:** τ = 1 + Σᵢ₌₁³ (α·c)ⁱ with τ = 2.3 at c = 1, so α = 0.637. This treats positions as independent, which overstates the loss somewhat because out-of-vocab tokens are also the rare ones the drafter misses anyway. The rejected `DSV41_DSPARK_DRAFT_TOPK=32` mask measured 4-6% acceptance loss (flags.md `DSV41_DSPARK_DRAFT_TOPK` row, `evidence/dspark-draft-topk`), which is the same order.
 
 ## Coverage (fraction of eval tokens inside the sub-vocab)
 
