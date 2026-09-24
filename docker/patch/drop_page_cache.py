@@ -19,6 +19,10 @@ from __future__ import annotations
 
 MARK = "dsv41-drop-page-cache"
 
+# Boot-log markers for tools/engagement_audit.py (run.sh post-ready audit).
+LOG_ENGAGED = "dropped page cache of"
+LOG_DISARMED = "drop failed: "
+
 
 def _mem_free_gib() -> float:
     try:

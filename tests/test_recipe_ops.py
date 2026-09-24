@@ -205,7 +205,7 @@ class EnvForwardingTests(unittest.TestCase):
         self.assertEqual(len(names), len(set(names)))
 
     def test_every_recipe_knob_reaches_the_worker(self) -> None:
-        head_only = {"WORKER_HOST", "ORCHESTRATE"}
+        head_only = {"WORKER_HOST", "ORCHESTRATE", "AUDIT", "WARMUP"}
         reach = set(_worker_config()) | set(_forward_envs())
         missing = sorted(set(_recipe()["serve"]["env"]) - reach - head_only)
         self.assertEqual(missing, [])
@@ -279,6 +279,18 @@ def _is_run(role: str):
 def _worker_log(res: dict) -> str:
     logs = [text for name, text in res["run_state"].items() if name.startswith("worker-")]
     return logs[0] if len(logs) == 1 else f"expected one worker-*.log, got {sorted(res['run_state'])}"
+
+
+ENGAGED_LOG = "\n".join(
+    [
+        "(Worker_TP0 pid=1) dsv41: lm_head mxfp8 enabled (b12x, (64640, 5120))",
+        "(Worker_TP0 pid=1) dsv41: engram prefetch v3 armed (ngram=4)",
+        "(Worker_TP0 pid=1) [dsv41-drop-page-cache] dropped page cache of 48 shard files",
+        "(Worker_TP0 pid=1) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)",
+        "(Worker_TP0 pid=1) INFO [breakable_cudagraph.py:290] Breakable CUDA graph enabled",
+        "(Worker_TP0 pid=1) dsv41: engram gather v2 self-check bit-exact (r=120)",
+    ]
+)
 
 
 class OrchestrationTests(unittest.TestCase):
@@ -395,6 +407,42 @@ class OrchestrationTests(unittest.TestCase):
             proc = subprocess.run([str(stop)], cwd=str(tmp), env=env, capture_output=True, text=True)
         self.assertEqual(proc.returncode, 1)
         self.assertIn("state-host-xyz", proc.stderr)
+
+    def test_validate_only_rejects_unknown_audit_mode(self) -> None:
+        proc = _run_sh(AUDIT="loud")
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("AUDIT=loud", proc.stderr)
+        for mode in ("warn", "strict", "off"):
+            self.assertEqual(_run_sh(AUDIT=mode).returncode, 0, mode)
+
+    def test_post_ready_audit_warn_strict_and_clean(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(AUDIT="warn", STUB_LOGS_HEAD="dsv41: lm_head mxfp8 self-disarmed (no key)")
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        self.assertIn("WARNING audit head: missing", res["stderr"])
+        self.assertIn("WARNING audit head: dsv41: lm_head mxfp8 self-disarmed", res["stderr"])
+        self.assertIn("WARNING audit worker: missing", res["stderr"])
+        self.assertEqual(_docker(res, "worker", "rm"), [], "an audit warning must not tear down the serve")
+        res = dry_run(AUDIT="strict")
+        self.assertEqual(res["returncode"], 1, res["stdout"] + res["stderr"])
+        self.assertIn("AUDIT=strict", res["stderr"])
+        self.assertEqual(_docker(res, "worker", "rm"), [], "strict audit reports; ./stop.sh tears down")
+        res = dry_run(
+            AUDIT="strict",
+            STUB_LOGS_HEAD=ENGAGED_LOG,
+            STUB_LOGS_WORKER=ENGAGED_LOG + "\n" + "Launching vLLM headless multiproc executor",
+        )
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        self.assertIn("audit ok", res["stdout"])
+        self.assertTrue(any(n.startswith("audit-head-") for n in res["run_state"]))
+        self.assertTrue(any(n.startswith("audit-worker-") for n in res["run_state"]))
+
+    def test_warmup_failure_warns_but_keeps_the_serve(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(WARMUP="1")
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        self.assertIn("Warmup:", res["stdout"])
+        self.assertIn("WARNING: warmup failed", res["stderr"])
 
 
 class RecipeOpsTests(unittest.TestCase):

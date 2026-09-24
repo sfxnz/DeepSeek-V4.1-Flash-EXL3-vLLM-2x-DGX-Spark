@@ -66,6 +66,19 @@ class SmokeChatTests(unittest.TestCase):
             httpd.shutdown()
             httpd.server_close()
 
+    def test_cli_default_expects_323(self) -> None:
+        httpd, url = _serve({"choices": [{"message": {"content": "The answer is 322."}}]})
+        try:
+            cmd = [sys.executable, str(ROOT / "smoke_chat.py"), "--url", url]
+            proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn("does not match --expect", proc.stderr)
+            proc = subprocess.run(cmd + ["--expect", ""], check=False, capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
     def test_cli_fails_on_empty_thinking_content(self) -> None:
         httpd, url = _serve({"choices": [{"message": {"content": "   "}}]})
         try:

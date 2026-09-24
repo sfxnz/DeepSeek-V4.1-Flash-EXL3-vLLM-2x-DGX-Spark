@@ -73,6 +73,10 @@ ENV_FLAG = "DSV41_LMHEAD_MXFP8"
 CKPT_SCALE_KEY = "lm_head.weight_scale"
 CKPT_WEIGHT_KEY = "lm_head.weight"
 
+# Boot-log markers for tools/engagement_audit.py (run.sh post-ready audit).
+LOG_ENGAGED = "dsv41: lm_head mxfp8 enabled"
+LOG_DISARMED = "dsv41: lm_head mxfp8 self-disarmed"
+
 
 # ---------------------------------------------------------------------------
 # Pure quantization helpers (no vllm import; mirrors

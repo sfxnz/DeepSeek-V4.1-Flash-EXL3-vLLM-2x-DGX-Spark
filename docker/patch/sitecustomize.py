@@ -13,6 +13,9 @@ if "/opt/dsv41-patch" not in sys.path:
 
 import os
 
+# Boot-log markers for tools/engagement_audit.py (run.sh post-ready audit).
+LOG_DISARMED = ("dsv41-patch FAIL", " skipped: ")
+
 _VLLM = "/usr/local/lib/python3.12/dist-packages/vllm"
 # run.sh sets DSV41_PATCH_STRICT=1: a required patch that fails exits the
 # process. Unset (docker build RUN steps, other images) it only prints FAIL.

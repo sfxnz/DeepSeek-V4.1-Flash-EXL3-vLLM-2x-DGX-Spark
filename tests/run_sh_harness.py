@@ -114,7 +114,7 @@ def dry_run(make_snapshot: bool = True, **extra: str) -> dict:
     """Run ./run.sh as the head with stubs.
 
     Returns head/worker docker run argv, all stub calls, and the files run.sh
-    left in .run-state.
+    left in .run-state. AUDIT and WARMUP default to off here; pass them to test.
     """
     with tempfile.TemporaryDirectory() as d:
         tmp = Path(d)
@@ -154,6 +154,8 @@ def dry_run(make_snapshot: bool = True, **extra: str) -> dict:
             "CONTAINER_NAME": CONTAINER,
             "WORKER_HOST": "dryrun-no-such-host",
             "PORT": str(_free_port()),
+            "AUDIT": "off",
+            "WARMUP": "0",
         }
         env.update(extra)
         proc = subprocess.run(

@@ -39,6 +39,8 @@ HF_CACHE="${HF_CACHE:-$HOME/.cache/huggingface}"
 SNAPSHOT_SHA="${SNAPSHOT_SHA:-2.0bpw-mcg-lmhead-mxfp8}"
 SKIP_DOWNLOAD="${SKIP_DOWNLOAD:-0}"
 ORCHESTRATE="${ORCHESTRATE:-auto}"
+AUDIT="${AUDIT:-warn}"
+WARMUP="${WARMUP:-1}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 DSV41_ENGRAM_PREFETCH="${DSV41_ENGRAM_PREFETCH:-1}"
 DSV41_ENGRAM_CENSUS="${DSV41_ENGRAM_CENSUS:-1}"
@@ -205,6 +207,13 @@ if [[ "$SPEC" == dspark && ! "$NUM_SPECULATIVE_TOKENS" =~ ^[1-5]$ && "$FORCE_UNS
   echo "NUM_SPECULATIVE_TOKENS=$NUM_SPECULATIVE_TOKENS must be an integer 1..5 (DSpark block size 5). E6: k=10 collapsed L.A.I.L to 12.1 vs 22.6. FORCE_UNSAFE_CTX=1 overrides." >&2
   exit 1
 fi
+case "$AUDIT" in
+  warn | strict | off) ;;
+  *)
+    echo "AUDIT=$AUDIT (want warn, strict or off)" >&2
+    exit 1
+    ;;
+esac
 
 # Cudagraph capture sizes match the verify batch: {1} + {s*k, s*(k+1)} for s in 1..MAX_NUM_SEQS.
 # k=3, 2 seqs gives [1,3,4,6,8] (R16: +5.5% vs padded k5-era sizes).
@@ -586,6 +595,35 @@ wait_ready() {
   exit 1
 }
 
+# Grep both ranks' logs for the engagement markers kept next to each patch.
+audit_engagement() {
+  [[ "$AUDIT" == off ]] && return 0
+  local ts name logs=() envs=(ENFORCE_EAGER="$ENFORCE_EAGER")
+  ts="$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$RUN_STATE"
+  docker logs "$CONTAINER_NAME" >"$RUN_STATE/audit-head-$ts.log" 2>&1 || true
+  logs+=("head=$RUN_STATE/audit-head-$ts.log")
+  if [[ "$WORKER_STARTED" == 1 ]]; then
+    worker_ssh "docker logs $(printf '%q' "$CONTAINER_NAME")" >"$RUN_STATE/audit-worker-$ts.log" 2>&1 || true
+    logs+=("worker=$RUN_STATE/audit-worker-$ts.log")
+  fi
+  for name in "${FORWARD_ENVS[@]%%=*}"; do
+    envs+=("$name=${!name:-}")
+  done
+  if ! env "${envs[@]}" python3 "$SCRIPT_DIR/tools/engagement_audit.py" --mode "$AUDIT" "${logs[@]}"; then
+    echo "AUDIT=strict: a patch did not engage (see above). The serve is up; ./stop.sh tears it down." >&2
+    exit 1
+  fi
+}
+
+# First-request JIT (Triton, CuTeDSL) off the user's TTFT. Nonce prompts stay out of the prefix cache.
+warmup() {
+  [[ "$WARMUP" == 1 ]] || return 0
+  log "Warmup: greedy, t=0.7 and a ~3k-token nonce prefill"
+  python3 "$SCRIPT_DIR/tools/warmup.py" --url "http://127.0.0.1:${PORT}/v1/chat/completions" --model "$SERVED_NAME" \
+    || echo "WARNING: warmup failed. The serve is up; the first requests pay the JIT." >&2
+}
+
 if [[ "${PREFLIGHT_ONLY:-0}" == "1" ]]; then
   ensure_image
   ensure_weights
@@ -639,6 +677,8 @@ if [[ "$ORCHESTRATE" == "auto" && "$ROLE" == "head" ]]; then
   start_local 0
   wait_ready
   trap - EXIT INT
+  audit_engagement
+  warmup
   log "Stop with: ./stop.sh"
 elif [[ "$ROLE" == "worker" ]]; then
   start_local 1
@@ -646,5 +686,7 @@ elif [[ "$ROLE" == "worker" ]]; then
 else
   start_local 0
   wait_ready
+  audit_engagement
+  warmup
   log "Stop with: ./stop.sh"
 fi
