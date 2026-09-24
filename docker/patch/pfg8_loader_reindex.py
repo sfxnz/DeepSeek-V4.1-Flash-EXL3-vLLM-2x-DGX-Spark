@@ -24,6 +24,8 @@ Idempotent; no-op if DSV41_LOAD_PF_G8 is unset in the SERVING environment
 from __future__ import annotations
 
 import argparse
+import json
+import struct
 from pathlib import Path
 
 MARKER = "# --- pfg8-loader-reindex ---"
@@ -109,10 +111,6 @@ ALLOC_W2_NEW = '''        _w2_shape = (
         )'''
 
 
-# tools/permute_pack_group_major.py --apply writes this into the G8 pack root.
-MANIFEST_NAME = "permute_g8_manifest.json"
-
-
 def serve_model_from_argv(argv: list[str]) -> str | None:
     """Model arg of a `vllm serve <model>` command line; None for other processes."""
     if "serve" not in argv:
@@ -120,24 +118,66 @@ def serve_model_from_argv(argv: list[str]) -> str | None:
     rest = argv[argv.index("serve") + 1:]
     if "--model" in rest[:-1]:
         return rest[rest.index("--model") + 1]
+    for a in rest:
+        if a.startswith("--model="):
+            return a[len("--model="):]
     if rest and not rest[0].startswith("-"):
         return rest[0]
     return None
 
 
-def require_g8_manifest(argv: list[str]) -> None:
-    """Refuse DSV41_LOAD_PF_G8=1 on a pack the permute tool did not write.
+def _trellis_shape(shard: Path, name: str) -> list[int]:
+    with shard.open("rb") as fh:
+        n = struct.unpack("<Q", fh.read(8))[0]
+        return list(json.loads(fh.read(n))[name]["shape"])
+
+
+def pack_is_g8(model: str) -> bool | None:
+    """Routed-expert trellis layout from the safetensors headers.
+
+    True = G8, False = stock, None = cannot tell (no index / no experts).
+    One expert's w1 (gate) and w2 (down) decide it, without config:
+      stock  w1 [KT_h][NT_i][W]     w2 [KT_i][NT_h][W]      e.g. (320,144,32) / (144,320,32)
+      G8     w1 [NT_i/8][KT_h][8W]  w2 [NT_h/8][KT_i][8W]   e.g. (18,320,256) / (40,144,256)
+    The real G8 packs (quantizer rebuild + tools/assemble_pack.sh) carry no
+    marker file, so the shapes are the only reliable signal.
+    """
+    root = Path(model)
+    try:
+        wm = json.loads((root / "model.safetensors.index.json").read_text())["weight_map"]
+        w1 = next(k for k in wm if ".experts." in k and k.endswith(".w1.trellis"))
+        w2 = w1[: -len("w1.trellis")] + "w2.trellis"
+        a = _trellis_shape(root / wm[w1], w1)
+        b = _trellis_shape(root / wm[w2], w2)
+    except (OSError, ValueError, KeyError, StopIteration, struct.error):
+        return None
+    if len(a) != 3 or len(b) != 3:
+        return None
+    if a[1] == 8 * b[0] and 8 * a[0] == b[1]:
+        return True
+    if a[0] == b[1] and a[1] == b[0]:
+        return False
+    return None
+
+
+def require_g8_pack(argv: list[str]) -> None:
+    """Refuse DSV41_LOAD_PF_G8=1 on a pack whose expert trellis is stock.
 
     A stock pack read with the G8 layout is garbage. Spawned engine/worker
     processes carry no `serve` argv; their `vllm serve` parent checked first.
+    An unreadable layout only warns (the loader's own shape check still runs).
     """
     model = serve_model_from_argv(argv)
     if model is None:
         return
-    if not (Path(model) / MANIFEST_NAME).is_file():
+    g8 = pack_is_g8(model)
+    if g8 is False:
         raise SystemExit(
-            f"DSV41_LOAD_PF_G8=1 but {model} has no {MANIFEST_NAME}: not a G8 pack"
+            f"DSV41_LOAD_PF_G8=1 but {model} has stock routed-expert trellis: not a G8 pack"
         )
+    if g8 is None:
+        print(f"dsv41: WARN pfg8: cannot read expert trellis layout of {model}; not checked",
+              flush=True)
 
 
 def patch(text: str) -> str:

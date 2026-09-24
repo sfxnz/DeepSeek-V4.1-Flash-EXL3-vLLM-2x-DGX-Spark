@@ -2,9 +2,12 @@
 """Pack-tool footguns and the trace kernel extractor (CPU only)."""
 from __future__ import annotations
 
+import contextlib
 import gzip
 import importlib.util
+import io
 import json
+import struct
 import subprocess
 import sys
 import tempfile
@@ -39,13 +42,25 @@ class PermuteToolTests(unittest.TestCase):
         self.assertFalse(hasattr(mod, "perm_axis"))
         self.assertNotIn("/home/", (ROOT / "tools/permute_pack_group_major.py").read_text())
 
-    def test_manifest_name_matches_loader(self) -> None:
-        tool = _load("tools/permute_pack_group_major.py")
-        loader = _load("docker/patch/pfg8_loader_reindex.py")
-        self.assertEqual(tool.MANIFEST_NAME, loader.MANIFEST_NAME)
+
+def _fake_pack(d: str, w1: list[int], w2: list[int]) -> None:
+    """Index + one header-only shard holding expert 0's w1/w2 trellis."""
+    hdr = {
+        f"layers.0.ffn.experts.0.{n}.trellis": {"dtype": "I16", "shape": s, "data_offsets": [0, 0]}
+        for n, s in (("w1", w1), ("w2", w2))
+    }
+    raw = json.dumps(hdr).encode()
+    (Path(d) / "model-00001-of-00001.safetensors").write_bytes(struct.pack("<Q", len(raw)) + raw)
+    idx = {"weight_map": {k: "model-00001-of-00001.safetensors" for k in hdr}}
+    (Path(d) / "model.safetensors.index.json").write_text(json.dumps(idx))
 
 
-class G8ManifestGuardTests(unittest.TestCase):
+class G8PackGuardTests(unittest.TestCase):
+    """Shapes as read from the real 2.0bpw-mcg / 2.0bpw-mcg-g8 shard headers."""
+
+    STOCK = ([320, 144, 32], [144, 320, 32])
+    G8 = ([18, 320, 256], [40, 144, 256])
+
     def setUp(self) -> None:
         self.mod = _load("docker/patch/pfg8_loader_reindex.py")
 
@@ -53,25 +68,41 @@ class G8ManifestGuardTests(unittest.TestCase):
         f = self.mod.serve_model_from_argv
         self.assertEqual(f(["/usr/local/bin/vllm", "serve", "/cache/snap", "--tp", "2"]), "/cache/snap")
         self.assertEqual(f(["vllm", "serve", "--model", "/cache/snap"]), "/cache/snap")
+        self.assertEqual(f(["vllm", "serve", "--model=/cache/snap"]), "/cache/snap")
         self.assertIsNone(f(["-c", "--multiprocessing-fork"]))
 
-    def test_refuses_pack_without_manifest(self) -> None:
-        with tempfile.TemporaryDirectory() as d:
-            with self.assertRaises(SystemExit) as cm:
-                self.mod.require_g8_manifest(["vllm", "serve", d])
-            self.assertIn(self.mod.MANIFEST_NAME, str(cm.exception))
+    def test_layout_detection(self) -> None:
+        for shapes, want in ((self.G8, True), (self.STOCK, False)):
+            with tempfile.TemporaryDirectory() as d:
+                _fake_pack(d, *shapes)
+                self.assertIs(self.mod.pack_is_g8(d), want)
 
-    def test_accepts_pack_with_manifest(self) -> None:
+    def test_accepts_g8_pack_without_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as d:
-            (Path(d) / self.mod.MANIFEST_NAME).write_text("{}")
-            self.mod.require_g8_manifest(["vllm", "serve", d])
+            _fake_pack(d, *self.G8)
+            self.mod.require_g8_pack(["vllm", "serve", d])
+
+    def test_refuses_stock_pack(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            _fake_pack(d, *self.STOCK)
+            with self.assertRaises(SystemExit) as cm:
+                self.mod.require_g8_pack(["vllm", "serve", d])
+            self.assertIn("not a G8 pack", str(cm.exception))
+
+    def test_unreadable_layout_warns_only(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            self.assertIsNone(self.mod.pack_is_g8(d))
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                self.mod.require_g8_pack(["vllm", "serve", d])
+            self.assertIn("WARN pfg8", out.getvalue())
 
     def test_spawned_process_is_not_checked(self) -> None:
-        self.mod.require_g8_manifest(["-c", "--multiprocessing-fork"])
+        self.mod.require_g8_pack(["-c", "--multiprocessing-fork"])
 
-    def test_sitecustomize_checks_manifest_before_patching(self) -> None:
+    def test_sitecustomize_checks_pack_before_patching(self) -> None:
         site = (ROOT / "docker/patch/sitecustomize.py").read_text()
         block = site[site.index("from pfg8_loader_reindex import patch"):]
+        self.assertIn("import require_g8_pack as _pfg8_require", block)
         self.assertLess(block.index("_pfg8_require(sys.argv)"), block.index("_pfg8_patch(_t)"))
 
 
