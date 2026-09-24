@@ -46,7 +46,13 @@ from pathlib import Path
 LOG_ENGAGED = "dsv41: engram prefetch v3 armed"
 LOG_DISARMED = "dsv41: engram prefetch disabled"
 
-MARKER = "# --- engram-prefetch-v3 ---"
+# v3.1 = the stager methods after the 2026-09-24 fixes (seqlock, cached
+# token map, record_stream, sampled-row stride). A baked v3 block (the
+# canonical-g8 image) is swapped for them; apply() used to return on it.
+MARKER = "# --- engram-prefetch-v3.1 ---"
+# The runner hook and the census text have not changed since v3 and keep
+# its marker (engram_cpu_hash anchors on the v3 runner block).
+V3_MARKER = "# --- engram-prefetch-v3 ---"
 
 STAGER_INIT_TAIL = """        self.hashes_ready = torch.cuda.Event()
         self.num_staged = 0
@@ -519,7 +525,7 @@ RUNNER_ANCHOR = """        if self.num_speculative_steps > 0:
             )
 """
 
-RUNNER_HOOK = RUNNER_ANCHOR + MARKER + """
+RUNNER_HOOK = RUNNER_ANCHOR + V3_MARKER + """
         if self.speculator is not None:
             _stager = getattr(self.model_state, "engram_stager", None)
             if _stager is not None:
@@ -559,7 +565,7 @@ CENSUS_NEW = """            _exp = getattr(self, "_pf_expected", None)
                 _pf[1] += len(_exp)
                 _pf[2] += 1
                 self._pf_expected = None
-""" + MARKER + """
+""" + V3_MARKER + """
                 # Pairing self-check: hits and predicted rows only counted
                 # when paired, so pf_hit% = share of predictions consumed.
                 import os as _pfv3_os
@@ -601,7 +607,7 @@ CENSUS_NEW = """            _exp = getattr(self, "_pf_expected", None)
 
 
 def _patch_census(disk_text: str) -> str:
-    for marker in (MARKER, V2_MARKER):
+    for marker in (V3_MARKER, V2_MARKER):
         if marker in disk_text:
             return disk_text  # already fixed (v3 marker wins)
     if CENSUS_OLD in disk_text:
@@ -618,6 +624,11 @@ def _swap_stager_methods(text: str, old_marker: str) -> str | None:
     if i < 0:
         return None
     end = text.index(STAGE_DEF_ANCHOR, i)
+    # Other patches' methods (engram_cpu_hash, engram_defer) can sit between
+    # this block and stage(); each starts with a column-0 "# --- " marker.
+    nxt = text.find("\n# --- ", i + len(needle))
+    if 0 <= nxt < end:
+        end = nxt + 1
     text = text[:i] + STAGER_METHODS + "\n\n" + text[end:]
     # Re-stamp any remaining (init) occurrence of the old marker.
     return text.replace(old_marker, MARKER)
@@ -628,7 +639,9 @@ def apply(model_root: Path, runner: Path, vllm_root: Path | None = None) -> None
     text = engram.read_text()
     if MARKER not in text:
         swapped = None
-        for marker, name in ((V2_MARKER, "v2"), (V1_MARKER, "v1")):
+        for marker, name in (
+            (V3_MARKER, "v3"), (V2_MARKER, "v2"), (V1_MARKER, "v1")
+        ):
             new_text = _swap_stager_methods(text, marker)
             if new_text is not None:
                 text = new_text
@@ -658,13 +671,13 @@ def apply(model_root: Path, runner: Path, vllm_root: Path | None = None) -> None
         )
 
     rtext = runner.read_text()
-    if MARKER not in rtext:
+    if V3_MARKER not in rtext:
         if V2_RUNNER_BLOCK in rtext:
             # upgrade path: remove v2's postprocess-site hook entirely (the
             # v3 prediction needs `draft_tokens`, which only exists AFTER
             # propose), then install the v3 hook at the post-propose anchor.
             rtext = rtext.replace(V2_RUNNER_BLOCK, "", 1)
-        if MARKER not in rtext:
+        if V3_MARKER not in rtext:
             if V1_MARKER in rtext:
                 raise SystemExit(
                     "engram_prefetch_v3: v1 runner hook present — apply v2 "

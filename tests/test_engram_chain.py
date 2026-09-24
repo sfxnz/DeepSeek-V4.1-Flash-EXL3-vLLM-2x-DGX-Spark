@@ -47,6 +47,7 @@ MARKERS = {
     "census": engram_stage_census.CENSUS_MARKER,
     "fast": engram_stage_fast.MARKER,
     "pfv3": engram_prefetch_v3.MARKER,
+    "pfv3_hook": engram_prefetch_v3.V3_MARKER,
     "cpu_hash": engram_cpu_hash.MARKER,
     "cpu_hash_commit": engram_cpu_hash.COMMIT_MARKER,
     "gv2": engram_gather_v2.MARKER,
@@ -56,9 +57,9 @@ MARKERS = {
 # Designed marker counts after one pass. A doubled apply shows up here.
 EXPECTED = {
     "models/deepseek_v4_1/common/engram.py": {"fast": 2, "pfv3": 2, "cpu_hash": 1, "defer": 4},
-    "models/deepseek_v4_1/common/engram_disk.py": {"census": 1, "pfv3": 1, "gv2": 3},
+    "models/deepseek_v4_1/common/engram_disk.py": {"census": 1, "pfv3_hook": 1, "gv2": 3},
     "models/deepseek_v4_1/nvidia/model_state.py": {"defer": 1},
-    "v1/worker/gpu/model_runner.py": {"pfv3": 1, "cpu_hash": 1, "cpu_hash_commit": 1, "defer": 1},
+    "v1/worker/gpu/model_runner.py": {"pfv3_hook": 1, "cpu_hash": 1, "cpu_hash_commit": 1, "defer": 1},
     "v1/attention/backends/mla/indexer.py": {"indexer": 1},
 }
 
@@ -108,6 +109,67 @@ class EngramChainTests(unittest.TestCase):
             for rel in TREE:
                 self.assertEqual((vllm / rel).read_text(), first[rel], f"{rel} changed on re-apply")
                 py_compile.compile(str(vllm / rel), cfile=os.path.join(tmp, "c.pyc"), doraise=True)
+
+
+class BakedOldTextUpgradeTests(unittest.TestCase):
+    """canonical-g8 baked the pre-2026-09-24 prefetch v3 / gather v2 text.
+
+    apply() used to return on the old MARKER, so a G8 boot ran the old code
+    while the audit saw the same engaged lines. The stale text is rebuilt
+    here from the fresh chain: old marker, plus a line the old code had.
+    """
+
+    def _fresh(self, tmp: str):
+        vllm = _build_tree(Path(tmp))
+        _apply_chain(vllm)
+        return vllm, {rel: (vllm / rel).read_text() for rel in TREE}
+
+    def test_baked_v3_stager_block_is_swapped_and_neighbours_kept(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            vllm, fresh = self._fresh(tmp)
+            rel = "models/deepseek_v4_1/common/engram.py"
+            new, old = engram_prefetch_v3.MARKER, engram_prefetch_v3.V3_MARKER
+            stale = fresh[rel].replace(new, old).replace(
+                "        self._pf_tm_list = self._pf_tm.tolist()\n",
+                "        self._pf_stale_v3 = True\n",
+            )
+            self.assertEqual(stale.count(old), 2)
+            # cpu-hash and defer methods sit between the v3 block and stage().
+            self.assertLess(stale.index(old + "\n    def "), stale.index(engram_cpu_hash.MARKER + "\n"))
+            (vllm / rel).write_text(stale)
+            model = vllm / "models/deepseek_v4_1"
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                engram_prefetch_v3.apply(model, vllm / "v1/worker/gpu/model_runner.py", vllm)
+            self.assertIn("(replaced v3 methods)", out.getvalue())
+            self.assertEqual((vllm / rel).read_text(), fresh[rel])
+            for r in TREE:
+                self.assertEqual((vllm / r).read_text(), fresh[r], r)
+
+    def test_baked_gv2_blocks_are_replaced(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            vllm, fresh = self._fresh(tmp)
+            rel = "models/deepseek_v4_1/common/engram_disk.py"
+            stale = fresh[rel].replace(engram_gather_v2.MARKER, engram_gather_v2.OLD_MARKER)
+            stale = stale.replace("_ENG_GV2_LOCK = _gv2_threading.Lock()\n", "")
+            stale = stale.replace(
+                "        if _ENG_GATHER_V2[0] and int(rel.numel()) <= _ENG_GV2_MAX_ROWS:",
+                "        if _ENG_GATHER_V2[0]:",
+            )
+            self.assertEqual(stale.count(engram_gather_v2.OLD_MARKER), 3)
+            (vllm / rel).write_text(stale)
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                engram_gather_v2.apply(vllm)
+            self.assertIn("(replaced baked pre-v2.1 text)", out.getvalue())
+            self.assertEqual((vllm / rel).read_text(), fresh[rel])
+
+    def test_unrecognised_old_gv2_layout_fails_loud(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            vllm, fresh = self._fresh(tmp)
+            rel = "models/deepseek_v4_1/common/engram_disk.py"
+            stale = fresh[rel].replace(engram_gather_v2.MARKER, engram_gather_v2.OLD_MARKER)
+            (vllm / rel).write_text(stale.replace("\nimport os as _gv2_os\n", "\nimport os\n_gv2_os = os\n", 1))
+            with self.assertRaises(SystemExit):
+                engram_gather_v2.apply(vllm)
 
 
 class MemHygieneInstallTests(unittest.TestCase):

@@ -47,7 +47,9 @@ CPU read bench backs it; it flips on after the E0/E1 serve ABAB passes.
 DSV41_ENGRAM_GATHER_V2_MAX_ROWS=N (unset/0 = off) is the fallback arm:
 calls with more than N rows take the stock 32-thread pool instead.
 
-Apply AFTER engram_stage_census (reads the chained text). Idempotent.
+Apply AFTER engram_stage_census (reads the chained text). Idempotent. A
+file that carries the pre-v2.1 text (baked into the canonical-g8 image) has
+those three blocks stripped first, then gets this version.
 """
 
 from __future__ import annotations
@@ -55,7 +57,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-MARKER = "# --- engram-gather-v2 ---"
+# v2.1 = WILLNEED pre-pass, MAX_ROWS arm, pf_hit and the census lock.
+MARKER = "# --- engram-gather-v2.1 ---"
+OLD_MARKER = "# --- engram-gather-v2 ---"
 
 # Boot-log markers for tools/engagement_audit.py (run.sh post-ready audit).
 LOG_ENGAGED = "dsv41: engram gather v2 self-check bit-exact"
@@ -318,11 +322,30 @@ GV2_METHODS = (
 )
 
 
+def _strip_old(text: str) -> str:
+    """Remove the module, methods and dispatch blocks an OLD_MARKER apply added."""
+    for start, end in (
+        (OLD_MARKER + "\nimport os as _gv2_os", "class DiskEngramTable:"),
+        (OLD_MARKER + "\n    def _gv2_read_runs", GD_DEF),
+        (OLD_MARKER + "\n        if _ENG_GATHER_V2[0]", "        torch = _torch()"),
+    ):
+        i = text.find(start)
+        if i < 0:
+            raise SystemExit("engram_gather_v2: baked pre-v2.1 block not recognised")
+        text = text[:i] + text[text.index(end, i):]
+    if OLD_MARKER in text:
+        raise SystemExit("engram_gather_v2: stray pre-v2.1 marker left after strip")
+    return text
+
+
 def apply(vllm_root: Path) -> None:
     disk = vllm_root / "models" / "deepseek_v4_1" / "common" / "engram_disk.py"
     text = disk.read_text()
     if MARKER in text:
         return
+    upgraded = OLD_MARKER in text
+    if upgraded:
+        text = _strip_old(text)
     if DISPATCH_OLD not in text:
         raise SystemExit(
             "engram_gather_v2: gather_dequant docstring anchor missing"
@@ -337,7 +360,10 @@ def apply(vllm_root: Path) -> None:
     text = text.replace(GD_DEF, GV2_METHODS + "\n" + GD_DEF, 1)
     text = text.replace(DISPATCH_OLD, DISPATCH_NEW, 1)
     disk.write_text(text)
-    print("dsv41: engram gather v2 installed (DSV41_ENGRAM_GATHER_V2)")
+    print(
+        "dsv41: engram gather v2 installed (DSV41_ENGRAM_GATHER_V2)"
+        + (" (replaced baked pre-v2.1 text)" if upgraded else "")
+    )
 
 
 def main() -> None:
