@@ -1129,3 +1129,6 @@ except SystemExit as _g8sf_exit:
     _os_sfx._exit(1)
 except Exception as _g8sf_err:
     print(f"dsv41: g8 stream feed skipped: {_g8sf_err!r}", flush=True)
+
+# Env-gated decode levers (docker/patch/decode_levers.py; each is off by default).
+__import__("decode_levers").install()
