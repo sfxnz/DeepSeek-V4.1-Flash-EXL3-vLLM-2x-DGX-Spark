@@ -127,8 +127,8 @@ same ideas are not retried blind.
 | `DSV41_DSPARK_CONF_GATE=1` | Confidence-gated Markov bias | rejected | `evidence/dspark-conf-gate` |
 | `DSV41_MLA_IO_WARPS=2` | 2 IO warps in DSV4 MLA decode | rejected (races mbarriers at 4) | `evidence/mla-io2` |
 | `DSV41_MLA_CHUNKS_PER_BLOCK=k` | Bake MLA chunks_per_block | rejected | `evidence/mla-chunks-per-block` |
-| p2b kernel variants (`widen_p2b_{mma,fma,cp16,cpasync,ldg,pf4,nocoop,mrow}.py`) | Alternate p2b kernels | all rejected or reverted; mma→mrow regression 13.24 | `evidence/p2b-*`, `evidence/mma-revert` |
-| `widen_mla_{tile32,kv_buf,io2}.py`, `sm120_wo_a.py`, `c1_graph_safe_adaptive.py` | MLA/KV/graph variants | unwired (failed L.A.I.L or no win) | `evidence/mla-*`, `evidence/c1-*`, `evidence/sm120-wo-a*` |
+| p2b kernel variants (`widen_p2b_mma.py`, `attic/widen_p2b_{fma,cp16,cpasync,ldg,pf4,nocoop}.py`) | Alternate p2b kernels | all rejected or reverted; mma→mrow regression 13.24. `widen_p2b_mrow.py` is live (docker/Dockerfile) | `evidence/p2b-*`, `evidence/mma-revert` |
+| `widen_mla_{tile32,io2}.py`, `attic/{widen_mla_kv_buf,sm120_wo_a,c1_graph_safe_adaptive}.py` | MLA/KV/graph variants | unwired (failed L.A.I.L or no win). Index of `docker/patch/attic/`: its README | `evidence/mla-*`, `evidence/c1-*`, `evidence/sm120-wo-a*` |
 
 ## Bench/eval settings (frozen for comparability)
 

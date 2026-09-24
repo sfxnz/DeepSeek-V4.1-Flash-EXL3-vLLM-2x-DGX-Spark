@@ -25,7 +25,7 @@ class WidenP2bNocoopTests(unittest.TestCase):
         cls.shapes = _load("docker/patch/widen_p2b_shapes.py")
         cls.mrow = _load("docker/patch/widen_p2b_mrow.py")
         cls.cfg1 = _load("docker/patch/widen_p2b_cfg1.py")
-        cls.nocoop = _load("docker/patch/widen_p2b_nocoop.py")
+        cls.nocoop = _load("docker/patch/attic/widen_p2b_nocoop.py")
         cls.pin = PIN_CU.read_text()
 
     def _cfg1(self) -> str:
