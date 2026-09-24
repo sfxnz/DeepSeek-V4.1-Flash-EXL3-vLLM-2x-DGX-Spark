@@ -727,3 +727,33 @@ host-memory site — lane closed, evidence in results/2026-09-22-g8final/)
 fadvise cap ~3.1 ms. Zero OOM the whole campaign (floors logged every
 boot). Full round-by-round table + honest ceiling statement + artifact
 index: results/2026-09-22-close/VERDICT.md.
+
+## 2026-09-24 review s0 live baseline — ran with prefetch v3 disarmed (NOT a promoted-config baseline)
+
+`results/2026-09-24-review/s0-live-baseline/` was recorded (d4db6cd) as the
+09-22 promoted config on the same container ("cmd digest 107dc938 = 09-22
+close"). The cmd and env were the same, but prefetch v3, a default-on KEEP
+lever (R21, +4.6% L.A.I.L), had already turned itself off on BOTH ranks:
+three `IndexError` at `_pf_next_chunk` `outs_r[A - 1]`, then "dsv41: engram
+prefetch disabled after 3 errors" (worker log 09-24 ~13:39 container
+clock; both ranks per the read-only audit run recorded in a911bb3), during
+the quality-harness full run with its c=2 phase. Excerpt:
+`s0-live-baseline/08-prefetch-disarm-worker.log`. `serve_env` still showed
+`DSV41_ENGRAM_PREFETCH=1`, so four_numbers could not see it.
+
+Every s0 cell (14:55-15:55Z) ran prefetch-off: L.A.I.L 10x 27.44
+(76 ms/step vs 66 at the 09-22 close), four_numbers L.A.I.L 28.84, prose
+37.65 / 39.35, prose_long c=1 75.08 ms/step. In the captured worker log,
+decode-sized gathers (rows/call < 150) read 2.63 ms/call (575 census
+lines) before the disable and 10.80 ms/call (75 lines, to ~14:48) after;
+the review's full-log count was 2.68 vs 7.20 ms/call, about +9 ms/step
+over 2 Engram layers, consistent with the unexplained 66 -> 76 ms/step.
+
+Do not use 27.44 / 28.84 as a L.A.I.L floor or read the drop as drift;
+re-baseline from the A boots of the next ABAB sequence. Fixes on the
+branch: the likely IndexError cause (record_stream on the side-stream
+sources, sampled-row stride, bounded num_sampled, 2ebb78d; not yet
+verified on GPU), the gv2
+census race that could disarm gather v2 the same way (13ee9f4), and
+tools/disarm_scan.sh in four_numbers.sh (lever_disarmed in the JSON,
+c3800a3) so a runtime disarm now invalidates the capture.
