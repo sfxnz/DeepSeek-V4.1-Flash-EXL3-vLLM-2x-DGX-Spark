@@ -182,6 +182,9 @@ try:
         from pathlib import Path as _Pg8
 
         from pfg8_loader_reindex import patch as _pfg8_patch
+        from pfg8_loader_reindex import require_g8_manifest as _pfg8_require
+
+        _pfg8_require(sys.argv)
 
         _exl3_py = _Pg8(
             "/usr/local/lib/python3.12/dist-packages/vllm_exl3/exl3.py"

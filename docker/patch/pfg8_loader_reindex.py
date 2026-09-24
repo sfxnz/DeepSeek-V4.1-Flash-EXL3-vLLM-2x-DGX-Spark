@@ -109,6 +109,37 @@ ALLOC_W2_NEW = '''        _w2_shape = (
         )'''
 
 
+# tools/permute_pack_group_major.py --apply writes this into the G8 pack root.
+MANIFEST_NAME = "permute_g8_manifest.json"
+
+
+def serve_model_from_argv(argv: list[str]) -> str | None:
+    """Model arg of a `vllm serve <model>` command line; None for other processes."""
+    if "serve" not in argv:
+        return None
+    rest = argv[argv.index("serve") + 1:]
+    if "--model" in rest[:-1]:
+        return rest[rest.index("--model") + 1]
+    if rest and not rest[0].startswith("-"):
+        return rest[0]
+    return None
+
+
+def require_g8_manifest(argv: list[str]) -> None:
+    """Refuse DSV41_LOAD_PF_G8=1 on a pack the permute tool did not write.
+
+    A stock pack read with the G8 layout is garbage. Spawned engine/worker
+    processes carry no `serve` argv; their `vllm serve` parent checked first.
+    """
+    model = serve_model_from_argv(argv)
+    if model is None:
+        return
+    if not (Path(model) / MANIFEST_NAME).is_file():
+        raise SystemExit(
+            f"DSV41_LOAD_PF_G8=1 but {model} has no {MANIFEST_NAME}: not a G8 pack"
+        )
+
+
 def patch(text: str) -> str:
     if MARKER in text and MARKER2 in text:
         return text  # idempotent (both phases)
