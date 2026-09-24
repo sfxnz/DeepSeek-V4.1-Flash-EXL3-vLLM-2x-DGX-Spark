@@ -38,11 +38,12 @@ runs/call + preads/call so engagement (pread count drop) is observable,
 plus fadv/call and pf_hit (prefetch-v3 predicted rows consumed).
 
 Prefill (2026-09-24): the serial preadv loop is queue depth 1, so a cold
-prefill call (5k-98k rows) waits ~350 us per NVMe row. Calls with at least
-DSV41_ENGRAM_WILLNEED_MIN_ROWS rows (default 512; decode is 48-96) first
-issue one posix_fadvise(WILLNEED) per merged 4 KiB page span in both
-files, so the reads are in flight together. Advisory only: the bytes read
-do not change. DSV41_ENGRAM_WILLNEED=0 turns it off.
+prefill call (5k-98k rows) waits ~350 us per NVMe row. With
+DSV41_ENGRAM_WILLNEED=1, calls with at least DSV41_ENGRAM_WILLNEED_MIN_ROWS
+rows (default 512; decode is 48-96) first issue one posix_fadvise(WILLNEED)
+per merged 4 KiB page span in both files, so the reads are in flight
+together. Advisory only: the bytes read do not change. Default off: only a
+CPU read bench backs it; it flips on after the E0/E1 serve ABAB passes.
 DSV41_ENGRAM_GATHER_V2_MAX_ROWS=N (unset/0 = off) is the fallback arm:
 calls with more than N rows take the stock 32-thread pool instead.
 
@@ -101,7 +102,7 @@ _ENG_GV2_SELFCHECK = [True]
 _ENG_GV2_MAX_ROWS = int(
     _gv2_os.environ.get("DSV41_ENGRAM_GATHER_V2_MAX_ROWS", "0") or 0
 ) or (1 << 62)
-_ENG_GV2_WILLNEED = _gv2_os.environ.get("DSV41_ENGRAM_WILLNEED", "1") == "1"
+_ENG_GV2_WILLNEED = _gv2_os.environ.get("DSV41_ENGRAM_WILLNEED", "0") == "1"
 _ENG_GV2_WILLNEED_MIN = int(
     _gv2_os.environ.get("DSV41_ENGRAM_WILLNEED_MIN_ROWS", "512") or 512
 )

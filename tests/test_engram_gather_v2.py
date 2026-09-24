@@ -163,19 +163,19 @@ class GatherV2ReadTests(unittest.TestCase):
             self.assertEqual(preads, tr.calls)
 
     def test_willneed_defaults(self) -> None:
-        self.assertIs(self.mod._ENG_GV2_WILLNEED, True)
+        self.assertIs(self.mod._ENG_GV2_WILLNEED, False)  # off until the E1 serve arm
         self.assertEqual(self.mod._ENG_GV2_WILLNEED_MIN, 512)
         self.assertEqual(self.mod._ENG_GV2_MAX_ROWS, 1 << 62)
         with tempfile.TemporaryDirectory() as tmp:
             mod = _load_patched_disk(
                 Path(tmp),
                 {
-                    "DSV41_ENGRAM_WILLNEED": "0",
+                    "DSV41_ENGRAM_WILLNEED": "1",
                     "DSV41_ENGRAM_WILLNEED_MIN_ROWS": "64",
                     "DSV41_ENGRAM_GATHER_V2_MAX_ROWS": "256",
                 },
             )
-        self.assertIs(mod._ENG_GV2_WILLNEED, False)
+        self.assertIs(mod._ENG_GV2_WILLNEED, True)
         self.assertEqual(mod._ENG_GV2_WILLNEED_MIN, 64)
         self.assertEqual(mod._ENG_GV2_MAX_ROWS, 256)
 
@@ -213,7 +213,9 @@ class GatherV2ReadTests(unittest.TestCase):
 
     def test_willneed_then_read_is_byte_identical(self) -> None:
         rel = next(r for n, r in self._cases() if n == "fuzz R=600")
-        with mock.patch.object(self.mod, "_ENG_GV2_WILLNEED_MIN", 4):
+        with mock.patch.object(self.mod, "_ENG_GV2_WILLNEED", True), mock.patch.object(
+            self.mod, "_ENG_GV2_WILLNEED_MIN", 4
+        ):
             self.assertGreater(self.tbl._gv2_willneed(rel), 0)
         for fname, fd, base, rb in self._files():
             self.assertEqual(self._v2(fd, base, rel, rb)[0], self._ref(fd, base, rel, rb), fname)

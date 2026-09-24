@@ -254,7 +254,7 @@ class EnvForwardingTests(unittest.TestCase):
         for role in ("head", "worker"):
             env = container_env(res[role])
             self.assertEqual(env["DSV41_ENGRAM_GATHER_V2_MAX_ROWS"], "256", role)
-            self.assertEqual(env["DSV41_ENGRAM_WILLNEED"], "1", role)
+            self.assertEqual(env["DSV41_ENGRAM_WILLNEED"], "0", role)  # off until the E1 serve arm
             self.assertEqual(env["DSV41_ENGRAM_WILLNEED_MIN_ROWS"], "512", role)
             self.assertEqual(env["NCCL_NTHREADS"], "128", role)
             _, args = image_and_args(res[role])
