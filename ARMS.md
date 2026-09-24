@@ -62,6 +62,20 @@ One boot = one lever. Every arm produces the four numbers via
      floors (step 4) hold; `benches/e2e.py` exits 0.
    - **Honest cells**: prose_long `natural_finish_reason` is `length`
      (post-EOS fraction 0) and `serve_env_ranks_match` is true.
+
+   **Quality gate (required before any KEEP)**: after the four numbers,
+   serialized and never interleaved with perf capture, the quick eval must
+   pass against the stored baseline:
+   ```bash
+   python3 tests/quality_eval.py --quick \
+     --baseline results/2026-09-24-review/quality-baseline/quick.json \
+     --out results/<arm-dir>/quality_quick.json      # exit 0 = pass
+   ```
+   It gates prefill numerics (NLL), decode numerics (decode-vs-prefill
+   probe and the golden flip hazard against the A/A control), tool calls,
+   needle 8k/32k, c=2 and vision. A lever that changes numerics by design
+   (a new pack, lm_head, a kernel format) also runs `--full` against
+   `full.json`. A failed gate means no KEEP, even when the perf win is real.
 7. **Free the box between arms**: `./stop.sh`, confirm no GPU containers on
    either node, then boot the next arm. Never stack levers on a promoted
    arm's boot without re-running the full four numbers.

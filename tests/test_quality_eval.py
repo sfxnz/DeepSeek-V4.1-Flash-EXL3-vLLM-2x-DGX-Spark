@@ -284,6 +284,13 @@ class MainWiringTests(unittest.TestCase):
                 with redirect_stdout(io.StringIO()):
                     rc = q.main(["--url", url, "--only", "nll", "--baseline", str(base)])
                 self.assertEqual(rc, 1)   # 0.5 > 0.4 + 0.01
+                # --result re-gates a saved run offline (no HTTP needed).
+                with redirect_stdout(io.StringIO()):
+                    rc_off = q.main(["--url", "http://127.0.0.1:9", "--result", str(out),
+                                     "--baseline", str(base)])
+                    rc_self = q.main(["--url", "http://127.0.0.1:9", "--result", str(base),
+                                      "--baseline", str(base)])
+                self.assertEqual((rc_off, rc_self), (1, 0))
         finally:
             httpd.shutdown()
             httpd.server_close()

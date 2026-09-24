@@ -88,6 +88,37 @@ When you are done:
 ./stop.sh
 ```
 
+## Quality eval
+
+`tests/quality_eval.py` measures output quality against a running serve. It is stdlib-only and uses HTTP only. `--quick` (~6-9 min) covers:
+
+- teacher-forced NLL on 40 public-domain passages (`prompt_logprobs`, with BOS)
+- a decode-vs-prefill logprob probe
+- 30 tool-call items (JSON-valid, exact-args and no-call rates)
+- needle recall at 8k/32k × 3 depths, on generated filler
+- a 12×2 greedy self-consistency control
+- a c=2 sanity check
+- the red-PNG vision check
+
+`--full` adds GSM8K-100 with thinking off, GSM8K-40 with thinking on, MMLU 4×57, and the needle at 128k. The run exits 1 when a gate fails.
+
+```bash
+python3 tests/quality_eval.py --quick --out /tmp/q.json \
+  --baseline results/2026-09-24-review/quality-baseline/quick.json
+```
+
+With `--baseline`, it gates on the following:
+
+| Metric | Gate |
+|--------|------|
+| NLL | ≤ baseline + max(0.01, 3× repeat noise) nats |
+| Decode probe | median \|Δlogprob\| ≤ baseline + 0.05, and greedy-text NLL ≤ baseline + 0.15 |
+| Rates | Wilson 95% upper bound ≥ baseline rate |
+| Needle | found ≥ baseline |
+| Golden flip hazard | ≤ 2× the A/A control |
+
+Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-gates two saved runs offline with no traffic, which is how an A/B compares two boots. Run it serialized: never next to a bench, and never with a third stream. The vendored data and licenses are in `tests/quality/README.md`. The baseline numbers are in `results/2026-09-24-review/quality-baseline/README.md`.
+
 ## Defaults
 
 <!-- BEGIN generated defaults from recipe.yaml — edit recipe.yaml and run kit/render.py -->
