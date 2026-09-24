@@ -17,6 +17,9 @@
 # post-EOS tokens), warm-prefix (same ~2k prompt twice, nonce at the end),
 # and provenance: filtered NCCL|DSV41|VLLM container env + digest on both
 # ranks, container start time, host uptime, page-cache state before benches.
+# Last, tools/disarm_scan.sh greps both ranks' docker logs for every
+# LOG_DISARMED marker: a lever that turned itself off at boot or at runtime
+# sets lever_disarmed=true in the JSON and the capture is invalid for an A/B.
 #
 # Usage: tools/four_numbers.sh --arm NAME [--out DIR]
 #   DIR default: results/$(date +%Y-%m-%d)-NAME
@@ -27,7 +30,7 @@
 # Capture order is serialized on purpose (MAX_NUM_SEQS=2; concurrent
 # prefill chunks contaminate each other): provenance -> prose 9x -> micro
 # 8k+32k -> free both nodes (right after the 32k prefill) -> L.A.I.L 3x ->
-# prose_long c=1/c=2 5x -> warm-prefix. Runtime budget ~20-25 min (estimate;
+# prose_long c=1/c=2 5x -> warm-prefix -> disarm scan. Runtime budget ~20-25 min (estimate;
 # re-measure on the first campaign run).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -113,6 +116,11 @@ python3 bench_decode.py --phase prose_long --concurrency 1 2 --max-tokens 200 \
 
 # --- warm-prefix: same ~2k prompt twice, nonce at the end ----------------
 python3 tools/warm_prefix.py --tokens 2048 2>&1 | tee "$out/07-warm-prefix.log"
+
+# --- disarm scan: any lever that turned itself off, boot or runtime --------
+if ! tools/disarm_scan.sh 2>&1 | tee "$out/08-disarm.log"; then
+  echo "WARNING: disarm lines above; this capture is INVALID for an A/B" >&2
+fi
 
 # --- parse everything into one JSON ----------------------------------------
 python3 tools/four_numbers_parse.py "$arm" "$ts" "$out" complete \

@@ -7,6 +7,8 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -219,6 +221,19 @@ class FourNumbersParseTests(unittest.TestCase):
         self.assertIsNone(res["serve_env_ranks_match"])
         self.assertIsNone(res["warm_prefix"])
         self.assertEqual(res["host_state"], {})
+        self.assertIsNone(res["lever_disarmed"], "no scan ran: unknown, not clean")
+
+    def test_parse_disarm_scan(self) -> None:
+        line = ("(Worker_TP1 pid=464) dsv41: engram prefetch disabled after 3 errors: "
+                "IndexError('list index out of range')")
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "08-disarm.log").write_text(f"== spark1 ==\n== spark2 ==\n{line}\n")
+            res = self.fn.parse("x", "2026-09-24T12:00:00Z", Path(d), "complete")
+            self.assertEqual(res["disarm_lines"], {"spark1": [], "spark2": [line]})
+            self.assertTrue(res["lever_disarmed"])
+            (Path(d) / "08-disarm.log").write_text("== spark1 ==\n== spark2 ==\n")
+            res = self.fn.parse("x", "2026-09-24T12:00:00Z", Path(d), "complete")
+        self.assertIs(res["lever_disarmed"], False)
 
     def test_four_numbers_sh_runs_new_cells_and_filters_env(self) -> None:
         sh = (ROOT / "tools/four_numbers.sh").read_text()
@@ -227,8 +242,42 @@ class FourNumbersParseTests(unittest.TestCase):
         self.assertIn("--phase prose_long --concurrency 1 2", sh)
         self.assertIn("tools/warm_prefix.py", sh)
         self.assertIn("00-host-state.log", sh)
+        self.assertIn('tools/disarm_scan.sh 2>&1 | tee "$out/08-disarm.log"', sh)
         # The frozen cell is unchanged.
         self.assertIn("bench_decode.py --phase prose --concurrency 1 --max-tokens 200", sh)
+
+
+class DisarmScanTests(unittest.TestCase):
+    """tools/disarm_scan.sh with docker/ssh shims (no serve)."""
+
+    DOCKER = '#!/usr/bin/env bash\n[[ "$1" == logs ]] && printf "%s\\n" "$STUB_LOGS"\nexit 0\n'
+    SSH = '#!/usr/bin/env bash\n[[ -n "$STUB_SSH_RC" ]] && exit "$STUB_SSH_RC"\nSTUB_LOGS="$STUB_LOGS_WORKER" exec bash -c "${@: -1}"\n'
+
+    def _run(self, head: str, worker: str, ssh_rc: str = "") -> subprocess.CompletedProcess:
+        with tempfile.TemporaryDirectory() as d:
+            for name, body in (("docker", self.DOCKER), ("ssh", self.SSH)):
+                (Path(d) / name).write_text(body)
+                (Path(d) / name).chmod(0o755)
+            env = dict(os.environ, PATH=f"{d}:{os.environ['PATH']}", STUB_LOGS=head,
+                       STUB_LOGS_WORKER=worker, STUB_SSH_RC=ssh_rc)
+            return subprocess.run(["bash", str(ROOT / "tools/disarm_scan.sh")], env=env,
+                                  capture_output=True, text=True, timeout=60)
+
+    def test_runtime_disarm_on_one_rank_is_reported(self) -> None:
+        bad = "(Worker_TP1 pid=464) dsv41: engram prefetch disabled after 3 errors: IndexError('x')"
+        r = self._run("INFO boot\ndsv41: engram prefetch v3 armed", f"INFO step\n{bad}\nINFO step")
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertEqual(r.stdout, f"== spark1 ==\n== spark2 ==\n{bad}\n")
+
+    def test_clean_ranks_exit_zero(self) -> None:
+        r = self._run("[dsv41-prefill-empty-cache] skipped #1", "dsv41-patch skip step_census: off")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stdout, "== spark1 ==\n== spark2 ==\n")
+
+    def test_unreachable_worker_is_not_clean(self) -> None:
+        r = self._run("", "", ssh_rc="255")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("disarm scan failed (rc=255)", r.stdout)
 
 
 class WarmPrefixTests(unittest.TestCase):

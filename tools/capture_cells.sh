@@ -25,4 +25,9 @@ python3 tools/measure_lail_prose.py 2>&1 | tee -a "$out/02-e2e.log"
 echo "== decode reference ==" | tee "$out/03-decode.log"
 python3 bench_decode.py --phase prose --concurrency 1 2>&1 | tee -a "$out/03-decode.log"
 
+# A lever that turned itself off (boot or runtime) invalidates the capture.
+if ! tools/disarm_scan.sh 2>&1 | tee "$out/04-disarm.log"; then
+  echo "WARNING: disarm lines above; this capture is INVALID for an A/B" >&2
+fi
+
 echo "captured $out"

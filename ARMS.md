@@ -61,7 +61,10 @@ One boot = one lever. Every arm produces the four numbers via
      not worse than A by more than their own boot-to-boot spread; boot
      floors (step 4) hold; `benches/e2e.py` exits 0.
    - **Honest cells**: prose_long `natural_finish_reason` is `length`
-     (post-EOS fraction 0) and `serve_env_ranks_match` is true.
+     (post-EOS fraction 0), `serve_env_ranks_match` is true, and
+     `lever_disarmed` is false (`tools/disarm_scan.sh` found no
+     LOG_DISARMED line in either rank's docker logs; a lever can turn
+     itself off at runtime, after the post-ready audit ran).
 
    **Quality gate (required before any KEEP)**: after the four numbers,
    serialized and never interleaved with perf capture, the quick eval must

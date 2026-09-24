@@ -78,6 +78,20 @@ def parse_host_state(text: str) -> dict:
     return out
 
 
+def parse_disarm(text: str) -> dict:
+    """08-disarm.log -> {node: [disarm lines]} (tools/disarm_scan.sh)."""
+    out: dict = {}
+    node = None
+    for ln in text.splitlines():
+        m = re.match(r"^== (spark\d) ==$", ln)
+        if m:
+            node = m.group(1)
+            out[node] = []
+        elif node and ln.strip():
+            out[node].append(ln.strip()[:240])
+    return out
+
+
 def parse(arm: str, ts: str, out: Path, mode: str) -> dict:
     res = {
         "arm": arm, "ts": ts, "host": "", "serve_image": None,
@@ -94,6 +108,7 @@ def parse(arm: str, ts: str, out: Path, mode: str) -> dict:
         "serve_env_ranks_match": None, "serve_env_rank_diff": None,
         "serve_started_at": {},
         "serve_uptime_s": None, "host_state": {},
+        "disarm_lines": None, "lever_disarmed": None,
         "notes": "", "partial": mode == "partial",
     }
 
@@ -194,6 +209,11 @@ def parse(arm: str, ts: str, out: Path, mode: str) -> dict:
             res["memavail_after_prefill_gib_spark1"] = gib
         elif host == "spark2":
             res["memavail_after_prefill_gib_spark2"] = gib
+
+    # disarm scan (08-disarm.log): None when the scan did not run
+    if (out / "08-disarm.log").exists():
+        res["disarm_lines"] = parse_disarm(log("08-disarm.log"))
+        res["lever_disarmed"] = any(res["disarm_lines"].values())
 
     # L.A.I.L prose median + per-run rates; acceptance fallback
     m = last_summary(log("04-lail.log"))
