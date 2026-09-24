@@ -463,6 +463,51 @@ class Sm120PageTests(unittest.TestCase):
         self.assertIn("engram n=1", text)
         self.assertIn("avg_ms=250.0", text)
 
+    def test_step_census_records_pre_draft_between_target_and_draft(self) -> None:
+        import sys
+        import types
+
+        class Spec:
+            def _generate_draft(self):
+                return "d"
+
+        class Model:
+            def forward(self):
+                return "t"
+
+        leaves = {
+            "vllm.v1.worker.gpu.spec_decode.dspark.speculator": ("DSparkSpeculator", Spec),
+            "vllm.models.deepseek_v4_1.nvidia.model": ("DeepseekV4Model", Model),
+        }
+        names = {leaf.rsplit(".", k)[0] for leaf in leaves for k in range(leaf.count(".") + 1)}
+        saved = {n: sys.modules.get(n) for n in names}
+        try:
+            for n in names:
+                sys.modules[n] = types.ModuleType(n)
+            for leaf, (attr, cls) in leaves.items():
+                setattr(sys.modules[leaf], attr, cls)
+            rec: list = []
+            self.mod.install_step_census(rec)
+            spec, model = Spec(), Model()
+            model.forward()
+            spec._generate_draft()
+            spec._generate_draft()  # no target in between: no pre_draft
+            model.forward()
+            spec._generate_draft()
+            order = [name for name, _ in rec]
+            self.assertEqual(
+                order, ["target", "pre_draft", "draft", "draft", "target", "pre_draft", "draft"]
+            )
+            self.assertTrue(all(dt >= 0 for _, dt in rec))
+            self.assertIn("pre_draft n=2", self.mod.format_census_totals(self.mod.census_totals(rec)))
+            rec.clear()  # atexit dump prints nothing
+        finally:
+            for n, m in saved.items():
+                if m is None:
+                    sys.modules.pop(n, None)
+                else:
+                    sys.modules[n] = m
+
     def test_sitecustomize_census_is_opt_in(self) -> None:
         site = (ROOT / "docker/patch/sitecustomize.py").read_text()
         self.assertIn("DSV41_STEP_CENSUS", site)
