@@ -174,6 +174,9 @@ STAGER_METHODS = MARKER + '''
             ):
                 return
             k = min(int(draft_tokens.shape[1]), self._pf_kmax)
+            # sampled_token_ids is [num_reqs, k + 1]: its row stride is w,
+            # not _pf_cap (the worker read rows r >= 1 from unwritten slots).
+            w = min(int(sampled_token_ids.shape[1]), self._pf_cap)
             # Bump the generation BEFORE overwriting the pinned snapshot: a
             # worker that still sees its own gen after copying the snapshot
             # out read a buffer no newer enqueue had touched (seqlock).
@@ -197,7 +200,7 @@ STAGER_METHODS = MARKER + '''
                 if window.numel():
                     win = window[:num_reqs, :].reshape(-1).to(_torch.int32)
                     self._pf_pin_win[: win.numel()].copy_(win, non_blocking=True)
-                out = sampled_token_ids[:num_reqs, : self._pf_cap].reshape(-1).to(
+                out = sampled_token_ids[:num_reqs, :w].reshape(-1).to(
                     _torch.int64
                 )
                 self._pf_pin_out[: out.numel()].copy_(out, non_blocking=True)
@@ -208,8 +211,17 @@ STAGER_METHODS = MARKER + '''
                     num_sampled[:num_reqs].to(_torch.int64), non_blocking=True
                 )
                 self._pf_event.record()
+                # The sources are main-stream tensors; sampled_token_ids and
+                # num_sampled are new every step. Without record_stream the
+                # caching allocator can hand their memory to the next step
+                # before these side-stream reads run (garbage num_sampled ->
+                # IndexError -> prefetch disabled, 2026-09-24).
+                for _src in (input_ids, positions, query_start_loc, window,
+                             sampled_token_ids, num_sampled, draft_tokens):
+                    if _src.is_cuda:
+                        _src.record_stream(self._pf_stream)
             self._pf_pool.submit(
-                self._prefetch_worker, self._pf_gen, num_reqs, num_tokens, k
+                self._prefetch_worker, self._pf_gen, num_reqs, num_tokens, k, w
             )
         except Exception as exc:  # noqa: BLE001
             self.prefetch_on = False
@@ -256,7 +268,7 @@ STAGER_METHODS = MARKER + '''
         return chunk, cpos, hist
 
     def _prefetch_worker(self, gen: int, num_reqs: int, num_tokens: int,
-                         k: int) -> None:
+                         k: int, w: int) -> None:
         # Hash the predicted NEXT chunks on CPU; fadvise AND publish each
         # table as soon as it is predicted so the next gather can pair.
         import os as _os
@@ -269,9 +281,7 @@ STAGER_METHODS = MARKER + '''
             win2 = self._pf_pin_win[
                 : num_reqs * self._pf_depth
             ].reshape(num_reqs, self._pf_depth)
-            outs = self._pf_pin_out[: num_reqs * self._pf_cap].reshape(
-                num_reqs, self._pf_cap
-            )
+            outs = self._pf_pin_out[: num_reqs * w].reshape(num_reqs, w)
             drs = self._pf_pin_draft[: num_reqs * k].reshape(num_reqs, k)
             ns = self._pf_pin_ns[:num_reqs].tolist()
             win2 = win2.tolist()
@@ -309,8 +319,21 @@ STAGER_METHODS = MARKER + '''
                     _t[11]._pf_expected = set()
                     _t[11]._pf_acc_gen = gen
             for r in range(num_reqs):
-                A = max(int(ns[r]), 0)
+                A = int(ns[r])
                 if A <= 0:
+                    continue
+                if A > w:
+                    # num_sampled <= k + 1 = w. A larger value is a bad
+                    # snapshot: skip this request, never count it as an
+                    # error (3 errors disable prefetch for the process).
+                    self._pf_bad = getattr(self, "_pf_bad", 0) + 1
+                    if self._pf_bad <= 3:
+                        print(
+                            "dsv41: engram prefetch v3 bad snapshot "
+                            "num_sampled=%d > %d (request not predicted, "
+                            "%d so far)" % (A, w, self._pf_bad),
+                            flush=True,
+                        )
                     continue
                 q0 = int(qsl[r])
                 q0 = min(max(q0, 0), num_tokens - 1)
