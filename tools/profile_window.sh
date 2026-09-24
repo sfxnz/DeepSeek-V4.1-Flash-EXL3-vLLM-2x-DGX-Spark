@@ -66,7 +66,8 @@ sleep "$FLUSH_S"
 echo "== trace files: rank 0 (head) =="
 docker exec "$CONTAINER_NAME" sh -c "ls -la $TRACE_DIR/"
 echo "== trace files: rank 1 ($WORKER_HOST) =="
-ssh "$WORKER_HOST" docker exec "$CONTAINER_NAME" sh -c "'ls -la $TRACE_DIR/'"
+ssh "$WORKER_HOST" docker exec "$CONTAINER_NAME" sh -c "'ls -la $TRACE_DIR/'" \
+  || echo "WARN: no rank-1 trace dir on $WORKER_HOST; still copying rank 0"
 
 echo "== MemAvail before cp =="
 free -h | sed -n 1,2p

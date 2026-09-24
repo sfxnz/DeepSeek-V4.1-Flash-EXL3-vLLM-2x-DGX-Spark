@@ -27,14 +27,14 @@ class ProfileWindowTests(unittest.TestCase):
     def test_syntax(self) -> None:
         subprocess.run(["bash", "-n", str(SCRIPT)], check=True)
 
-    def test_copies_both_ranks_and_never_stops_the_serve(self) -> None:
+    def _run(self, ssh_shim: str) -> tuple[subprocess.CompletedProcess, list[str]]:
         with tempfile.TemporaryDirectory() as d:
             bin_dir = Path(d) / "bin"
             bin_dir.mkdir()
             (bin_dir / "curl").write_text(CURL)
             (bin_dir / "docker").write_text(DOCKER)
-            for name in ("ssh", "free"):
-                (bin_dir / name).write_text(LOGGER.format(name=name))
+            (bin_dir / "ssh").write_text(ssh_shim)
+            (bin_dir / "free").write_text(LOGGER.format(name="free"))
             for f in bin_dir.iterdir():
                 f.chmod(0o755)
             log = Path(d) / "calls.log"
@@ -47,8 +47,18 @@ class ProfileWindowTests(unittest.TestCase):
                 "WORKER_HOST": "spark2",
             }
             r = subprocess.run(["bash", str(SCRIPT)], env=env, capture_output=True, text=True, timeout=60)
-            self.assertEqual(r.returncode, 0, r.stderr)
-            calls = log.read_text().splitlines()
+            return r, log.read_text().splitlines()
+
+    def test_worker_without_trace_dir_still_copies_rank0(self) -> None:
+        ssh = LOGGER.format(name="ssh") + '[[ "$*" == *"docker exec"* ]] && exit 2\nexit 0\n'
+        r, calls = self._run(ssh)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("WARN: no rank-1 trace dir", r.stdout)
+        self.assertTrue(any(c.startswith("docker cp dsv41-flash-exl3:/tmp/dsv41-traces") for c in calls))
+
+    def test_copies_both_ranks_and_never_stops_the_serve(self) -> None:
+        r, calls = self._run(LOGGER.format(name="ssh"))
+        self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("completion_tokens': 512", r.stdout)
         stop = next(i for i, c in enumerate(calls) if "stop_profile" in c)
         head_cp = next(i for i, c in enumerate(calls) if c.startswith("docker cp dsv41-flash-exl3:/tmp/dsv41-traces"))
