@@ -2,9 +2,13 @@
 """Isolated prefill (pp) and decode (tg) microbench at fixed context lengths.
 
 For each context length L in CONTEXTS:
-  pp@L  : one fresh ~L-token prompt, max_tokens=1, stream. Prefill tok/s =
-          prompt_tokens / TTFT. (TTFT includes one verify step; constant
-          across configs, so comparisons are clean.)
+  pp_warm@L : one fresh ~L-token repo-text prompt, max_tokens=1, stream.
+          Prefill tok/s = prompt_tokens / TTFT. (TTFT includes one verify
+          step; constant across configs, so comparisons are clean.) Repo text
+          reuses the same n-grams every run, so Engram rows are page-cache
+          warm. Historical "pp" rows are this cell.
+  pp_novel@L: same, on seeded pseudo-word text (corpus novel=True): fresh
+          n-grams every run, so this is the cold-Engram prefill path.
   tg32@L: fresh ~L-token prompt, max_tokens=33, stream, ignore_eos. Decode
           tok/s = (completion_tokens-1) / wall-after-first-token.
 
@@ -86,8 +90,8 @@ def stream_once(url, model, prompt, max_tokens, timeout):
     }
 
 
-def fresh_doc(target, ratio, tok, seed):
-    doc = build_doc(target, ratio, seed=seed)
+def fresh_doc(target, ratio, tok, seed, novel=False):
+    doc = build_doc(target, ratio, seed=seed, novel=novel)
     doc = trim_to_tokens(doc, target, tok)
     return doc, tok(doc)
 
@@ -104,7 +108,7 @@ def main() -> int:
     args = p.parse_args()
 
     tok = make_tokenizer(args.url.rsplit("/v1", 1)[0], args.model)
-    ratio = char_ratio(tok)
+    ratios = {False: char_ratio(tok), True: char_ratio(tok, novel=True)}
     metrics_url = args.url.split("/v1/", 1)[0] + "/metrics"
     rows = []
     # Fresh docs every invocation: the prefix cache makes any repeated
@@ -112,13 +116,14 @@ def main() -> int:
     base_seed = (time.time_ns() // 1000) % (1 << 30)
     seed = base_seed
     for ctx in args.contexts:
-        for phase in ("pp", "tg"):
+        for phase in ("pp_warm", "pp_novel", "tg"):
+            novel = phase == "pp_novel"
             per = []
             for r in range(args.runs):
                 seed += 1
-                doc, ntok = fresh_doc(ctx, ratio, tok, seed)
+                doc, ntok = fresh_doc(ctx, ratios[novel], tok, seed, novel)
                 before = spec_counters(metrics_url)
-                if phase == "pp":
+                if phase != "tg":
                     res = stream_once(args.url, args.model, doc, 1, args.timeout)
                     rate = res["prompt_tokens"] / res["ttft_s"]
                     for attempt in range(3):
@@ -127,7 +132,8 @@ def main() -> int:
                         print(f"  cache-hit suspected (rate={rate:.0f}); "
                               f"fresh doc, attempt {attempt+2}", flush=True)
                         seed += 1
-                        doc, ntok = fresh_doc(ctx, ratio, tok, seed)
+                        doc, ntok = fresh_doc(ctx, ratios[novel], tok, seed,
+                                              novel)
                         res = stream_once(args.url, args.model, doc, 1,
                                           args.timeout)
                         rate = res["prompt_tokens"] / res["ttft_s"]

@@ -7,6 +7,11 @@ python) so token distribution and expert routing look like the real workload
 bank. Repetition across a long doc is broken by seeded reshuffles per cycle.
 
 Everything is reproducible: same seed and file state, same document.
+
+novel=True swaps the repo text for seeded pseudo-word prose: a per-seed
+lexicon of syllable words glued with common function words. Repo text is the
+same n-gram set on every run, so Engram rows stay page-cache warm; novel text
+hits fresh rows and exposes the cold-Engram prefill path. No downloads.
 """
 
 from __future__ import annotations
@@ -72,18 +77,62 @@ def _rng(seed: int) -> random.Random:
     return random.Random(seed)
 
 
-def char_ratio(tokenize) -> float:
+_ONSETS = ["b", "d", "f", "g", "k", "l", "m", "n", "p", "r", "s", "t", "v",
+           "br", "dr", "gl", "kr", "pl", "st", "tr", "sh", "th"]
+_VOWELS = ["a", "e", "i", "o", "u", "ai", "ea", "ou"]
+_CODAS = ["", "", "n", "r", "s", "l", "m", "nd", "st"]
+_FUNCTION = ["the", "of", "and", "a", "to", "in", "is", "that", "for", "it",
+             "with", "as", "on", "was", "by", "from", "at", "which", "but",
+             "or", "this", "their", "when", "each"]
+
+
+def novel_segments(seed: int, n_paras: int = 64) -> list[str]:
+    """Seeded pseudo-word paragraphs; distinct seeds give distinct lexicons."""
+    rng = _rng(seed)
+    lexicon = sorted({
+        "".join(rng.choice(_ONSETS) + rng.choice(_VOWELS)
+                for _ in range(rng.randint(1, 3))) + rng.choice(_CODAS)
+        for _ in range(3000)
+    })
+    paras = []
+    for _ in range(n_paras):
+        sents = []
+        for _ in range(rng.randint(3, 6)):
+            words = [rng.choice(_FUNCTION) if rng.random() < 0.35
+                     else rng.choice(lexicon)
+                     for _ in range(rng.randint(8, 20))]
+            sents.append(" ".join(words).capitalize() + ".")
+        paras.append(" ".join(sents))
+    return paras
+
+
+def char_ratio(tokenize, novel: bool = False) -> float:
     """Calibrate tokens-per-char for the segment pool with one call."""
-    sample = "\n\n".join(_repo_segments()[:40])
+    segs = novel_segments(0, 40) if novel else _repo_segments()[:40]
+    sample = "\n\n".join(segs)
     return tokenize(sample) / max(1, len(sample))
 
 
-def build_doc(target_tokens: int, ratio: float, seed: int = 7) -> str:
-    """Assemble repo-text segments to ~target_tokens.
+def build_doc(target_tokens: int, ratio: float, seed: int = 7,
+              novel: bool = False) -> str:
+    """Assemble repo-text (or novel=True pseudo-word) segments to ~target_tokens.
 
     Deterministic in (seed, target, ratio, repo state). Each cycle reshuffles
-    with a derived seed so long docs are not one repeated block.
+    with a derived seed so long docs are not one repeated block; in novel
+    mode each cycle draws fresh paragraphs instead.
     """
+    if novel:
+        parts: list[str] = []
+        est = 0
+        cycle = 0
+        while est < target_tokens / ratio * 1.05:
+            for para in novel_segments(seed * 1000 + cycle):
+                parts.append(para)
+                est += len(para) + 2
+                if est >= target_tokens / ratio * 1.05:
+                    break
+            cycle += 1
+        return "\n\n".join(parts)
     segs = _repo_segments()
     rng = _rng(seed)
     parts: list[str] = []
