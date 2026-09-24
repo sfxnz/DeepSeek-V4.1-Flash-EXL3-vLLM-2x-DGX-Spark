@@ -78,7 +78,8 @@ mkdir -p "$OUT_DIR"
 docker cp "$CONTAINER_NAME:$TRACE_DIR" "$OUT_DIR/rank0"
 ls -la "$OUT_DIR/rank0"
 echo "== docker cp BEFORE stop: rank 1 -> $WORKER_HOST:$OUT_DIR/rank1 =="
-ssh "$WORKER_HOST" "mkdir -p '$OUT_DIR' && docker cp '$CONTAINER_NAME:$TRACE_DIR' '$OUT_DIR/rank1' && ls -la '$OUT_DIR/rank1'"
+ssh "$WORKER_HOST" "mkdir -p '$OUT_DIR' && docker cp '$CONTAINER_NAME:$TRACE_DIR' '$OUT_DIR/rank1' && ls -la '$OUT_DIR/rank1'" \
+  || echo "WARN: rank-1 copy failed on $WORKER_HOST; rank 0 is saved"
 
 echo "== MemAvail after cp =="
 free -h | sed -n 1,2p

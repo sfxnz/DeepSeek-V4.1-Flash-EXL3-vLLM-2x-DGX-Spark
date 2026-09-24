@@ -50,11 +50,16 @@ class ProfileWindowTests(unittest.TestCase):
             return r, log.read_text().splitlines()
 
     def test_worker_without_trace_dir_still_copies_rank0(self) -> None:
-        ssh = LOGGER.format(name="ssh") + '[[ "$*" == *"docker exec"* ]] && exit 2\nexit 0\n'
+        # No trace dir on rank 1: the real `docker exec ls` AND `docker cp` both fail there.
+        ssh = LOGGER.format(name="ssh") + '[[ "$*" == *"docker exec"* || "$*" == *"docker cp"* ]] && exit 2\nexit 0\n'
         r, calls = self._run(ssh)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("WARN: no rank-1 trace dir", r.stdout)
+        self.assertIn("WARN: rank-1 copy failed", r.stdout)
         self.assertTrue(any(c.startswith("docker cp dsv41-flash-exl3:/tmp/dsv41-traces") for c in calls))
+        cp1 = next(i for i, c in enumerate(calls) if c.startswith("ssh spark2") and "docker cp" in c)
+        self.assertTrue(any(c.startswith("free") for c in calls[cp1:]), "MemAvail after cp still read")
+        self.assertIn("Traces saved", r.stdout)
 
     def test_copies_both_ranks_and_never_stops_the_serve(self) -> None:
         r, calls = self._run(LOGGER.format(name="ssh"))
