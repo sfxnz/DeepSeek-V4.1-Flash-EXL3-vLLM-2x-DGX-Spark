@@ -1,0 +1,15 @@
+steps=232.0 kernel_ms_per_step=64.459
+argmax               grid=[1, 1, 1]      calls/step=3.02    us/call=23.07    ms/step=0.07  void at::native::reduce_kernel<512, 1, at::native::ReduceOp<
+markov_gemm          grid=[8, 505, 1]    calls/step=3.01    us/call=276.91   ms/step=0.834  void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616g
+mhc_pre_norm_fused   grid=[4, 1, 1]      calls/step=80.0    us/call=6.14     ms/step=0.491  mhc_pre_big_fuse_with_norm_tilelang_kernel
+mhc_pre_norm_fused   grid=[3, 1, 1]      calls/step=6.03    us/call=5.57     ms/step=0.034  mhc_pre_big_fuse_with_norm_tilelang_kernel
+mhc_pre_norm_fused   grid=[61, 1, 1]     calls/step=0.34    us/call=8.44     ms/step=0.003  mhc_pre_big_fuse_with_norm_tilelang_kernel
+mhc_prenorm_gemm     grid=[40, 1, 1]     calls/step=85.37   us/call=15.6     ms/step=1.331  void deep_gemm::sm120_tf32_hc_prenorm_gemm_impl<24u, 20480u,
+mhc_prenorm_gemm     grid=[20, 1, 1]     calls/step=1.0     us/call=6.14     ms/step=0.006  void deep_gemm::sm120_tf32_hc_prenorm_gemm_impl<24u, 5120u, 
+topk                 grid=[4, 1, 1]      calls/step=91.0    us/call=12.39    ms/step=1.128  _compute_global_topk_indices_and_lens_kernel
+topk                 grid=[256, 1, 1]    calls/step=9.0     us/call=3.72     ms/step=0.033  void at::native::mbtopk::computeBlockDigitCounts<float, unsi
+topk                 grid=[1, 1, 1]      calls/step=9.19    us/call=2.88     ms/step=0.026  void vllm::moe::topkGatingSoftplusSqrt<4, 128, 4, 16, 32, fa
+topk                 grid=[4, 10, 1]     calls/step=8.0     us/call=1.59     ms/step=0.013  void vllm::topKPerRowDecode<512, true, true, false>(float co
+topk                 grid=[61, 1, 1]     calls/step=0.37    us/call=9.57     ms/step=0.004  _dsv4_topk_kernel
+woa_einsum           grid=[48, 1, 1]     calls/step=43.01   us/call=81.26    ms/step=3.495  void deep_gemm::sm120_fp8_fp4_gemm_1d1d_impl<0u, 4u, 4096u, 
+woa_pack             grid=[12, 1, 1]     calls/step=3.01    us/call=1.48     ms/step=0.004  void deep_gemm::transpose_and_pack_fp32_into_ue8m0<512u, 48u
