@@ -83,8 +83,9 @@ RUNTIME_STEPS = [
 
 SKIP_WORDS = ("skip", "missing", "not found", "not present")
 
-# vllm/flashinfer-targeting patches kept in docker/patch but not wired by default.
-UNWIRED = ["prefer_b12x_bmm", "widen_mla_kv_buf", "c1_graph_safe_adaptive", "sm120_wo_a", "g8_stream_feed"]
+# vllm/flashinfer-targeting patches kept in docker/patch (most in attic/) but not wired by default.
+UNWIRED = ["attic/prefer_b12x_bmm", "attic/widen_mla_kv_buf", "attic/c1_graph_safe_adaptive", "attic/sm120_wo_a",
+           "g8_stream_feed"]
 ANCHOR_NAME = re.compile(r"(^OLD|_OLD$|_OLD_|ANCHOR|_TAIL$|^GD_DEF$)")
 
 
