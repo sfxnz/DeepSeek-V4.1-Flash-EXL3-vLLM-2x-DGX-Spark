@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "docker/patch/sitecustomize.py"
-HELPERS = ("_PatchSkip", "_patch", "_rewrite", "_sm120_rewrite", "_PATCH_STRICT", "_VLLM")
+HELPERS = ("_PatchSkip", "_PatchAbsent", "_patch","_rewrite", "_sm120_rewrite", "_PATCH_STRICT", "_VLLM")
 REQUIRED = {
     "persistent_topk",
     "kpool_persistent_topk",
@@ -124,7 +124,7 @@ class PatchHelperTests(unittest.TestCase):
                 import sm120_page
                 _patch("native_indexer_decode", lambda: _rewrite({str(target)!r}, sm120_page.patch_native_indexer_decode_source), required=True)
                 _patch("native_indexer_decode", lambda: _rewrite({str(target)!r}, sm120_page.patch_native_indexer_decode_source), required=True)
-                _patch("absent", lambda: _rewrite({str(target) + ".nope"!r}, sm120_page.patch_native_indexer_decode_source), required=True)
+                _patch("absent", lambda: _rewrite({str(target) + ".nope"!r}, sm120_page.patch_native_indexer_decode_source))
                 """,
                 strict="1",
             )
@@ -136,6 +136,22 @@ class PatchHelperTests(unittest.TestCase):
             self.assertIn("is_device_capability_family(120)", target.read_text())
             self.assertEqual(target.stat().st_mode & 0o777, 0o640)
             self.assertEqual(sorted(p.name for p in Path(d).iterdir()), ["indexer.py"], "no tmp file left")
+
+    def test_required_rewrite_of_absent_file_fails(self) -> None:
+        # A moved file is image drift: FAIL (the audit's disarm marker), exit when strict.
+        body = """
+            import sm120_page
+            _patch("req", lambda: _rewrite("/nonexistent/indexer.py", sm120_page.patch_native_indexer_decode_source), required=True)
+            print("after required")
+            """
+        proc = _run(body, strict="1")
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("dsv41-patch FAIL req: _PatchAbsent('/nonexistent/indexer.py absent')", proc.stderr)
+        self.assertNotIn("after required", proc.stdout)
+        proc = _run(body)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertTrue(proc.stderr.startswith("dsv41-patch FAIL req: "), proc.stderr)
+        self.assertIn("after required", proc.stdout)
 
     def test_anchor_miss_fails_required_and_leaves_file(self) -> None:
         with tempfile.TemporaryDirectory() as d:

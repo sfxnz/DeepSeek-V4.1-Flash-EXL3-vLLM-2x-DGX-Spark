@@ -26,11 +26,21 @@ class _PatchSkip(Exception):
     """A patch body raises this when it does not apply (env off, file absent)."""
 
 
+class _PatchAbsent(_PatchSkip):
+    """The target file is missing: a skip, but a FAIL for a required patch."""
+
+
 def _patch(name, fn, required=False):
     """Run one patch; print one 'dsv41-patch ok|skip|FAIL name' line to stderr."""
     try:
         detail = fn()
     except _PatchSkip as exc:
+        if required and isinstance(exc, _PatchAbsent):
+            # A required patch whose file moved is image drift, not a skip.
+            print(f"dsv41-patch FAIL {name}: {exc!r}", file=sys.stderr, flush=True)
+            if _PATCH_STRICT:
+                os._exit(1)
+            return
         print(f"dsv41-patch skip {name}: {exc}", file=sys.stderr, flush=True)
         return
     except BaseException as exc:  # SystemExit is an apply() anchor miss
@@ -49,7 +59,7 @@ def _rewrite(path, patch_source):
 
     path = Path(path)
     if not path.is_file():
-        raise _PatchSkip(f"{path} absent")
+        raise _PatchAbsent(f"{path} absent")
     src = path.read_text()
     out = patch_source(src)
     if out == src:
