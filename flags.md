@@ -113,6 +113,7 @@ same ideas are not retried blind.
 | `DSV41_STREAM_FEED=1` | Drain the VL wrapper's sorted weight list while it loads (`g8_stream_feed.py` on stock packs) | unmeasured on stock; boot A/B pending (per-rank 'Loading weights took', swap, MemAvail). The R31 drain kept every item alive until the 2026-09-24 fix, so R32's G8 "post-load balloon" verdict is unproven | `docker/patch/g8_stream_feed.py`, `tests/test_stream_feed.py` |
 | `DSV41_INDEX_TOPK` | Clamp indexer topk | rejected as default | `evidence/extra-topk-128`, `evidence/indexer-native` |
 | `DSV41_MHC_DECODE_SPLITS=1` | Collapse MHC prenorm split-K to 1 | rejected | `evidence/mhc-decode-splits` |
+| `DSV41_MHC_DECODE_SPLITS=N` (N >= 2) | Force MHC prenorm split-K to N at num_tokens <= 64 (stock clamps 48 -> 16); `docker/patch/decode_levers.py` | untested, GPU campaign decides (microbench 16/24/32/40/48 first) | `kernel_study/decode_levers` |
 | `DSV41_ENGRAM_CACHE=1` | Host LRU for Engram rows | rejected (staging already prestage-hidden) | `evidence/engram-cache` |
 | `DSV41_ENGRAM_FAST_STAGE=1` (default) | Parallel per-table Engram disk gathers | **KEEP**: kills ~13 ms/step of GPU idle; L.A.I.L 22.0-23.5 -> 25.2-26.3 | `results/2026-09-19-faststage` |
 | `DSV41_ENGRAM_STAGE_THREADS=16` | Worker pool for the parallel stage | default measured good | round 11 |
@@ -124,6 +125,8 @@ same ideas are not retried blind.
 | `NCCL_MIN/MAX_NCHANNELS=1` | Force single NCCL channel | null (steps/s 9.65 vs 9.68-10.26); AR p50 already 41-54 us | round 11 |
 | `DSV41_MHC_NO_DEEPGEMM=1` | TileLang GEMM for MHC prenorm | rejected | `evidence/mhc-tilelang-gemm` |
 | `DSV41_DSPARK_DRAFT_TOPK=k` | Topk-mask draft logits | rejected | `evidence/dspark-draft-topk` |
+| `DSV41_DSPARK_SPARSE_MARKOV=1` (+`_TOPK`, default 256) | Gathered top-k Markov bias via the speculator's `_sample_sequential_topk` (drops the 3 x 66 MB Markov GEMM; argmax stays); refuses MARKOV_SCALE != 1, CONF_GATE, DRAFT_TOPK | untested, GPU campaign decides | `kernel_study/decode_levers` |
+| `DSV41_WOA_PREPACK=1` | Pack the fp32 wo_a scale to UE8M0 once (bitwise self-test, else fp32 stays); needs an image with `fix_o_proj_woa_fp8.py` stage 2 (`docker/Dockerfile.woa-prepack`) | untested, GPU campaign decides | `kernel_study/decode_levers` |
 | `DSV41_DSPARK_TAIL_NGRAM=1` (+`_POS`) | Prompt-lookup tail on drafts | rejected | `evidence/dspark-tail-ngram`, `evidence/ngram-overlay` |
 | `DSV41_DSPARK_SOFTMAX_VERIFY=1` | Greedy propose, softmax verify | rejected | `evidence/dspark-softmax-verify` |
 | `DSV41_DSPARK_REFINE_PASS=1` | Second draft pass on pass-1 fills | rejected | `evidence/dspark-refine-pass` |

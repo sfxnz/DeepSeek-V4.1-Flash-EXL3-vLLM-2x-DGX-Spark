@@ -286,5 +286,41 @@ class WiringTests(unittest.TestCase):
             self.assertEqual(out.getvalue(), "")
 
 
+class TraceKernelsTests(unittest.TestCase):
+    def test_streamed_per_step_sums(self):
+        import gzip
+        import json
+        import tempfile
+
+        sys.path.insert(0, str(ROOT / "kernel_study" / "decode_levers"))
+        import trace_kernels as tk
+
+        def k(name, dur, grid):
+            return {"ph": "X", "cat": "kernel", "name": name, "dur": dur, "args": {"grid": grid}}
+
+        ev = [{"ph": "X", "cat": "cpu_op", "name": "aten::mm", "dur": 999}]
+        for _ in range(2):  # two verify steps: 40 p2b calls each
+            ev += [k("void p2b_moe_batched_kernel<2, 1>(x)", 500, [1, 1, 1])] * 40
+            ev += [k("void deep_gemm::transpose_and_pack_fp32_into_ue8m0<512u, 48u, 128u>", 19, [22, 4, 1])] * 43
+            ev += [k("void deep_gemm::transpose_and_pack_fp32_into_ue8m0<512u, 48u, 40u>", 2, [12, 1, 1])] * 3
+            ev += [k("void deep_gemm::sm120_tf32_hc_prenorm_gemm_impl<24u, 20480u>", 20, [16, 1, 1])] * 86
+        with tempfile.TemporaryDirectory() as td:
+            path = str(Path(td) / "t.json.gz")
+            with gzip.open(path, "wt") as fh:
+                json.dump({"schemaVersion": 1, "traceEvents": ev, "deviceProperties": []}, fh, indent=1)
+            events = tk.load_events(path)
+            self.assertEqual(len(events), 2 * (40 + 43 + 3 + 86))
+            small = list(tk.iter_events(path, chunk=97))  # objects straddle chunk edges
+            self.assertEqual(len(small), len(ev))
+        res = tk.summarize(events, "p2b_moe_batched_kernel", 40)
+        self.assertEqual(res["steps"], 2.0)
+        rows = {(r["pattern"], tuple(r["grid"])): r for r in res["rows"]}
+        pack = rows[("woa_pack", (22, 4, 1))]
+        self.assertEqual(pack["calls_per_step"], 43.0)
+        self.assertEqual(pack["ms_per_step"], 0.817)
+        self.assertEqual(rows[("woa_pack", (12, 1, 1))]["calls_per_step"], 3.0)
+        self.assertEqual(rows[("mhc_prenorm_gemm", (16, 1, 1))]["ms_per_step"], 1.72)
+
+
 if __name__ == "__main__":
     unittest.main()
