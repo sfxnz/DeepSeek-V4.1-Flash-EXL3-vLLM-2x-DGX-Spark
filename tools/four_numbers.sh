@@ -5,7 +5,7 @@
 #   1. prose decode c=1 tok/s   — 9-run median   (bench_decode.py frozen cell)
 #   2. cold prefill tok/s @8k/@32k — 3 runs each (benches/micro.py; fresh doc
 #      per run, prefix-cache bust built in); pp_warm = repo text, pp_novel
-#      = seeded pseudo-words (fresh Engram n-grams, cold path)
+#      = seeded pseudo-words (mostly-cold Engram: fresh 3-grams, shared 2-grams)
 #   3. MoE/attention ms per layer — NO live probe exists; recorded as a
 #      documented fallback + TODO in the JSON notes. Do NOT build a profiler
 #      here; profiling is a separate gated step.
@@ -27,7 +27,8 @@
 # Capture order is serialized on purpose (MAX_NUM_SEQS=2; concurrent
 # prefill chunks contaminate each other): provenance -> prose 9x -> micro
 # 8k+32k -> free both nodes (right after the 32k prefill) -> L.A.I.L 3x ->
-# prose_long c=1/c=2 5x -> warm-prefix. Runtime budget ~15-20 min.
+# prose_long c=1/c=2 5x -> warm-prefix. Runtime budget ~20-25 min (estimate;
+# re-measure on the first campaign run).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

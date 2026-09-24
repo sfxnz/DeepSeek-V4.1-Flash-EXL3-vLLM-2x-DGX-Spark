@@ -7,8 +7,10 @@ For each context length L in CONTEXTS:
           step; constant across configs, so comparisons are clean.) Repo text
           reuses the same n-grams every run, so Engram rows are page-cache
           warm. Historical "pp" rows are this cell.
-  pp_novel@L: same, on seeded pseudo-word text (corpus novel=True): fresh
-          n-grams every run, so this is the cold-Engram prefill path.
+  pp_novel@L: same, on seeded pseudo-word text (corpus novel=True):
+          mostly-cold Engram (fresh word 3-grams per seed; the pseudo-words
+          tokenize into short syllable pieces, so many token 2-grams repeat
+          across seeds and those rows can be warm).
   tg32@L: fresh ~L-token prompt, max_tokens=33, stream, ignore_eos. Decode
           tok/s = (completion_tokens-1) / wall-after-first-token.
 
@@ -18,6 +20,10 @@ user pays on the first turn.
 
 DSpark acceptance is read from /metrics deltas when speculative decoding
 is enabled.
+
+Run order per context is pp_warm, pp_novel, tg. Before pp_novel existed it
+was pp, tg, so pp_warm@32k now follows the 8k pp_novel runs (their Engram
+rows are in page cache): close to, not identical with, historical "pp".
 """
 
 from __future__ import annotations

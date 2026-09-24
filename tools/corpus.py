@@ -11,7 +11,8 @@ Everything is reproducible: same seed and file state, same document.
 novel=True swaps the repo text for seeded pseudo-word prose: a per-seed
 lexicon of syllable words glued with common function words. Repo text is the
 same n-gram set on every run, so Engram rows stay page-cache warm; novel text
-hits fresh rows and exposes the cold-Engram prefill path. No downloads.
+is mostly-cold (fresh word 3-grams per seed, but short syllable tokens share
+many token 2-grams across seeds). No downloads.
 """
 
 from __future__ import annotations

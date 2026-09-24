@@ -22,7 +22,8 @@ One boot = one lever. Every arm produces the four numbers via
    - abort if MemAvailable **< 12 GiB at boot** (before smoke);
    - abort if MemAvailable **< 8 GiB after smoke** (`smoke_chat.py` +
      `smoke_vision.py`).
-5. **Four numbers** (serialized, ~15-20 min):
+5. **Four numbers** (serialized, ~20-25 min estimated; re-measure on the
+   first campaign run):
    ```bash
    tools/four_numbers.sh --arm <name>          # prose 9x median, pp_warm/pp_novel 8k/32k,
                                                # MemAvailable both nodes, L.A.I.L 3x,
@@ -32,10 +33,12 @@ One boot = one lever. Every arm produces the four numbers via
    Number 3 (MoE/attention ms/layer at shipped chunk) has no live probe —
    fallback is boot knobs `DSV41_STEP_CENSUS=1` / `DSV41_ENGRAM_CENSUS=1`
    (decode-side only; E0 prefill-flush caveat); real profiling is a
-   separate gated step.
+   separate gated step. `four_numbers.sh` does not run e2e: run
+   `benches/e2e.py` separately on the same boot (step 6 requires exit 0).
 6. **Promote rule**. The old text here ("9-run prose median beats
    baseline") was never what decided an arm. Rounds R16-R33 used +3% on
-   the pooled L.A.I.L t=0.2 median. That gate sits inside boot-to-boot
+   the pooled L.A.I.L t=0.2 median (flags.md:308 R16, :432, :488, :672
+   R30, :715, :725 R33). That gate sits inside boot-to-boot
    noise: the identical config measured 27.40/26.13/28.01
    (`results/2026-09-21-cpuhash/VERDICT.md`), and lm_head went from REVERT
    at +2.5% (R30) to KEEP at +5.9% (R33). An arm promotes only when all of
