@@ -110,6 +110,7 @@ same ideas are not retried blind.
 | Env | What | Verdict | Evidence |
 |---|---|---|---|
 | `DSV41_STEP_CENSUS=1` | Per-step census (draft/target/Engram timings) | diagnostic only | `evidence/b12x-census` |
+| `DSV41_STREAM_FEED=1` | Drain the VL wrapper's sorted weight list while it loads (`g8_stream_feed.py` on stock packs) | unmeasured on stock; boot A/B pending (per-rank 'Loading weights took', swap, MemAvail). The R31 drain kept every item alive until the 2026-09-24 fix, so R32's G8 "post-load balloon" verdict is unproven | `docker/patch/g8_stream_feed.py`, `tests/test_stream_feed.py` |
 | `DSV41_INDEX_TOPK` | Clamp indexer topk | rejected as default | `evidence/extra-topk-128`, `evidence/indexer-native` |
 | `DSV41_MHC_DECODE_SPLITS=1` | Collapse MHC prenorm split-K to 1 | rejected | `evidence/mhc-decode-splits` |
 | `DSV41_ENGRAM_CACHE=1` | Host LRU for Engram rows | rejected (staging already prestage-hidden) | `evidence/engram-cache` |
