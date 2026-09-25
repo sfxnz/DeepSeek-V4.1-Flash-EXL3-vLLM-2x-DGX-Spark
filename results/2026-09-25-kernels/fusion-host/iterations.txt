@@ -1,0 +1,69 @@
+fusion-host (k3 round 3): glue kernels, small bf16 GEMMs, host idle. Iteration log.
+==================================================================================
+Branch k3/fusion-host (from perf/kernels-r3). Every number below names its machine,
+run and file. Timed runs: spark2 (clean GPU; pmon shows only Xorg/gnome-shell type G)
+under .worktrees-spark2/.gpu.lock, SM clock 2190 MHz before/after each run.
+
+0. Re-reading the r3 profile (profile/c1/c1-rank0.pkl, the c=1 L.A.I.L window)
+-----------------------------------------------------------------------------
+- The host is NOT the bottleneck of the eager chain: cudaLaunch/cudaGraphLaunch
+  timestamps vs kernel start show the main thread launches every eager kernel of the
+  next step 40-49 ms before the GPU runs it (kernel_study/fusion_host notes; step 120:
+  draft graph launched at -48.7 ms, run at -6.3 ms). The "258 launches at ~4 us host
+  cadence" are GPU-side back-to-back small-kernel costs (queued work), not host latency.
+- The only host-bound GPU idle per step is the Engram stage: the main thread blocks in
+  EngramDiskStager.stage -> hashes_ready.synchronize() until the GPU drains everything
+  queued (the whole previous step), then runs the gather while the GPU has nothing
+  queued. Step 120: DtoH ends at 0, sync returns +55 us, 2 pool futures start +190/+290
+  us, finish +1.8/+2.4 ms, main wakes +2.57 ms, H2D +2.65 ms, graph starts +2.81 ms.
+- 260 gaps > 1 ms in 250 steps: 251 are DtoH(hash) -> HtoD(rows), median 3.06 ms
+  (p10 2.21, p90 3.94) profiled. Unprofiled estimate from the [gv2-census] read time
+  before vs inside the profile window: 0.83 vs 1.39 ms/call median -> the profiler
+  inflates this host span ~1.7x; unprofiled gap ~1.5-2.0 ms.
+
+1. ITERATION 1: native Engram stage gather (KEEP, env DSV41_ENGRAM_NATIVE_STAGE=1)
+-------------------------------------------------------------------------------
+What: docker/patch/engram_native.c + engram_native_stage.py. After the stock hash +
+sync, one ctypes call per table (GIL released): owned ids -> preadv2(RWF_NOWAIT) of
+the 256 B fp8 row + 8 B ue8m0 row (misses: WILLNEED all, then blocking pread) ->
+fp8 LUT x 2^(e-127) -> bf16 RNE straight into the pinned rows_host. Prefill (> 64
+tokens) and every error take the stock stage. First 8 calls verified bit-exact
+against the stock per-table gather; mismatch/error -> one DISABLED line, stock.
+
+Numerics (engram_native_check.json, image canonical-e13, CPU): all 65536
+(fp8 byte, ue8m0 byte) pairs bit-exact vs the stock torch chain (first cut had 512
+NaN mismatches: torch's CPU bf16 conversion keeps NaN sign/payload -> 0x7FF0/0xFFF0,
+not c10's scalar 0x7FC0; fixed), synthetic-table gathers both row orders and mixed
+scales, ownership/padding 21/21, real tables 108/108 calls (2 layers x 2 TP ranks x
+n in 1..8,64 x hot/dead-id/dropped-cache) bit-exact.
+
+CPU critical path, spark2, rank 0, 2 tables, 300 iters after 30 warmup, arms
+alternating, fresh ids every call (engram_stage_cpu_bench_spark2.json), us median
+(p10/p90):
+  scenario  n  stock                   native              native on the pool
+  hot       4  1461.7 (1056.5/1895.3)  274.1 (202.9/292.8) 307.8
+  hot       8  2213.5 (1842.0/3023.2)  492.6 (438.5/627.8) 564.3
+  pf        4  1702.9 (1145.5/2226.0)  141.7 (136.8/174.2) 380.5
+  pf        8  2339.6 (1682.0/2975.0)  283.0 (271.5/308.3) 533.8
+  cold      4  37738.6                 849.3               1087.1
+  cold      8  62798.8                 1644.1              1518.7
+  (pf = rows dropped, WILLNEED 500 us before, as prefetch v3 does; cold = a prefetch
+  miss: the stock serial preadv chain waits ~0.4 ms per row, the native path puts all
+  misses in flight together.) Dispatching the native calls to the pool loses: the
+  future hop costs more than the second table.
+
+End to end on a GPU, spark2 (engram_stage_gpu_bench_{pf,hot}_spark2.json): the
+image's real EngramDiskStager.stage() (stock) vs the native stage, real
+DiskEngramTables, a stand-in hash module returning precomputed ids from a device
+tensor; GPU work queued first so the host blocks in the sync as in the serve; CUDA
+events around stage() = hash + DtoH + host gather + H2D = the GPU idle it causes.
+300 iters, arms alternating, staged device rows compared bitwise every 25 iters:
+0 mismatches, native engaged.
+  pf  n=4: stock 1370.9 us (1217.1/1532.5)  native 205.3 (198.6/212.8)  -1165.6 us
+  pf  n=8: stock 2139.6 (1615.3/2907.6)     native 357.6 (343.6/378.2)  -1782.0 us
+  hot n=4: stock 1488.0 (1086.7/1943.4)     native 197.9 (182.0/215.6)  -1290.1 us
+  hot n=8: stock 2382.4 (1610.8/3004.1)     native 332.0 (304.2/369.1)  -2050.4 us
+Projected: -1.17..-1.29 ms/step at c=1 (n=4), -1.8..-2.05 ms/step at c=2 (n=8),
+unprofiled (the bench has no profiler). ~1.9% of the 62.8 ms c=1 step.
+Remaining native gap ~200 us = hash + DtoH + sync wakeup + ~130 us of page-cache
+lookups (192 random-page syscalls; 1.2-1.8 us each measured on spark1) + H2D.

@@ -28,6 +28,10 @@
 - DSV41_MHC_DET_SPLITS=16 lives in mhc_det.py: bitwise-stock decode mHC (post
   + prenorm GEMM) on faster kernels. Here: its install step (it also installs
   DSV41_MHC_DET_OVERLAP=1, mhc_det_overlap.py).
+- DSV41_ENGRAM_NATIVE_STAGE=1: the decode-step Engram disk gather + dequant in
+  C with the GIL released (engram_native_stage.py, engram_native.c). Hooked
+  here rather than in sitecustomize so the mounted patch dir arms it on an
+  image whose baked sitecustomize predates it.
 
 Top-level imports are stdlib only, so importing this module cannot fail.
 """
@@ -183,6 +187,14 @@ def _install_mhc_det(env) -> None:
     mhc_det.install(env)
 
 
+def _install_engram_native_stage(env) -> None:
+    if (env.get("DSV41_ENGRAM_NATIVE_STAGE", "0") or "0") != "1":
+        return
+    import engram_native_stage
+
+    print(f"dsv41: engram native stage: {engram_native_stage.install()}", flush=True)
+
+
 def install(env=None) -> None:
     env = os.environ if env is None else env
     for name, step in (
@@ -192,6 +204,7 @@ def install(env=None) -> None:
         ("woa-prepack", _check_woa_prepack),
         ("p2b_src_sort", _check_p2b_src_sort),
         ("p2b_coop", _check_p2b_coop),
+        ("engram-native-stage", _install_engram_native_stage),
     ):
         try:
             step(env)
