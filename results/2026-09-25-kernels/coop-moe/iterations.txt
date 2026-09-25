@@ -183,3 +183,74 @@ it 14 per-step projection re-derived from all 40 routed layers (r3 review, block
   c=2 (m=8) -15.3 ms/step. summary.json: time -> time_layer20 (the per-call table, layer 20),
   projected_ms_per_step_40_layers (this iteration); README.txt serve-arm "Expected" and flags.md
   DSV41_P2B_COOP row updated.
+
+it 15 round-4 fix pass: the reviewer's missed opportunities (plan and gates written before any run)
+  MO3 per-call fixed cost (stamps at m=4: prologue ~9.5 us, final down-tile imbalance ~8.6 us,
+  output ~2.9 us). Bench-only exploration (make_bench_r3.explore): ONE kernel p2b_df_x_kernel<2,1>
+  derived textually from the production text, every knob compiled in, the knob passed as an extra
+  kernel argument, so all exploration arms run the same machine code:
+    arm 3  knob = production behaviour (control: arm 3 vs v2 = the exploration binary's own cost)
+    arm 4/5/6  the last 1 / 2 / all grids of 64-column down tiles run as two 32-column tiles
+           (each column keeps its K-split, fold and cross-warp sum order: bitwise by construction)
+    arm 7  the last grid of down tasks L2-prefetches its warp's whole K-range at tile start
+    arm 8/9  prologue prefetch of the static first task: 8 / 12 k-slices (production 4)
+  plus prologue sub-stamps (build done, prefetch issued) in the stamped build.
+  MO2 ceiling: a flat 16-B grid-stride read of the same experts' trellis bytes (dense-gemv calib2's
+  best pattern, 48/96/144 blocks) next to the tile-pattern probes, same process and flush.
+  Gates (fixed now): correctness = one-hot bitwise vs p2b, full weights bitwise vs =1, repeat,
+  graph replay and stress bitwise (no tolerance anywhere). A knob is promoted into the served
+  kernel only if, on census_all cold (800 iterations, paired vs v2 and vs the control arm), its
+  saving at m=4 AND m=8 is >= 0.5% of the v2 call with the 95% CI above 0, no other m (1, 3, 6)
+  and no dup0 case is slower beyond its CI, and the promoted kernel's MMA loops stay spill-free.
+  Results (spark2, pmon clean before and after every run, SM 2164-2190 MHz in every timed section).
+  Correctness: x1-check (arms 1-9, m 1..8, census/dup0/census_seq, 4 routings each: 108 entries) and
+  x5/x6 (arms 10-12, 60 entries each): every arm one-hot bitwise = p2b, full weights bitwise = =1,
+  repeat bitwise; graph replay = eager for every arm and m. The 32-column tiles are bitwise equal
+  as predicted. Exploration binary: 80 registers, 3 blocks/SM; its gate/up MMA loop carries 2 LDL
+  (production: 0), hence arm 3 vs v2 below.
+  Timing: census_all cold, 800 iterations per arm, paired mean saving (us, +- 95% CI); arm 3 vs v2,
+  every other arm vs arm 3 (the same machine code):
+    x2-time (seed 41)          m=1        m=3        m=4        m=6        m=8
+    arm 3 (control) vs v2   -6.4+-1.0  -1.8+-0.7  -0.7+-1.4  -0.3+-1.5  -1.0+-1.2
+    arm 4 32-col tail x1    +2.1+-0.8  -0.4+-0.7  -1.3+-1.1  -2.1+-1.4  -1.9+-1.2
+    arm 5 32-col tail x2    -0.7+-1.1  -3.3+-1.0  -4.0+-1.5  -3.3+-1.5  -2.9+-1.3
+    arm 6 32-col all down   -0.4+-1.0 -17.3+-1.4 -22.4+-1.7 -37.4+-2.4 -44.1+-1.9
+    arm 7 tail whole-K pf   -2.2+-0.8  -0.4+-1.0  -1.1+-1.3  -2.4+-2.0  -0.4+-1.2
+    arm 8 prologue pf 8     -0.1+-0.9  +0.8+-1.0  +0.7+-1.2  +0.1+-1.4  -0.4+-1.5
+    arm 9 prologue pf 12    -1.0+-0.8  +0.7+-1.1  -0.4+-1.6  +0.8+-1.3  -0.8+-1.9
+  Narrow tiles: a 32-column down tile keeps the per-tile fixed work (fill ~1.9, cross-warp
+  reduction ~2, task hand-off ~2 us per tile per warp at m=4) and halves only the stream, so a block's
+  last grid becomes two latency chains instead of one: the reviewer's tail idea is bitwise but slower.
+  Prologue sub-stamps (x3-phases, v2, per block median): m=4 sort/chunk build 2.7 us, first-task
+  prefetch issue 0.8, input Hadamard to barrier arrival 5.4 (its dependent ids -> pointer table ->
+  suh loads queue behind the 1.2 MB prefetch burst), first release 10.4-11.8; m=8 4.2 / 0.8 / 7.1 /
+  13.9 (the Hadamard needs 2 rounds: 1920 tasks on 1152 warps).
+    x5-early (seed 53)         m=1        m=3        m=4        m=6        m=8
+    arm 10 early Hadamard   -2.5+-1.0  +2.4+-0.9  +3.3+-1.0  -0.3+-1.0  -0.1+-2.0
+    arm 11 early + pf 8     -4.5+-0.9  +0.8+-1.2  +1.9+-1.2  -0.4+-1.4  +0.1+-2.3
+    x6-early2 (seed 59, arm 12 designed from the x5 stamps: both Hadamard rounds early, m >= 3 only)
+    arm 10 early Hadamard   -3.1+-0.8  +2.2+-0.3  +2.3+-1.0  +0.4+-1.0  +0.4+-1.5
+    arm 12 early x2, m>=3   +0.4+-0.7  +2.5+-0.4  +2.6+-0.8  +1.2+-1.4  +2.3+-2.1
+  arm 12 = +0.74% at m=4 (CI 0.5..0.96%) but +0.36% at m=8: below the 0.5% bar at m=8, so NOT
+  promoted (it is ~0.1 ms/step at c=1 for ~40 lines of prologue). Every other knob fails outright.
+  MO3 verdict: none of the fixed-cost knobs clears the gate; the served kernel stays as committed.
+  MO2 ceiling (x3-phases, x4-stream; census routing of layer 20, cold, trellis bytes, 300 iterations,
+  arms rotating): flat 16-B grid-stride read of the same experts' trellis at 144 blocks
+  227.4 / 232.5-233.5 / 233.8-236.8 GB/s median at m=1 / 4 / 8 (48 blocks: 212-225, the dense-gemv
+  calib's 48-block optimum does not carry over); the coop tile pattern without decode 217.8 /
+  222.5-224.0 / 229.9-231.4; per-warp contiguous runs 216.1 / 222.1 / 227.7; the N-split pattern
+  (a block's 8 warps on 8 adjacent 64-column strips of one K-range: 2 KB contiguous per k-slice)
+  209.0 / 219.2-222.2 / 225.6-228.6, i.e. no better (flags.md Round 10 rejected the N-split
+  decomposition on the old p2b for the same reason). So the ~4% (m=4) / ~2% (m=8) between the tile
+  pattern and the flat sweep is the DRAM's preference for a globally sequential sweep, which a K-split
+  tile with a fixed per-column sum order cannot produce; the only lever is a layout change (flags.md
+  Round 9: group-major trellis, bit-exact, +6% on the old kernel, needs a loader permute and every
+  prefill reader re-indexed). The reviewer's 237 GB/s reference agrees with the flat read at m=8.
+  MO1 (fold the wrapper glue, bound ~10 us/layer ~0.4 ms/step at c=1): not built in this pass. The
+  gain lives in the serve's two-stream graph, not in the kernel: the 16 routing-stream glue kernels
+  overlap the side-stream shared expert and end ~7 us after it. Removing them lets the cooperative
+  144-block launch reach the GPU while the b12x shared expert still holds SMs; at 61,440 registers
+  per SM the dataflow blocks cannot co-reside with b12x CTAs, so the shared down GEMM could queue
+  behind the whole p2b call. A microbench cannot reproduce that SM scheduling faithfully, and ARMS.md
+  says "one boot = one lever": first the DSV41_P2B_COOP=2 serve ABAB, then this as its own lever (plan
+  in kernel_study/p2b_coop/README.txt).

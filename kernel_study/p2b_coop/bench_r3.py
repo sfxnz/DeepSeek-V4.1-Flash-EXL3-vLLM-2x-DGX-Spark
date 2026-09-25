@@ -443,7 +443,8 @@ def paired(a_us, c_us) -> dict:
             "ms_per_step_40": statistics.mean(d) * 40 / 1000.0, "ms_per_step_40_ci95": 1.96 * sem * 40 / 1000.0}
 
 
-def timing(b: Bench, routes: Routings, variants, ms, sources, iters: int, warmup: int, flush: Flusher) -> dict:
+def timing(b: Bench, routes: Routings, variants, ms, sources, iters: int, warmup: int, flush: Flusher,
+           pair_base=None) -> dict:
     res: dict = {}
     for m in ms:
         for src in sources:
@@ -489,7 +490,10 @@ def timing(b: Bench, routes: Routings, variants, ms, sources, iters: int, warmup
                 # Paired per-call savings (same iteration, same routing): the mean x 40 routed layers is
                 # the per-step projection when the routings weight every layer equally (census_all).
                 t_us = {v: [e0.elapsed_time(e1) * 1000.0 for e0, e1, _ in evs[v]] for v in variants}
-                pairs = [(0, v) for v in variants if v != 0] + [(a, c) for a, c in zip(variants[1:], variants[2:])]
+                if pair_base:  # every arm against each base arm
+                    pairs = [(a, c) for a in pair_base for c in variants if c != a and not (c in pair_base and c < a)]
+                else:
+                    pairs = [(0, v) for v in variants if v != 0] + [(a, c) for a, c in zip(variants[1:], variants[2:])]
                 entry[kind]["paired"] = {f"v{a}-v{c}": paired(t_us[a], t_us[c]) for a, c in pairs}
                 if src == "census_all":
                     lay = row_layer[warmup:]
@@ -554,29 +558,45 @@ def stress(b: Bench, routes: Routings, variants, ms, calls: int, flush: Flusher)
 
 def stream_ceiling(b: Bench, routes: Routings, ms, iters: int, flush: Flusher) -> dict:
     """Read ceiling of the experts' trellis bytes: the coop tile pattern without decode (mode 0 with
-    a block barrier per task, mode 1 without) and a contiguous read of the same bytes (mode 2).
-    Cold (flushed) calls, modes alternating, census routing; GB/s over trellis bytes only."""
+    a block barrier per task, mode 1 without), a contiguous read of the same bytes (mode 2), and
+    (round 4) a flat 16-B grid-stride read of them at 48 / 96 / 144 blocks (the dense-gemv
+    calibration's best pure-read pattern). Cold (flushed) calls, arms rotating per iteration,
+    census routing; GB/s over trellis bytes only."""
     res = {}
     sink = torch.zeros(4, dtype=torch.int32, device=b.dev)
     gt, ut, dt = b.L.tables[0], b.L.tables[3], b.L.tables[6]
+    arms = {"tile_barrier": lambda uq: b.ext.stream(gt, ut, dt, uq, HIDDEN, INTER, 0, sink),
+            "tile_nobarrier": lambda uq: b.ext.stream(gt, ut, dt, uq, HIDDEN, INTER, 1, sink),
+            "contiguous": lambda uq: b.ext.stream(gt, ut, dt, uq, HIDDEN, INTER, 2, sink),
+            "nsplit_g": lambda uq: b.ext.stream(gt, ut, dt, uq, HIDDEN, INTER, 4, sink),
+            "nsplit_k": lambda uq: b.ext.stream(gt, ut, dt, uq, HIDDEN, INTER, 5, sink),
+            # the same patterns at the dataflow kernel's own grid (3 blocks/SM)
+            "tile_barrier_g144": lambda uq: b.ext.stream(gt, ut, dt, uq, HIDDEN, INTER, 0, sink, 144),
+            "nsplit_g_g144": lambda uq: b.ext.stream(gt, ut, dt, uq, HIDDEN, INTER, 4, sink, 144),
+            "nsplit_k_g144": lambda uq: b.ext.stream(gt, ut, dt, uq, HIDDEN, INTER, 5, sink, 144)}
+    for g in (48, 96, 144):
+        arms[f"flat16_g{g}"] = lambda uq, g=g: b.ext.flat(gt, ut, dt, uq, TRELLIS_BYTES // 3, g, sink)
+    names = list(arms)
     for m in ms:
         rows = [routes.draw("census", m) for _ in range(iters)]
         uniq = [torch.tensor(sorted({x for r in rr for x in r}), dtype=torch.int32, device=b.dev) for rr in rows]
-        evs = {md: [] for md in (0, 1, 2)}
+        evs = {n: [] for n in names}
         for i, uq in enumerate(uniq):
-            for md in ((0, 1, 2) if i % 2 == 0 else (2, 1, 0)):
+            k = i % len(names)
+            for name in names[k:] + names[:k]:
                 flush()
                 e0, e1 = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
                 e0.record()
-                b.ext.stream(gt, ut, dt, uq, HIDDEN, INTER, md, sink)
+                arms[name](uq)
                 e1.record()
-                evs[md].append((e0, e1, uq.numel() * TRELLIS_BYTES))
+                evs[name].append((e0, e1, uq.numel() * TRELLIS_BYTES))
         torch.cuda.synchronize()
         entry = {}
-        for md, name in ((0, "tile_barrier"), (1, "tile_nobarrier"), (2, "contiguous")):
-            ts = [e0.elapsed_time(e1) * 1000.0 for e0, e1, _ in evs[md]]
-            bw = [nb / (t * 1e-6) / 1e9 for (_, _, nb), t in zip(evs[md], ts)]
-            entry[name] = {"median_us": statistics.median(ts), "gbps_median": statistics.median(bw),
+        for name in names:
+            ts = [e0.elapsed_time(e1) * 1000.0 for e0, e1, _ in evs[name]]
+            bw = [nb / (t * 1e-6) / 1e9 for (_, _, nb), t in zip(evs[name], ts)]
+            entry[name] = {"median_us": statistics.median(ts), "p10_us": pct(ts, 0.1), "p90_us": pct(ts, 0.9),
+                           "mean_us": statistics.mean(ts), "gbps_median": statistics.median(bw),
                            "gbps_p10": pct(bw, 0.1), "gbps_p90": pct(bw, 0.9)}
         res[f"m{m}"] = entry
         log(f"[stream] m={m}: " + "  ".join(f"{k} {v['median_us']:.1f}us {v['gbps_median']:.1f}GB/s [{v['gbps_p10']:.1f},{v['gbps_p90']:.1f}]"
@@ -692,8 +712,13 @@ def phases(ext_ts, layer: Layer, routes: Routings, variants, ms, calls: int, flu
                 d = dfb.view(grid * 8, 8).cpu().numpy().astype(np.float64)
                 t = buf.view(grid, 64).cpu().numpy().astype(np.float64)
                 t0 = t[:, 0].min()
-                nsync = int((t[:, 1:63] > 0).any(axis=0).sum()) // 2
+                nsync = int((t[:, 1:56] > 0).any(axis=0).sum()) // 2  # slots 56, 57: dataflow prologue stamps
                 row = {"launch_skew_us": (t[:, 0].max() - t0) / 1e3, "syncs": [], "unique": n_unique(rows)}
+                if (t[:, 56] > 0).all() and (t[:, 57] > 0).all():  # per block, then the median over blocks
+                    row["pro"] = {"build_us": float(np.median(t[:, 56] - t[:, 0])) / 1e3,
+                                  "prefetch_issue_us": float(np.median(t[:, 57] - t[:, 56])) / 1e3,
+                                  "hadamard_us": float(np.median(t[:, 1] - t[:, 57])) / 1e3,
+                                  "first_release_us": (t[:, 2].min() - t0) / 1e3}
                 if d[:, 6].sum() > 0:  # dataflow accounting, mean per warp (us)
                     fill, loop, red, span = (d[:, k].mean() / 1e3 for k in (3, 4, 5, 7))
                     row["df"] = {"tiles_per_warp": d[:, 6].mean(), "fill_us": fill, "loop_us": loop, "reduce_us": red,
@@ -722,11 +747,14 @@ def phases(ext_ts, layer: Layer, routes: Routings, variants, ms, calls: int, flu
                                      for f in per_call[0]["syncs"][k]})
             if all("df" in r for r in per_call):
                 agg["df"] = {k: statistics.median(r["df"][k] for r in per_call) for k in per_call[0]["df"]}
+            if all("pro" in r for r in per_call):
+                agg["pro"] = {k: statistics.median(r["pro"][k] for r in per_call) for k in per_call[0]["pro"]}
             res[f"v{v}/m{m}"] = agg
             log(f"[phases] v{v} m={m} grid {grid}: total {agg['total_us']:.1f} us, skew {agg['launch_skew_us']:.1f}, "
                 + " | ".join(f"s{k + 1} work {s['work_us']:.1f} imb {s['imbalance_us']:.1f} bar {s['barrier_us']:.1f}"
                              for k, s in enumerate(agg["syncs"])) + f" | tail {agg['tail_us']:.1f} | uniq {agg['unique_mean']:.1f}"
-                + ("" if "df" not in agg else " | df " + " ".join(f"{k} {x:.1f}" for k, x in agg["df"].items())))
+                + ("" if "df" not in agg else " | df " + " ".join(f"{k} {x:.1f}" for k, x in agg["df"].items()))
+                + ("" if "pro" not in agg else " | pro " + " ".join(f"{k} {x:.2f}" for k, x in agg["pro"].items())))
     return res
 
 
@@ -747,6 +775,7 @@ def main() -> int:
     ap.add_argument("--phase-calls", type=int, default=30)
     ap.add_argument("--stress-calls", type=int, default=1000)
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--pair-base", default="", help="time: paired savings of every arm vs each of these arms")
     ap.add_argument("--out", type=Path)
     args = ap.parse_args()
 
@@ -791,7 +820,8 @@ def main() -> int:
     if "capture" in modes:
         result["capture"] = capture(b, routes, variants, ms, args.replays)
     if "time" in modes:
-        result["time"] = timing(b, routes, variants, tms, sources, args.iters, args.warmup, flush)
+        result["time"] = timing(b, routes, variants, tms, sources, args.iters, args.warmup, flush,
+                                [int(v) for v in args.pair_base.split(",") if v])
     if "gemm" in modes:
         result["gemm"] = gemm_probe(b, max(20, args.iters // 5), flush)
     if "ld" in modes:

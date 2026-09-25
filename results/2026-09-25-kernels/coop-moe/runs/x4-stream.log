@@ -1,0 +1,26 @@
+# 2026-09-25T17:49:39Z host spark2 tag x4-stream
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       6.3Gi        85Gi       244Ki        31Gi       115Gi
+Swap:           15Gi       1.1Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode stream --variants 0 --ms 1,4,8 --iters 300 --seed 47 --out results/2026-09-25-kernels/coop-moe/x4-stream.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[17:49:52Z] loaded layer 20 rank 0 in 5.8 s
+[17:49:52Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}}
+[17:49:54Z] [stream] m=1: tile_barrier 121.9us 217.8GB/s [212.5,219.8]  tile_nobarrier 121.9us 217.8GB/s [212.5,219.7]  contiguous 122.8us 216.1GB/s [212.4,219.8]  nsplit_g 127.0us 209.0GB/s [204.1,210.8]  nsplit_k 128.0us 207.3GB/s [202.5,210.7]  tile_barrier_g144 125.0us 212.4GB/s [208.9,214.2]  nsplit_g_g144 126.9us 209.1GB/s [205.7,212.5]  nsplit_k_g144 127.0us 209.0GB/s [205.7,212.5]  flat16_g48 124.9us 212.5GB/s [209.0,216.0]  flat16_g96 116.8us 227.3GB/s [219.7,231.3]  flat16_g144 116.7us 227.4GB/s [223.4,231.5]
+[17:49:57Z] [stream] m=4: tile_barrier 317.5us 222.5GB/s [214.1,226.1]  tile_nobarrier 318.5us 221.8GB/s [215.0,225.1]  contiguous 315.4us 222.1GB/s [211.4,225.9]  nsplit_g 319.5us 222.2GB/s [215.8,225.7]  nsplit_k 321.5us 221.6GB/s [215.0,224.7]  tile_barrier_g144 314.9us 224.0GB/s [214.7,227.4]  nsplit_g_g144 322.1us 219.2GB/s [209.6,224.2]  nsplit_k_g144 322.5us 219.4GB/s [211.0,224.3]  flat16_g48 321.0us 221.0GB/s [216.0,223.4]  flat16_g96 307.2us 231.4GB/s [220.4,234.4]  flat16_g144 305.2us 232.5GB/s [222.2,235.6]
+[17:50:01Z] [stream] m=8: tile_barrier 579.6us 229.9GB/s [225.7,231.4]  tile_nobarrier 579.1us 229.1GB/s [225.5,230.8]  contiguous 584.6us 227.7GB/s [222.9,229.7]  nsplit_g 578.6us 228.6GB/s [224.4,230.1]  nsplit_k 579.6us 227.8GB/s [224.2,229.5]  tile_barrier_g144 577.0us 231.4GB/s [226.5,232.9]  nsplit_g_g144 598.5us 225.9GB/s [220.4,228.3]  nsplit_k_g144 594.1us 225.6GB/s [221.0,228.1]  flat16_g48 591.9us 225.3GB/s [222.3,227.0]  flat16_g96 564.7us 236.0GB/s [230.6,237.8]  flat16_g144 564.1us 236.8GB/s [231.2,239.0]
+[17:50:01Z] pass=True
+# 2026-09-25T17:50:02Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

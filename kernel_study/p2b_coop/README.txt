@@ -211,3 +211,30 @@ identical, no-sharing routing not slower (-7.4% at m=4).
    (0.2987). Accept on ms/step at matched acceptance (L.A.I.L n=10 and bench c=1/c=2) with the
    ARMS.md noise gate; quality quick+full within baseline bands.
 Rollback: ./stop.sh, canonical-e13 boot with DSV41_P2B_COOP unset.
+
+Round 4 fix pass (2026-09-25): the review's missed opportunities, measured; nothing promoted
+--------------------------------------------------------------------------------------------
+iterations.txt it 15 (results x1-x6). One bench-only exploration kernel derived from the production
+text, every knob compiled in and passed as a kernel argument, so all arms share machine code and a
+control arm isolates each knob. Bitwise gates pass for every arm; none clears the promotion bar
+(>= 0.5% of the call at m=4 and at m=8, nothing slower elsewhere): 32-column tail tiles (bitwise,
+slower: per-tile fixed work dominates), whole-K tail prefetch and a deeper prologue prefetch (no
+change), early Hadamard loads (+0.74% at m=4, +0.36% at m=8). Read ceiling of the same bytes: a
+flat 16-B sweep 233 / 237 GB/s at m=4 / 8, the tile pattern 224 / 231; closing that gap needs a
+layout change (flags.md Round 9, group-major trellis), not a kernel change.
+
+Next lever after the DSV41_P2B_COOP=2 serve ABAB: fold the wrapper glue (not built)
+  Serve trace (review r4: c=1, rank 1, 10,000 p2b calls): top-k end -> p2b start takes 73.8 us
+  through 16 routing-stream kernels (map_topk_to_local, clamp, int32 / fp16 casts, valid mask,
+  bf16 -> fp16 x) that overlap the side-stream shared expert and end ~7 us after it; after p2b,
+  fp16 -> fp32 -> bf16 and the shared-expert add take 6.5 us. Bound ~10 us/layer, ~0.4 ms/step at c=1.
+  1. Output: write bf16 from the output pass (bf16_rn(float(half_rn(s))) is the bits of the
+     fp16 -> fp32 -> bf16 chain) and hand it from _apply_native_fused_moe to apply_exl3_experts.
+     Removes 2 of the 3 post-kernel launches on the same stream; no scheduling change.
+  2. Input: fold the int64 -> int32 clamp and valid mask, the fp32 -> fp16 weight cast and the
+     bf16 -> fp16 x cast into the prologue (the same conversions). Keep p2b ordered after the shared
+     expert (an explicit join before the launch): the 144-block cooperative grid uses 61,440
+     registers/SM and cannot co-reside with b12x CTAs, so launching it while the shared expert runs
+     could park the shared down GEMM behind the whole p2b call.
+  Measure per call with a profile boot (shared-down end -> p2b start, p2b end -> add end), ABAB
+  against DSV41_P2B_COOP=2 alone (ARMS.md: one boot = one lever).

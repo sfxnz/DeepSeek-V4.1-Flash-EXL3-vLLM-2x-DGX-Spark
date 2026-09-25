@@ -59,7 +59,8 @@ else
     common+=(--user 1000:1000 --entrypoint python3)
 fi
 set +e
-docker run "${common[@]}" dsv41-flash-exl3-sm121:canonical-e13 "$@" 2>&1 \
+# timeout: every locked GPU window stays under 10 minutes
+timeout 590 docker run "${common[@]}" dsv41-flash-exl3-sm121:canonical-e13 "$@" 2>&1 \
     | grep -v -e '^dsv41-patch' -e '^dsv41-indexer' -e ' \[importing.py' -e ' \[interface.py' -e 'cpp_extension.py:' \
     | tee -a "$log"
 rc=${PIPESTATUS[0]}
