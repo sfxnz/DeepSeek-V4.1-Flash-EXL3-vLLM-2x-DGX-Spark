@@ -35,6 +35,15 @@ One boot = one lever. Every arm produces the four numbers via
    (decode-side only; E0 prefill-flush caveat); real profiling is a
    separate gated step. `four_numbers.sh` does not run e2e: run
    `benches/e2e.py` separately on the same boot (step 6 requires exit 0).
+
+   **Order on a fresh boot** (the Round 34 FULL and DECODE protocols; keep
+   it the same on every arm so the cells compare like with like):
+   `smoke_chat.py` + `smoke_vision.py`, then the fresh L.A.I.L
+   (`tools/measure_lail_prose.py --runs 10`), then `bench_decode.py`, then
+   `benches/micro.py`, quality, and C2-STRESS last. The L.A.I.L goes before
+   `bench_decode.py` because bench_decode's default `--concurrency 1 2`
+   sends c=2 traffic. A c=1 cell that has to run before the L.A.I.L passes
+   `--concurrency 1`.
 6. **Promote rule**. The old text here ("9-run prose median beats
    baseline") was never what decided an arm. Rounds R16-R33 used +3% on
    the pooled L.A.I.L t=0.2 median (flags.md sections Round 16, Round 21,
