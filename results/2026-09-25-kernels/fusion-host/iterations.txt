@@ -123,3 +123,40 @@ early engaged): GPU span chain + stage, us median (p10/p90):
   n=8: stock 2559.9 (2216.6/2995.9)  native 631.1 (619.7/642.1)  native+early 347.1 (338.0/358.6)
 The early arm is chain + H2D: the gather is fully hidden. Beyond iteration 1:
 -173.6 us (n=4), -284.0 us (n=8). Together vs stock: -1.61 ms (n=4), -2.21 ms (n=8).
+
+4. ITERATION 4: p2b input prep as one kernel (KEEP, env DSV41_MOE_PREP_FUSED=1)
+------------------------------------------------------------------------------
+Trace (c1-rank0.pkl, one layer of the FFN prologue, times vs p2b start): routing stream =
+router gate 18.9 us (-122.8) -> splitK reduce -> _dsv4_topk 30.1 us -> 14 single-block
+glue kernels from -68.8 to -0.5 us (compare_scalar alone 7.1 and 20.5 us: tiny kernels
+queued behind the shared expert's bandwidth-saturating b12x GEMMs) -> p2b at 0; shared
+expert stream ends at -7.7. The glue is vllm_exl3 _apply_native_fused_moe:
+map_topk_to_local (2 compares, or, fill, where), clamp + int32, valid (2 compares, and),
+weights -> fp16, valid -> fp16, mul, x -> fp16 (+ the int64 ids copy). The routing path
+ends after the shared expert in ~98% of layers (audit: p2b starts 7.4 us after it).
+What: docker/patch/moe_prep_fused.py. install() takes the image's own
+_apply_native_fused_moe source, swaps ONLY the glue block (verbatim anchor; drift ->
+DISABLED line, stock function stays) for one call into a Triton kernel that writes the
+same int32 ids / fp16 weights / fp16 x (x via float, weight*valid in float then one
+round, like torch's half opmath), and execs it in the module namespace. expert_map
+(EP), non-contiguous or other dtypes -> the stock ops. First 16 eager calls re-run the
+stock ops and compare bits (never during capture).
+Checks (moe_prep_check_spark2.json, spark2): 576 sweep cases (m 1..8, 64; random and
+adversarial: ids -1/384/1000/+-2^40, weights NaN/+-inf/-0/65520/1e-8/6e-5, x NaN/inf/-0/
+7e4/subnormals; int64/int32 ids, fp32/bf16 weights) bit-exact; 100 CUDA-graph replays
+with new inputs bit-exact vs eager stock; the rewritten function vs the stock function
+with a stand-in p2b op: recorded p2b inputs and outputs bit-exact (first harness cut
+compared fp32 outputs with torch.equal, which is False on identical NaN bits; fixed to
+compare raw bits). GPU ops per call 14 -> 1.
+Timing, each arm captured in a CUDA graph, 400 replays after 30 warmup, arms
+alternating, us median (p10/p90):
+  m  alone: stock           fused          beside a 512 MiB DtoD copy: stock   fused
+  1  18.7 (17.0/19.2)   6.4 (6.2/6.6)      26.6 (26.3/26.6)   4.1 (3.8/4.1)
+  3  19.4 (18.7/21.0)   6.3 (6.1/6.6)      26.6 (26.4/26.8)   4.1 (3.9/4.1)
+  4  20.3 (18.8/21.1)   6.3 (6.1/6.6)      26.6 (26.4/26.7)   4.3 (4.2/5.9)
+  6  19.5 (18.8/21.0)   6.3 (6.1/6.6)      26.6 (26.5/26.9)   4.1 (4.0/4.2)
+  8  20.6 (18.8/21.0)   6.4 (6.1/6.6)      26.6 (26.3/26.6)   4.3 (4.2/5.8)
+Projected: the routing path loses >= 22 us per MoE layer (in the serve's contention it
+spans ~68 us), so it stops trailing the shared expert: ~-0.3 ms/step now (the 7.4 us per
+layer p2b waits, x40), and up to ~50 us per layer of slack for any shared-expert speedup
+(dense-gemv), which today would be capped by this path. 560 fewer launches per step.

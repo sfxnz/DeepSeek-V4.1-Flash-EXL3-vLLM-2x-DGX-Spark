@@ -29,6 +29,7 @@ PATCHES = {
     "engram_gather_v2.py": {"DSV41_ENGRAM_GATHER_V2": "1"},
     "engram_native_stage.py": {"DSV41_ENGRAM_NATIVE_STAGE": "1"},
     "engram_early_hash.py": {"DSV41_ENGRAM_NATIVE_STAGE": "1", "DSV41_ENGRAM_EARLY_HASH": "1"},
+    "moe_prep_fused.py": {"DSV41_MOE_PREP_FUSED": "1"},
     "fix_o_proj_woa_fp8.py": {},  # baked into the image at build time
     "drop_page_cache.py": {"DSV41_DROP_PAGE_CACHE": "1"},
     "sitecustomize.py": None,  # disarm markers only

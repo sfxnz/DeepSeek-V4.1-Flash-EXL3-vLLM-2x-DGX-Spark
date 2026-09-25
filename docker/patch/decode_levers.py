@@ -32,6 +32,9 @@
   C with the GIL released (engram_native_stage.py, engram_native.c). Hooked
   here rather than in sitecustomize so the mounted patch dir arms it on an
   image whose baked sitecustomize predates it.
+- DSV41_MOE_PREP_FUSED=1: the native p2b MoE's input prep (~14 single-block
+  torch kernels per MoE layer on the routing path) as one Triton kernel,
+  bit-exact (moe_prep_fused.py).
 - DSV41_ATTN_T2R_DEDUP=1: build_attn_metadata makes one CommonAttentionMetadata
   per KV-cache group, so the token -> request map (arange + repeat_interleave +
   copy, ~8 small kernels) is rebuilt for every group: ~21 times a decode step
@@ -248,6 +251,14 @@ def _install_t2r_dedup(env) -> None:
     print("dsv41: attention token->request map dedup across KV-cache groups armed", flush=True)
 
 
+def _install_moe_prep_fused(env) -> None:
+    if (env.get("DSV41_MOE_PREP_FUSED", "0") or "0") != "1":
+        return
+    import moe_prep_fused
+
+    print(f"dsv41: moe prep fused: {moe_prep_fused.install()}", flush=True)
+
+
 def _install_engram_native_stage(env) -> None:
     if (env.get("DSV41_ENGRAM_NATIVE_STAGE", "0") or "0") != "1":
         return
@@ -267,6 +278,7 @@ def install(env=None) -> None:
         ("p2b_coop", _check_p2b_coop),
         ("engram-native-stage", _install_engram_native_stage),
         ("attn-t2r-dedup", _install_t2r_dedup),
+        ("moe-prep-fused", _install_moe_prep_fused),
     ):
         try:
             step(env)
