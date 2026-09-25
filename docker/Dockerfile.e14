@@ -1,8 +1,18 @@
-# review-e14: canonical-e13 + widen_p2b_coop.py (DSV41_P2B_COOP, default off).
-# Rebuilds only vllm_exl3_c, from the same vllm-exl3 pin and the same p2b chain
-# as docker/Dockerfile.e13, plus the coop stage. With the env unset the SORT=0/1
-# kernels are byte-identical to canonical-e13's chain
-# (kernel_study/p2b_coop/sass_identity.sh); coop adds p2b_moe_batched_kernel<2, 1, 2>.
+# review-e14: canonical-e13 + the build-time kernel stages of k3 round 3 (perf/kernels-r3):
+#   - vllm_exl3_c rebuilt from the same vllm-exl3 pin and the same p2b chain as
+#     docker/Dockerfile.e13, plus widen_p2b_coop.py (DSV41_P2B_COOP=1, the coop kernel
+#     p2b_moe_batched_kernel<2, 1, 2>) and widen_p2b_dataflow.py (DSV41_P2B_COOP=2, the
+#     dataflow kernel p2b_coop_df_kernel<2, 1>); both default off. With the env unset the
+#     SORT=0/1 kernels are byte-identical to canonical-e13's chain
+#     (kernel_study/p2b_coop/sass_identity.sh, sass_identity_r3.sh). Folds in the former
+#     docker/Dockerfile.e15 (review-e15), which built this same chain.
+#   - the branch sitecustomize baked in, as docker/Dockerfile does (run.sh still bind-mounts
+#     docker/patch and sitecustomize.py over the baked copies).
+# The other round-3 kernels need no build stage: they compile at first use from the mounted
+# docker/patch (dense_gemv_kernel.cu: torch cpp_extension/nvcc; mhc_det.cu: NVRTC;
+# engram_native.c: gcc; the Triton kernels: Triton JIT).
+# docker/Dockerfile applies the same p2b chain from scratch (tests/test_widen_p2b_dataflow.py
+# keeps the two in sync).
 #   docker build -f docker/Dockerfile.e14 -t dsv41-flash-exl3-sm121:review-e14 docker
 FROM dsv41-flash-exl3-sm121:canonical-e13
 
@@ -22,7 +32,11 @@ RUN apt-get update \
  && python3 /opt/dsv41-patch/widen_p2b_fshift.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_srcsort.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_coop.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_dataflow.py /opt/vllm-exl3 \
  && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps --force-reinstall /opt/vllm-exl3 \
- && python3 -c "import torch, vllm_exl3, vllm_exl3_c; so = open(vllm_exl3_c.__file__, 'rb').read(); assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); assert b'DSV41_P2B_SRC_SORT' in so and b'DSV41_P2B_COOP' in so; print('vllm_exl3 coop cuda ok')" \
+ && python3 -c "import torch, vllm_exl3, vllm_exl3_c; so = open(vllm_exl3_c.__file__, 'rb').read(); assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); assert b'DSV41_P2B_SRC_SORT' in so and b'DSV41_P2B_COOP' in so and b'p2b coop dataflow kernel engaged' in so; print('vllm_exl3 coop+dataflow cuda ok')" \
  && rm -rf /opt/vllm-exl3 /var/lib/apt/lists/*
-LABEL dsv41.recipe.patches="shapes,mrow,cfg1,codebook,fshift,srcsort,coop,b12x_smalls,fix_o_proj_woa_fp8,woa_prepack"
+
+RUN cp /opt/dsv41-patch/sitecustomize.py /usr/lib/python3.12/sitecustomize.py \
+ && python3 -m py_compile /usr/lib/python3.12/sitecustomize.py
+LABEL dsv41.recipe.patches="shapes,mrow,cfg1,codebook,fshift,srcsort,coop,dataflow,b12x_smalls,fix_o_proj_woa_fp8,woa_prepack"

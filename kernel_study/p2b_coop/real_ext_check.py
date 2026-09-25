@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The real vllm_exl3_c (built from the docker/Dockerfile.e15 recipe) vs the bench module (GPU).
+"""The real vllm_exl3_c (built from the docker/Dockerfile.e15 recipe, now docker/Dockerfile.e14) vs the bench module (GPU).
 
   python3 kernel_study/p2b_coop/real_ext_check.py --so-dir kernel_study/p2b_coop/build/e15so \
       --out results/2026-09-25-kernels/coop-moe/real-ext-check.json

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CPU only: compile the round-2 image TU (chain + coop, docker/Dockerfile.e14) and the round-3
-# TU (chain + coop + dataflow, docker/Dockerfile.e15) for sm_121a in one no-GPU container and
+# TU (chain + coop + dataflow, docker/Dockerfile.e15, now docker/Dockerfile.e14) for sm_121a in one no-GPU container and
 # require every p2b_moe_batched_kernel<BITS, CB, SORT> (SORT 0/1 for all six BITS/CB, SORT 2 for
 # <2, 1>) to have byte-identical machine code, with exactly one new kernel,
 # p2b_coop_df_kernel<2, 1>. So DSV41_P2B_COOP unset, 0 or 1 runs the same code as review-e14.

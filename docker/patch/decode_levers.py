@@ -23,8 +23,8 @@
   code (built before the patch), where the env would silently do nothing.
 - DSV41_P2B_COOP=1 is read by the compiled vllm_exl3_c (widen_p2b_coop in
   docker/Dockerfile.e14). Same warning when that .so has no coop code.
-- DSV41_P2B_COOP=2 selects the dataflow coop kernel (widen_p2b_dataflow in
-  docker/Dockerfile.e15). Same warning when that .so has no dataflow code.
+- DSV41_P2B_COOP=2 selects the dataflow coop kernel (widen_p2b_dataflow, also
+  in docker/Dockerfile.e14). Same warning when that .so has no dataflow code.
 - DSV41_MHC_DET_SPLITS=16 lives in mhc_det.py: bitwise-stock decode mHC (post
   + prenorm GEMM) on faster kernels. Here: its install step (it also installs
   DSV41_MHC_DET_OVERLAP=1, mhc_det_overlap.py).
@@ -200,7 +200,7 @@ P2B_DATAFLOW_NEEDLE = "p2b coop dataflow kernel engaged"
 
 def _check_p2b_coop(env) -> None:
     _check_p2b_env(env, "DSV41_P2B_COOP", "p2b_coop", "coop", "docker/Dockerfile.e14")
-    _check_p2b_env(env, "DSV41_P2B_COOP", "p2b_coop_dataflow", "dataflow", "docker/Dockerfile.e15",
+    _check_p2b_env(env, "DSV41_P2B_COOP", "p2b_coop_dataflow", "dataflow", "docker/Dockerfile.e14",
                    value="2", needle=P2B_DATAFLOW_NEEDLE)
 
 

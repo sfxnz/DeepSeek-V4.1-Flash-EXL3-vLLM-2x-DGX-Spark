@@ -132,7 +132,8 @@ with last-finisher epilogues and per-unit readiness counts, 2 grid barriers inst
 3 blocks/SM (80 registers, spill-free MMA loops), L2 prefetch 2 k-slices past the register
 ring, the A fragment one k-slice ahead, the first tile prefetched in the prologue, svh
 prefetch and an unrolled top-6 output pass. Bit-identical to DSV41_P2B_COOP=1 for any routing
-weights (one-hot: to p2b). docker/Dockerfile.e15 builds review-e15 (chain + coop + dataflow).
+weights (one-hot: to p2b). docker/Dockerfile.e15 built review-e15 (chain + coop + dataflow); the
+round-3 integration (perf/kernels-r3) folded it into docker/Dockerfile.e14 (review-e14).
 
 Harness (all under kernel_study/p2b_coop, force-added: kernel_study/ is gitignored)
 -----------------------------------------------------------------------------------
@@ -189,15 +190,15 @@ hunts per m bitwise, all on layer 20 rank 0 and layer 33 rank 1; the real vllm_e
 recipe = the bench bitwise; SORT=0/1/2 SASS identical; no-sharing routing not slower (-7.2% at m=4).
 1. Build (network for apt + git clone; CPU nvcc ~2-5 min; serve down or >= 14 GiB MemAvailable):
      cd /home/sfxnz/projects/ai-lab/recipes/.worktrees/k3-coop-moe
-     docker build -f docker/Dockerfile.e15 -t dsv41-flash-exl3-sm121:review-e15 docker
-     docker save dsv41-flash-exl3-sm121:review-e15 | ssh spark2 docker load
+     docker build -f docker/Dockerfile.e14 -t dsv41-flash-exl3-sm121:review-e14 docker
+     docker save dsv41-flash-exl3-sm121:review-e14 | ssh spark2 docker load
      for h in "" "ssh spark2"; do $h docker run --rm --network none --entrypoint bash \
-       dsv41-flash-exl3-sm121:review-e15 -c 'grep -c "p2b coop dataflow kernel engaged" \
+       dsv41-flash-exl3-sm121:review-e14 -c 'grep -c "p2b coop dataflow kernel engaged" \
        /usr/local/lib/python3.12/dist-packages/vllm_exl3_c*.so'; done
 2. ABAB per ARMS.md, one lever, the same image for A and B (A = env unset: canonical-e13's
    p2b SORT=0 code, byte-identical), spark1's GPU exclusive (no chromium GPU process):
-     A: ./stop.sh && AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e15 ./run.sh
-     B: ./stop.sh && AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e15 DSV41_P2B_COOP=2 ./run.sh
+     A: ./stop.sh && AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e14 ./run.sh
+     B: ./stop.sh && AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e14 DSV41_P2B_COOP=2 ./run.sh
    each boot: python3 smoke_chat.py (323); python3 smoke_vision.py;
               tools/four_numbers.sh --arm coopdf-{A1,B1,A2,B2}; tools/disarm_scan.sh
    B boots: the strict audit must find "dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)"

@@ -242,8 +242,8 @@ class DataflowScheduleTests(unittest.TestCase):
 
 
 class DataflowWiringTests(unittest.TestCase):
-    def test_dockerfile_e15(self) -> None:
-        df = (ROOT / "docker/Dockerfile.e15").read_text()
+    def test_dockerfile_e14(self) -> None:
+        df = (ROOT / "docker/Dockerfile.e14").read_text()
         self.assertIn("FROM dsv41-flash-exl3-sm121:canonical-e13\n", df)
         ref = re.search(r"ARG VLLM_EXL3_REF=(\w+)", (ROOT / "docker/Dockerfile.e13").read_text()).group(1)
         self.assertIn(f"ARG VLLM_EXL3_REF={ref}\n", df)
@@ -255,7 +255,22 @@ class DataflowWiringTests(unittest.TestCase):
         self.assertTrue(_load("widen_p2b_dataflow").LOG_ENGAGED.startswith("dsv41: " + needle))
         label = re.search(r'LABEL dsv41.recipe.patches="([^"]+)"', df).group(1).split(",")
         self.assertEqual(label[label.index("coop") + 1], "dataflow")
-        self.assertNotIn("widen_p2b_dataflow", (ROOT / "docker/Dockerfile").read_text())
+        self.assertFalse((ROOT / "docker/Dockerfile.e15").exists(), "folded into Dockerfile.e14")
+
+    def test_full_chain_in_sync_with_e14(self) -> None:
+        """docker/Dockerfile (from scratch) applies the same p2b stages in the same order and
+        carries the same label as docker/Dockerfile.e14 (layered on canonical-e13)."""
+        full = (ROOT / "docker/Dockerfile").read_text()
+        e14 = (ROOT / "docker/Dockerfile.e14").read_text()
+        stages = [re.findall(r"(widen_p2b_\w+)\.py /opt/vllm-exl3", df) for df in (full, e14)]
+        self.assertEqual(stages[0], stages[1])
+        self.assertEqual(stages[0], [f"widen_p2b_{n}" for n in CHAIN + ("coop", "dataflow")])
+        labels = [re.search(r'LABEL dsv41.recipe.patches="([^"]+)"', df).group(1) for df in (full, e14)]
+        self.assertEqual(labels[0], labels[1])
+        needle = _load("decode_levers").P2B_DATAFLOW_NEEDLE
+        self.assertIn(f"b'{needle}' in so", full)
+        self.assertLess(full.index("widen_p2b_dataflow.py /opt/vllm-exl3"),
+                        full.index("pip install --no-build-isolation --no-deps /opt/vllm-exl3"))
 
     def test_lever_check_warns_on_extension_without_dataflow(self) -> None:
         import tempfile
@@ -272,7 +287,7 @@ class DataflowWiringTests(unittest.TestCase):
                     dl.install({"DSV41_P2B_COOP": "2"})
                 line = out.getvalue()
                 self.assertIn("decode lever p2b_coop_dataflow:", line)
-                self.assertIn("Rebuild docker/Dockerfile.e15", line)
+                self.assertIn("Rebuild docker/Dockerfile.e14", line)
                 self.assertNotIn("decode lever p2b_coop:", line)
                 self.assertTrue(any("p2b_coop_dataflow" in x for x in audit({"head": line}, {})))
                 so.write_bytes(b"\x7fELF" + b"\0" * 4096 + b"DSV41_P2B_COOP\0" + dl.P2B_DATAFLOW_NEEDLE.encode() + b"\0")
