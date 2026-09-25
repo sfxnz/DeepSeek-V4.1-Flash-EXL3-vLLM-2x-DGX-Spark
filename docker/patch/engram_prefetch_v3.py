@@ -46,7 +46,13 @@ from pathlib import Path
 LOG_ENGAGED = "dsv41: engram prefetch v3 armed"
 LOG_DISARMED = "dsv41: engram prefetch disabled"
 
-MARKER = "# --- engram-prefetch-v3 ---"
+# v3.1 = the stager methods after the 2026-09-24 fixes (seqlock, cached
+# token map, record_stream, sampled-row stride). A baked v3 block (the
+# canonical-g8 image) is swapped for them; apply() used to return on it.
+MARKER = "# --- engram-prefetch-v3.1 ---"
+# The runner hook and the census text have not changed since v3 and keep
+# its marker (engram_cpu_hash anchors on the v3 runner block).
+V3_MARKER = "# --- engram-prefetch-v3 ---"
 
 STAGER_INIT_TAIL = """        self.hashes_ready = torch.cuda.Event()
         self.num_staged = 0
@@ -75,6 +81,9 @@ STAGER_METHODS = MARKER + '''
         import torch as _torch
 
         self._pf_tm = hs.token_map.to("cpu").to(_torch.int64)
+        # Converted once: tolist() of the 129k-entry map held the GIL for
+        # ~1.8 ms on every worker call.
+        self._pf_tm_list = self._pf_tm.tolist()
         self._pf_mult = hs.multipliers.to("cpu").to(_torch.int64)
         self._pf_primes = (
             hs.primes.to("cpu").to(_torch.int64).reshape(-1).tolist()
@@ -171,6 +180,13 @@ STAGER_METHODS = MARKER + '''
             ):
                 return
             k = min(int(draft_tokens.shape[1]), self._pf_kmax)
+            # sampled_token_ids is [num_reqs, k + 1]: its row stride is w,
+            # not _pf_cap (the worker read rows r >= 1 from unwritten slots).
+            w = min(int(sampled_token_ids.shape[1]), self._pf_cap)
+            # Bump the generation BEFORE overwriting the pinned snapshot: a
+            # worker that still sees its own gen after copying the snapshot
+            # out read a buffer no newer enqueue had touched (seqlock).
+            self._pf_gen += 1
             # Order the side stream behind main-stream work queued so far.
             # MUST be issued while the MAIN stream is current — inside the
             # with-block below current_stream() IS the side stream and
@@ -190,7 +206,7 @@ STAGER_METHODS = MARKER + '''
                 if window.numel():
                     win = window[:num_reqs, :].reshape(-1).to(_torch.int32)
                     self._pf_pin_win[: win.numel()].copy_(win, non_blocking=True)
-                out = sampled_token_ids[:num_reqs, : self._pf_cap].reshape(-1).to(
+                out = sampled_token_ids[:num_reqs, :w].reshape(-1).to(
                     _torch.int64
                 )
                 self._pf_pin_out[: out.numel()].copy_(out, non_blocking=True)
@@ -201,9 +217,17 @@ STAGER_METHODS = MARKER + '''
                     num_sampled[:num_reqs].to(_torch.int64), non_blocking=True
                 )
                 self._pf_event.record()
-            self._pf_gen += 1
+                # The sources are main-stream tensors; sampled_token_ids and
+                # num_sampled are new every step. Without record_stream the
+                # caching allocator can hand their memory to the next step
+                # before these side-stream reads run (garbage num_sampled ->
+                # IndexError -> prefetch disabled, 2026-09-24).
+                for _src in (input_ids, positions, query_start_loc, window,
+                             sampled_token_ids, num_sampled, draft_tokens):
+                    if _src.is_cuda:
+                        _src.record_stream(self._pf_stream)
             self._pf_pool.submit(
-                self._prefetch_worker, self._pf_gen, num_reqs, num_tokens, k
+                self._prefetch_worker, self._pf_gen, num_reqs, num_tokens, k, w
             )
         except Exception as exc:  # noqa: BLE001
             self.prefetch_on = False
@@ -218,39 +242,6 @@ STAGER_METHODS = MARKER + '''
         start_a = start & -4096
         end_a = (start + row_bytes + 4095) & -4096
         _os.posix_fadvise(fd, start_a, end_a - start_a, _os.POSIX_FADV_WILLNEED)
-
-    def _fadvise_rows_capped(self, fd: int, base: int, rows, row_bytes: int) -> None:
-        # --- engram-prefetch-fadvise-cap ---
-        # Round-25 trace: 191 posix_fadvise(WILLNEED)/step (~3.1 ms of
-        # off-thread gap time) with pf_hit 100% — the pages are already
-        # resident, so per-row calls are pure waste. DORMANT by default:
-        # DSV41_ENGRAM_FADVISE_CAP unset/empty = exact legacy per-row
-        # behavior. Set to coalesce sorted rows into contiguous page runs,
-        # ONE fadvise per run, at most DSV41_ENGRAM_FADVISE_CAP calls per
-        # table (~24 = 2 tables x 12 rows); "0" issues none.
-        import os as _os
-
-        env = _os.environ.get("DSV41_ENGRAM_FADVISE_CAP")
-        if env is None or env == "":
-            for row in rows:
-                self._fadvise_row(fd, base, row, row_bytes)
-            return
-        try:
-            cap = int(env)
-        except ValueError:
-            cap = 24
-        if cap == 0 or not rows:
-            return
-        spans = []
-        for row in sorted(rows):
-            start = (base + row * row_bytes) & -4096
-            end = (base + row * row_bytes + row_bytes + 4095) & -4096
-            if spans and start <= spans[-1][1]:
-                spans[-1][1] = max(spans[-1][1], end)
-            else:
-                spans.append([start, end])
-        for start, end in spans[:cap]:
-            _os.posix_fadvise(fd, start, end - start, _os.POSIX_FADV_WILLNEED)
 
     def _pf_set_id(self, rows) -> int:
         import zlib as _zlib
@@ -283,7 +274,7 @@ STAGER_METHODS = MARKER + '''
         return chunk, cpos, hist
 
     def _prefetch_worker(self, gen: int, num_reqs: int, num_tokens: int,
-                         k: int) -> None:
+                         k: int, w: int) -> None:
         # Hash the predicted NEXT chunks on CPU; fadvise AND publish each
         # table as soon as it is predicted so the next gather can pair.
         import os as _os
@@ -296,12 +287,15 @@ STAGER_METHODS = MARKER + '''
             win2 = self._pf_pin_win[
                 : num_reqs * self._pf_depth
             ].reshape(num_reqs, self._pf_depth)
-            outs = self._pf_pin_out[: num_reqs * self._pf_cap].reshape(
-                num_reqs, self._pf_cap
-            )
+            outs = self._pf_pin_out[: num_reqs * w].reshape(num_reqs, w)
             drs = self._pf_pin_draft[: num_reqs * k].reshape(num_reqs, k)
             ns = self._pf_pin_ns[:num_reqs].tolist()
-            tm = self._pf_tm.tolist()
+            win2 = win2.tolist()
+            outs = outs.tolist()
+            drs = drs.tolist()
+            if gen != self._pf_gen:
+                return  # superseded: a newer enqueue may have overwritten
+            tm = self._pf_tm_list
             depth = self._pf_depth
             tables = [
                 (
@@ -331,16 +325,29 @@ STAGER_METHODS = MARKER + '''
                     _t[11]._pf_expected = set()
                     _t[11]._pf_acc_gen = gen
             for r in range(num_reqs):
-                A = max(int(ns[r]), 0)
+                A = int(ns[r])
                 if A <= 0:
+                    continue
+                if A > w:
+                    # num_sampled <= k + 1 = w. A larger value is a bad
+                    # snapshot: skip this request, never count it as an
+                    # error (3 errors disable prefetch for the process).
+                    self._pf_bad = getattr(self, "_pf_bad", 0) + 1
+                    if self._pf_bad <= 3:
+                        print(
+                            "dsv41: engram prefetch v3 bad snapshot "
+                            "num_sampled=%d > %d (request not predicted, "
+                            "%d so far)" % (A, w, self._pf_bad),
+                            flush=True,
+                        )
                     continue
                 q0 = int(qsl[r])
                 q0 = min(max(q0, 0), num_tokens - 1)
                 S = int(pos[q0])
                 chunk, cpos, hist = self._pf_next_chunk(
                     r, A, ids, q0, None,
-                    outs[r].tolist(), drs[r].tolist(),
-                    win2[r].tolist(), S,
+                    outs[r], drs[r],
+                    win2[r], S,
                 )
                 if not chunk:
                     continue
@@ -372,10 +379,10 @@ STAGER_METHODS = MARKER + '''
                         v1,
                     )
                     # fadvise FIRST (pages start landing), then publish.
-                    # --- engram-prefetch-fadvise-cap --- coalesced + capped
-                    # (191/step per-row calls were pure waste at pf_hit 100%)
-                    self._fadvise_rows_capped(w_fd, w_off, rows, dim)
-                    self._fadvise_rows_capped(s_fd, s_off, rows, sb)
+                    for row in rows:
+                        self._fadvise_row(w_fd, w_off, row, dim)
+                    for row in rows:
+                        self._fadvise_row(s_fd, s_off, row, sb)
                     # Publish gen-stamped; only the newest generation wins.
                     if gen >= self._pf_pub_gen:
                         self._pf_pub_gen = gen
@@ -518,7 +525,7 @@ RUNNER_ANCHOR = """        if self.num_speculative_steps > 0:
             )
 """
 
-RUNNER_HOOK = RUNNER_ANCHOR + MARKER + """
+RUNNER_HOOK = RUNNER_ANCHOR + V3_MARKER + """
         if self.speculator is not None:
             _stager = getattr(self.model_state, "engram_stager", None)
             if _stager is not None:
@@ -558,7 +565,7 @@ CENSUS_NEW = """            _exp = getattr(self, "_pf_expected", None)
                 _pf[1] += len(_exp)
                 _pf[2] += 1
                 self._pf_expected = None
-""" + MARKER + """
+""" + V3_MARKER + """
                 # Pairing self-check: hits and predicted rows only counted
                 # when paired, so pf_hit% = share of predictions consumed.
                 import os as _pfv3_os
@@ -600,7 +607,7 @@ CENSUS_NEW = """            _exp = getattr(self, "_pf_expected", None)
 
 
 def _patch_census(disk_text: str) -> str:
-    for marker in (MARKER, V2_MARKER):
+    for marker in (V3_MARKER, V2_MARKER):
         if marker in disk_text:
             return disk_text  # already fixed (v3 marker wins)
     if CENSUS_OLD in disk_text:
@@ -617,6 +624,11 @@ def _swap_stager_methods(text: str, old_marker: str) -> str | None:
     if i < 0:
         return None
     end = text.index(STAGE_DEF_ANCHOR, i)
+    # Other patches' methods (engram_cpu_hash, engram_defer) can sit between
+    # this block and stage(); each starts with a column-0 "# --- " marker.
+    nxt = text.find("\n# --- ", i + len(needle))
+    if 0 <= nxt < end:
+        end = nxt + 1
     text = text[:i] + STAGER_METHODS + "\n\n" + text[end:]
     # Re-stamp any remaining (init) occurrence of the old marker.
     return text.replace(old_marker, MARKER)
@@ -627,7 +639,9 @@ def apply(model_root: Path, runner: Path, vllm_root: Path | None = None) -> None
     text = engram.read_text()
     if MARKER not in text:
         swapped = None
-        for marker, name in ((V2_MARKER, "v2"), (V1_MARKER, "v1")):
+        for marker, name in (
+            (V3_MARKER, "v3"), (V2_MARKER, "v2"), (V1_MARKER, "v1")
+        ):
             new_text = _swap_stager_methods(text, marker)
             if new_text is not None:
                 text = new_text
@@ -657,13 +671,13 @@ def apply(model_root: Path, runner: Path, vllm_root: Path | None = None) -> None
         )
 
     rtext = runner.read_text()
-    if MARKER not in rtext:
+    if V3_MARKER not in rtext:
         if V2_RUNNER_BLOCK in rtext:
             # upgrade path: remove v2's postprocess-site hook entirely (the
             # v3 prediction needs `draft_tokens`, which only exists AFTER
             # propose), then install the v3 hook at the post-propose anchor.
             rtext = rtext.replace(V2_RUNNER_BLOCK, "", 1)
-        if MARKER not in rtext:
+        if V3_MARKER not in rtext:
             if V1_MARKER in rtext:
                 raise SystemExit(
                     "engram_prefetch_v3: v1 runner hook present — apply v2 "
