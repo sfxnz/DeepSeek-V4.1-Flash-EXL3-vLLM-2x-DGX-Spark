@@ -72,6 +72,9 @@ class ArmTests(unittest.TestCase):
         self.assertEqual(tc.arm_env("twin")["NCCL_GRAPH_MIXING_SUPPORT"], "0")
         self.assertEqual(tc.arm_env("twin_so0")["NCCL_GRAPH_STREAM_ORDERING"], "0")
         self.assertNotIn("mix0_single", tc.DEFAULT_ARMS)
+        self.assertEqual(tc.arm_env("keep_qos")["DSV41_PM_QOS_US"], "20")
+        self.assertNotIn("NCCL_GRAPH_MIXING_SUPPORT", tc.arm_env("keep_qos"))
+        self.assertEqual(tc.arm_env("twin_qos")["NCCL_GRAPH_MIXING_SUPPORT"], "0")
         with self.assertRaises(KeyError):
             tc.arm_env("nope")
 
@@ -83,6 +86,9 @@ class ArmTests(unittest.TestCase):
         image = yaml.load((ROOT / "recipe.yaml").read_text(), Loader=yaml.BaseLoader)["serve"]["env"]["IMAGE"]
         self.assertIn(f'IMAGE="${{IMAGE:-{image}}}"', sh)
         self.assertIn("docker/patch/nccl_eager_twin.py", sh)
+        self.assertIn('"$ROOT/docker/patch/pm_qos.py"', sh)
+        # PM QoS arms need root and the device; every other arm runs as the caller
+        self.assertIn("then who=(--device /dev/cpu_dma_latency); fi", sh)
 
 
 class CompareTests(unittest.TestCase):

@@ -9,6 +9,9 @@ tools/nccl_twin_check.sh:
   twin       stock comm + eager twin behind nccl_eager_twin.GraphEagerRouter,
              NCCL_GRAPH_MIXING_SUPPORT=0 (the lever)
   twin_so0   twin + NCCL_GRAPH_STREAM_ORDERING=0 (diagnostic)
+  keep_qos / twin_qos  keep / twin with docker/patch/pm_qos.py holding a 20 us
+             /dev/cpu_dma_latency request (the graph-startup wake-up, iteration #7);
+             the driver runs these as root with the device
   mix0_single  one communicator, mixing off, eager calls during outstanding graphs:
              the case NCCL does not support. Diagnostic only, never in the default
              arm list; a hang here is the reason the twin exists.
@@ -60,6 +63,8 @@ ARMS = {
     "twin": {"NCCL_GRAPH_MIXING_SUPPORT": "0"},
     "twin_so0": {"NCCL_GRAPH_MIXING_SUPPORT": "0", "NCCL_GRAPH_STREAM_ORDERING": "0"},
     "mix0_single": {"NCCL_GRAPH_MIXING_SUPPORT": "0"},
+    "keep_qos": {"DSV41_PM_QOS_US": "20"},
+    "twin_qos": {"NCCL_GRAPH_MIXING_SUPPORT": "0", "DSV41_PM_QOS_US": "20"},
 }
 DEFAULT_ARMS = ("keep", "twin")
 BASE_ENV = {  # serve NCCL env (run.sh docker args + recipe KEEP set)
@@ -146,6 +151,11 @@ def run(args) -> int:
 
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "docker" / "patch"))
     import nccl_eager_twin as nt
+    import pm_qos
+
+    qos_state = pm_qos.install()  # arms with DSV41_PM_QOS_US; must hold before the first NCCL wake-up
+    if os.environ.get(pm_qos.ENV) and qos_state != "armed":
+        raise RuntimeError(f"{args.arm}: PM QoS request not held ({qos_state})")
     from vllm.distributed.device_communicators.pynccl import PyNcclCommunicator
 
     torch.cuda.set_device(0)
@@ -299,6 +309,7 @@ def run(args) -> int:
         "arm": args.arm,
         "rank": args.rank,
         "world": world,
+        "pm_qos": qos_state,
         "host": socket.gethostname(),
         "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "nccl_version": graph_comm.nccl.ncclGetVersion(),

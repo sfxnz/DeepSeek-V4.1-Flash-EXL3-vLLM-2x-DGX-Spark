@@ -7,6 +7,7 @@
 #
 # Usage: tools/nccl_twin_check.sh                        (keep twin, REPS=3, c=1 sizes)
 #        ARMS="keep twin twin_so0" REPS=2 ROWS="--m 8 --md 6" tools/nccl_twin_check.sh   (c=2)
+#        ARMS="keep keep_qos twin twin_qos" tools/nccl_twin_check.sh   (with the PM QoS arms)
 # Then:  python3 tools/nccl_twin_check.py compare $OUT
 set -euo pipefail
 
@@ -37,12 +38,15 @@ fi
 mkdir -p "$OUT"
 ssh -o BatchMode=yes "$WORKER_HOST" "mkdir -p $RDIR/tools $RDIR/docker/patch $RDIR/out"
 scp -q "$ROOT/tools/nccl_twin_check.py" "$WORKER_HOST:$RDIR/tools/"
-scp -q "$ROOT/docker/patch/nccl_eager_twin.py" "$WORKER_HOST:$RDIR/docker/patch/"
+scp -q "$ROOT/docker/patch/nccl_eager_twin.py" "$ROOT/docker/patch/pm_qos.py" "$WORKER_HOST:$RDIR/docker/patch/"
 
 docker_args() {  # $1 = arm env (KEY=VAL lines), $2 = repo-like dir, $3 = out dir, $4 = name
+  local who=(--user "$(id -u):$(id -g)")
+  # PM QoS arms: root in the container opens /dev/cpu_dma_latency (host-wide while the run lasts)
+  if grep -q '^DSV41_PM_QOS_US=' <<<"$1"; then who=(--device /dev/cpu_dma_latency); fi
   local a=(--rm --name "$4" --gpus all --network host --ipc host --device /dev/infiniband
     --cap-add IPC_LOCK --ulimit memlock=-1:-1 --entrypoint python3
-    --user "$(id -u):$(id -g)" -e HOME=/tmp
+    "${who[@]}" -e HOME=/tmp
     -e PYTHONPATH=/usr/local/lib/python3.12/dist-packages
     -e NCCL_SOCKET_IFNAME="$IFACE" -e GLOO_SOCKET_IFNAME="$IFACE" -e NCCL_DEBUG=WARN
     -v "$2:/bench:ro" -v "$3:/out")
