@@ -77,6 +77,16 @@ def expert_stems(names: list[str], n: int) -> list[str]:
     return stems[:n]
 
 
+def package_version(name: str) -> str:
+    """Installed distribution version; exllamav3 1.5.1 has no __version__."""
+    import importlib.metadata as md
+
+    try:
+        return md.version(name)
+    except md.PackageNotFoundError:
+        return "?"
+
+
 def full_pack_hours(sec_per_tensor: float, nodes: int) -> float:
     return sec_per_tensor * TENSORS_TOTAL / nodes / 3600
 
@@ -95,7 +105,6 @@ def main(argv: list[str] | None = None) -> int:
 
     import torch
     from exllamav3.ext import exllamav3_ext as ext
-    import exllamav3
     from safetensors.torch import safe_open
 
     from quantize_experts_exl3 import _dequant_t, _load_index, _quantize_fast
@@ -156,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
                           flush=True)
                 rows.append(row)
 
-    summary = {"exllamav3": getattr(exllamav3, "__version__", "?"), "experts": stems, "arms": {}}
+    summary = {"exllamav3": package_version("exllamav3"), "experts": stems, "arms": {}}
     for arm in arms:
         errs = [r[arm] for r in rows]
         mean = sum(errs) / len(errs)
