@@ -4,6 +4,12 @@
 Matches local-ai-lab packages/serve-engine/app/services/perf.py
 (completion_body + decode_tok_per_s = completion_tokens / post-TTFT wall).
 Also reports recipe math (completion_tokens-1) and DSpark acceptance.
+
+After the measured runs, one probe WITHOUT ignore_eos/min_tokens records
+natural_completion_tokens + natural_finish_reason, and the SUMMARY carries
+post_eos_fraction (share of the median measured completion generated past the
+natural stop; 0 when the probe ran to max_tokens). The measured cell is
+unchanged (frozen, still ignore_eos).
 """
 
 from __future__ import annotations
@@ -19,7 +25,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from bench_decode import acceptance, decode_rate, spec_counters  # noqa: E402
+from bench_decode import acceptance, decode_rate, post_eos_fraction, spec_counters  # noqa: E402
 
 LAIL_PROSE = (
     "Continue this essay in the same voice. Do not stop.\n\n"
@@ -77,13 +83,11 @@ def prose_collapsed(text: str) -> bool:
     return prose_type_token_ratio(text) < 0.12 or prose_ngram_diversity(text) < 0.12
 
 
-def completion_body(model: str) -> dict:
-    return {
+def completion_body(model: str, ignore_eos: bool = True) -> dict:
+    body = {
         "model": model,
         "messages": [{"role": "user", "content": LAIL_PROSE}],
         "max_tokens": MAX_TOKENS,
-        "min_tokens": MAX_TOKENS,
-        "ignore_eos": True,
         "temperature": TEMPERATURE,
         "stream": True,
         "stream_options": {"include_usage": True},
@@ -93,12 +97,16 @@ def completion_body(model: str) -> dict:
             "reasoning_effort": "low",
         },
     }
+    if ignore_eos:
+        body["min_tokens"] = MAX_TOKENS
+        body["ignore_eos"] = True
+    return body
 
 
-def stream_one(url: str, model: str) -> dict:
+def stream_one(url: str, model: str, ignore_eos: bool = True) -> dict:
     req = urllib.request.Request(
         url,
-        data=json.dumps(completion_body(model)).encode(),
+        data=json.dumps(completion_body(model, ignore_eos)).encode(),
         headers={"Content-Type": "application/json"},
         method="POST",
     )
@@ -107,6 +115,7 @@ def stream_one(url: str, model: str) -> dict:
     chunks = 0
     usage: dict = {}
     parts: list[str] = []
+    finish_reason = None
     with urllib.request.urlopen(req, timeout=600) as resp:
         for raw in resp:
             line = raw.decode("utf-8", "replace").strip()
@@ -124,6 +133,7 @@ def stream_one(url: str, model: str) -> dict:
             choices = ev.get("choices") or []
             if not choices:
                 continue
+            finish_reason = choices[0].get("finish_reason") or finish_reason
             delta = (choices[0].get("delta") or {}).get("content") or ""
             if delta and first is None:
                 first = time.perf_counter()
@@ -144,6 +154,7 @@ def stream_one(url: str, model: str) -> dict:
         "decode_s": decode_s,
         "prompt_tokens": int(usage.get("prompt_tokens") or 0),
         "completion_tokens": completion,
+        "finish_reason": finish_reason,
         "chunks": chunks,
         "lail_tok_s": lail_decode_tok_s(completion, decode_s),
         "recipe_tok_s": decode_rate(completion, decode_s),
@@ -193,6 +204,19 @@ def main() -> int:
             r["completion_tokens"] for r in rows
         ),
     }
+    probe = stream_one(args.url, args.model, ignore_eos=False)
+    print(
+        f"natural phase=lail_prose completion_tokens={probe['completion_tokens']} "
+        f"finish_reason={probe['finish_reason']}",
+        flush=True,
+    )
+    summary["natural_completion_tokens"] = probe["completion_tokens"]
+    summary["natural_finish_reason"] = probe["finish_reason"]
+    summary["post_eos_fraction"] = post_eos_fraction(
+        summary["median_completion_tokens"],
+        probe["completion_tokens"],
+        probe["finish_reason"],
+    )
     accs = [r["acceptance_len"] for r in rows if "acceptance_len" in r]
     if accs:
         summary["median_acceptance_len"] = statistics.median(accs)

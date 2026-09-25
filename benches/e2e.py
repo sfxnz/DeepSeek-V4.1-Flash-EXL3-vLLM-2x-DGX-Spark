@@ -14,6 +14,11 @@ Phases (all streamed, thinking off, effort low — the shipped defaults):
 Reports ttft, decode tok/s, and useful tok/s (completion tokens over wall
 for phases that pass their quality check). A config that fails a quality
 check scores zero useful tokens for that phase — fast garbage is not a win.
+Exit status is 1 when any phase fails its check.
+
+ignore_eos stays on for coding_agent and doc_recall (fixed-length decode
+timing, comparable with history) and is off for tool_json, so its tokens stop
+at the tool call instead of padding useful_tok_s with post-EOS text.
 """
 
 from __future__ import annotations
@@ -87,10 +92,10 @@ unified memory. Match the style of the guards above.
 
 
 def post_chat(url, model, messages, *, max_tokens, tools=None,
-              stream=True, timeout=900):
+              stream=True, timeout=900, ignore_eos=True):
     payload = {
         "model": model, "messages": messages, "max_tokens": max_tokens,
-        "temperature": 0, "stream": stream, "ignore_eos": True,
+        "temperature": 0, "stream": stream, "ignore_eos": ignore_eos,
         "chat_template_kwargs": CHAT_KWARGS,
     }
     if stream:
@@ -245,7 +250,7 @@ def main() -> int:
             {"role": "user",
              "content": "What is the weather in Paris right now? "
                         "Call the tool."},
-        ], max_tokens=128, tools=TOOLS)
+        ], max_tokens=128, tools=TOOLS, ignore_eos=False)
         ok, why = grade_tool(res)
         phases.append({"phase": "tool_json", "run": r + 1, "pass": ok,
                        "detail": why,
@@ -268,7 +273,7 @@ def main() -> int:
         "pass_rate": f"{len(useful)}/{len(phases)}",
     }
     print("SUMMARY", json.dumps(summary, indent=1))
-    return 0
+    return 0 if len(useful) == len(phases) else 1
 
 
 if __name__ == "__main__":
