@@ -19,7 +19,7 @@ import sys
 
 def view():
     from vllm.models.deepseek_v4_1.attention import DeepseekV4Indexer
-    from vllm.models.deepseek_v4_1.common.engram import EngramDiskStager
+    from vllm.models.deepseek_v4_1.common.engram import Engram, EngramDiskStager
     from vllm.v1.attention.backend import CommonAttentionMetadata as CAM
     from vllm.v1.attention.backends.mla import sparse_swa as swa
 
@@ -28,6 +28,7 @@ def view():
         "t2r_dedup": bool(getattr(CAM.token_to_req_indices, "_dsv41_t2r_dedup", False)),
         "wp_gemv": bool(getattr(DeepseekV4Indexer.__init__, "_dsv41_wp_gemv", False)),
         "native_stage": bool(getattr(EngramDiskStager.stage, "_dsv41_native", False)),
+        "wkv_tp": bool(getattr(Engram.__init__, "_dsv41_wkv_tp", False)),
         "cpu_hash_defer_text": [n for n in ("_ch_try_stage", "_defer_try_stage") if hasattr(EngramDiskStager, n)],
     }
     sig = inspect.signature(EngramDiskStager.stage)
@@ -39,7 +40,7 @@ def view():
         out["stage_accepts_input_batch"] = repr(exc)
     out["modules"] = sorted(m for m in sys.modules if m in (
         "engram_native_stage", "engram_early_hash", "moe_prep_fused", "candidate_mask_bounded",
-        "indexer_wp_gemv", "swa_meta_fused", "attn_t2r_dedup"))
+        "indexer_wp_gemv", "swa_meta_fused", "attn_t2r_dedup", "engram_wkv_tp"))
     return out
 
 
