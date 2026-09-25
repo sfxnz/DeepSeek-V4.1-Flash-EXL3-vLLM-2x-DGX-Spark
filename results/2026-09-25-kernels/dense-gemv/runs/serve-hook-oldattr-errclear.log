@@ -1,0 +1,93 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T17:47:15Z
+lock acquired 2026-09-25T17:49:08Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/mxfp8/flashinfer.py
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+dsv41-indexer-workspace: already applied
+[dense-gemv] rank? K6144xN25600 (engram_wkv) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48, M<=8 W2 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+[dense-gemv] rank? K5120xN1792 (qkv_a) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid28, M<=8 W3 S2 MR8 grid38; self-test M=1..8 x 3 dist bitwise, graph replay ok
+[dense-gemv] rank? K1280xN16384 (wq_b) dense GEMV armed: KC640 M<=8 W2 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+[dense-gemv] rank? K4096xN5120 (wo_b) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid48, M<=8 W4 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+[dense-gemv] rank? K5120xN2304 (shared_gate_up) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48, M<=8 W2 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+[dense-gemv] rank? K1152xN5120 (shared_down) dense GEMV armed: KC384 M<=8 W4 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+[dense-gemv] rank? K5120xN64640 (lm_head) dense GEMV armed: KC512 M<=8 W3 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+[dense-gemv] rank? K15360xN5120 (main_proj) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48; self-test M=1..4 x 3 dist bitwise, graph replay ok
+serve order: 21 layers created in load order, not armed: []
+[dense-gemv] rank? K1280xN16384 (wq_b) pre-quantized input checked bitwise vs b12x (M=8)
+[wo_a-probe] wo_a.dtype=torch.float8_e4m3fn wo_a.shape=(4, 1024, 4096) use_fp8=True wo_b.dtype=torch.bfloat16 n_groups=4
+INFO 09-25 17:49:23 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 17:49:23 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+INFO 09-25 17:49:23 [deep_gemm.py:136] DeepGEMM E8M0 enabled on current platform.
+[woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+[dense-gemv] rank? wo_a (4x1024x4096) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid48, M<=8 W4 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise vs fp8_einsum; in-situ bitwise (M=8)
+[woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+[woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+[dense-gemv] rank? K6144xN25600 (engram_wkv) pre-quantized input checked bitwise vs b12x (M=8)
+[dense-gemv] rank? K5120xN1792 (qkv_a) pre-quantized input checked bitwise vs b12x (M=8)
+[dense-gemv] rank? K4096xN5120 (wo_b) pre-quantized input checked bitwise vs b12x (M=8)
+[dense-gemv] rank? K5120xN2304 (shared_gate_up) pre-quantized input checked bitwise vs b12x (M=8)
+[dense-gemv] rank? K1152xN5120 (shared_down) pre-quantized input checked bitwise vs b12x (M=8)
+[dense-gemv] rank? K15360xN5120 (main_proj) pre-quantized input checked bitwise vs b12x (M=4)
+serve order FAIL engram_wkv@L1 M=8 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL engram_wkv@L1 M=8 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL engram_wkv@L1 M=7 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL engram_wkv@L1 M=6 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL engram_wkv@L1 M=5 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL engram_wkv@L1 M=4 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L1 M=4 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L1 M=4 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L39 M=4 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L39 M=4 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL main_proj@L0 M=4 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L38 M=4 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L38 M=4 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL engram_wkv@L1 M=3 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L1 M=3 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L1 M=3 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L39 M=3 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L39 M=3 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL main_proj@L0 M=3 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L38 M=3 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L38 M=3 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL engram_wkv@L1 M=2 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L1 M=2 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L1 M=2 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L39 M=2 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L39 M=2 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL main_proj@L0 M=2 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L38 M=2 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L38 M=2 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL engram_wkv@L1 M=1 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L1 M=1 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L1 M=1 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L39 M=1 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L39 M=1 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL main_proj@L0 M=1 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L38 M=1 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL qkv_a@L38 M=1 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order FAIL graph capture/replay: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)
+serve order: 288/288 bitwise, 288/288 GEMV use as expected, 38 failures, graph replay == eager False
+[dense-gemv] rank? K5120xN1792 rejected (RuntimeError('dense_gemv: launch failed: invalid argument')); b12x stays
+qkv_a: NOT ARMED
+wq_b: {'armed': True, 'cases': 18, 'bitwise': 18, 'gemv_calls': 16, 'graph_replay_eq_eager': True}
+wo_b: {'armed': True, 'cases': 18, 'bitwise': 18, 'gemv_calls': 16, 'graph_replay_eq_eager': True}
+shared_gate_up: {'armed': True, 'cases': 18, 'bitwise': 18, 'gemv_calls': 16, 'graph_replay_eq_eager': True}
+shared_down: {'armed': True, 'cases': 18, 'bitwise': 18, 'gemv_calls': 16, 'graph_replay_eq_eager': True}
+engram_wkv: {'armed': True, 'cases': 18, 'bitwise': 18, 'gemv_calls': 16, 'graph_replay_eq_eager': True}
+main_proj: {'armed': True, 'cases': 18, 'bitwise': 18, 'gemv_calls': 8, 'graph_replay_eq_eager': True}
+lm_head: {'armed': True, 'cases': 5, 'bitwise': 5}
+[woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+wo_a: {'cases': 18, 'bitwise': 18, 'armed': True, 'graph_replay_eq_eager': True}
+FAILURES
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 123 busy 48 sm_median 2190 sm_min_busy 2190 mem ['[N/A]'] power_median 8.5 W
+rc=1

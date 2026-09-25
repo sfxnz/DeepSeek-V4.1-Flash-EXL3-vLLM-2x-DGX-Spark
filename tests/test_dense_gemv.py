@@ -160,6 +160,19 @@ class ConfigTableTests(unittest.TestCase):
         others = [v[2] for key, v in self.mod.CONFIGS.items() if key != (5120, 64640)]
         self.assertEqual(set(others), {0})
 
+    def test_smem_attribute_is_only_raised(self) -> None:
+        # Shapes with different K share an instantiation and the serve plans every layer
+        # before the first call: the dynamic-smem attribute must never be lowered, and
+        # launch() and occupancy() must share one high-water mark (k3 review blocker).
+        src = KERNEL.read_text()
+        self.assertEqual(src.count("cudaFuncSetAttribute("), 1)
+        helper = src.split("bool ensure_smem_attr(int smem) {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("cudaFuncSetAttribute(", helper)
+        self.assertLess(helper.index("if (smem <= hwm) return true;"), helper.index("cudaFuncSetAttribute("))
+        for fn in ("void launch(const Params& p, int grid, bool pdl) {", "int occupancy(int K) {"):
+            body = src.split(fn, 1)[1].split("\n}\n", 1)[0]
+            self.assertIn("ensure_smem_attr<W, S, KC, SMODE, IN_MODE, MR>(smem)", body, fn)
+
 
 class PatchTests(unittest.TestCase):
     @classmethod
@@ -336,6 +349,29 @@ class TorchRuntimeTests(unittest.TestCase):
         out = self.mod.build_scales(s2d, n, k, kc, 1)
         self.assertEqual(tuple(out.shape), (2, 2, 16, 16))
         self.assertEqual(int(out[1, 1, 3, 5]), int(s2d[16 + 3, 16 + 5]))
+
+    def test_preq_check_waits_for_a_covered_m(self) -> None:
+        # main_proj has no bucket above M = 4: a pre-quantized call there goes to b12x without
+        # spending (and failing, with a false '; b12x stays') the shape's one-time check
+        import torch
+
+        checked = []
+        self.mod._check_preq = lambda *a: checked.append(a[2].data.shape[0]) or True
+        self.mod._run = lambda *a, **k: None
+        armed = self.mod._Armed((15360, 5120), "main_proj", 512, 0, None, [(4, 2, 2, 4, 48)])
+
+        class Layer:
+            _dsv41_gemv = armed
+
+        class QA:
+            scale = torch.zeros(1, dtype=torch.uint8)
+            orig_dtype = torch.bfloat16
+
+        for m in (6, 4):
+            QA.data = torch.zeros(m, 15360, dtype=torch.uint8)
+            QA.orig_shape = (m, 15360)
+            self.assertIsNone(self.mod.maybe_apply(Layer(), QA(), None))
+        self.assertEqual(checked, [4])
 
 
 if __name__ == "__main__":

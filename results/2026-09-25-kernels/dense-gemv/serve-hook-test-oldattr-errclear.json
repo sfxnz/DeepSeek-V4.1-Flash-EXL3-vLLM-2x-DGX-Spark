@@ -1,0 +1,137 @@
+{
+ "hooks_in_vllm_file": true,
+ "shapes": {
+  "qkv_a": {
+   "armed": false,
+   "cases": 0,
+   "bitwise": 0,
+   "gemv_calls": 0
+  },
+  "wq_b": {
+   "armed": true,
+   "cases": 18,
+   "bitwise": 18,
+   "gemv_calls": 16,
+   "graph_replay_eq_eager": true
+  },
+  "wo_b": {
+   "armed": true,
+   "cases": 18,
+   "bitwise": 18,
+   "gemv_calls": 16,
+   "graph_replay_eq_eager": true
+  },
+  "shared_gate_up": {
+   "armed": true,
+   "cases": 18,
+   "bitwise": 18,
+   "gemv_calls": 16,
+   "graph_replay_eq_eager": true
+  },
+  "shared_down": {
+   "armed": true,
+   "cases": 18,
+   "bitwise": 18,
+   "gemv_calls": 16,
+   "graph_replay_eq_eager": true
+  },
+  "engram_wkv": {
+   "armed": true,
+   "cases": 18,
+   "bitwise": 18,
+   "gemv_calls": 16,
+   "graph_replay_eq_eager": true
+  },
+  "main_proj": {
+   "armed": true,
+   "cases": 18,
+   "bitwise": 18,
+   "gemv_calls": 8,
+   "graph_replay_eq_eager": true
+  },
+  "lm_head": {
+   "armed": true,
+   "cases": 5,
+   "bitwise": 5
+  },
+  "wo_a": {
+   "cases": 18,
+   "bitwise": 18,
+   "armed": true,
+   "graph_replay_eq_eager": true
+  }
+ },
+ "hooks_in_o_proj": true,
+ "serve_order": {
+  "order": [
+   "engram_wkv@L1",
+   "qkv_a@L1",
+   "wq_b@L1",
+   "wo_a@L1",
+   "wo_b@L1",
+   "shared_gate_up@L1",
+   "shared_down@L1",
+   "qkv_a@L39",
+   "wq_b@L39",
+   "wo_a@L39",
+   "wo_b@L39",
+   "shared_gate_up@L39",
+   "shared_down@L39",
+   "lm_head@L0",
+   "main_proj@L0",
+   "qkv_a@L38",
+   "wq_b@L38",
+   "wo_a@L38",
+   "wo_b@L38",
+   "shared_gate_up@L38",
+   "shared_down@L38"
+  ],
+  "not_armed": [],
+  "cases": 288,
+  "bitwise": 288,
+  "used_as_expected": 288,
+  "failures": [
+   "engram_wkv@L1 M=8 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "engram_wkv@L1 M=8 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "engram_wkv@L1 M=7 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "engram_wkv@L1 M=6 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "engram_wkv@L1 M=5 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "engram_wkv@L1 M=4 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L1 M=4 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L1 M=4 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L39 M=4 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L39 M=4 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "main_proj@L0 M=4 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L38 M=4 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L38 M=4 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "engram_wkv@L1 M=3 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L1 M=3 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L1 M=3 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L39 M=3 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L39 M=3 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "main_proj@L0 M=3 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L38 M=3 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L38 M=3 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "engram_wkv@L1 M=2 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L1 M=2 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L1 M=2 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L39 M=2 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L39 M=2 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "main_proj@L0 M=2 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L38 M=2 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L38 M=2 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "engram_wkv@L1 M=1 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L1 M=1 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L1 M=1 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L39 M=1 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L39 M=1 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "main_proj@L0 M=1 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L38 M=1 quant=False: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "qkv_a@L38 M=1 quant=True: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)",
+   "graph capture/replay: dense_gemv: launch failed: invalid argument (cudaGetLastError=0)"
+  ],
+  "graph_replay_eq_eager": false,
+  "ok": false
+ },
+ "all_ok": false
+}

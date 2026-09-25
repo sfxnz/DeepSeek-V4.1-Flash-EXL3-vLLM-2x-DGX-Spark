@@ -504,6 +504,8 @@ def maybe_apply(layer, x, bias):
             return None
         if data.dim() != 2 or data.shape[1] != k or not 0 < data.shape[0] <= MAX_M or data.stride(1) != 1:
             return None
+        if armed.plan(data.shape[0]) is None:
+            return None  # no bucket for this M (main_proj M > 4): b12x, and keep the one-time check for later
         if not _check_preq(armed, layer, x):
             return None
         y = _run(armed, layer, q=data.view(torch.uint8), s=scale.view(torch.uint8))

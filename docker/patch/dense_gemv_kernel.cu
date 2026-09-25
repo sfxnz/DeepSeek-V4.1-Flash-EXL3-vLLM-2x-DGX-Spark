@@ -415,16 +415,28 @@ struct Cfg {
 using LaunchFn = void (*)(const Params&, int grid, bool pdl);
 using SmemFn = int (*)(int K);
 
+// One high-water mark per instantiation, shared by launch() and occupancy(): the
+// MaxDynamicSharedMemorySize attribute is only ever raised. Shapes with different K
+// share an instantiation (qkv_a/wo_b, gate_up/Engram/main_proj), and the serve arms
+// every layer (plan_grid -> occupancy) before the first call; lowering the attribute
+// for a smaller K made the larger K's later launches fail (cudaErrorInvalidValue).
+template <int W, int S, int KC, int SMODE, int IN_MODE, int MR>
+bool ensure_smem_attr(int smem) {
+  static int hwm = 0;
+  if (smem <= hwm) return true;
+  if (cudaFuncSetAttribute(gemv_kernel<W, S, KC, SMODE, IN_MODE, MR>, cudaFuncAttributeMaxDynamicSharedMemorySize,
+                           smem) != cudaSuccess)
+    return false;
+  hwm = smem;
+  return true;
+}
+
 template <int W, int S, int KC, int SMODE, int IN_MODE, int MR>
 void launch(const Params& p, int grid, bool pdl) {
   auto kern = gemv_kernel<W, S, KC, SMODE, IN_MODE, MR>;
   const int smem = smem_bytes<W, S, KC, SMODE, MR>(p.K);
-  static int configured = 0;
-  if (configured < smem) {
-    TORCH_CHECK(cudaFuncSetAttribute(kern, cudaFuncAttributeMaxDynamicSharedMemorySize, smem) == cudaSuccess,
-                "dense_gemv: cannot set ", smem, " B of dynamic smem");
-    configured = smem;
-  }
+  TORCH_CHECK((ensure_smem_attr<W, S, KC, SMODE, IN_MODE, MR>(smem)), "dense_gemv: cannot set ", smem,
+              " B of dynamic smem");
   cudaLaunchConfig_t cfg = {};
   cfg.gridDim = dim3(grid);
   cfg.blockDim = dim3((W + SW) * 32);
@@ -435,14 +447,18 @@ void launch(const Params& p, int grid, bool pdl) {
   attr[0].val.programmaticStreamSerializationAllowed = 1;
   cfg.attrs = attr;
   cfg.numAttrs = pdl ? 1 : 0;
-  TORCH_CHECK(cudaLaunchKernelEx(&cfg, kern, p) == cudaSuccess, "dense_gemv: launch failed");
+  const cudaError_t err = cudaLaunchKernelEx(&cfg, kern, p);
+  // A rejected launch leaves its (non-sticky) error pending; clear it so the caller's fallback
+  // to the stock path (dense_gemv.py _arm: '; b12x stays') does not die at torch's next launch check.
+  if (err != cudaSuccess) (void)cudaGetLastError();
+  TORCH_CHECK(err == cudaSuccess, "dense_gemv: launch failed: ", cudaGetErrorString(err));
 }
 
 template <int W, int S, int KC, int SMODE, int IN_MODE, int MR>
 int occupancy(int K) {
   auto kern = gemv_kernel<W, S, KC, SMODE, IN_MODE, MR>;
   const int smem = smem_bytes<W, S, KC, SMODE, MR>(K);
-  if (cudaFuncSetAttribute(kern, cudaFuncAttributeMaxDynamicSharedMemorySize, smem) != cudaSuccess) return 0;
+  if (!ensure_smem_attr<W, S, KC, SMODE, IN_MODE, MR>(smem)) return 0;
   int n = 0;
   if (cudaOccupancyMaxActiveBlocksPerMultiprocessor(&n, kern, (W + SW) * 32, smem) != cudaSuccess) return 0;
   return n;
