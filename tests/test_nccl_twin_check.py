@@ -49,6 +49,22 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(tc.expected_ar(5), 15)
         self.assertEqual(tc.expected_ag_halves(5), [5, 6])
 
+    def test_expected_segments_cover_every_output(self) -> None:
+        p = tc.plan(4, 3)
+        items = p["target"] + p["draft"] + p["eager"]
+        runs = tc.expected_segments(items, 2)
+        n_ag = sum(1 for x in items if x[1] == "all_gather")
+        self.assertEqual(len(runs), len(items) + n_ag)  # an all-gather output is one run per rank
+        want = sum(x[3] // 2 * (2 if x[1] == "all_gather" else 1) for x in items)
+        self.assertEqual(sum(n for n, _, _ in runs), want)
+        self.assertEqual(runs[0], (4 * 5120, 3, 0))  # layer 0 attn AR: seed * (1 + 2)
+        ag = items.index(next(x for x in items if x[1] == "all_gather"))
+        self.assertEqual(runs[ag:ag + 2], [(4 * 3072, 1, 0), (4 * 3072, 1, 1)])  # engram AG halves
+        for seed in (1, 17, 40):  # the pattern reproduces the scalar expectations
+            self.assertEqual(runs[0][1] * seed + runs[0][2], tc.expected_ar(seed))
+            self.assertEqual([c * seed + o for _, c, o in runs[ag:ag + 2]], tc.expected_ag_halves(seed))
+        self.assertEqual(tc.expected_segments(items, 1)[0], (4 * 5120, 1, 0))  # one-rank selftest
+
     def test_checked_steps(self) -> None:
         self.assertTrue(tc.is_checked(0, 10, 330))
         self.assertTrue(tc.is_checked(329, 10, 330))
@@ -104,6 +120,7 @@ class CompareTests(unittest.TestCase):
         self.assertEqual(res["keep"]["step_us_median_of_medians"], 61000.0)
         self.assertEqual(res["twin"]["delta_vs_keep_ms"], -3.0)
         self.assertEqual(res["twin"]["mismatches"], 0)
+        self.assertEqual(res["twin"]["device_checked_steps"], 0)  # older JSONs: no device check
 
 
 if __name__ == "__main__":

@@ -11,7 +11,9 @@ R=/home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2
 NAME="${NAME:-k3-comm}"
 ssh -o BatchMode=yes spark2 "mkdir -p $R/$NAME"
 rsync -a --delete --exclude .git "$ROOT/" "spark2:$R/$NAME/"
-ssh -o BatchMode=yes spark2 "cd $R/$NAME && IMAGE=${IMAGE:-} AS_ROOT=${AS_ROOT:-0} DOCKER_EXTRA=$(printf '%q' "${DOCKER_EXTRA:-}") flock -w 7200 $R/.gpu.lock kernel_study/comm/gpu_run.sh $R/$NAME $OUTDIR $(printf '%q ' "$@")"
+rc=0
+ssh -o BatchMode=yes spark2 "cd $R/$NAME && IMAGE=${IMAGE:-} AS_ROOT=${AS_ROOT:-0} DOCKER_EXTRA=$(printf '%q' "${DOCKER_EXTRA:-}") flock -w 7200 $R/.gpu.lock kernel_study/comm/gpu_run.sh $R/$NAME $OUTDIR $(printf '%q ' "$@")" || rc=$?
 mkdir -p "$ROOT/$OUTDIR"
-rsync -a "spark2:$R/$NAME/$OUTDIR/" "$ROOT/$OUTDIR/"
+rsync -a "spark2:$R/$NAME/$OUTDIR/" "$ROOT/$OUTDIR/"  # also on failure: the logs are the evidence
 tail -3 "$ROOT/$OUTDIR/stdout.txt"
+exit "$rc"

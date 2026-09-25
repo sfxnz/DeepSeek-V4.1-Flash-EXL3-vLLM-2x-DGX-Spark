@@ -28,6 +28,13 @@ them). The host stays one step ahead, like the serve.
 
 Every collective input is a small integer derived from a per-step seed that the graph
 reads at replay (exact in bf16): each checked step verifies every output bitwise.
+Host checks (--check-every N) drain the pipeline, so they only see the steps they stop
+at. --device-check verifies every step without draining: all outputs live in one flat
+buffer, and after each step's last collective a stream-ordered comparison against
+coef * seed + offset (expected_segments) adds that step's mismatching elements to a
+device counter that the host reads once at the end. --inject-fault STEP corrupts one
+output element of that step before its check (a selftest: the check must flag exactly
+that step).
 Per-step GPU time comes from CUDA events around the step, reported as median/p10/p90
 over --steps after --warmup; a watchdog aborts on a hang (the driver's timeout too).
 
@@ -100,6 +107,20 @@ def expected_ar(seed: int, tp: int = TP) -> int:
 
 def expected_ag_halves(seed: int, tp: int = TP) -> list[int]:
     return [seed + r for r in range(tp)]
+
+
+def expected_segments(items: list, world: int) -> list[tuple[int, int, int]]:
+    """Flat-buffer runs (elements, coef, offset) for the outputs of `items` in order, so that
+    output == coef * seed + offset elementwise: an all-reduce sums seed * (r + 1) over the
+    ranks; an all-gather's r-th slice holds rank r's seed + r."""
+    runs = []
+    for _phase, op, _rows, nbytes in items:
+        n = nbytes // 2
+        if op == "all_reduce":
+            runs.append((n, sum(r + 1 for r in range(world)), 0))
+        else:
+            runs += [(n, 1, r) for r in range(world)]
+    return runs
 
 
 def is_checked(step: int, every: int, total: int) -> bool:
@@ -198,17 +219,25 @@ def run(args) -> int:
     seed_t = torch.ones(1, dtype=torch.bfloat16, device=dev)  # read by the graphs at replay
     mult = float(args.rank + 1)
 
+    # Every output is a view of one flat buffer (target, draft, eager order) for --device-check.
+    runs = expected_segments(p["target"] + p["draft"] + p["eager"], world)
+    flat_out = torch.zeros(sum(n for n, _, _ in runs), dtype=torch.bfloat16, device=dev)
+    coef = torch.cat([torch.full((n,), float(c), device=dev) for n, c, _ in runs])
+    offs = torch.cat([torch.full((n,), float(o), device=dev) for n, _, o in runs])
+    cursor = [0]
+
+    def take(n):
+        v = flat_out[cursor[0]:cursor[0] + n]
+        cursor[0] += n
+        return v
+
     def make_calls(items):
         calls = []
         for phase, op, rows, nbytes in items:
             n = nbytes // 2
             x = torch.zeros(n, dtype=torch.bfloat16, device=dev)
-            if op == "all_reduce":
-                out = torch.empty_like(x)
-                calls.append({"phase": phase, "op": op, "rows": rows, "x": x, "out": out})
-            else:
-                out = torch.empty(n * world, dtype=torch.bfloat16, device=dev)
-                calls.append({"phase": phase, "op": op, "rows": rows, "x": x, "out": out})
+            out = take(n if op == "all_reduce" else n * world)
+            calls.append({"phase": phase, "op": op, "rows": rows, "x": x, "out": out})
         return calls
 
     def issue(c):
@@ -221,6 +250,7 @@ def run(args) -> int:
             comm.all_gather(c["out"], c["x"])
 
     target_calls, draft_calls, eager_calls = (make_calls(p[k]) for k in ("target", "draft", "eager"))
+    assert cursor[0] == flat_out.numel()
 
     def target_body():
         it = iter(target_calls)
@@ -270,6 +300,7 @@ def run(args) -> int:
     ev = [(torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True),
            torch.cuda.Event(enable_timing=True)) for _ in range(total)]
     mismatches, checked = [], 0
+    bad = torch.zeros(total, dtype=torch.int64, device=dev)  # --device-check: bad elements per step
     prev_end = None
     for step in range(total):
         seed_t.fill_(float(seed_of(step)))
@@ -281,6 +312,10 @@ def run(args) -> int:
         g_draft.replay()
         issue(eager_calls[1])  # next-step embed AR while the draft graph is outstanding
         s1.record()
+        if step == args.inject_fault:
+            target_calls[0]["out"][0:1].add_(1.0)  # selftest: the check must flag this step
+        if args.device_check:  # stream-ordered, after this step's last collective, no host sync
+            bad[step] = torch.ne(flat_out.float(), torch.addcmul(offs, coef, seed_t.float())).sum()
         if prev_end is not None:
             prev_end.synchronize()
         prev_end = s1
@@ -300,6 +335,7 @@ def run(args) -> int:
             checked += 1
     torch.cuda.synchronize()
     stop.set()
+    bad_steps = [i for i, v in enumerate(bad.tolist()) if v] if args.device_check else []
     # A checked step drains the pipeline; the step after it starts from an idle GPU.
     timed = [i for i in range(args.warmup, total) if not is_checked(i - 1, args.check_every, total)]
     step_us = [ev[i][0].elapsed_time(ev[i][2]) * 1e3 for i in timed]
@@ -326,20 +362,28 @@ def run(args) -> int:
         "checked_steps": checked,
         "mismatches": mismatches[:20],
         "n_mismatches": len(mismatches),
+        "device_check": bool(args.device_check),
+        "device_checked_steps": total if args.device_check else 0,
+        "device_bad_steps": bad_steps[:20],
+        "n_device_bad_steps": len(bad_steps),
+        "inject_fault": args.inject_fault,
         "step_us": stats(step_us),
         "target_plus_eager_ag_us": stats(target_us),
         "draft_plus_eager_ar_us": stats(draft_us),
         "router_counts": ({"graph": comm._n_graph, "eager": comm._n_eager}
                           if isinstance(comm, nt.GraphEagerRouter) else None),
     }
-    print(json.dumps({k: res[k] for k in ("arm", "rank", "step_us", "n_mismatches", "router_counts")}), flush=True)
+    print(json.dumps({k: res[k] for k in ("arm", "rank", "step_us", "n_mismatches", "device_checked_steps",
+                                          "n_device_bad_steps", "router_counts")}), flush=True)
     del g_target, g_draft
     comm.destroy()
     if not args.selftest_1rank:
         dist.destroy_process_group()
     if args.json:
         Path(args.json).write_text(json.dumps(res, indent=1) + "\n")
-    return 0 if not mismatches else 2
+    if args.inject_fault >= 0:  # selftest: exactly the injected step is flagged (host checks aside)
+        return 0 if bad_steps == [args.inject_fault] or not args.device_check else 2
+    return 0 if not mismatches and not bad_steps else 2
 
 
 def compare(root: Path) -> dict:
@@ -357,6 +401,8 @@ def compare(root: Path) -> dict:
             "step_us_median_of_medians": round(statistics.median(meds), 2),
             "p10_p90_of_first_rep": [runs[0]["step_us"]["p10"], runs[0]["step_us"]["p90"]],
             "mismatches": sum(r["n_mismatches"] for r in runs),
+            "device_checked_steps": sum(r.get("device_checked_steps", 0) for r in runs),
+            "device_bad_steps": sum(r.get("n_device_bad_steps", 0) for r in runs),
         }
     if "keep" in out:
         base = out["keep"]["step_us_median_of_medians"]
@@ -378,6 +424,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--steps", type=int, default=300)
     r.add_argument("--warmup", type=int, default=30)
     r.add_argument("--check-every", type=int, default=10)
+    r.add_argument("--device-check", action="store_true", help="verify every step on the device, no drain")
+    r.add_argument("--inject-fault", type=int, default=-1, help="selftest: corrupt one output at this step")
     r.add_argument("--scale", type=float, default=1.0, help="scale the work gaps between collectives")
     r.add_argument("--hang-s", type=float, default=60.0)
     r.add_argument("--selftest-1rank", action="store_true", help="one GPU, one-rank comms: harness check only")

@@ -8,6 +8,8 @@
 # Usage: tools/nccl_twin_check.sh                        (keep twin, REPS=3, c=1 sizes)
 #        ARMS="keep twin twin_so0" REPS=2 ROWS="--m 8 --md 6" tools/nccl_twin_check.sh   (c=2)
 #        ARMS="keep keep_qos twin twin_qos" tools/nccl_twin_check.sh   (with the PM QoS arms)
+#        CHECK=--device-check REPS=1 ARMS="keep twin" tools/nccl_twin_check.sh
+#            (every pipelined step verified on the device; the phase-A1 correctness gate)
 # Then:  python3 tools/nccl_twin_check.py compare $OUT
 set -euo pipefail
 
@@ -21,6 +23,7 @@ REPS="${REPS:-3}"
 ARMS="${ARMS:-$(python3 "$ROOT/tools/nccl_twin_check.py" arms)}"
 ROWS="${ROWS:---m 4 --md 3}"
 STEPS="${STEPS:-300}"
+CHECK="${CHECK:-}"  # extra run options for both ranks, e.g. --device-check
 OUT="${OUT:-$HOME/projects/data/dsv41-nccl-twin/$(date +%Y%m%d-%H%M)}"
 TIMEOUT_S="${TIMEOUT_S:-420}"
 RDIR=/tmp/dsv41-nccl-twin
@@ -75,14 +78,14 @@ for ((rep = 1; rep <= REPS; rep++)); do
     $(smi) >"$d/rep$rep.smi.spark1.csv" 2>/dev/null &
     smi0=$!
     ssh -o BatchMode=yes "$WORKER_HOST" "$(smi) > $RDIR/out/smi.csv 2>/dev/null & echo \$! > $RDIR/smi.pid" || true
-    wcmd="docker run $(docker_args "$env_kv" "$RDIR" "$RDIR/out" nccl-twin-r1) $IMAGE -S /bench/tools/nccl_twin_check.py run --rank 1 --master $HEAD_IP:$port --arm $arm --steps $STEPS $ROWS --json /out/rep$rep.rank1.json"
+    wcmd="docker run $(docker_args "$env_kv" "$RDIR" "$RDIR/out" nccl-twin-r1) $IMAGE -S /bench/tools/nccl_twin_check.py run --rank 1 --master $HEAD_IP:$port --arm $arm --steps $STEPS $ROWS $CHECK --json /out/rep$rep.rank1.json"
     timeout "$TIMEOUT_S" ssh -o BatchMode=yes "$WORKER_HOST" "$wcmd" >"$d/rep$rep.rank1.txt" 2>&1 &
     wpid=$!
     rc0=0
     # shellcheck disable=SC2046,SC2086
     eval timeout "$TIMEOUT_S" docker run $(docker_args "$env_kv" "$ROOT" "$d" nccl-twin-r0) "$IMAGE" \
       -S /bench/tools/nccl_twin_check.py run --rank 0 --master "$HEAD_IP:$port" --arm "$arm" \
-      --steps "$STEPS" $ROWS --json "/out/rep$rep.rank0.json" >"$d/rep$rep.rank0.txt" 2>&1 || rc0=$?
+      --steps "$STEPS" $ROWS $CHECK --json "/out/rep$rep.rank0.json" >"$d/rep$rep.rank0.txt" 2>&1 || rc0=$?
     rc1=0
     wait "$wpid" || rc1=$?
     kill "$smi0" 2>/dev/null || true
