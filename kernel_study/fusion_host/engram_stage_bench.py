@@ -19,8 +19,8 @@ fresh set of ids (hash rows are new every step). Page-cache scenarios:
   pf      rows dropped (DONTNEED), WILLNEED issued --lead-us before the call
           (the prefetch worker's head start), then timed
   cold    rows dropped, no WILLNEED (a prefetch miss)
-Optional --noise: a Python thread spinning pure-Python work, the GIL pressure
-of a still-running prefetch worker.
+Optional --noise: a Python thread spinning pure-Python work during each timed
+call, the GIL pressure of a still-running prefetch worker.
 Prints one JSON line: per scenario and arm, median/p10/p90/mean us, n.
 """
 from __future__ import annotations
@@ -192,11 +192,18 @@ def main() -> int:
         for fd, a, ln in page_spans(ids):
             os.posix_fadvise(fd, a, ln, os.POSIX_FADV_WILLNEED)
 
+    # --noise: the spinner holds the GIL in ~0.1 ms chunks only while a timed stage call
+    # runs (noisy set). Spinning through the untimed setup as well made every
+    # GIL-releasing syscall there (hundreds of fadvise / pread per iteration) wait out a
+    # 5 ms switch interval, and the first run did not finish in 3 minutes.
     stop = threading.Event()
+    noisy = threading.Event()
     if args.noise:
         def spin():
             x = 0
             while not stop.is_set():
+                if not noisy.wait(0.05):
+                    continue
                 for k in range(2000):
                     x ^= k * 2654435761
         threading.Thread(target=spin, daemon=True).start()
@@ -238,9 +245,12 @@ def main() -> int:
                             while time.perf_counter() < t_end:
                                 pass
                     load_host(ids, n)
+                    if args.noise:
+                        noisy.set()
                     t0 = time.perf_counter_ns()
                     arms[a](n)
                     t1 = time.perf_counter_ns()
+                    noisy.clear()
                     if it >= args.warmup:
                         times[a].append((t1 - t0) / 1e3)
                         if a == "native":
