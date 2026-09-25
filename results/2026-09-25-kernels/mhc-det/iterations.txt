@@ -187,3 +187,18 @@ per run under runs/<tag>/), image dsv41-flash-exl3-sm121:canonical-e13, SM clock
     Remaining floor: the fn stream, 106 MB/step = 0.42 ms at 250 GB/s. The det path takes
     ~1.15 ms/pass; the rest is the sinkhorn chain (19 x 2 dependent IEEE divisions + 4 shuffles,
     ~2.4 us per sublayer) and the post -> x -> GEMM start latency.
+13. The fused norm triggers its dependent once layer_input is written (the coefficient warp
+    finishes the sinkhorn after that). This matters only when the next kernel is PDL-launched.
+    The vLLM kernels launched with PDL wait first (gdc_wait / griddepcontrol.wait, e.g.
+    deepseek_v4_1 query_quant, fused_inv_rope_fp8_quant). The engram kernels after a post are
+    not PDL-launched. Measured with the AR proxy as a PDL-launched copy that waits
+    (sweep_variants --pdl-proxy, us per 86-sublayer pass, median (p10/p90)):
+      T=4: det, no early trigger 1057.2 (1052.7/1062.0); early trigger 1025.4 (1021.1/1031.4)
+      T=8: 1078.5 (1075.4/1084.6); 1044.0 (1040.0/1049.9)
+    The same proxy for both arms (sweep-pdlproxy-stock): T=4 stock 1954.3 (1951.2/1962.4) ->
+    det 1018.3 (1013.9/1022.9), -936 us (-47.9%); T=8 stock 1958.5 -> det 1034.6, -924 us.
+    Kept (unconditional). Bitwise re-checked (path-check-v8), lever smoke PASS (lever-smoke-v5).
+    Final whole-path numbers with the plain-copy (non-PDL) proxy (path_time_final.json,
+    path-time-final2): T=4 stock 2149.7 (2146.8/2155.8) -> det 1138.8 (1136.2/1143.1), -1010.9
+    us (-47.0%); T=1 2006.2 -> 1037.1; T=3 2142.8 -> 1122.8; T=6 2149.6 -> 1147.7; T=8 2013.1 ->
+    1053.8. The T=8 run-to-run spread is bimodal (p90 2147.4 / 1156.8); arms alternate within a run.

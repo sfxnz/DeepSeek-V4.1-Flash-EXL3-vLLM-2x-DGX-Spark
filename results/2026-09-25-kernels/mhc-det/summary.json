@@ -4,7 +4,8 @@
   "DSV41_MHC_DET_SPLITS": "16 enables (only value; 0/unset = off, stock). Conflicts refused: DSV41_MHC_DECODE_SPLITS!=0, DSV41_MHC_NO_DEEPGEMM=1"
  },
  "scope": "decode mHC per sublayer for T<=16 tokens: mhc_post + prenorm GEMM + fused norm; T>16 (prefill) stays stock",
- "numerics": "bitwise equal to the stock 16-split path (DeepGEMM TF32 prenorm GEMM + TileLang mhc_post + TileLang mhc_pre_big_fuse_with_norm)",
+ "numerics": "bitwise equal to the stock 16-split path (DeepGEMM TF32 prenorm GEMM + TileLang mhc_post + TileLang mhc_pre_big_fuse_with_norm): 4656 GEMM cases (87 real fn, T 1..16), whole 43-layer recurrence 430/430 outputs at T 1/3/4/6/8/16",
+ "determinism": "det path 1000 runs (T=4) and 200 (T=8) of the whole recurrence: 0 differing elements; CUDA graph 100 replays x T {1,3,4,6,8}: 0 mismatches",
  "stock_determinism": "stock split-K is deterministic: 1000 runs, 0 differing elements, at 16 and 40 splits, GEMM and whole stock pre (gemm_check.json)",
  "gemm_serve_like_us": {
   "stock_dg16_T1": {
@@ -374,96 +375,123 @@
    "pct_of_250": 26.9
   }
  },
- "path_per_86_sublayers_us": {
+ "path_per_86_sublayers_us_non_pdl_proxy": {
   "stock_T1": {
-   "median": 1999.296,
-   "p10": 1996.832,
-   "p90": 2005.76,
-   "per_sublayer": 23.248
+   "median": 2006.24,
+   "p10": 2002.72,
+   "p90": 2014.368,
+   "per_sublayer": 23.328
   },
   "det_stock_norm_T1": {
-   "median": 1127.232,
-   "p10": 1123.232,
-   "p90": 1132.192,
-   "per_sublayer": 13.107
+   "median": 1122.736,
+   "p10": 1118.848,
+   "p90": 1127.712,
+   "per_sublayer": 13.055
   },
   "det_T1": {
-   "median": 1040.848,
-   "p10": 1036.448,
-   "p90": 1045.12,
-   "per_sublayer": 12.103
+   "median": 1037.056,
+   "p10": 1032.864,
+   "p90": 1040.992,
+   "per_sublayer": 12.059
   },
   "stock_T3": {
-   "median": 2136.064,
-   "p10": 2132.224,
-   "p90": 2141.152,
-   "per_sublayer": 24.838
+   "median": 2142.816,
+   "p10": 2139.936,
+   "p90": 2148.352,
+   "per_sublayer": 24.916
   },
   "det_stock_norm_T3": {
-   "median": 1191.264,
-   "p10": 1187.2,
-   "p90": 1198.88,
-   "per_sublayer": 13.852
+   "median": 1181.808,
+   "p10": 1177.568,
+   "p90": 1186.656,
+   "per_sublayer": 13.742
   },
   "det_T3": {
-   "median": 1130.832,
-   "p10": 1126.432,
-   "p90": 1134.752,
-   "per_sublayer": 13.149
+   "median": 1122.832,
+   "p10": 1119.552,
+   "p90": 1129.696,
+   "per_sublayer": 13.056
   },
   "stock_T4": {
-   "median": 2141.488,
-   "p10": 2138.016,
-   "p90": 2147.392,
-   "per_sublayer": 24.901
+   "median": 2149.728,
+   "p10": 2146.784,
+   "p90": 2155.776,
+   "per_sublayer": 24.997
   },
   "det_stock_norm_T4": {
-   "median": 1204.352,
-   "p10": 1200.288,
-   "p90": 1209.472,
-   "per_sublayer": 14.004
+   "median": 1195.424,
+   "p10": 1192.0,
+   "p90": 1199.84,
+   "per_sublayer": 13.9
   },
   "det_T4": {
-   "median": 1145.92,
-   "p10": 1142.08,
-   "p90": 1150.912,
-   "per_sublayer": 13.325
+   "median": 1138.768,
+   "p10": 1136.192,
+   "p90": 1143.072,
+   "per_sublayer": 13.241
   },
   "stock_T6": {
-   "median": 2142.528,
-   "p10": 2139.456,
-   "p90": 2149.664,
-   "per_sublayer": 24.913
+   "median": 2149.6,
+   "p10": 2146.24,
+   "p90": 2156.896,
+   "per_sublayer": 24.995
   },
   "det_stock_norm_T6": {
-   "median": 1225.792,
-   "p10": 1220.96,
-   "p90": 1231.008,
-   "per_sublayer": 14.253
+   "median": 1216.72,
+   "p10": 1212.48,
+   "p90": 1221.792,
+   "per_sublayer": 14.148
   },
   "det_T6": {
-   "median": 1157.072,
-   "p10": 1153.792,
-   "p90": 1161.12,
-   "per_sublayer": 13.454
+   "median": 1147.744,
+   "p10": 1144.416,
+   "p90": 1152.96,
+   "per_sublayer": 13.346
   },
   "stock_T8": {
-   "median": 2145.856,
-   "p10": 2142.656,
-   "p90": 2151.84,
-   "per_sublayer": 24.952
+   "median": 2013.104,
+   "p10": 2009.024,
+   "p90": 2147.36,
+   "per_sublayer": 23.408
   },
   "det_stock_norm_T8": {
-   "median": 1268.96,
-   "p10": 1263.968,
-   "p90": 1276.64,
-   "per_sublayer": 14.755
+   "median": 1131.696,
+   "p10": 1127.584,
+   "p90": 1257.408,
+   "per_sublayer": 13.159
   },
   "det_T8": {
-   "median": 1168.4,
-   "p10": 1165.504,
-   "p90": 1172.192,
-   "per_sublayer": 13.586
+   "median": 1053.84,
+   "p10": 1049.856,
+   "p90": 1156.768,
+   "per_sublayer": 12.254
   }
- }
+ },
+ "path_per_86_sublayers_us_pdl_proxy": {
+  "stock_T4": {
+   "bitwise_vs_stock": true,
+   "median_us": 1954.336,
+   "p10_us": 1951.168,
+   "p90_us": 1962.368
+  },
+  "det_T4": {
+   "bitwise_vs_stock": true,
+   "median_us": 1018.288,
+   "p10_us": 1013.92,
+   "p90_us": 1022.944
+  },
+  "stock_T8": {
+   "bitwise_vs_stock": true,
+   "median_us": 1958.48,
+   "p10_us": 1955.2,
+   "p90_us": 1965.632
+  },
+  "det_T8": {
+   "bitwise_vs_stock": true,
+   "median_us": 1034.576,
+   "p10_us": 1028.992,
+   "p90_us": 1039.904
+  }
+ },
+ "projection_ms_per_step_c1": "-1.0 (isolated chain, T=4: -1.01 ms per pass) to -1.4 (if the det path keeps the stock path's 1.36x in-serve inflation, 2.92 vs 2.14 ms)"
 }

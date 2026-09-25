@@ -443,5 +443,9 @@ extern "C" __global__ void __launch_bounds__(288, 1)
       *(uint2*)(lo + p) = make_uint2(bf16x2_rn(o0, o1), bf16x2_rn(o2, o3));
     }
     if (lt == 0) PROFN(5);
+    // layer_input is written: the next kernel may launch while the coefficient warp finishes
+    // the sinkhorn. PDL dependents still wait for this grid before reading (the vLLM contract:
+    // PDL-launched kernels call griddepcontrol.wait / gdc_wait first); non-PDL ones start after.
+    pdl_trigger();
   }
 }

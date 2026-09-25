@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """A/B of GEMM compile variants in the serve-like path graph (det post + det GEMM + det norm).
 
-Usage: sweep_variants.py name=-DFLAG=1,-DOTHER=2 name2=... (each arm is one NVRTC compile).
+Usage: sweep_variants.py [--pdl-proxy] name=-DFLAG=1,-DOTHER=2 name2=... (each arm is one NVRTC
+compile; the arm name "stock" runs the stock kernels). --pdl-proxy: the AR proxy before each
+post is a PDL-launched copy kernel that waits on its primary (a PDL-aware successor of the norm).
 Also runs a bitwise check of every arm against stock on the whole recurrence at T=4 and 8.
 """
 from __future__ import annotations
@@ -17,8 +19,18 @@ import common as C  # noqa: E402
 import mhc_det  # noqa: E402
 
 
+PDL_COPY = r"""
+extern "C" __global__ void pdl_copy(const uint4* __restrict__ src, uint4* __restrict__ dst, int n) {
+  asm volatile("griddepcontrol.wait;" ::: "memory");
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += gridDim.x * blockDim.x) dst[i] = src[i];
+}
+"""
+
+
 def main() -> int:
     arms = {}
+    pdl_proxy = "--pdl-proxy" in sys.argv
+    sys.argv = [a for a in sys.argv if a != "--pdl-proxy"]
     for a in sys.argv[1:]:
         name, _, opts = a.partition("=")
         arms[name] = [o for o in opts.split(",") if o]
@@ -27,8 +39,21 @@ def main() -> int:
     fn_names = [k for k in w if k.endswith("_fn") or k.endswith("_broadcast")]
     packed = {k: mhc_det.pack_fn(w[k]) for k in fn_names}
     subs = BP.sublayers()
-    kern = {n: mhc_det.DetKernels(opts=o) for n, o in arms.items()}
-    out = {"arms": arms}
+    kern = {n: (None if n == "stock" else mhc_det.DetKernels(opts=o)) for n, o in arms.items()}
+    out = {"arms": arms, "pdl_proxy": pdl_proxy}
+    import ctypes
+
+    from mhc_det_rt import Module
+
+    pcopy = Module(PDL_COPY, "pdl_copy.cu").function("pdl_copy")
+
+    def proxy(dst, src):
+        if not pdl_proxy:
+            dst.copy_(src)
+            return
+        n = dst.numel() * dst.element_size() // 16
+        pcopy.launch((min(48, max(1, n // 128)),), (128,), 0,
+                     [(src.data_ptr(), ctypes.c_void_p), (dst.data_ptr(), ctypes.c_void_p), (n, ctypes.c_int)], pdl=True)
     stock = BP.Path(w, None, packed, False)
     for t in (4, 8):
         g = torch.Generator(device="cuda").manual_seed(9 + t)
@@ -39,14 +64,14 @@ def main() -> int:
         ok = {}
         for n, dk in kern.items():
             rec = []
-            BP.run_chain(BP.Path(w, dk, packed, True), t, emb, xouts, rec)
+            BP.run_chain(BP.Path(w, dk, packed, dk is not None), t, emb, xouts, rec)
             ok[n] = all(bool((BP.ints(a) == BP.ints(b)).all()) for ra, rb in zip(ref, rec) for a, b in zip(ra, rb))
 
         def make(path):
             def body():
                 state = None
                 for i, (prefix, sub, first) in enumerate(subs):
-                    xouts[i].copy_(src[i])
+                    proxy(xouts[i], src[i])
                     if first and prefix == "layers.0":
                         e = emb[:t]
                         residual = e.unsqueeze(1).expand(-1, C.HC, -1).contiguous()
@@ -63,10 +88,10 @@ def main() -> int:
 
         def copies():
             for i in range(len(subs)):
-                xouts[i].copy_(src[i])
+                proxy(xouts[i], src[i])
 
         graphs = {"copies": BP._graph(copies)}
-        graphs.update({n: BP._graph(make(BP.Path(w, dk, packed, True))) for n, dk in kern.items()})
+        graphs.update({n: BP._graph(make(BP.Path(w, dk, packed, dk is not None))) for n, dk in kern.items()})
         for _ in range(3):
             for gr in graphs.values():
                 gr.replay()
