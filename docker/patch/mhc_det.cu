@@ -83,8 +83,15 @@ __device__ unsigned long long g_prof[64 * 16];
       g_prof[(blockIdx.y * gridDim.x + blockIdx.x) * 16 + (i)] = c_;               \
     }                                                                              \
   } while (0)
+#define PROFN(i)                                                                   \
+  do {                                                                             \
+    unsigned long long c_;                                                         \
+    asm volatile("mov.u64 %0, %%globaltimer;" : "=l"(c_)::"memory");              \
+    g_prof[(48 + blockIdx.x) * 16 + (i)] = c_;                                     \
+  } while (0)
 #else
 #define PROF(i)
+#define PROFN(i)
 #endif
 
 #define MHC_SPLITS 16
@@ -145,6 +152,9 @@ DEV void gemm_body(const u16* __restrict__ x, const void* __restrict__ fnsrc, fl
   }
   PROF(1);
   pdl_wait();
+  // The producer of x (the post) is complete now: let the dependent fused norm launch; it reads
+  // only the post output and weights before its own wait (see mhc_det_norm).
+  pdl_trigger();
   PROF(2);
   // x is L2-hot (just written by the previous kernel): issue it before the remaining fn
   // stages so its requests do not queue behind them. All lanes, 16 B cp.async, one group.
@@ -156,9 +166,6 @@ DEV void gemm_body(const u16* __restrict__ x, const void* __restrict__ fnsrc, fl
     for (int st = PREFETCH_STAGES; st < nstage; ++st) issue_fn(st);
   cp_async_wait_all();
   __syncwarp();
-  // Past griddepcontrol.wait, so the producer of x (the post) is complete: let the dependent
-  // fused norm launch now; it reads only the post output before its own wait (see mhc_det_norm).
-  pdl_trigger();
   PROF(3);
 
   float d[4] = {0.f, 0.f, 0.f, 0.f};
@@ -331,7 +338,13 @@ extern "C" __global__ void __launch_bounds__(288, 1)
   __shared__ float rsqrt_s;
   const int tok = blockIdx.x, tid = threadIdx.x, lane = tid & 31;
   if (tid < 32) {
+    if (lane == 0) PROFN(0);
+    // weights: fetch before waiting on the GEMM
+    const float s0 = hc_scale[0], s1 = hc_scale[1], s2 = hc_scale[2];
+    const float bpre = hc_base[lane & 3], bpost = hc_base[4 + (lane & 3)];
+    const float bsk = hc_base[(lane & 15) + 8];
     pdl_wait();
+    if (lane == 0) PROFN(1);
     float rms = 0.f;
     for (int s = 0; s < MHC_SPLITS; ++s) rms = __fadd_rn(rms, sqr_p[s * T + tok]);
     rms = rsqrtf(__fadd_rn(__fdiv_rn(rms, rms_numel), rms_eps));
@@ -341,14 +354,18 @@ extern "C" __global__ void __launch_bounds__(288, 1)
     mix = __fmul_rn(mix, rms);
     if (lane < 24) mixes_s[lane] = mix;
     __syncwarp();
+    if (lane == 0) PROFN(2);
     if (lane < 4) {
-      const float e0 = expf(__fsub_rn(0.f, __fmaf_rn(mixes_s[lane], hc_scale[0], hc_base[lane])));
+      const float e0 = expf(__fsub_rn(0.f, __fmaf_rn(mixes_s[lane], s0, bpre)));
       pre_mix_out[tok * 4 + lane] = __fadd_rn(__fdiv_rn(1.f, __fadd_rn(1.f, e0)), hc_pre_eps);
-      const float e1 = expf(__fsub_rn(0.f, __fmaf_rn(mixes_s[lane + 4], hc_scale[1], hc_base[lane + 4])));
+      const float e1 = expf(__fsub_rn(0.f, __fmaf_rn(mixes_s[lane + 4], s1, bpost)));
       post_mix[tok * 4 + lane] = __fmul_rn(__fdiv_rn(1.f, __fadd_rn(1.f, e1)), post_mult);
     }
+    // Sinkhorn exactly as TileLang: one element per lane (lanes 16..31 compute copies), rows
+    // reduced with shfl_xor 2,1, columns with shfl_xor 8,4, fmaxf for the row max. (One row per
+    // lane with 4 divisions each measured 2x slower: iterations.txt item 9.)
     const int c = (lane & 15) + 8;
-    float cm = __fmaf_rn(mixes_s[c], hc_scale[2], hc_base[c]);
+    float cm = __fmaf_rn(mixes_s[c], s2, bsk);
     float rmax = fmaxf(-__int_as_float(0x7f800000), cm);
     rmax = fmaxf(rmax, __shfl_xor_sync(0xffffffffu, rmax, 2));
     rmax = fmaxf(rmax, __shfl_xor_sync(0xffffffffu, rmax, 1));
@@ -361,6 +378,7 @@ extern "C" __global__ void __launch_bounds__(288, 1)
     cs = __fadd_rn(cs, __shfl_xor_sync(0xffffffffu, cs, 8));
     cs = __fadd_rn(cs, __shfl_xor_sync(0xffffffffu, cs, 4));
     cm = __fdiv_rn(cm, __fadd_rn(cs, sk_eps));
+    if (lane == 0) PROFN(3);
     for (int it = 0; it < sk_repeat - 1; ++it) {
       rs = __fadd_rn(0.f, cm);
       rs = __fadd_rn(rs, __shfl_xor_sync(0xffffffffu, rs, 2));
@@ -372,6 +390,7 @@ extern "C" __global__ void __launch_bounds__(288, 1)
       cm = __fdiv_rn(cm, __fadd_rn(cs, sk_eps));
     }
     if (lane < 16) comb_mix[tok * 16 + lane] = cm;
+    if (lane == 0) PROFN(4);
   } else {
     const int lt = tid - 32;  // 0..255
     float pre[4] = {1.f, 0.f, 0.f, 0.f};
@@ -379,6 +398,9 @@ extern "C" __global__ void __launch_bounds__(288, 1)
       const float4 pm = *(const float4*)(pre_mix_in + tok * 4);
       pre[0] = pm.x; pre[1] = pm.y; pre[2] = pm.z; pre[3] = pm.w;
     }
+    uint2 wv[5];  // norm weight, fetched first (a weight: independent of the primary)
+#pragma unroll
+    for (int q = 0; q < 5; ++q) wv[q] = ldcg_u2(norm_w + 4 * (lt + 256 * q));
     const u16* rb = residual + (size_t)tok * 4 * NORM_H;
     // weighted stream sum, bf16 round: 5 chunks of 4 positions per thread (p = 4*(lt + 256q))
 #pragma unroll
@@ -440,12 +462,12 @@ extern "C" __global__ void __launch_bounds__(288, 1)
     for (int q = 0; q < 5; ++q) {
       const int p = 4 * (lt + 256 * q);
       const uint2 rv = *(const uint2*)(rounded_s + p);
-      const uint2 wv = ldcg_u2(norm_w + p);
-      const float o0 = __fmul_rn(__fmul_rn(bf16_lo(rv.x), r), bf16_lo(wv.x));
-      const float o1 = __fmul_rn(__fmul_rn(bf16_hi(rv.x), r), bf16_hi(wv.x));
-      const float o2 = __fmul_rn(__fmul_rn(bf16_lo(rv.y), r), bf16_lo(wv.y));
-      const float o3 = __fmul_rn(__fmul_rn(bf16_hi(rv.y), r), bf16_hi(wv.y));
+      const float o0 = __fmul_rn(__fmul_rn(bf16_lo(rv.x), r), bf16_lo(wv[q].x));
+      const float o1 = __fmul_rn(__fmul_rn(bf16_hi(rv.x), r), bf16_hi(wv[q].x));
+      const float o2 = __fmul_rn(__fmul_rn(bf16_lo(rv.y), r), bf16_lo(wv[q].y));
+      const float o3 = __fmul_rn(__fmul_rn(bf16_hi(rv.y), r), bf16_hi(wv[q].y));
       *(uint2*)(lo + p) = make_uint2(bf16x2_rn(o0, o1), bf16x2_rn(o2, o3));
     }
+    if (lt == 0) PROFN(5);
   }
 }

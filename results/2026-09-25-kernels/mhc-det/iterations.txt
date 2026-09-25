@@ -120,3 +120,22 @@ per run under runs/<tag>/), image dsv41-flash-exl3-sm121:canonical-e13, SM clock
   dependent IEEE divisions and 4 shuffles per step) is the tail; the layer_input half is hidden.
   Kept (bitwise, a little faster, no TileLang JIT on the det path).
 - prepare() now self-tests the whole det pre per sublayer on the real layer parameters.
+9. Fused-norm tail (prof_tail.json: globaltimer in the GEMM CTAs and the norm, one sublayer in a
+   graph, T=4). Before: GEMM last CTA done 7.58 us, norm entry 5.12 (it launched only when the
+   slowest GEMM CTA had its x loaded), layer_input stored 9.07 (NOT hidden), wait returned 7.87,
+   split sums 8.38, first sinkhorn step 9.63 (dependent L2/DRAM loads of hc_scale/hc_base),
+   comb stored 12.03 -> tail 4.45 us.
+- GEMM trigger moved to right after its own griddepcontrol.wait (before x loads): norm entry 3.0.
+- Weights the norm needs (hc_scale, hc_base, norm weight) fetched before griddepcontrol.wait.
+- Result: layer_input stored 6.21 (< GEMM done 7.97, hidden), comb stored 11.58, tail 3.6 us;
+  path pass T=4 1194.4 -> 1137.0 us (path-time-v5). Bitwise re-checked (path-check-v6).
+- Tried and dropped: one sinkhorn ROW per lane (4 lanes per token, row sums in-register, 4
+  IEEE divisions per lane): bitwise equal but the 19-iteration loop took 5.16 us instead of
+  2.39 us (prof-tail-v2): the per-division check/branch sequence serializes. The TileLang layout
+  (one element per lane, 1 division per half-step) is kept.
+- Tried and dropped: a second warp per GEMM CTA that issues every fn stage at kernel start
+  (ISSUER_WARP): bitwise, T=4 1147.3 vs 1147.3 us, T=8 1194.4 vs 1179.7 us (sweep_variants,
+  sweep-issuer run): x requests queue behind fn in the memory system whoever issues them.
+- MMA latency on GB10 (probe_mma_latency.json): dependent mma.sync m16n8k8 TF32 chain 31.4
+  cycles per MMA (3 independent chains interleaved: 56.9 cycles per step of 3). The det GEMM
+  chain runs 52 cycles per k-step (0.19 us per k-block): 160 steps = 3.8 us vs a 2.3 us floor.
