@@ -18,7 +18,11 @@ value. Prefill calls (row starts given) keep the stock function. The first
 DSV41_CANDIDATE_MASK_VERIFY eager decode calls (default 4, minimum 1; never
 during CUDA graph capture) also run the stock mask on a copy and compare
 every column below each row's end bit for bit; a mismatch prints one
-LOG_DISARMED line, keeps the stock result and disarms for good.
+LOG_DISARMED line, keeps the stock result and disarms for good. Decode calls
+replay CUDA graphs, so eager decode calls may never come: the first eager call
+of any kind (a prefill's) also self-tests the bounded kernels on synthetic
+decode logits (rows 1/4/8, ends odd, below one block and at the width) and
+prints LOG_ENGAGED or disarms.
 
 Top-level imports are stdlib only. decode_levers.install() calls install()
 when the env is on.
@@ -29,12 +33,12 @@ from __future__ import annotations
 import os
 
 # Boot-log marker for tools/engagement_audit.py.
-LOG_ENGAGED = "dsv41: candidate mask bounded by the row length armed"
+LOG_ENGAGED = "dsv41: candidate mask bounded self-check bit-exact"
 LOG_DISARMED = "dsv41: candidate mask bounded DISABLED ->"
 
 TILE = 1024
 DEFAULT_VERIFY = 4
-_STATE = {"armed": True, "verify_left": DEFAULT_VERIFY, "verified": 0}
+_STATE = {"armed": True, "verify_left": DEFAULT_VERIFY, "verified": 0, "engaged": False}
 
 
 def enabled(env=None) -> bool:
@@ -132,7 +136,35 @@ def make_apply(torch, triton, stock_apply, flags_kernel, mask_kernel):
             if e > 0 and not torch.equal(logits[r, :e].view(torch.int32), ref[r, :e].view(torch.int32)):
                 raise RuntimeError(f"bounded != stock below the end (row {r}, end {e})")
 
+    def selftest(device, block_size) -> None:
+        g = torch.Generator(device=device).manual_seed(0)
+        width = 65536
+        for rows in (1, 4, 8):
+            ends = torch.randint(1, 40000, (rows,), device=device, generator=g, dtype=torch.int32)
+            ends[0] = 37 * block_size + 3
+            if rows > 1:
+                ends[1] = block_size - 3
+            if rows > 2:
+                ends[2] = width
+            nb = triton.cdiv(width, block_size)
+            cand = torch.randint(-1, nb + 3, (rows, 2048), device=device, generator=g, dtype=torch.int32)
+            logits = torch.randn(rows, width, device=device, generator=g)
+            ref = logits.clone()
+            bounded(logits, ends, cand, block_size, 1)
+            stock_apply(ref, None, ends, cand, block_size, 1)
+            verify(logits, ref, ends, 1)
+
     def apply_candidate_mask(logits, row_ks, row_ke, candidate_blocks, block_size, row_repeat=1):
+        if _STATE["armed"] and not _STATE["engaged"] and not torch.cuda.is_current_stream_capturing():
+            try:
+                selftest(logits.device, block_size)
+                _STATE["engaged"] = True
+                print(
+                    "dsv41: candidate mask bounded self-check bit-exact (rows 1/4/8, width 65536)",
+                    flush=True,
+                )
+            except Exception as exc:  # noqa: BLE001
+                _disarm(exc)
         if row_ks is not None or not _STATE["armed"]:
             return stock_apply(logits, row_ks, row_ke, candidate_blocks, block_size, row_repeat)
         assert logits.is_cuda
@@ -168,9 +200,4 @@ def install() -> str:
     _STATE["verify_left"] = verify_calls()
     flags_k, mask_k = _build_kernels(tl, triton)
     sai._apply_candidate_mask = make_apply(torch, triton, stock, flags_k, mask_k)
-    print(
-        "dsv41: candidate mask bounded by the row length armed (decode calls, verify=%d)"
-        % _STATE["verify_left"],
-        flush=True,
-    )
-    return "sparse_attn_indexer._apply_candidate_mask wrapped"
+    return f"sparse_attn_indexer._apply_candidate_mask wrapped (decode calls, verify={_STATE['verify_left']})"

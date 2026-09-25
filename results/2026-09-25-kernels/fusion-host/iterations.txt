@@ -212,3 +212,36 @@ Timing: a graph of 40 epilogues (one per routed layer; a single-epilogue graph i
 dominated by the ~5 us graph launch and showed 7.0 vs 7.1 us, no signal), 400 replays
 alternating: m=4 stock 123.6 us (123.4/124.0) -> 86.6 (85.3/86.8) per step; m=8 125.7 ->
 86.8. ~-0.04 ms/step on the p2b -> all-reduce critical path (more under contention).
+
+7. ITERATION 7: indexer weights_proj as a Triton GEMV with cuBLAS's MMA order (KEEP,
+   env DSV41_INDEXER_WP_GEMV=1)
+------------------------------------------------------------------------------------
+Trace join analysis (c1-rank0/1.pkl, the qkv_a || compressor || weights_proj fan-out,
+joined at _q_kv_norm_quant_kernel): plain layers join 0.5 us after qkv_a; the 4
+"+wp" layers join 23.8 us after qkv_a (wp 70.2 us vs qkv_a 47.8); the 4 "comp+wp"
+layers 29.3 us after (wp 113.7, comp 94.7, qkv_a slowed to 76.4). weights_proj is bf16
+[32, 5120]; cuBLAS runs it as cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_16x16_128x1
+on 2 one-warp CTAs. (The draft router gate, same kernel family, is hidden behind the
+shared expert in the draft graph; the compressor and router gates are in the
+dense-gemv workstream's shape list, weights_proj is not.)
+Probe: a Triton kernel with 16x16 tiles accumulating tl.dot over k in order equals
+cuBLAS bit for bit at M 2..8 on all 8 layers' real weights, any k block. At M = 1 cuBLAS
+picks another kernel (10 us); nine configs matched it only by chance (1-3 of 16 cases
+off each), so M = 1 stays stock.
+What: docker/patch/indexer_wp_gemv.py wraps each DeepseekV4Indexer.weights_proj forward:
+2 <= M <= 8, bf16, contiguous -> the GEMV (k block 512, 2 warps, 3 stages); else stock.
+The first eager call of any size (the profile run's) self-tests M 2..8 on random rows
+against the stock forward; the first 8 eager served calls also verify.
+Checks (wp_gemv_bench_spark2.json): 3 fastest configs bitwise on 8 layers x M 2..8 x 2
+input scales; the wrapper at M 1/2/3/4/6/8/9/16 bitwise vs F.linear (M 1, 9, 16 via the
+stock path), engaged and armed; 20 CUDA-graph replays with new rows bitwise.
+Timing, CUDA graph replay (includes ~5 us of graph launch), 300 replays, arms rotating,
+us median (p10/p90):
+  m  cold: cuBLAS        GEMV            warm: cuBLAS    GEMV          beside copy: cuBLAS  GEMV
+  3  40.8 (39.1/41.0)  12.3 (12.0/12.3)  25.6          9.4            39.2               11.9
+  4  39.0 (38.8/41.0)  12.3 (12.0/12.3)  27.2          10.9           38.7               10.7
+  6  38.9 (38.9/40.7)  12.3 (12.0/12.3)  27.2          10.9           38.8               11.4
+  8  39.1 (38.9/41.0)  12.3 (12.0/12.3)  27.3          10.9           38.9               12.0
+Projected: the +wp layers stop waiting at the join (~-24 us x 4), the comp+wp layers are
+left with the compressor as the last branch (~-10..-17 us x 4): ~-0.14 ms/step at c=1.
+Bit-identical, so no quality risk.

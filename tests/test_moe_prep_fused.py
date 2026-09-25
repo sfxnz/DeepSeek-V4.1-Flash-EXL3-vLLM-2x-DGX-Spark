@@ -34,7 +34,7 @@ def pinned_function(name: str = "_apply_native_fused_moe") -> str:
 
 
 class RewriteTests(unittest.TestCase):
-    def test_only_the_three_anchors_change(self) -> None:
+    def test_only_the_four_anchors_change(self) -> None:
         src = pinned_function()
         out = mpf.patch_source(src)
         ast.parse(out)
@@ -42,12 +42,15 @@ class RewriteTests(unittest.TestCase):
             out.replace(mpf.NEW_BLOCK, mpf.OLD_BLOCK)
             .replace(mpf.SIG_NEW, mpf.SIG_OLD)
             .replace(mpf.RET_NEW, mpf.RET_OLD)
+            .replace(mpf.HEAD_NEW, mpf.HEAD_OLD)
         )
         self.assertEqual(undo, src)
         self.assertNotIn("map_topk_to_local(", out)
         self.assertEqual(out.count("_dsv41_moe_prep(ids, weights, x2d, n_exp, expert_map)"), 1)
         self.assertIn("out_dtype: torch.dtype | None = None,", out)
         self.assertIn("return native_out.to(dtype=torch.float32 if out_dtype is None else out_dtype)", out)
+        # the eager self-test runs before the dimension check (prefill calls return there)
+        self.assertLess(out.index("_dsv41_moe_prep.selftest_once(x2d.device)"), out.index("_native_moe_dimensions_supported("))
 
     def test_experts_call_passes_the_model_dtype(self) -> None:
         src = pinned_function("apply_exl3_experts")

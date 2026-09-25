@@ -32,6 +32,8 @@
   C with the GIL released (engram_native_stage.py, engram_native.c). Hooked
   here rather than in sitecustomize so the mounted patch dir arms it on an
   image whose baked sitecustomize predates it.
+- DSV41_INDEXER_WP_GEMV=1: the indexer's bf16 weights_proj [32, 5120] as a
+  Triton GEMV with cuBLAS's MMA chain order (bit-identical, indexer_wp_gemv.py).
 - DSV41_CANDIDATE_MASK_BOUNDED=1: the V4.1 decode candidate mask stops at each
   row's end instead of rewriting the whole max_model_len-wide logits row
   (candidate_mask_bounded.py; top_k_per_row_decode never reads past the end).
@@ -254,12 +256,20 @@ def _install_t2r_dedup(env) -> None:
     print("dsv41: attention token->request map dedup across KV-cache groups armed", flush=True)
 
 
+def _install_indexer_wp_gemv(env) -> None:
+    if (env.get("DSV41_INDEXER_WP_GEMV", "0") or "0") != "1":
+        return
+    import indexer_wp_gemv
+
+    print(f"dsv41: indexer weights_proj: {indexer_wp_gemv.install()}", flush=True)
+
+
 def _install_candidate_mask_bounded(env) -> None:
     if (env.get("DSV41_CANDIDATE_MASK_BOUNDED", "0") or "0") != "1":
         return
     import candidate_mask_bounded
 
-    candidate_mask_bounded.install()
+    print(f"dsv41: candidate mask bounded: {candidate_mask_bounded.install()}", flush=True)
 
 
 def _install_moe_prep_fused(env) -> None:
@@ -291,6 +301,7 @@ def install(env=None) -> None:
         ("attn-t2r-dedup", _install_t2r_dedup),
         ("moe-prep-fused", _install_moe_prep_fused),
         ("candidate-mask-bounded", _install_candidate_mask_bounded),
+        ("indexer-wp-gemv", _install_indexer_wp_gemv),
     ):
         try:
             step(env)

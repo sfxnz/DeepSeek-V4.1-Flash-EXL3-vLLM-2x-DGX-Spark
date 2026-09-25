@@ -17,7 +17,11 @@ one call: install() rewrites that block only when it matches verbatim (else
 one LOG_DISARMED line and the stock function stays). The first
 DSV41_MOE_PREP_VERIFY eager calls (default 16, minimum 1; never during CUDA
 graph capture) also run the stock ops and compare raw bits; a mismatch
-disarms to the stock ops for good.
+disarms to the stock ops for good. Decode batches replay CUDA graphs, so eager
+decode calls may never come: the first eager call of the rewritten function
+(any size; the profile run's returns before the glue) also self-tests the
+kernel on synthetic routings (m 1..8, invalid ids, NaN/inf weights and x)
+against the stock ops, and prints LOG_ENGAGED or disarms.
 
 The same lever drops one of the two conversions after p2b: the native path
 returns p2b's fp16 output as fp32 and apply_exl3_experts casts that to the
@@ -77,6 +81,11 @@ SIG_NEW = """    expert_map: torch.Tensor | None,
     out_dtype: torch.dtype | None = None,
 ) -> torch.Tensor | None:
     \"\"\"Run the native cooperative kernel for decode rows when it is safe."""
+HEAD_OLD = """    module = _load_native_exl3_ext()
+    if module is None or not _native_moe_dimensions_supported("""
+HEAD_NEW = """    _dsv41_moe_prep.selftest_once(x2d.device)
+    module = _load_native_exl3_ext()
+    if module is None or not _native_moe_dimensions_supported("""
 RET_OLD = """    return native_out.to(dtype=torch.float32)"""
 RET_NEW = """    # dsv41 moe_prep_fused: one cast when the caller names its dtype (bit-exact).
     return native_out.to(dtype=torch.float32 if out_dtype is None else out_dtype)"""
@@ -116,6 +125,7 @@ def _replace_once(src: str, old: str, new: str, what: str) -> str:
 
 def patch_source(src: str) -> str:
     """The image's _apply_native_fused_moe: glue block, out_dtype parameter."""
+    src = _replace_once(src, HEAD_OLD, HEAD_NEW, "head of _apply_native_fused_moe")
     src = _replace_once(src, OLD_BLOCK, NEW_BLOCK, "glue block of _apply_native_fused_moe")
     src = _replace_once(src, SIG_OLD, SIG_NEW, "signature of _apply_native_fused_moe")
     return _replace_once(src, RET_OLD, RET_NEW, "return of _apply_native_fused_moe")
@@ -214,6 +224,36 @@ class MoePrep:
             and x2d.is_contiguous()
         )
 
+    def selftest_once(self, device) -> None:
+        """Fused vs stock on synthetic routings, once, outside graph capture."""
+        torch = self.torch
+        if not _STATE["armed"] or _STATE["engaged"] or torch.cuda.is_current_stream_capturing():
+            return
+        try:
+            g = torch.Generator(device=device).manual_seed(0)
+            for m in range(1, 9):
+                ids = torch.randint(0, 384, (m, 6), device=device, generator=g)
+                ids.view(-1)[0] = -1
+                ids.view(-1)[-1] = 384
+                w = torch.rand(m, 6, device=device, generator=g)
+                w.view(-1)[1] = float("nan")
+                w.view(-1)[2] = float("inf")
+                x = (torch.randn(m, 5120, device=device, generator=g) * 3).to(torch.bfloat16)
+                x.view(-1)[5] = float("inf")
+                out = self.fused(ids, w, x, 384)
+                ref = self.stock(ids, w, x, 384, None)
+                if not (
+                    torch.equal(out[0], ref[0])
+                    and torch.equal(out[1].view(torch.int16), ref[1].view(torch.int16))
+                    and torch.equal(out[2].view(torch.int16), ref[2].view(torch.int16))
+                ):
+                    raise RuntimeError(f"fused != stock in the self-test (m={m})")
+        except Exception as exc:  # noqa: BLE001
+            _disarm(exc)
+            return
+        _STATE["engaged"] = True
+        print("dsv41: moe prep fused self-check bit-exact (synthetic, m=1..8)", flush=True)
+
     def __call__(self, ids, weights, x2d, n_exp, expert_map):
         if not self.usable(ids, weights, x2d, expert_map):
             return self.stock(ids, weights, x2d, n_exp, expert_map)
@@ -230,13 +270,6 @@ class MoePrep:
                 _disarm(RuntimeError(f"fused != stock (ids {tuple(ids.shape)}, x {tuple(x2d.shape)})"))
                 return ref
             _STATE["verify_left"] -= 1
-            if not _STATE["engaged"]:
-                _STATE["engaged"] = True
-                print(
-                    "dsv41: moe prep fused self-check bit-exact (ids %s, x %s)"
-                    % (tuple(ids.shape), tuple(x2d.shape)),
-                    flush=True,
-                )
         return out
 
 
