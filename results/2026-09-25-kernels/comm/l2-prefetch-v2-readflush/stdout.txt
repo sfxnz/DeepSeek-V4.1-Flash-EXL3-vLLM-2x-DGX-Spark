@@ -1,0 +1,450 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+INFO 09-25 13:17:22 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 13:17:22 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+[13:17:30] : Warning: T.vectorized loop over `i_hci` with extent 4 is lowered as a serial loop because TileLang could not find a valid vectorization plan. Scalar accumulator updates inside the loop are a common cause; move reductions to T.unroll or T.serial if this is intended.
+2026-09-25 13:17:24  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-25 13:17:29  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-25 13:17:29  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_post_tilelang` with `out_idx=None`
+2026-09-25 13:17:30  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_post_tilelang`
+{
+ "what": "L2 warm-up of the next GEMM's weights during the AR + mHC window (single GPU, AR emulated by a 5-CTA clock spin, clean-read L2 flush per replay)",
+ "device": "NVIDIA GB10",
+ "l2_bytes": 25165824,
+ "m": 4,
+ "ar_us": 22.7,
+ "replays": 300,
+ "warmup": 20,
+ "chunk": 16384,
+ "qkv_a_bytes": 9461760,
+ "wq_b_bytes": 21626880,
+ "arms": {
+  "none": [],
+  "warm": "ceiling",
+  "bulk100": [
+   [
+    "bulk",
+    "a",
+    1.0
+   ]
+  ],
+  "bulk60": [
+   [
+    "bulk",
+    "a",
+    0.6
+   ]
+  ],
+  "bulk40": [
+   [
+    "bulk",
+    "a",
+    0.4
+   ]
+  ],
+  "bulk100_b25": [
+   [
+    "bulk",
+    "a",
+    1.0
+   ],
+   [
+    "bulk",
+    "b",
+    0.25
+   ]
+  ],
+  "ld100": [
+   [
+    "ld",
+    "a",
+    1.0
+   ]
+  ]
+ },
+ "summary": {
+  "none": {
+   "window": {
+    "median": 61.25,
+    "p10": 60.93,
+    "p90": 63.3,
+    "n": 300
+   },
+   "w_ar": {
+    "median": 26.43,
+    "p10": 26.18,
+    "p90": 26.46,
+    "n": 300
+   },
+   "w_mhc_post": {
+    "median": 6.53,
+    "p10": 6.46,
+    "p90": 8.19,
+    "n": 300
+   },
+   "w_mhc_pre": {
+    "median": 24.19,
+    "p10": 24.06,
+    "p90": 24.58,
+    "n": 300
+   },
+   "w_act_quant": {
+    "median": 4.1,
+    "p10": 4.1,
+    "p90": 4.1,
+    "n": 300
+   },
+   "qkv_a": {
+    "median": 26.62,
+    "p10": 24.99,
+    "p90": 26.62,
+    "n": 300
+   },
+   "wq_b": {
+    "median": 100.35,
+    "p10": 99.49,
+    "p90": 101.5,
+    "n": 300
+   },
+   "total": {
+    "median": 188.22,
+    "p10": 186.18,
+    "p90": 190.3,
+    "n": 300
+   },
+   "bitwise_equal_to_none": true
+  },
+  "warm": {
+   "window": {
+    "median": 61.25,
+    "p10": 60.96,
+    "p90": 61.47,
+    "n": 300
+   },
+   "w_ar": {
+    "median": 26.43,
+    "p10": 26.18,
+    "p90": 26.46,
+    "n": 300
+   },
+   "w_mhc_post": {
+    "median": 6.53,
+    "p10": 6.43,
+    "p90": 8.19,
+    "n": 300
+   },
+   "w_mhc_pre": {
+    "median": 24.22,
+    "p10": 24.03,
+    "p90": 24.42,
+    "n": 300
+   },
+   "w_act_quant": {
+    "median": 4.1,
+    "p10": 3.97,
+    "p90": 4.1,
+    "n": 300
+   },
+   "qkv_a": {
+    "median": 16.38,
+    "p10": 16.38,
+    "p90": 16.38,
+    "n": 300
+   },
+   "wq_b": {
+    "median": 101.38,
+    "p10": 100.35,
+    "p90": 102.4,
+    "n": 300
+   },
+   "total": {
+    "median": 178.77,
+    "p10": 177.63,
+    "p90": 180.77,
+    "n": 300
+   },
+   "bitwise_equal_to_none": true
+  },
+  "bulk100": {
+   "window": {
+    "median": 65.38,
+    "p10": 63.33,
+    "p90": 65.38,
+    "n": 300
+   },
+   "w_ar": {
+    "median": 28.83,
+    "p10": 28.45,
+    "p90": 28.86,
+    "n": 300
+   },
+   "w_mhc_post": {
+    "median": 7.87,
+    "p10": 7.81,
+    "p90": 8.13,
+    "n": 300
+   },
+   "w_mhc_pre": {
+    "median": 24.42,
+    "p10": 22.88,
+    "p90": 24.58,
+    "n": 300
+   },
+   "w_act_quant": {
+    "median": 4.1,
+    "p10": 3.68,
+    "p90": 4.1,
+    "n": 300
+   },
+   "qkv_a": {
+    "median": 16.38,
+    "p10": 16.38,
+    "p90": 16.38,
+    "n": 300
+   },
+   "wq_b": {
+    "median": 100.35,
+    "p10": 99.33,
+    "p90": 101.38,
+    "n": 300
+   },
+   "total": {
+    "median": 181.54,
+    "p10": 179.97,
+    "p90": 183.14,
+    "n": 300
+   },
+   "bitwise_equal_to_none": true
+  },
+  "bulk60": {
+   "window": {
+    "median": 63.55,
+    "p10": 62.98,
+    "p90": 65.18,
+    "n": 300
+   },
+   "w_ar": {
+    "median": 26.94,
+    "p10": 26.82,
+    "p90": 28.35,
+    "n": 300
+   },
+   "w_mhc_post": {
+    "median": 8.0,
+    "p10": 7.78,
+    "p90": 8.19,
+    "n": 300
+   },
+   "w_mhc_pre": {
+    "median": 24.58,
+    "p10": 24.54,
+    "p90": 24.58,
+    "n": 300
+   },
+   "w_act_quant": {
+    "median": 4.06,
+    "p10": 4.0,
+    "p90": 4.1,
+    "n": 300
+   },
+   "qkv_a": {
+    "median": 16.42,
+    "p10": 16.38,
+    "p90": 16.45,
+    "n": 300
+   },
+   "wq_b": {
+    "median": 100.1,
+    "p10": 99.39,
+    "p90": 101.6,
+    "n": 300
+   },
+   "total": {
+    "median": 180.06,
+    "p10": 179.07,
+    "p90": 182.62,
+    "n": 300
+   },
+   "bitwise_equal_to_none": true
+  },
+  "bulk40": {
+   "window": {
+    "median": 63.58,
+    "p10": 61.54,
+    "p90": 63.78,
+    "n": 300
+   },
+   "w_ar": {
+    "median": 27.1,
+    "p10": 26.91,
+    "p90": 28.22,
+    "n": 300
+   },
+   "w_mhc_post": {
+    "median": 7.78,
+    "p10": 7.65,
+    "p90": 8.13,
+    "n": 300
+   },
+   "w_mhc_pre": {
+    "median": 24.61,
+    "p10": 22.98,
+    "p90": 24.61,
+    "n": 300
+   },
+   "w_act_quant": {
+    "median": 4.1,
+    "p10": 3.71,
+    "p90": 4.13,
+    "n": 300
+   },
+   "qkv_a": {
+    "median": 16.38,
+    "p10": 16.38,
+    "p90": 16.42,
+    "n": 300
+   },
+   "wq_b": {
+    "median": 100.59,
+    "p10": 100.1,
+    "p90": 102.14,
+    "n": 300
+   },
+   "total": {
+    "median": 180.16,
+    "p10": 178.85,
+    "p90": 182.24,
+    "n": 300
+   },
+   "bitwise_equal_to_none": true
+  },
+  "bulk100_b25": {
+   "window": {
+    "median": 77.63,
+    "p10": 75.58,
+    "p90": 79.42,
+    "n": 300
+   },
+   "w_ar": {
+    "median": 28.54,
+    "p10": 27.23,
+    "p90": 28.67,
+    "n": 300
+   },
+   "w_mhc_post": {
+    "median": 8.16,
+    "p10": 7.49,
+    "p90": 8.19,
+    "n": 300
+   },
+   "w_mhc_pre": {
+    "median": 37.92,
+    "p10": 36.9,
+    "p90": 38.98,
+    "n": 300
+   },
+   "w_act_quant": {
+    "median": 3.84,
+    "p10": 3.55,
+    "p90": 3.84,
+    "n": 300
+   },
+   "qkv_a": {
+    "median": 16.38,
+    "p10": 16.38,
+    "p90": 16.38,
+    "n": 300
+   },
+   "wq_b": {
+    "median": 85.02,
+    "p10": 84.26,
+    "p90": 86.37,
+    "n": 300
+   },
+   "total": {
+    "median": 179.14,
+    "p10": 176.99,
+    "p90": 181.73,
+    "n": 300
+   },
+   "bitwise_equal_to_none": true
+  },
+  "ld100": {
+   "window": {
+    "median": 68.99,
+    "p10": 67.42,
+    "p90": 69.5,
+    "n": 300
+   },
+   "w_ar": {
+    "median": 30.08,
+    "p10": 29.6,
+    "p90": 31.78,
+    "n": 300
+   },
+   "w_mhc_post": {
+    "median": 10.46,
+    "p10": 9.34,
+    "p90": 11.39,
+    "n": 300
+   },
+   "w_mhc_pre": {
+    "median": 23.84,
+    "p10": 22.88,
+    "p90": 24.61,
+    "n": 300
+   },
+   "w_act_quant": {
+    "median": 4.1,
+    "p10": 3.84,
+    "p90": 4.1,
+    "n": 300
+   },
+   "qkv_a": {
+    "median": 16.38,
+    "p10": 16.38,
+    "p90": 16.38,
+    "n": 300
+   },
+   "wq_b": {
+    "median": 101.38,
+    "p10": 100.42,
+    "p90": 102.4,
+    "n": 300
+   },
+   "total": {
+    "median": 186.3,
+    "p10": 184.42,
+    "p90": 188.32,
+    "n": 300
+   },
+   "bitwise_equal_to_none": true
+  }
+ },
+ "time": "2026-09-25T13:17:33Z"
+}
+rc=0

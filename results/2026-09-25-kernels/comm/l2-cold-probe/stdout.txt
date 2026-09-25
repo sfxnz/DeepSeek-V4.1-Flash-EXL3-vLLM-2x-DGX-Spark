@@ -1,0 +1,35 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+warm {"median": 15.94, "p10": 15.17, "p90": 16.45, "n": 100, "gbps": 593.6}
+memset1x {"median": 81.3, "p10": 80.06, "p90": 82.5, "n": 100, "gbps": 116.4}
+memset2x {"median": 87.74, "p10": 86.08, "p90": 91.36, "n": 100, "gbps": 107.8}
+memset4x {"median": 84.21, "p10": 82.78, "p90": 85.7, "n": 100, "gbps": 112.4}
+read2x {"median": 45.54, "p10": 44.74, "p90": 45.92, "n": 100, "gbps": 207.8}
+read4x {"median": 45.89, "p10": 44.96, "p90": 47.14, "n": 100, "gbps": 206.2}
+rot8 {"median": 47.04, "p10": 45.92, "p90": 48.45, "n": 800, "gbps": 201.1}
+rot8_memset2x {"median": 89.09, "p10": 87.07, "p90": 91.04, "n": 800, "gbps": 106.2}
+rc=0

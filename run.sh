@@ -148,6 +148,7 @@ FORWARD_ENVS=(
   VLLM_USE_BREAKABLE_CUDAGRAPH=
   VLLM_ADAPTIVE_VERIFICATION_PROFILE_CONTEXT_LEN=256
   DSV41_NCCL_EAGER_TWIN=0
+  DSV41_PM_QOS_US=
   NCCL_MIN_NCHANNELS=
   NCCL_MAX_NCHANNELS=
   NCCL_NTHREADS=
@@ -450,6 +451,12 @@ start_local() {
     --kernel-config '{"enable_flashinfer_autotune":false,"enable_jit_warmup":false}'
   )
 
+  # docker/patch/pm_qos.py holds a PM QoS request through this device (root in the container).
+  local qos_args=()
+  if [[ -n "${DSV41_PM_QOS_US:-}" ]]; then
+    qos_args+=(--device /dev/cpu_dma_latency)
+  fi
+
   local vol_args=(-v "${HF_CACHE}:${HF_HOME_IN_CONTAINER}")
   if [[ -d "$PATCH_DIR" ]]; then
     vol_args+=(
@@ -491,6 +498,7 @@ start_local() {
     --ipc host \
     --shm-size 32g \
     --device /dev/infiniband \
+    "${qos_args[@]}" \
     --cap-add IPC_LOCK \
     --ulimit memlock=-1:-1 \
     "${vol_args[@]}" \

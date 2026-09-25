@@ -1,0 +1,64 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip pm_qos: DSV41_PM_QOS_US is not set
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+single noqos 0 0 20.0 2.0 {'median': 481.1, 'p10': 243.9, 'p90': 509.5, 'max': 3892.58, 'n': 100}
+single noqos 0 0 20.0 300.0 {'median': 2.7, 'p10': 2.11, 'p90': 14.59, 'max': 152.51, 'n': 100}
+chain noqos_r0_spinners0_gap20ms {'first_node_delay_us': {'median': 3.04, 'p10': 2.18, 'p90': 346.75, 'max': 373.22, 'n': 20}, 'later_nodes_delay_us': {'median': 2.46, 'p10': 2.14, 'p90': 3.42, 'max': 22.5, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single qos0 1 0 20.0 2.0 {'median': 3.36, 'p10': 2.4, 'p90': 5.38, 'max': 15.14, 'n': 100}
+single qos0 1 0 20.0 300.0 {'median': 2.91, 'p10': 2.21, 'p90': 3.49, 'max': 3.62, 'n': 100}
+chain qos0_r1_spinners0_gap20ms {'first_node_delay_us': {'median': 2.14, 'p10': 1.79, 'p90': 2.98, 'max': 3.2, 'n': 20}, 'later_nodes_delay_us': {'median': 2.5, 'p10': 1.79, 'p90': 2.59, 'max': 64.83, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single qos20 2 0 20.0 2.0 {'median': 3.36, 'p10': 2.75, 'p90': 5.63, 'max': 7.07, 'n': 100}
+single qos20 2 0 20.0 300.0 {'median': 2.88, 'p10': 2.14, 'p90': 3.42, 'max': 62.62, 'n': 100}
+chain qos20_r2_spinners0_gap20ms {'first_node_delay_us': {'median': 2.8, 'p10': 1.95, 'p90': 3.36, 'max': 3.46, 'n': 20}, 'later_nodes_delay_us': {'median': 2.46, 'p10': 1.73, 'p90': 2.53, 'max': 3.2, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single qos40 3 0 20.0 2.0 {'median': 3.47, 'p10': 2.5, 'p90': 5.54, 'max': 15.1, 'n': 100}
+single qos40 3 0 20.0 300.0 {'median': 2.85, 'p10': 2.11, 'p90': 3.42, 'max': 3.62, 'n': 100}
+chain qos40_r3_spinners0_gap20ms {'first_node_delay_us': {'median': 2.62, 'p10': 1.89, 'p90': 3.2, 'max': 3.3, 'n': 20}, 'later_nodes_delay_us': {'median': 2.53, 'p10': 1.76, 'p90': 2.59, 'max': 16.96, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single qos50 4 0 20.0 2.0 {'median': 491.71, 'p10': 203.42, 'p90': 574.02, 'max': 647.87, 'n': 100}
+single qos50 4 0 20.0 300.0 {'median': 248.0, 'p10': 2.56, 'p90': 334.24, 'max': 358.14, 'n': 100}
+chain qos50_r4_spinners0_gap20ms {'first_node_delay_us': {'median': 304.69, 'p10': 225.7, 'p90': 334.78, 'max': 358.5, 'n': 20}, 'later_nodes_delay_us': {'median': 2.3, 'p10': 2.21, 'p90': 3.2, 'max': 4.22, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single qos100 5 0 20.0 2.0 {'median': 608.43, 'p10': 418.18, 'p90': 624.48, 'max': 676.22, 'n': 100}
+single qos100 5 0 20.0 300.0 {'median': 299.94, 'p10': 199.42, 'p90': 334.02, 'max': 371.36, 'n': 100}
+chain qos100_r5_spinners0_gap20ms {'first_node_delay_us': {'median': 275.15, 'p10': 187.04, 'p90': 297.79, 'max': 345.79, 'n': 20}, 'later_nodes_delay_us': {'median': 2.3, 'p10': 2.24, 'p90': 3.17, 'max': 21.18, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single noqos 6 0 20.0 2.0 {'median': 585.82, 'p10': 105.47, 'p90': 867.68, 'max': 881.38, 'n': 100}
+single noqos 6 0 20.0 300.0 {'median': 2.88, 'p10': 2.11, 'p90': 275.97, 'max': 616.8, 'n': 100}
+chain noqos_r6_spinners0_gap20ms {'first_node_delay_us': {'median': 3.06, 'p10': 2.05, 'p90': 77.09, 'max': 493.82, 'n': 20}, 'later_nodes_delay_us': {'median': 2.3, 'p10': 2.14, 'p90': 3.07, 'max': 82.5, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single qos0 7 0 20.0 2.0 {'median': 14.5, 'p10': 13.98, 'p90': 15.1, 'max': 18.59, 'n': 100}
+single qos0 7 0 20.0 300.0 {'median': 3.02, 'p10': 2.21, 'p90': 3.42, 'max': 3.62, 'n': 100}
+chain qos0_r7_spinners0_gap20ms {'first_node_delay_us': {'median': 2.03, 'p10': 1.76, 'p90': 2.78, 'max': 3.14, 'n': 20}, 'later_nodes_delay_us': {'median': 2.27, 'p10': 1.89, 'p90': 2.5, 'max': 45.5, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single qos20 8 0 20.0 2.0 {'median': 14.7, 'p10': 14.11, 'p90': 15.26, 'max': 21.09, 'n': 100}
+single qos20 8 0 20.0 300.0 {'median': 3.01, 'p10': 2.14, 'p90': 3.39, 'max': 628.38, 'n': 100}
+chain qos20_r8_spinners0_gap20ms {'first_node_delay_us': {'median': 2.27, 'p10': 1.89, 'p90': 2.91, 'max': 3.17, 'n': 20}, 'later_nodes_delay_us': {'median': 2.27, 'p10': 1.89, 'p90': 2.5, 'max': 3.46, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single qos40 9 0 20.0 2.0 {'median': 11.66, 'p10': 10.4, 'p90': 21.5, 'max': 26.21, 'n': 100}
+single qos40 9 0 20.0 300.0 {'median': 2.85, 'p10': 2.21, 'p90': 3.42, 'max': 63.14, 'n': 100}
+chain qos40_r9_spinners0_gap20ms {'first_node_delay_us': {'median': 2.43, 'p10': 1.76, 'p90': 3.04, 'max': 5.54, 'n': 20}, 'later_nodes_delay_us': {'median': 2.21, 'p10': 2.02, 'p90': 3.01, 'max': 20.96, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single qos50 10 0 20.0 2.0 {'median': 384.46, 'p10': 269.54, 'p90': 564.74, 'max': 636.48, 'n': 100}
+single qos50 10 0 20.0 300.0 {'median': 238.24, 'p10': 100.9, 'p90': 261.38, 'max': 337.15, 'n': 100}
+chain qos50_r10_spinners0_gap20ms {'first_node_delay_us': {'median': 215.6, 'p10': 161.57, 'p90': 249.63, 'max': 286.02, 'n': 20}, 'later_nodes_delay_us': {'median': 2.3, 'p10': 2.21, 'p90': 3.2, 'max': 44.7, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single qos100 11 0 20.0 2.0 {'median': 525.18, 'p10': 277.95, 'p90': 572.32, 'max': 637.92, 'n': 100}
+single qos100 11 0 20.0 300.0 {'median': 115.36, 'p10': 2.27, 'p90': 261.38, 'max': 420.38, 'n': 100}
+chain qos100_r11_spinners0_gap20ms {'first_node_delay_us': {'median': 40.19, 'p10': 2.27, 'p90': 238.56, 'max': 261.15, 'n': 20}, 'later_nodes_delay_us': {'median': 2.37, 'p10': 2.24, 'p90': 3.23, 'max': 4.0, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+rc=0

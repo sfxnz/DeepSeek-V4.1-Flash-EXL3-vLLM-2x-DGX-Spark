@@ -38,6 +38,7 @@ PATCHES = {
     "fix_o_proj_woa_fp8.py": {},  # baked into the image at build time
     "drop_page_cache.py": {"DSV41_DROP_PAGE_CACHE": "1"},
     "nccl_eager_twin.py": {"DSV41_NCCL_EAGER_TWIN": "1"},
+    "pm_qos.py": {"DSV41_PM_QOS_US": "20"},  # any other value: disarm markers only
     "sitecustomize.py": None,  # disarm markers only
     "decode_levers.py": None,  # disarm markers only
     "dense_mxfp8_deepgemm.py": None,  # disarm markers only (opt-in lever)

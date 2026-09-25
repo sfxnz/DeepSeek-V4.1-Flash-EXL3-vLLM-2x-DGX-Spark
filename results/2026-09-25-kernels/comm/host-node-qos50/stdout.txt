@@ -1,0 +1,39 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+single noqos 0 0 20.0 2.0 {'median': 135.6, 'p10': 20.29, 'p90': 354.4, 'max': 480.96, 'n': 100}
+single noqos 0 0 20.0 300.0 {'median': 2.54, 'p10': 2.14, 'p90': 3.3, 'max': 3153.22, 'n': 100}
+chain noqos_r0_spinners0_gap20ms {'first_node_delay_us': {'median': 2.61, 'p10': 2.05, 'p90': 3.23, 'max': 3.58, 'n': 20}, 'later_nodes_delay_us': {'median': 2.5, 'p10': 2.4, 'p90': 3.46, 'max': 80.45, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single qos50 1 0 20.0 2.0 {'median': 379.31, 'p10': 210.53, 'p90': 392.03, 'max': 429.41, 'n': 100}
+single qos50 1 0 20.0 300.0 {'median': 64.82, 'p10': 2.72, 'p90': 89.92, 'max': 112.8, 'n': 100}
+chain qos50_r1_spinners0_gap20ms {'first_node_delay_us': {'median': 3.33, 'p10': 2.3, 'p90': 114.24, 'max': 127.3, 'n': 20}, 'later_nodes_delay_us': {'median': 2.5, 'p10': 2.37, 'p90': 3.46, 'max': 83.36, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single noqos 2 0 20.0 2.0 {'median': 212.69, 'p10': 109.98, 'p90': 381.86, 'max': 464.38, 'n': 100}
+single noqos 2 0 20.0 300.0 {'median': 2.54, 'p10': 2.08, 'p90': 77.38, 'max': 140.48, 'n': 100}
+chain noqos_r2_spinners0_gap20ms {'first_node_delay_us': {'median': 88.82, 'p10': 2.62, 'p90': 118.5, 'max': 128.29, 'n': 20}, 'later_nodes_delay_us': {'median': 2.5, 'p10': 2.4, 'p90': 3.49, 'max': 27.04, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+single qos50 3 0 20.0 2.0 {'median': 358.88, 'p10': 206.11, 'p90': 405.09, 'max': 432.51, 'n': 100}
+single qos50 3 0 20.0 300.0 {'median': 63.92, 'p10': 2.69, 'p90': 103.52, 'max': 149.89, 'n': 100}
+chain qos50_r3_spinners0_gap20ms {'first_node_delay_us': {'median': 3.09, 'p10': 2.08, 'p90': 102.24, 'max': 115.52, 'n': 20}, 'later_nodes_delay_us': {'median': 2.5, 'p10': 2.3, 'p90': 3.42, 'max': 55.97, 'n': 1620}, 'layer_us': 650.0, 'nodes': 82}
+rc=0

@@ -1162,6 +1162,21 @@ except SystemExit as _g8sf_exit:
 except Exception as _g8sf_err:
     print(f"dsv41: g8 stream feed skipped: {_g8sf_err!r}", flush=True)
 
+# PM QoS CPU wake-up latency request for the serve's lifetime (docker/patch/pm_qos.py).
+def _p_pm_qos():
+    import pm_qos
+
+    state = pm_qos.install()
+    if state == "off":
+        raise _PatchSkip("DSV41_PM_QOS_US is not set")
+    if state != "armed":
+        raise RuntimeError(f"pm_qos {state}")
+    return state
+
+
+_patch("pm_qos", _p_pm_qos)
+
+
 # NCCL graph mixing off behind an eager-only twin communicator (docker/patch/nccl_eager_twin.py).
 # Runs at interpreter start, before any NCCL communicator exists in this process.
 def _p_nccl_eager_twin():

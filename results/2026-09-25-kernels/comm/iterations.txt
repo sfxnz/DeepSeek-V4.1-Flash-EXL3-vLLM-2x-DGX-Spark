@@ -101,3 +101,57 @@ Two-node NCCL runs need both GPUs: they are prepared here and scheduled for the 
     60 steps per arm, 0 mismatches in all 4 arms, router counts graph 90 (82 target + 8 draft
     captures) / eager 220. Timings there are one-rank local copies: harness check only, not data.
     Tests: tests/test_nccl_twin_check.py (8 CPU tests). Full suite 574 OK, render --check 0.
+
+#6  Overlap the AR with independent work: L2 warm-up of the next GEMM's weights (single GPU)
+    kernel_study/comm/l2_prefetch_window.py, spark2, m=4, 300 replays per arm, arms alternated
+    replay by replay in one process, SM 2190 MHz, pmon clean. Window = the serve's sequence after a
+    MoE AR: AR (5-CTA clock spin, 22.7 us) -> mhc_post -> mhc_pre (DeepGEMM prenorm + TileLang) ->
+    mxfp8 act quant -> qkv_a b12x (9.46 MB) -> act quant + wq_b b12x (21.6 MB). Real kernels, random
+    MXFP8 weights of the serve's shapes; every arm's GEMM outputs bitwise equal to 'none'.
+    Methodology found on the way (l2-cold-probe/l2_cold_probe.json, qkv_a alone): cold = 2x-L2
+    streaming-read flush (45.5 us, 207 GB/s) = 8 rotating weight copies (47.0 us) = the serve (47.6 us);
+    a memset flush leaves dirty lines and doubles the GEMM (81-88 us); L2 evict_last lines survive a
+    flush and warm the next arm. Runs l2-prefetch-v1/v2/v3 are INVALID for that reason (kept, not used).
+    Valid run l2-prefetch/l2_prefetch_m4.json (median [p10, p90], us):
+      none      window 63.3  qkv_a 47.1 [46.1, 47.1]  total 211.0 [207.7, 212.8]
+      warm      (ceiling: qkv_a read into L2 first)   qkv_a 16.4  total 180.4  (-30.5)
+      bulk60    1-CTA TMA cp.async.bulk.prefetch.L2 of 60% of qkv_a (5.7 MB) forked at the AR start:
+                window 65.3 (+2.0)  qkv_a 22.5  total 189.3 [186.3, 190.9]  (-21.7)
+      bulk100   all 9.46 MB: qkv_a 16.4 but the 1-CTA issue delays the AR spin by 12 us: -18.5
+      bulk100 + 25% wq_b: window +27.6, wq_b 78.8: -24.8;  plain loads by 16 CTAs: -20.3
+      multi-CTA TMA issue (8/48 CTAs): qkv_a only 25-27 us (requests from exiting CTAs complete
+      partially): -17.5..-18.0;  fork after the AR (mHC window only): -1.2
+    Projection: ~-21.7 us per MoE-AR window x 40 = ~-0.87 ms/step at c=1, if the real NCCL LL AR
+    (5 CTAs polling host memory) behaves like the spin. The attn-AR window (shared gate_up + router
+    gate) is bounded by the routing glue chain (balanced with the shared expert today). Not built
+    yet: needs a side-stream fork inside the MoE AR call site, the next layer's qkv_a pointers and a
+    join before the next attention op (breakable-graph segments must not leave a stream forked).
+
+#7  Graph startup root cause: CPU deep idle, not NCCL. Lever DSV41_PM_QOS_US (docker/patch/pm_qos.py)
+    r3 trace (c1-rank0.pkl, script comm/an/launch_vs_ar0.py): the draft graph is launched on the host
+    44.7 ms (median) before the GPU reaches it, yet the device idles 235 us (rank 0) / 427 us (rank 1)
+    right before its first AR: the AR waits for its NCCL host node (hostStreamPlanCallback), which
+    only runs when the GPU reaches the graph. Target graph: launched 68 us before the GPU starts it,
+    AR0 at 427 us into the graph, AR0 kernel 267 us (waiting for the late rank).
+    cpuidle on both hosts (read-only): LPI-1/2/3 exit latency 42/231/433 us, menu governor, LPI-3 is
+    the most used state. /dev/cpu_dma_latency is root-only.
+    kernel_study/comm/host_node_latency.py, spark2, graph with one root host node gating a kernel,
+    host sleep between replays (the serve replays each graph once per ~63 ms):
+      back-to-back replays: 7-16 us median;  5-20 ms gaps: 470-480 us;  60 ms gaps: 751 us.
+      CUDA device schedule flags (spin/yield/blocking) and a 0.2-1 ms host-func heartbeat thread: noisy,
+      no reliable fix (host-node-flags/*).
+      PM QoS request held in the same process (host-node-qos-sweep/hn_qos_sweep.json, 2 reps x 6 arms,
+      cycled): none 481/586 us | 0 us 3.4/14.5 | 20 us 3.4/14.7 | 40 us 3.5/11.7 | 50 us 492/384 |
+      100 us 608/525 (median, T=2 us). First of 82 chained nodes: none 3.0 (p90 347) vs 20 us 2.3
+      (p90 2.9). The limit must be < 42 us (LPI-1 excluded); 20 is the lever value.
+    NCCL's proxy thread also sleeps on a condition variable when it has no active ops
+    (proxy.cc ncclProxyGetPostedOps) and pays the same wake-up at each replay start.
+    Lever: DSV41_PM_QOS_US=N (unset = off). run.sh passes --device /dev/cpu_dma_latency to both
+    containers only when set; every Python process of the container holds one request for its
+    lifetime (host-wide while the serve runs: idle cores stay in WFI). Audit markers; gate at 20.
+    Tests: tests/test_pm_qos.py (8, incl. the run.sh dry run on both ranks). Also tools/warmup.py:
+    the 3k-token warmup prefill is now cut to its char budget like the bucket prefills (build_doc
+    overshoots by one repo segment, which moved with this change and broke test_warmup).
+    Expected in the serve: the 1.13 ms/step graph startup (both replays' first collective) mostly
+    goes; other host wake-ups on the critical path (Engram stage thread pool, 3.2 ms of GPU idle)
+    may shrink too. Needs the serve ABAB; power: idle cores in WFI.
