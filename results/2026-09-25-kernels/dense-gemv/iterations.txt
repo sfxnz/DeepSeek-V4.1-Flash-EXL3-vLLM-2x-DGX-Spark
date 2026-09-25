@@ -131,3 +131,110 @@ Iterations (M = 4 unless noted; % = b12x/ours - 1, + is faster)
      cold b12x_e2e 373.76 us at M=6 and M=8, against a read floor of 331.8. The draft runs main_proj once per step,
      and M > 4 happens only at c=2, so at most ~35 us/step is on the table. That does not pay for a K-split
      activation ring.
+
+Fix pass (k3 review, 2026-09-25 evening; spark2 under .worktrees-spark2/.gpu.lock, pmon clean before and
+after every run, SM 2190 MHz on every busy sample; the serve module's extension pre-built on spark1 and
+mounted at its JIT path so no compile ran under the lock)
+===========================================================================================================
+ blocker  Review: with DSV41_DENSE_GEMV=1 the serve crashes at the first decode-size forward. plan_grid ->
+     occupancy() set cudaFuncAttributeMaxDynamicSharedMemorySize to smem(K) for its own K, so it could LOWER
+     the attribute, while launch() re-set it only when its private static high-water mark grew. Shapes with
+     different K share an instantiation: (4,2,512,C,MR4) qkv_a 87680 B / wo_b 83456 B (its IN_QUANT twin
+     also wo_a 83456 B); (2,2,512,C,MR4) gate_up 54400 / Engram 58624 / main_proj 96640; (2,2,512,C,MR8)
+     gate_up 75520 / Engram 83968. vLLM arms every layer at load in named_modules order (image:
+     DeepseekV4DecoderLayer registers engram (layers 1/14), attn (fused_wqa_wkv, wq_b, wo_a, wo_b), ffn; the
+     target lm_head after the layers; the DSpark draft = main_proj, then 3 decoder layers, lm_head aliased),
+     so after load each shared attribute held the last-armed, smaller value and the next qkv_a / main_proj
+     (M<=4) or Engram (any M) launch failed with cudaErrorInvalidValue out of maybe_apply. My single-shape
+     tests (and seqbench/stress/bench4, which call plan_grid right before every launch) never saw that order.
+   fix  ensure_smem_attr<W,S,KC,SMODE,IN_MODE,MR>(smem): one high-water mark per instantiation, shared by
+     launch() and occupancy(); the attribute is only ever raised (the reviewer's verified patch; same code).
+     CPU guard: test_smem_attribute_is_only_raised (one cudaFuncSetAttribute, inside the raise-only helper,
+     used by both call sites; fails on the old source).
+   test serve_hook_test.py now STARTS with a serve-load-order phase (fresh process, nothing armed before it):
+     21 layers created in the image's order (L1: engram, qkv_a, wq_b, wo_a, wo_b, gate_up, down; L39: the
+     same without engram; lm_head; main_proj; L38 as the draft decoder layer), every dense layer armed at
+     creation; then the first eager forward at M=8 (wo_a arms there, wq_b's QuantizedActivation is checked
+     there); then every layer at M=8..1 (largest first, as vLLM warms up and captures) with bf16 and, where
+     the hook takes it, QuantizedActivation input, each call bitwise vs the stock path and GEMV use counted
+     against the plan; then one captured forward-order pass at M=4 replayed on new inputs vs eager.
+     - original kernel (runs/serve-hook-oldkernel.log): 38 failures, 'dense_gemv: launch failed' on Engram at
+       every M, qkv_a M<=4 bf16 AND pre-quantized (wo_a's arming lowered the shared IN_QUANT instantiation
+       too), main_proj M<=4 and the graph capture.
+     - attribute fix (runs/serve-hook-test6.log): 325/325 bitwise, 325/325 GEMV use as expected, 0 failures,
+       captured forward == eager; the per-shape phases too: ALL_OK.
+ harden  The original-kernel run also showed the load-time fallback was not survivable: _arm caught the
+     self-test's launch error and logged 'rejected ...; b12x stays', but the rejected launch's (non-sticky)
+     error stayed pending and torch's next launch check raised it (torch.AcceleratorError: invalid argument).
+     launch() now clears it (cudaGetLastError) before throwing and names it. Checked on the ORIGINAL
+     attribute code plus only this change (runs/serve-hook-oldattr-errclear.log): the same 38 serve-order
+     failures, then "K5120xN1792 rejected (RuntimeError('dense_gemv: launch failed: invalid argument'));
+     b12x stays" and the run continues: every other shape armed and bitwise.
+     maybe_apply: a QuantizedActivation at an M without a bucket (main_proj M>4) no longer spends the shape's
+     one-time in-situ check. That check used to run the GEMV, get no output, and disarm the pre-quantized
+     path with a false 'not bitwise equal ...; b12x stays'. Latent (the serve hands a QuantizedActivation
+     only to wq_b, bucketed for M 1..8); test_preq_check_waits_for_a_covered_m (fails on the old module).
+     Not added: a runtime fallback in maybe_apply (the review's optional item). The root cause is fixed and
+     serve-order tested, every compiled config is self-tested per shape at load, and a runtime launch error
+     now surfaces with its CUDA error named and nothing left pending.
+     final kernel (tag b85dd9215a48; runs/serve-hook-test7.log): serve order 325/325 bitwise, 325/325 GEMV
+     use as expected, 0 failures, graph replay == eager; every per-shape phase bitwise; ALL_OK.
+ L2 regime (review missed opportunity: move weight reads into DRAM-idle time; needs an L2-regime GEMV).
+     l2_regime_bench.py (runs/l2-regime-1): per timed call flush -> k3 comm's shipped TMA prefetch kernel
+     (l2pf_k3comm.py, verbatim) on the call's copy -> 60 us memory-free spin (the AR + mHC window) -> activation
+     re-touch -> call; 32 real layers rotating, 200 samples, 6 arms ABBA; all 15 (shape, M) cells bitwise.
+     pf = what DSV41_AR_L2_PREFETCH=1 leaves in L2 today: the first 5.5 MiB of the weight and of the stock
+     weight_scale, the same fraction of each (qkv_a 61 %; the GEMV's compact scale stays cold, as in the serve).
+       qkv_a M=1/3/4 : cold 48.1 -> 43.9 (+9.4..9.6 %) | pf 24.5 -> 20.4..20.5 (+19.2..20.3 %) | warm +28..66 %
+       qkv_a M=6/8   : cold +9.1 % | pf 24.5 -> 22.3 / 24.6 -> 22.5 (+9.7 / +9.1 %) | warm +12.1 / -11.1 %
+     -> the two levers stack: with the qkv_a prefetch on, the GEMV keeps its ~4 us per call at every M.
+     Information for a possible second window (no lever exists), same 5.5 MiB budget:
+       shared gate_up (47 % prefetched): pf +13.0 / +6.7 / +6.2 % at M 1/3/4 but -2.8 / -10.5 % at M 6/8
+       shared down   (95 % prefetched): pf 16.3..14.2 -> 8.2..10.1 us (+40..98 %) at every M
+     So a prefetch of down (5.9 MB fits the budget) pairs with the GEMV at every M, gate_up only at M <= 4.
+     Where the GEMV loses: once weights are L2-resident, its per-CTA whole-K activation staging (8-10 KC spans,
+     one span ahead, per CTA) becomes the critical path, most at MR8; cold it hides behind the DRAM stream.
+     Kept as is: no lever puts gate_up, wo_a or a whole qkv_a in L2 today, and a staging rework for a regime the
+     serve does not run would be speculative. If a window for gate_up lands, keep M >= 6 on b12x there.
+ disclosure (warm = fully L2-resident, never the serve case; chain-a/b): the GEMV loses qkv_a M=8 12.65 -> 15.47 us
+     (-18.2 %), gate_up M=6 -13.7 %, M=8 -33.7 % (15.59 -> 23.53), wo_a M=3/4/6/8 -9.2 / -13.3 / -15.9 / -25.7 %
+     (17.11 -> 23.02 at M=8; the review found the wo_a case, the first pass had not reported it); it wins warm
+     everywhere else. wq_b warm is unstable run to run (21 MB weight vs 24 MiB L2).
+ final suite on the final kernel (tag b85dd9215a48, every run on spark2 under the lock, pmon clean, SM 2190 MHz on
+     every busy sample except 2 container-start samples of concur-1 at 1 % util):
+   chain-a/b (chain_bench.py, the review's independent method adopted: one CUDA graph of R back-to-back calls over
+     distinct real layers, 2 x 64 MiB flush before each replay, 200 replays ABBA, production CONFIGS, no best-of
+     selection): 78/78 (shape, M, cold/warm) cells bitwise on every call; cold p10/p90 bands never overlap.
+     Cold M=4 stock -> GEMV, us (% of 250 GB/s): qkv_a 45.98 -> 41.57 (+10.6 %, 89), wq_b 97.33 -> 92.25
+     (+5.5 %, 92), wo_b 100.96 -> 91.91 (+9.8 %, 92), gate_up 57.28 -> 52.22 (+9.7 %, 91), down 29.98 -> 27.64
+     (+8.5 %, 86), Engram 738.08 -> 680.72 (+8.4 %, 93), main_proj 373.40 -> 338.53 (+10.3 %, 93), lm_head
+     1516.70 -> 1455.73 (+4.2 %, 94), wo_a 79.33 -> 74.39 (+6.6 %, 91). Cold minima over M: lm_head +4.2 % (M=4/8),
+     wq_b +4.7 % (M=1) and +5.0..5.5 % (M >= 3), wo_a +6.6 %; every other shape >= +8.3 % at every M.
+   seqbench3 (8-layer dense chain in one graph): M=3/4/6/8 348.2/351.0/352.4/354.2 -> 322.9/325.5/326.7/328.0
+     us/layer (+7.8/+7.8/+7.9/+8.0 %), outputs bitwise; PDL still no gain (+7.6..8.2 %).
+   concur-1 (concur_bench.py, adopted: shared gate_up -> silu_and_mul -> down with the router bf16 GEMM on a side
+     stream, 32 cold layers): saving per layer M=1/4/8 7.78/8.37/8.85 us alone -> 6.55/7.36/7.59 us with the
+     router (+10.0 -> +7.2 % at M=4); bitwise.
+   projection (projection.py -> projection-m4/m8.json: chain cold deltas x calls/step, the shared expert replaced
+     by concur's with-router saving): M=4 (c=1) 1.600 ms/step isolated, 1.598 corrected (2.48 % of the 64.45 ms
+     step); M=8 (c=2) 1.583 corrected. The correction is small because the fixed-config chain's gate_up + down
+     delta (7.41 us) is already close to the with-router 7.36 us; bench4's isolated best-config deltas (7.91 us)
+     were the higher ones. With the qkv_a prefetch stacked, qkv_a still saves 3.9-4.1 us per call (l2-regime-1).
+   woa-bench2: 192/192 eager + 128/128 replays bitwise; cold M=1/3/4/6/8 +5.6/+5.7/+6.7/+7.8/+6.8 %.
+   stress4: 7600 eager checks + 3800 graph replays over 38 (shape, M) cells, 0 mismatches.
+   edge-stress-1 (edge_stress.py, adopted): 624/624 edge activations bitwise through the hooked path (zero and
+     padding rows, power-of-two block absmax, subnormals, bf16 max, -0.0, inf, NaN, constant, row-strided);
+     77,400 launches beside co-resident noise kernels, 0 mismatches.
+   prod5-corr (bench4.py --impl prod --no-time): 1374/1374 bitwise over every compiled config, M 1..8,
+     4 distributions, fused and pre-quantized input, incl. graph replay.
+   serve-hook-test7: see above; ALL_OK.
+ not done  - runtime fallback in maybe_apply: see 'harden'.
+     - early PDL trigger (griddepcontrol.launch_dependents at kernel start) for the one GEMV -> GEMV adjacency in
+       the serve (o_proj wo_a -> wo_b): at most the ~2-4 us DRAM gap between the two kernels x 43 (~0.2 % of a
+       step), and it would let ANY PDL-launched successor start before the GEMV finishes, which is safe only for
+       successors that griddepcontrol.wait before consuming. Not worth auditing every successor for that.
+     - follow-up for k3 comm (their mechanism): a second prefetch window, the attention all-reduce after wo_b,
+       warming shared down (5.9 MB, 95 % of it within the 5.5 MiB budget) -> down 29.7 -> ~10 us per layer with the
+       GEMV (l2-regime-1), up to ~0.8 ms/step at c=1 if the lines survive the router GEMM + gate_up traffic
+       (~18 MB: router 3.9 + gate_up 11.8 + mHC ~2.3) in between. That retention is the open question;
+       their l2_prefetch_window.py is the harness for it.

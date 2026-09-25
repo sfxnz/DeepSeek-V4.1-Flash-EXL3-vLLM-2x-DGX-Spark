@@ -1,0 +1,34 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T17:52:25Z
+lock acquired 2026-09-25T17:52:54Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/mxfp8/flashinfer.py
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+dsv41-indexer-workspace: already applied
+qkv_a          M=1 cold: stock  48.06 [47.01,49.12] gemv  43.87 [42.85,44.90]  +9.6% | pf: stock  24.48 [24.38,26.53] gemv  20.35 [20.29,20.48] +20.3% | warm: stock  20.38 [20.29,20.51] gemv  12.26 [12.10,12.32] +66.3% | bitwise True
+qkv_a          M=3 cold: stock  48.00 [47.01,49.09] gemv  43.87 [42.88,44.00]  +9.4% | pf: stock  24.48 [22.43,26.50] gemv  20.38 [20.29,22.37] +20.1% | warm: stock  18.30 [18.24,18.50] gemv  14.30 [14.11,14.37] +28.0% | bitwise True
+qkv_a          M=4 cold: stock  48.06 [47.07,49.18] gemv  43.92 [42.85,44.06]  +9.4% | pf: stock  24.45 [22.50,26.46] gemv  20.51 [20.29,22.50] +19.2% | warm: stock  18.43 [18.24,18.50] gemv  14.34 [14.21,14.37] +28.6% | bitwise True
+qkv_a          M=6 cold: stock  48.03 [47.01,49.22] gemv  44.03 [43.01,45.09]  +9.1% | pf: stock  24.51 [22.53,26.46] gemv  22.34 [20.35,22.56]  +9.7% | warm: stock  18.37 [18.21,18.50] gemv  16.38 [16.26,16.42] +12.1% | bitwise True
+qkv_a          M=8 cold: stock  48.16 [47.14,49.22] gemv  44.13 [44.00,46.05]  +9.1% | pf: stock  24.58 [22.56,26.62] gemv  22.53 [20.48,24.58]  +9.1% | warm: stock  16.42 [16.35,16.45] gemv  18.46 [18.43,18.50] -11.1% | bitwise True
+shared_gate_up M=1 cold: stock  59.50 [59.10,60.48] gemv  54.30 [53.25,55.52]  +9.6% | pf: stock  34.75 [34.62,36.74] gemv  30.75 [30.53,32.64] +13.0% | warm: stock  22.59 [22.46,24.45] gemv  16.38 [16.29,16.45] +37.9% | bitwise True
+shared_gate_up M=3 cold: stock  60.22 [59.17,61.31] gemv  54.37 [53.28,56.13] +10.8% | pf: stock  34.75 [34.66,36.70] gemv  32.58 [30.56,34.62]  +6.7% | warm: stock  22.53 [22.34,22.62] gemv  18.43 [18.34,18.50] +22.2% | bitwise True
+shared_gate_up M=4 cold: stock  60.22 [59.20,61.28] gemv  54.32 [54.05,56.10] +10.9% | pf: stock  34.78 [34.62,35.78] gemv  32.77 [30.69,34.72]  +6.2% | warm: stock  20.51 [20.29,20.58] gemv  18.43 [18.40,18.50] +11.3% | bitwise True
+shared_gate_up M=6 cold: stock  60.22 [59.17,61.34] gemv  55.07 [54.05,55.39]  +9.4% | pf: stock  34.75 [34.62,36.70] gemv  35.76 [34.59,36.86]  -2.8% | warm: stock  22.53 [22.30,22.62] gemv  24.58 [24.38,24.64]  -8.3% | bitwise True
+shared_gate_up M=8 cold: stock  60.38 [58.53,61.44] gemv  55.26 [53.38,56.32]  +9.3% | pf: stock  34.82 [34.78,35.84] gemv  38.91 [36.90,38.98] -10.5% | warm: stock  18.46 [18.43,18.53] gemv  26.64 [26.59,26.69] -30.7% | bitwise True
+shared_down    M=1 cold: stock  32.74 [31.74,33.82] gemv  30.54 [29.50,30.75]  +7.2% | pf: stock  16.32 [16.22,16.42] gemv   8.22 [8.10,10.24] +98.4% | warm: stock  16.35 [16.26,16.42] gemv   8.16 [8.06,9.98] +100.4% | bitwise True
+shared_down    M=3 cold: stock  32.64 [31.65,33.66] gemv  29.66 [28.90,30.66] +10.0% | pf: stock  16.19 [14.30,16.35] gemv  10.11 [10.05,10.21] +60.1% | warm: stock  16.19 [14.30,16.35] gemv  10.14 [9.98,10.27] +59.6% | bitwise True
+shared_down    M=4 cold: stock  32.61 [31.62,33.63] gemv  29.66 [29.47,30.69]  +9.9% | pf: stock  14.27 [14.14,16.29] gemv  10.11 [10.05,10.24] +41.1% | warm: stock  14.27 [14.18,16.29] gemv  10.18 [10.02,10.27] +40.3% | bitwise True
+shared_down    M=6 cold: stock  32.64 [31.65,33.66] gemv  29.70 [29.50,30.66]  +9.9% | pf: stock  14.21 [14.11,16.26] gemv  10.11 [10.08,10.24] +40.5% | warm: stock  14.27 [14.14,16.32] gemv  10.14 [10.02,10.27] +40.7% | bitwise True
+shared_down    M=8 cold: stock  32.64 [31.68,33.66] gemv  29.70 [29.50,30.69]  +9.9% | pf: stock  14.18 [14.05,14.30] gemv  10.11 [10.05,10.21] +40.2% | warm: stock  14.21 [12.42,14.30] gemv  10.18 [10.02,10.27] +39.6% | bitwise True
+ALL_OK
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 252 busy 64 sm_median 2190 sm_min_busy 2190 mem ['[N/A]'] power_median 4.3 W
+rc=0

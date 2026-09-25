@@ -1,0 +1,54 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T18:25:45Z
+lock acquired 2026-09-25T18:28:17Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/mxfp8/flashinfer.py
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+dsv41-indexer-workspace: already applied
+engram_wkv: 4 copies (600 MiB) loaded in 2.2 s
+engram_wkv     M=1 cold: stock   748.68 [742.26,762.17] gemv   674.08 [666.14,692.54] -> +11.1% (mean +10.9%), gemv 234 GB/s = 93% | bitwise True
+engram_wkv     M=1 warm: stock   752.16 [743.94,761.14] gemv   676.96 [670.02,686.60] -> +11.1% (mean +10.9%), gemv 233 GB/s = 93% | bitwise True
+engram_wkv     M=4 cold: stock   738.08 [731.66,758.27] gemv   680.72 [674.67,710.40] ->  +8.4% (mean  +8.4%), gemv 232 GB/s = 93% | bitwise True
+engram_wkv     M=4 warm: stock   727.05 [726.09,728.63] gemv   668.95 [667.84,670.78] ->  +8.7% (mean  +8.7%), gemv 236 GB/s = 94% | bitwise True
+engram_wkv     M=8 cold: stock   728.61 [727.82,730.37] gemv   672.75 [671.52,674.41] ->  +8.3% (mean  +8.3%), gemv 235 GB/s = 94% | bitwise True
+engram_wkv     M=8 warm: stock   730.16 [729.22,731.74] gemv   672.80 [671.73,674.58] ->  +8.5% (mean  +8.6%), gemv 235 GB/s = 94% | bitwise True
+main_proj: 4 copies (300 MiB) loaded in 0.6 s
+main_proj      M=1 cold: stock   369.96 [369.24,375.31] gemv   336.73 [335.90,343.31] ->  +9.9% (mean  +9.6%), gemv 234 GB/s = 94% | bitwise True
+main_proj      M=1 warm: stock   369.14 [368.32,370.21] gemv   336.82 [336.09,338.20] ->  +9.6% (mean  +9.6%), gemv 234 GB/s = 94% | bitwise True
+main_proj      M=3 cold: stock   372.25 [371.70,373.78] gemv   337.96 [337.17,339.75] -> +10.1% (mean +10.4%), gemv 233 GB/s = 93% | bitwise True
+main_proj      M=3 warm: stock   371.71 [371.00,373.03] gemv   338.69 [337.47,340.27] ->  +9.7% (mean +10.1%), gemv 233 GB/s = 93% | bitwise True
+main_proj      M=4 cold: stock   373.40 [372.58,374.52] gemv   338.53 [337.74,339.80] -> +10.3% (mean +10.1%), gemv 233 GB/s = 93% | bitwise True
+main_proj      M=4 warm: stock   372.87 [372.25,374.05] gemv   338.73 [337.97,340.09] -> +10.1% (mean +10.1%), gemv 233 GB/s = 93% | bitwise True
+lm_head: 2 copies (631 MiB) loaded in 2.6 s
+lm_head        M=1 cold: stock  1584.71 [1544.83,1593.97] gemv  1448.98 [1446.53,1452.08] ->  +9.4% (mean  +9.2%), gemv 236 GB/s = 94% | bitwise True
+lm_head        M=1 warm: stock  1554.72 [1510.03,1596.42] gemv  1449.60 [1447.54,1452.18] ->  +7.3% (mean  +7.9%), gemv 236 GB/s = 94% | bitwise True
+lm_head        M=4 cold: stock  1516.70 [1514.93,1519.63] gemv  1455.73 [1453.22,1459.84] ->  +4.2% (mean  +4.2%), gemv 235 GB/s = 94% | bitwise True
+lm_head        M=4 warm: stock  1519.38 [1515.63,1564.21] gemv  1459.81 [1455.68,1504.40] ->  +4.1% (mean  +4.1%), gemv 234 GB/s = 94% | bitwise True
+lm_head        M=8 cold: stock  1524.42 [1522.37,1527.38] gemv  1462.35 [1460.34,1464.90] ->  +4.2% (mean  +4.3%), gemv 234 GB/s = 94% | bitwise True
+lm_head        M=8 warm: stock  1524.89 [1522.82,1527.84] gemv  1464.26 [1461.89,1467.50] ->  +4.1% (mean  +4.2%), gemv 234 GB/s = 94% | bitwise True
+INFO 09-25 18:29:13 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 18:29:13 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+INFO 09-25 18:29:13 [deep_gemm.py:136] DeepGEMM E8M0 enabled on current platform.
+wo_a: 24 copies loaded
+wo_a           M=1 cold: stock    78.90 [78.73,79.93] gemv    73.95 [73.79,74.71] ->  +6.7% (mean  +6.7%), gemv 227 GB/s = 91% | bitwise True
+wo_a           M=1 warm: stock    19.00 [18.99,19.08] gemv    16.96 [16.87,17.12] -> +12.1% (mean +11.8%), gemv 992 GB/s = 397% | bitwise True
+wo_a           M=3 cold: stock    79.20 [79.05,79.50] gemv    74.24 [74.07,74.49] ->  +6.7% (mean  +6.8%), gemv 227 GB/s = 91% | bitwise True
+wo_a           M=3 warm: stock    18.49 [18.47,19.07] gemv    20.37 [20.24,20.75] ->  -9.2% (mean  -8.3%), gemv 828 GB/s = 331% | bitwise True
+wo_a           M=4 cold: stock    79.33 [79.15,80.86] gemv    74.39 [74.16,75.66] ->  +6.6% (mean  +6.5%), gemv 227 GB/s = 91% | bitwise True
+wo_a           M=4 warm: stock    18.32 [18.31,18.48] gemv    21.14 [21.03,21.44] -> -13.3% (mean -12.7%), gemv 799 GB/s = 320% | bitwise True
+wo_a           M=6 cold: stock    79.49 [79.32,79.79] gemv    74.11 [73.94,74.42] ->  +7.3% (mean  +7.2%), gemv 229 GB/s = 91% | bitwise True
+wo_a           M=6 warm: stock    18.48 [18.47,18.73] gemv    21.98 [21.87,22.15] -> -15.9% (mean -14.0%), gemv 771 GB/s = 308% | bitwise True
+wo_a           M=8 cold: stock    79.57 [79.41,79.96] gemv    74.23 [74.03,74.54] ->  +7.2% (mean  +7.0%), gemv 229 GB/s = 92% | bitwise True
+wo_a           M=8 warm: stock    17.11 [17.07,17.26] gemv    23.02 [22.91,23.31] -> -25.7% (mean -25.1%), gemv 738 GB/s = 295% | bitwise True
+DONE
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 328 busy 272 sm_median 2190 sm_min_busy 2190 mem ['[N/A]'] power_median 18.8 W
+rc=0
