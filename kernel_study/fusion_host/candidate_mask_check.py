@@ -16,6 +16,9 @@ Runs in the serving image on a GPU (patch dir mounted at /opt/dsv41-patch).
    stock_order_nondeterministic), so raw order cannot be the criterion.
    seq_lens is (B, next_n) like the native spec decode path, rows =
    B * next_n, vis and row_repeat computed exactly as sparse_attn_indexer does.
+2b. capture: the serve wrapper captured in a CUDA graph at width 1M, rows 4,
+   replayed 20 times with new logits / row ends / candidates, vs the eager stock
+   mask on the same inputs below each row's end.
 3. timing: each arm in a CUDA graph at the serve's width (max_model_len
    1048576) and a 64k width, rows 4 and 8, typical decode ends; >= 300
    replays, CUDA events, arms alternating.
@@ -136,6 +139,36 @@ def main() -> int:
                 n_nondet += int(not torch.equal(ia, ia2))
                 n_topk += 1
 
+    # 2b. the serve wrapper captured in a CUDA graph at the serve's width, replayed
+    # with new logits / row ends / candidates, vs the eager stock mask on the same
+    # inputs: every column below each row's end bit for bit
+    width, rows = 1 << 20, 4
+    logits_s = torch.randn(rows, width, device=dev)
+    ends_s = torch.full((rows,), 5000, dtype=torch.int32, device=dev)
+    cand_s = candidates(rows, torch.full((rows,), 5000), width, g, dev)
+    bounded(logits_s, None, ends_s, cand_s, BS, 1)
+    torch.cuda.synchronize()
+    graph = torch.cuda.CUDAGraph()
+    with torch.cuda.graph(graph):
+        bounded(logits_s, None, ends_s, cand_s, BS, 1)
+    n_replay = 0
+    for rep in range(20):
+        ends = torch.randint(1, 60000, (rows,), generator=g)
+        if rep % 5 == 0:
+            ends[0] = BS - 3  # below one block
+        ends_s.copy_(ends.to(torch.int32))
+        cand_s.copy_(candidates(rows, ends, width, g, dev))
+        new = torch.randn(rows, width, generator=g).to(dev)
+        logits_s.copy_(new)
+        graph.replay()
+        stock(new, None, ends_s, cand_s, BS, 1)
+        torch.cuda.synchronize()
+        for r in range(rows):
+            e = int(ends[r])
+            if not torch.equal(logits_s[r, :e].view(torch.int32), new[r, :e].view(torch.int32)):
+                bad.append(f"graph replay {rep} row {r} end {e}")
+        n_replay += 1
+
     # 3. timing
     timing = {}
     for width in (1 << 20, 65536):
@@ -164,7 +197,8 @@ def main() -> int:
                         t[name].append(e0.elapsed_time(e1) * 1e3)
             timing[f"width{width}_rows{rows}"] = {k: summarize(v) for k, v in t.items()}
     print(json.dumps({"torch": torch.__version__, "mask_cases": n_mask, "topk_cases": n_topk,
-                      "stock_order_nondeterministic": n_nondet, "lever_state": dict(cmb._STATE),
+                      "stock_order_nondeterministic": n_nondet, "graph_replays": n_replay,
+                      "lever_state": dict(cmb._STATE),
                       "timing_us": timing, "mismatches": bad}))
     return 1 if bad or not cmb._STATE["armed"] else 0
 

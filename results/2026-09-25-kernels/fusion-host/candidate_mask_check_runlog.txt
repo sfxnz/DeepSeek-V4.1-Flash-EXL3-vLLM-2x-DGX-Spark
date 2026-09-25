@@ -6,3 +6,14 @@
 2190 MHz, [N/A], 8.63 W, 47
 == end 2026-09-25T13:39:49Z
 2190 MHz, [N/A], 8.54 W, 47
+
+cmd: s2run.sh cand-mask-graph docker run --rm --gpus all --network none --memory 16g -v $R2:/repo -v $R2/docker/patch:/opt/dsv41-patch:ro -w /tmp --entrypoint python3 dsv41-flash-exl3-sm121:canonical-e13 /repo/kernel_study/fusion_host/candidate_mask_check.py  (adds section 2b: 20 graph replays; JSON in candidate_mask_check_graph_spark2.json)
+== 2026-09-25T14:35:55Z cand-mask-graph
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+2190 MHz, [N/A], 8.68 W, 46
+dsv41: candidate mask bounded self-check bit-exact (rows 1/4/8, width 65536)
+== end 2026-09-25T14:36:07Z
+2190 MHz, [N/A], 8.51 W, 46
