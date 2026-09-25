@@ -6,8 +6,8 @@ What changes in the serve. Decode mHC for T <= 16 tokens per call: the target ve
 TF32 prenorm GEMM and the TileLang fused norm become mhc_det_post, mhc_det_gemm_t8/_t16 and
 mhc_det_norm. Every output is bitwise the stock one, so greedy token streams are unchanged by
 construction. Prefill (T > 16) keeps the stock kernels.
-Cost: about 107 MiB of GPU memory per rank (packed fn: 86 x 1.23 MiB + 0.3 MiB for the
-broadcast), plus one NVRTC compile (~1-2 s) and a bitwise self-test at weight load. No image
+Cost: about 101 MiB of GPU memory per rank (packed fn: 86 x 1,228,800 B + 307,200 B for the
+broadcast = 105,984,000 B), plus one NVRTC compile (~1-2 s) and a bitwise self-test at weight load. No image
 rebuild: canonical-e13 as is. The kernels come from docker/patch (NVRTC through cuda.bindings).
 
 Preconditions
@@ -57,12 +57,12 @@ Keep rule (ARMS.md step 6)
   per-boot median_run_acceptance_len of A and B must overlap. If they do not, something else
   changed: stop and investigate. Promote when the median improvement exceeds the larger A/B
   boot spread AND every B boot beats the A median.
-- Expected: -1.0 to -1.4 ms/step at c=1, from about -0.99 ms per 86-sublayer pass in the
-  serve-like graph (path_time_final.json, T=4). The in-serve stock mHC costs 2.92 ms/step vs 2.14
-  in the isolated chain, so the serve saving may be larger. c=2 (T=8 target, 6 draft):
-  about -0.98 ms/pass.
+- Expected: -1.0 to -1.4 ms/step at c=1, from -1.04 ms per 86-sublayer pass in the
+  serve-like graph (path_time_final.json, T=4: 2142.4 -> 1104.6 us). The in-serve stock mHC costs
+  2.92 ms/step vs 2.14 in the isolated chain, so the serve saving may be larger. c=2 (T=8
+  target, 6 draft): about -1.02 ms/pass.
 - Non-inferiority: pp_warm / pp_novel 8k/32k within spread (prefill path untouched),
-  prose_long c=2 aggregate, warm-prefix hit fraction, boot floors (MemAvailable: +107 MiB of
+  prose_long c=2 aggregate, warm-prefix hit fraction, boot floors (MemAvailable: +101 MiB of
   GPU memory per rank), benches/e2e.py exit 0.
 - Quality: quick eval must pass. Numerics are bitwise, so decode NLL and the decode-vs-prefill
   probe should read the same as A, and the golden hazard should sit at A's own A/A level. A

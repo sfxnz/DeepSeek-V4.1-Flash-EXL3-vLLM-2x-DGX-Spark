@@ -208,7 +208,8 @@ per run under runs/<tag>/), image dsv41-flash-exl3-sm121:canonical-e13, SM clock
       MUFU.RCP -> FFMA refinement -> FCHK -> branch around the slow-path CALL. The fast path is
       inline and the chain is strictly dependent (each normalisation needs the previous one), so
       ~126 ns per step is the floor for a bitwise replica. 19 steps take 2.4 us of the 3.6 us
-      tail.
+      tail. [Superseded by item 15: the two dependent SHFL -> FADD steps of each sum can be three
+      independent shuffles with the same additions, -28..-34 us per pass, bitwise.]
     - GEMM: DRAM-paced after its x lands; floor ~5.6 us (1.39 MB at 250 GB/s) vs 7.65 us per
       call in the chain. The rest is the post -> x dependency and first-byte latency. Prefetching
       more fn before the wait delays x (sweep_prefetch), and a separate issuer warp does not help
@@ -216,5 +217,40 @@ per run under runs/<tag>/), image dsv41-flash-exl3-sm121:canonical-e13, SM clock
       matters on the last stage (~0.2 us).
     - Remaining ideas, each <= ~0.1 ms/step with structural risk, not done: fold the post into
       the GEMM prologue (the model calls post and pre separately, and engram layers modify the
-      residual in between); side stream (item 11: measured +0.08 ms/step).
+      residual in between); side stream (item 11: saved 82 us per pass, i.e. -0.08 ms/step).
     Verdict: further kernel changes stop paying. Serve A/B next (serve_validation_plan.txt).
+
+--- Fix pass (review of 4f661a5; 2026-09-25 evening) ---------------------------------------------
+
+15. Sinkhorn sums with independent shuffles (the review's first missed opportunity; the edit was
+    left uncommitted by the interrupted fix attempt at 16:56 and is validated and committed here).
+    TileLang's AllReduce gives lane l, for a row sum, (v_l + v_l^2) + (v_l^1 + v_l^3) (xor 2
+    then xor 1) and, for a column sum, (v_l + v_l^8) + (v_l^4 + v_l^12) (xor 8 then xor 4).
+    rowsum4 / colsum4 fetch the three partner values with three independent SHFL.BFLY and do the
+    same three additions in the same grouping, so the expression tree is identical (IEEE add is
+    commutative; NaN results are the canonical NaN either way) and each sum loses one dependent
+    SHFL -> FADD step. SASS (sass/mhc_det.sass): three SHFL.BFLY back to back, then two
+    independent FADD and the combining FADD; norm 72 registers, no local memory; post and both
+    GEMM kernels byte-identical to 4f661a5 (per-function SASS md5 equal).
+    Checks on the edited source (sha256 b0bb537a...):
+      path-check (fp-path-check): post 96/96; whole recurrence 430/430 outputs at T 1/3/4/6/8/16;
+        1000-run (T=4) and 200-run (T=8) determinism 0; graph 100 replays x 5 T: 0 mismatches.
+      gemm-check (fp-gemm-check): 4656/4656 bitwise (87 fn, T 1..16, 6 input families);
+        determinism 0 (det and stock at 16/40 splits); graph 0/100 x 5 T.
+      lever smoke through the patched vLLM names (fp-lever-smoke): PASS.
+    Paired A/B in one process, shipped (new) vs 4f661a5 (ab/mhc_det_4f661a5.cu), both bitwise
+    equal to stock at every T, 200 reps, us per 86-sublayer pass, 4f661a5 minus new
+    (ab_shfl3_vs_4f661a5*.json; median (p10/p90)):
+      plain-copy AR proxy: T=1 30.3 (22.6/38.4)  T=3 27.7 (22.3/33.2)  T=4 29.5 (24.4/35.5)
+                           T=6 33.7 (27.4/41.2)  T=8 32.2 (20.2/43.6)
+      PDL-aware proxy:     T=1 30.0 (22.0/39.1)  T=3 31.2 (25.8/37.0)  T=4 27.7 (20.7/35.4)
+                           T=6 33.3 (25.8/38.6)  T=8 30.0 (19.7/39.8)
+    Final whole path on this source (path_time_final.json, fp-path-time; plain-copy proxy):
+      T=1 2004.6 -> 1001.9 (-50.0%)  T=3 2136.4 -> 1083.1  T=4 2142.4 (2138.6/2150.3) -> 1104.6
+      (1099.9/1110.5) (-48.4%)  T=6 2144.9 -> 1118.4  T=8 2152.9 -> 1133.7 (-47.3%).
+      PDL-aware proxy (sweep_variants.json, fp-pdlproxy): T=4 1948.2 -> 990.1 (-49.2%);
+      T=8 1956.2 -> 1014.7.
+    Harness: spark2.sh runs the container with --init (PID 1 forwards SIGTERM), timeout -k 15
+    (SIGKILL after 15 s) and a named container removed before the lock is released, so a hung
+    job cannot hold the shared GPU (review nit 3).
+

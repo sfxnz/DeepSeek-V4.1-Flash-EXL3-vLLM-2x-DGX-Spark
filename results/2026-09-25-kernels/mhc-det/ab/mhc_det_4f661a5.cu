@@ -278,9 +278,8 @@ extern "C" __global__ void __launch_bounds__(64)
 // Bitwise replica of the TileLang mhc_pre_big_fuse_with_norm kernel (hc 4, hidden 5120, 16
 // splits, save_pre_mix; carried pre-mix or the one-hot stream-0 pre-mix), one CTA per token:
 //   warp 0     : coefficients after griddepcontrol.wait: serial split sums (rms, 24 mixes),
-//                sigmoids, 20-step sinkhorn with the TileLang AllReduce butterflies (max over
-//                xor 2,1; sums as rowsum4 / colsum4, the same additions as xor 2,1 for rows and
-//                xor 8,4 for columns), IEEE divisions, expf/rsqrtf as nvcc 13.0.
+//                sigmoids, 20-step sinkhorn with the TileLang AllReduce butterflies (max/sum over
+//                xor 2,1 for rows, xor 8,4 for columns), IEEE divisions, expf/rsqrtf as nvcc 13.0.
 //   warps 1..8 : layer_input = bf16(bf16(sum_j pre_j * resid_j) * rsqrt(sumsq/5120 + eps) * w),
 //                sumsq in TileLang's order: 64 virtual threads l, slot i of l = position
 //                hb*1024 + (i>>3)*512 + l*8 + (i&7), fma chain over hb = 0..4, slots summed as
@@ -298,22 +297,6 @@ DEV uint2 ldcg_u2(const void* p) {
 DEV float bf16_lo(u32 w) { return __uint_as_float(w << 16); }
 DEV float bf16_hi(u32 w) { return __uint_as_float(w & 0xffff0000u); }
 DEV void bar_named(int id, int n) { asm volatile("bar.sync %0, %1;" ::"r"(id), "r"(n) : "memory"); }
-// The TileLang AllReduce butterflies, bitwise, with independent shuffles. Rows (xor 2 then xor 1)
-// give lane l (v_l + v_l^2) + (v_l^1 + v_l^3); columns (xor 8 then xor 4) give
-// (v_l + v_l^8) + (v_l^4 + v_l^12). The same additions in the same order, but the three shuffles
-// issue back to back instead of two dependent SHFL -> FADD steps.
-DEV float rowsum4(float v) {
-  const float a1 = __shfl_xor_sync(0xffffffffu, v, 1);
-  const float a2 = __shfl_xor_sync(0xffffffffu, v, 2);
-  const float a3 = __shfl_xor_sync(0xffffffffu, v, 3);
-  return __fadd_rn(__fadd_rn(v, a2), __fadd_rn(a1, a3));
-}
-DEV float colsum4(float v) {
-  const float a4 = __shfl_xor_sync(0xffffffffu, v, 4);
-  const float a8 = __shfl_xor_sync(0xffffffffu, v, 8);
-  const float a12 = __shfl_xor_sync(0xffffffffu, v, 12);
-  return __fadd_rn(__fadd_rn(v, a8), __fadd_rn(a4, a12));
-}
 
 extern "C" __global__ void __launch_bounds__(288, 1)
     mhc_det_norm(const float* __restrict__ mixes_p, const float* __restrict__ sqr_p,
@@ -352,21 +335,33 @@ extern "C" __global__ void __launch_bounds__(288, 1)
       const float e1 = expf(__fsub_rn(0.f, __fmaf_rn(mixes_s[lane + 4], s1, bpost)));
       post_mix[tok * 4 + lane] = __fmul_rn(__fdiv_rn(1.f, __fadd_rn(1.f, e1)), post_mult);
     }
-    // Sinkhorn exactly as TileLang: one element per lane (lanes 16..31 compute copies), row sums
-    // rowsum4, column sums colsum4, fmaxf over shfl_xor 2,1 for the row max. (One row per lane
-    // with 4 divisions each measured 2x slower: iterations.txt item 9.)
+    // Sinkhorn exactly as TileLang: one element per lane (lanes 16..31 compute copies), rows
+    // reduced with shfl_xor 2,1, columns with shfl_xor 8,4, fmaxf for the row max. (One row per
+    // lane with 4 divisions each measured 2x slower: iterations.txt item 9.)
     const int c = (lane & 15) + 8;
     float cm = __fmaf_rn(mixes_s[c], s2, bsk);
     float rmax = fmaxf(-__int_as_float(0x7f800000), cm);
     rmax = fmaxf(rmax, __shfl_xor_sync(0xffffffffu, rmax, 2));
     rmax = fmaxf(rmax, __shfl_xor_sync(0xffffffffu, rmax, 1));
     cm = expf(__fsub_rn(cm, rmax));
-    cm = __fadd_rn(__fdiv_rn(cm, rowsum4(__fadd_rn(0.f, cm))), sk_eps);
-    cm = __fdiv_rn(cm, __fadd_rn(colsum4(__fadd_rn(0.f, cm)), sk_eps));
+    float rs = __fadd_rn(0.f, cm);
+    rs = __fadd_rn(rs, __shfl_xor_sync(0xffffffffu, rs, 2));
+    rs = __fadd_rn(rs, __shfl_xor_sync(0xffffffffu, rs, 1));
+    cm = __fadd_rn(__fdiv_rn(cm, rs), sk_eps);
+    float cs = __fadd_rn(0.f, cm);
+    cs = __fadd_rn(cs, __shfl_xor_sync(0xffffffffu, cs, 8));
+    cs = __fadd_rn(cs, __shfl_xor_sync(0xffffffffu, cs, 4));
+    cm = __fdiv_rn(cm, __fadd_rn(cs, sk_eps));
     if (lane == 0) PROFN(3);
     for (int it = 0; it < sk_repeat - 1; ++it) {
-      cm = __fdiv_rn(cm, __fadd_rn(rowsum4(__fadd_rn(0.f, cm)), sk_eps));
-      cm = __fdiv_rn(cm, __fadd_rn(colsum4(__fadd_rn(0.f, cm)), sk_eps));
+      rs = __fadd_rn(0.f, cm);
+      rs = __fadd_rn(rs, __shfl_xor_sync(0xffffffffu, rs, 2));
+      rs = __fadd_rn(rs, __shfl_xor_sync(0xffffffffu, rs, 1));
+      cm = __fdiv_rn(cm, __fadd_rn(rs, sk_eps));
+      cs = __fadd_rn(0.f, cm);
+      cs = __fadd_rn(cs, __shfl_xor_sync(0xffffffffu, cs, 8));
+      cs = __fadd_rn(cs, __shfl_xor_sync(0xffffffffu, cs, 4));
+      cm = __fdiv_rn(cm, __fadd_rn(cs, sk_eps));
     }
     if (lane < 16) comb_mix[tok * 16 + lane] = cm;
     if (lane == 0) PROFN(4);

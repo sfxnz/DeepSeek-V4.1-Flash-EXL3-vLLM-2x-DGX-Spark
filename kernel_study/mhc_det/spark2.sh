@@ -7,7 +7,9 @@
 # 2. Under flock on .worktrees-spark2/.gpu.lock: wait until no foreign GPU process
 #    is present (Xorg / gnome-shell are the idle desktop and are allowed), record
 #    `nvidia-smi pmon -c 1` before and after, log clocks/power every 200 ms, run
-#    `python3 <args>` in the image (network none, 16 GB, uid 1000, timeout 590 s).
+#    `python3 <args>` in the image (network none, 16 GB, uid 1000, timeout 590 s). --init so
+#    PID 1 forwards SIGTERM, -k 15 escalates to SIGKILL, and the named container is removed
+#    before the lock is released: a hung job cannot hold the shared GPU.
 # 3. rsync results/2026-09-25-kernels/mhc-det back.
 # Logs land in results/2026-09-25-kernels/mhc-det/runs/<tag>/.
 set -euo pipefail
@@ -19,6 +21,7 @@ NAME=k3-mhc-det
 IMAGE="${IMAGE:-dsv41-flash-exl3-sm121:canonical-e13}"
 SNAPROOT=/home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3
 RUNDIR="results/2026-09-25-kernels/mhc-det/runs/$TAG"
+CNAME="mhcdet-$(printf %s "$TAG" | tr -c 'A-Za-z0-9_.-' _)-$$"
 mkdir -p "$WT/$RUNDIR"
 
 ssh -o BatchMode=yes spark2 "mkdir -p $R/$NAME"
@@ -44,11 +47,12 @@ if [ -n "\$f" ]; then echo "ABORT: foreign GPU process still present: \$f" | tee
 nvidia-smi --query-gpu=timestamp,clocks.sm,clocks.mem,power.draw,temperature.gpu,utilization.gpu --format=csv -lms 200 > $RUNDIR/smi.csv &
 SMI=\$!
 set +e
-timeout 590 docker run --rm --gpus all --network none --memory 16g --user 1000:1000 \
+timeout -k 15 590 docker run --init --rm --name $CNAME --gpus all --network none --memory 16g --user 1000:1000 \
   -e HOME=/tmp/h -e PYTHONDONTWRITEBYTECODE=1 \
   -v $R/$NAME:/repo -v $SNAPROOT:/snaproot:ro -w /repo \
   --entrypoint python3 $IMAGE $ARGS > $RUNDIR/stdout.txt 2> $RUNDIR/stderr.txt
 RC=\$?
+docker rm -f $CNAME >/dev/null 2>&1 || true
 set -e
 kill \$SMI 2>/dev/null || true
 { date -u +%FT%TZ; nvidia-smi pmon -c 1; } > $RUNDIR/pmon_after.txt
