@@ -71,7 +71,7 @@ def _load_tool(rel: str, name: str):
 HUB_MODEL = "sfxnz/DeepSeek-V4.1-Flash-EXL3"
 HUB_REV = "2.0bpw-mcg-lmhead-mxfp8"
 STOCK_REV = "2.0bpw-mcg"
-IMAGE_TAG = "dsv41-flash-exl3-sm121:canonical-e12"
+IMAGE_TAG = "dsv41-flash-exl3-sm121:canonical-e13"
 PROMOTED_BOOT = "results/2026-09-22-endgame2/boot-lm.sh"
 HUB_DIRNAME = "models--sfxnz--DeepSeek-V4.1-Flash-EXL3"
 HUB_PACK_URL = "https://huggingface.co/sfxnz/DeepSeek-V4.1-Flash-EXL3"
@@ -256,7 +256,7 @@ class EnvForwardingTests(unittest.TestCase):
         for role in ("head", "worker"):
             env = container_env(res[role])
             self.assertEqual(env["DSV41_ENGRAM_GATHER_V2_MAX_ROWS"], "256", role)
-            self.assertEqual(env["DSV41_ENGRAM_WILLNEED"], "0", role)  # off until the E1 serve arm
+            self.assertEqual(env["DSV41_ENGRAM_WILLNEED"], "1", role)  # on since round 34 (s4 E1)
             self.assertEqual(env["DSV41_ENGRAM_WILLNEED_MIN_ROWS"], "512", role)
             self.assertEqual(env["NCCL_NTHREADS"], "128", role)
             _, args = image_and_args(res[role])
@@ -732,13 +732,15 @@ class RecipeOpsTests(unittest.TestCase):
     def test_defaults_match_promoted_boot(self) -> None:
         """A plain ./run.sh reproduces the measured 39.6/33.2 boot (results/2026-09-22-endgame2/boot-lm.sh).
 
-        Only intentional delta: FORCE_UNSAFE_CTX. The campaign set it per boot to get k=3 past the old
-        %5 spec guard; the default stays 0 (ARMS.md: never commit it).
+        Intentional deltas: FORCE_UNSAFE_CTX. The campaign set it per boot to get k=3 past the old
+        %5 spec guard; the default stays 0 (ARMS.md: never commit it). IMAGE: round 34 promotes
+        canonical-e13 (the woa-prepack o_proj stage DSV41_WOA_PREPACK needs). The other round-34
+        defaults (WILLNEED, STREAM_FEED, WOA_PREPACK, SPARSE_MARKOV) are not in boot-lm.sh.
         """
         import json
         import shlex
 
-        allowed = {"FORCE_UNSAFE_CTX"}
+        allowed = {"FORCE_UNSAFE_CTX", "IMAGE"}
         boot = {}
         for line in _read(PROMOTED_BOOT).splitlines():
             if line.startswith("export "):

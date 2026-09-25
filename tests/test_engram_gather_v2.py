@@ -163,7 +163,7 @@ class GatherV2ReadTests(unittest.TestCase):
             self.assertEqual(preads, tr.calls)
 
     def test_willneed_defaults(self) -> None:
-        self.assertIs(self.mod._ENG_GV2_WILLNEED, False)  # off until the E1 serve arm
+        self.assertIs(self.mod._ENG_GV2_WILLNEED, False)  # module default; run.sh passes 1
         self.assertEqual(self.mod._ENG_GV2_WILLNEED_MIN, 512)
         self.assertEqual(self.mod._ENG_GV2_MAX_ROWS, 1 << 62)
         with tempfile.TemporaryDirectory() as tmp:
