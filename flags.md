@@ -55,7 +55,7 @@ Effect column key: **measured** = number recorded in `evidence/` or
 | `DSV41_ENGRAM_WILLNEED=1` (+`DSV41_ENGRAM_WILLNEED_MIN_ROWS=512`) | gv2 prefill read-ahead: one `posix_fadvise(WILLNEED)` per merged 4 KiB page span of a gather's unique rows before the serial preadv loop, for calls with >= 512 rows (decode is 48-96) | The serial preadv loop is queue depth 1 on a cold prefill | **KEEP (R34 s4)**: micro novel 8k 188.8 → 798.3 tok/s (4.23x), novel 32k 234.7 → 805.7 (3.43x), warm 8k 747.2 vs 761.9 (−1.9%), L.A.I.L 33.81 (5 runs) vs 34.11 (10 runs), decode census fadv/call 0.0; prefill Engram read ms per 1k rows −83% (TP0) / −87% (TP1); `results/2026-09-24-review/campaign/s4-E1-willneed/` |
 | `DSV41_STREAM_FEED=1` | Drain the VL wrapper's sorted weight list while it loads (`g8_stream_feed.py` on stock packs) | Shorter load | **KEEP (R34 s4, hb-2 gate ≥5% on both ranks)**: 'Loading weights took' TP0 334.25 → 313.24 s (−6.3%), TP1 190.68 → 151.42 s (−20.6%) vs s3; one boot per arm; min MemAvail during load not compared (s3 has no trace); `results/2026-09-24-review/campaign/s4-E1-willneed/` |
 | `DSV41_WOA_PREPACK=1` | Pack the fp32 wo_a scale to UE8M0 once per layer (bitwise self-test, else the fp32 scale stays). Needs `canonical-e13` (`fix_o_proj_woa_fp8.py` stage 2); on `canonical-e12` it logs `the lever is OFF` | `fp8_einsum` repacked the scale on every call (~43 per step) | **KEEP (R34)**: bitwise equal at M=3/4/8; 31.75 → 25.0 us/call at M=3 (s1); 43/43 layers engaged per rank, 0 REJECTED (s5, s7); trace −0.71 / −0.81 ms/step r0/r1 (s5, vs trace3). ABAB (bundled with MHC split-K 40): prose c=1 63.795 vs 64.395 ms/step (−0.60, B spread 0.27), tok/s flat (39.485 vs 39.61); `results/2026-09-24-review/campaign/s1-microbench/`, `results/2026-09-24-review/campaign/s5-C1-decode-bundle/`, `results/2026-09-24-review/campaign/s7-C2-decode-bundle/abab.json` |
-| `DSV41_DSPARK_SPARSE_MARKOV=1` (+`_TOPK`, default 256) | Gathered top-k Markov bias via the speculator's `_sample_sequential_topk` (drops the 3 x 66 MB Markov GEMM; argmax stays). It refuses `DSV41_DSPARK_MARKOV_SCALE` != 1, `CONF_GATE`, `DRAFT_TOPK` (lever OFF, strict audit fails): set it to 0 to test those | Greedy verify keeps output exact; only acceptance can move | **KEEP (R34 s8, one boot)**: ms/step vs the B mean: prose c=1 −0.825 (B spread 0.27), structured −0.45 (0.04), L.A.I.L fresh −0.245 (0.07), post-stress −1.35 (0.30). L.A.I.L 34.51 at acceptance 2.172 (B 2.160 / 2.183); prose pooled acceptance 2.504 is below B (2.566 / 2.621). Quick quality PASS. Confounded with WOA_PREPACK (no WOA-only boot); no trace; `results/2026-09-24-review/campaign/s8-S-sparse-markov/compare.json` |
+| `DSV41_DSPARK_SPARSE_MARKOV=1` (+`_TOPK`, default 256) | Gathered top-k Markov bias via the speculator's `_sample_sequential_topk` (drops the 3 x 66 MB Markov GEMM; argmax stays). It refuses `DSV41_DSPARK_MARKOV_SCALE` != 1, `CONF_GATE`, `DRAFT_TOPK` (lever OFF, strict audit fails): set it to 0 to test those | Greedy verify keeps output exact; only acceptance can move | **KEEP (R34 s8, one boot)**: ms/step vs the B mean: prose c=1 −0.825 (B spread 0.27), structured −0.45 (0.04), L.A.I.L fresh −0.245 (0.07), post-stress −1.35 (0.30). L.A.I.L 34.51 at acceptance 2.172 (B 2.160 / 2.183); prose pooled acceptance 2.504 is below B (2.566 / 2.621). Quick quality PASS. Confounded with WOA_PREPACK (no WOA-only boot); no trace. s13, the second S boot: L.A.I.L acceptance 2.071, the lowest of the campaign. Pooled over 4 L.A.I.L batches, S vs B is acceptance 2.129 vs 2.159 (−1.4%), 62.67 vs 63.50 ms/step, tok/s 33.72 vs 33.95 (−0.7%). The acceptance cost is open: next is an S-vs-WOA-only ABAB or the TOPK=1024 retry; `results/2026-09-24-review/campaign/s8-S-sparse-markov/compare.json`, results/RESULTS.md round 34 |
 
 ## Refuse-guards (run.sh, all overridable)
 
@@ -753,3 +753,27 @@ S=249 steps (SSE chunks; acc 2.056 in-window). Results/2026-09-21-trace3/.
   needs p2b 22.4ms (G8 stack blocked) + dense 17.6ms CUDA work. Full
   table rounds 15-33 + artifacts: results/2026-09-22-close/VERDICT.md.
 - Scoreboard: 26.4 → 27.27 → 28.76 → 30.10 → 31.37 → 33.23. Boots 2/4.
+
+## Round 34 — 2026-09-24 review campaign: 4 levers promoted, canonical-e13, serve UP
+- Promoted to defaults (rows above; af90bbb): `DSV41_ENGRAM_WILLNEED=1`,
+  `DSV41_STREAM_FEED=1`, `DSV41_WOA_PREPACK=1`, `DSV41_DSPARK_SPARSE_MARKOV=1`.
+  The IMAGE default is `canonical-e13` (review-e13, sha256:c81762335a12,
+  tagged on both nodes), which carries the woa-prepack o_proj stage.
+- Rejected, still off: `DSV41_MHC_DECODE_SPLITS=40` (C1 quick quality FAIL,
+  every C A/A hazard sample above both B boots), `DSV41_P2B_SRC_SORT` (cold
+  −0.37/+1.41/+0.83%, under the 3% gate), `DSV41_DENSE_DG_SMALLM` (deep_gemm
+  slower on every shape), dual-rail NCCL (small-message latency +9.5-30%).
+  `DSV41_ENGRAM_GATHER_V2_MAX_ROWS` was not run and not needed.
+- Kept: lm_head mxfp8 (s12 quality A/B vs the stock bf16 head: ΔNLL −0.00045,
+  GSM8K 94/94; the stock head costs −6.2% L.A.I.L).
+- Final boot s13 vs s2 (fresh R33 config, same protocol):
+  - prose c=1 37.07 → 39.18 (67.77 → 63.28 ms/step)
+  - L.A.I.L fresh 32.44 → 32.44 (66.38 → 62.57 ms/step; acceptance 2.167 → 2.071)
+  - L.A.I.L after C2-STRESS 31.91 → 33.63
+  - micro pass 1 novel 8k 184.2 → 838.0, 32k 231.1 → 811.5; warm 8k 211.9 → 716.3, 32k 430.0 → 761.1
+  - quick quality PASS
+  - Evidence: `results/2026-09-24-review/campaign/s13-promote-final/final.json`
+- Prefetch v3 c=2 self-disable (IndexError in `_prefetch_worker`, disabled
+  after 3 errors per rank on the aged R33 serve): fixed in 2ebb78d, and it
+  held through C2-STRESS in s3, s5-s8 and s13. Full account and numbers:
+  results/RESULTS.md round 34.

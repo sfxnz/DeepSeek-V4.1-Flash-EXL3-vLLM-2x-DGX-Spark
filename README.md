@@ -6,6 +6,15 @@ The pack is [sfxnz/DeepSeek-V4.1-Flash-EXL3](https://huggingface.co/sfxnz/DeepSe
 
 **Decode campaign 2026-09-20/22 (+44% vs published)**: real-use prose 23 → **33.2 tok/s** (L.A.I.L cell, c=1 t=0.2, pooled n=10), greedy single-stream **39.6 tok/s** (9-run median, acc 2.61), 21.6/23.2 GiB free per Spark after a 32k prefill, zero OOMs in ~30 boots. Won levers: spec k=5→k=3 + matched cudagraph captures, Engram prefetch v3 (pf_hit 100%) + gather v2, NCCL AR-tail set, mem-hygiene bundle, lm_head mxfp8. Full evidence: `results/RESULTS.md` rounds 15–33.
 
+**Review campaign 2026-09-24 (round 34)**: compared with a fresh boot of the round-33 config under the same protocol, the new defaults give:
+- prose c=1: 37.07 → **39.18 tok/s** (67.77 → 63.28 ms/step)
+- L.A.I.L fresh: 32.44 → 32.44 tok/s. ms/step fell from 66.38 to 62.57, but this sample drew acceptance 2.071 against 2.167.
+- L.A.I.L after c=2 traffic: 31.91 → 33.63 tok/s
+- novel-text prefill: 8k 184 → **838 tok/s**, 32k 231 → **812 tok/s** (Engram WILLNEED read-ahead)
+- quick quality eval: pass
+
+New default levers: `DSV41_ENGRAM_WILLNEED`, `DSV41_STREAM_FEED`, `DSV41_WOA_PREPACK` and `DSV41_DSPARK_SPARSE_MARKOV`, on image `canonical-e13`. Evidence: `results/RESULTS.md` round 34.
+
 Default thinking is off. If you omit `chat_template_kwargs`, V4.1 thinking is on at effort 50. A small `max_tokens` then returns empty `content`.
 
 ## Prerequisites

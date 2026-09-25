@@ -757,3 +757,141 @@ verified on GPU), the gv2
 census race that could disarm gather v2 the same way (13ee9f4), and
 tools/disarm_scan.sh in four_numbers.sh (lever_disarmed in the JSON,
 c3800a3) so a runtime disarm now invalidates the capture.
+
+## Round 34 — 2026-09-24 review campaign: four levers promoted on canonical-e13, serve UP
+
+The branch perf/review-2026-09-24 (a foundation package, 9 lever packages, then review fixes) went through a serialized GPU campaign on both Sparks. The stages ran s1 to s13. There are no s9 or s11 directories. Evidence for each stage is in `results/2026-09-24-review/campaign/<stage>/` (`summary.json`, numbered logs, and both ranks' docker logs).
+
+**New defaults** (commit af90bbb):
+- `DSV41_ENGRAM_WILLNEED=1`
+- `DSV41_STREAM_FEED=1`
+- `DSV41_WOA_PREPACK=1`
+- `DSV41_DSPARK_SPARSE_MARKOV=1` (k=256)
+
+The image is `dsv41-flash-exl3-sm121:canonical-e13`. It is review-e13 (`sha256:c81762335a12`, `docker/Dockerfile.e13` on canonical-e12), tagged on both nodes. `docker/Dockerfile` runs the same two new build stages (srcsort, woa-prepack). All of its other build-time scripts predate the e12 build (`s13-promote-final/01-image-provenance.txt`).
+
+**Rejected, still default off** (numbers in flags.md):
+- `DSV41_MHC_DECODE_SPLITS=40` (quality)
+- `DSV41_P2B_SRC_SORT` (below its 3% gate)
+- `DSV41_DENSE_DG_SMALLM` (slower on every shape)
+- dual-rail NCCL (small-message latency)
+
+**Before and after.** Before is s2: a fresh boot of the R33 config from the main checkout (45d3303, `results/2026-09-22-endgame2/boot-lm.sh`, canonical-e12). After is s13: a fresh `AUDIT=strict ./run.sh` from the branch with no overrides. Both boots ran the same protocol in the same order. s13's DSV41/NCCL/VLLM env and engine argv are identical to s8's, which set the four levers by hand.
+
+| Metric | s2 before | s13 after | Δ |
+|---|---:|---:|---:|
+| L.A.I.L fresh, median of 10 (tok/s) | 32.44 | 32.44 | 0.0 |
+| L.A.I.L fresh ms/step (decode_s/chunks, median) | 66.38 | 62.57 | −3.81 |
+| L.A.I.L fresh acceptance (median) | 2.167 | 2.071 | −0.096 |
+| L.A.I.L fresh TTFT (median, s) | 0.318 | 0.355 | +0.037 |
+| L.A.I.L after C2-STRESS (tok/s; ms/step) | 31.91; 66.99 | 33.63; 62.76 | +5.4%; −4.23 |
+| prose c=1, bench_decode 9 runs (tok/s; ms/step) | 37.07; 67.77 | 39.18; 63.28 | +5.7%; −4.49 |
+| prose c=1 acceptance (pooled; median-run) | —; 2.532 | 2.488; 2.525 | |
+| prose c=2 per stream / aggregate | 27.13 / 52.93 | 28.70 / 56.36 | +6.5% agg |
+| structured c=1 (tok/s; ms/step) | 58.57; 67.63 | 62.68; 63.19 | +7.0% |
+| structured c=2 per stream / aggregate | 42.06 / 84.04 | 45.18 / 89.45 | +6.4% agg |
+| TTFT p50, prose c=1 (s) | 0.263 | 0.251 | |
+| micro pass 1, 8k warm / novel (tok/s) | 211.9 / 184.2 | 716.3 / 838.0 | 3.4x / 4.5x |
+| micro pass 1, 32k warm / novel (tok/s) | 430.0 / 231.1 | 761.1 / 811.5 | 1.8x / 3.5x |
+| micro 8k repeat pass, warm / novel (tok/s) | 771.9 / 247.3 | 789.9 / 814.6 | +2.3% / 3.3x |
+| micro pass 1 novel TTFT 8k / 32k (median, s) | 44.06 / 141.14 | 9.71 / 40.20 | |
+| API ready after start (s) | 576 | 572 | |
+| 'Loading weights took' TP0 / TP1 (s, main + second load) | 330.18+27.78 / 180.54+20.83 | 311.53+27.54 / 148.03+22.79 | −5.3% / −15.2% |
+| MemAvailable at ready, spark1 / spark2 (GiB) | 24 / 26 | 23 / 24 | |
+| MemAvailable after FULL (GiB) | 21 / 23 | 21 / 22 | |
+| quality quick vs quick.json | PASS | PASS | |
+| NLL / decode median abs dlogprob | 0.244203 / 0.01838 | 0.243823 / 0.00703 | |
+| tools exact / needle / A/A hazard / golden hazard | 0.9545 / 6/6 / 0.01636 / 0.01543 | 0.9545 / 6/6 / 0.02005 / 0.02305 | |
+
+In both boots, micro pass 1 is the first long prefill after the boot, so the Engram page cache is cold and its "warm" cell is not page-cache warm. The 8k repeat pass is warm.
+
+The L.A.I.L cell is sampled at t=0.2, so its tok/s follows acceptance. The fresh s13 batch drew the lowest L.A.I.L acceptance of the campaign (2.071). Its ms/step is 3.81 lower than s2, but its median tok/s is exactly s2's. Pooling every 10-run L.A.I.L batch per arm (fresh plus post-C2-STRESS) gives:
+
+| Arm | Batches | Pooled median tok/s | Pooled median ms/step | Mean acceptance |
+|---|---|---:|---:|---:|
+| old config (s2) | 2 | 32.25 | 66.95 | 2.149 |
+| B: new code, levers off (s3, s6) | 4 | 33.95 | 63.50 | 2.159 |
+| C: WOA + MHC40 (s5, s7) | 4 | 33.74 | 62.91 | 2.131 |
+| S: WOA + SPARSE_MARKOV, the new defaults (s8, s13) | 4 | 33.72 | 62.67 | 2.129 |
+
+The new defaults beat the old config by +4.6% pooled L.A.I.L tok/s and −4.28 ms/step. Against B the decode levers save 0.83 ms/step, but pooled acceptance is 1.4% lower, so pooled L.A.I.L tok/s is −0.7%. WOA_PREPACK is bitwise exact and cannot move acceptance. SPARSE_MARKOV can. Its per-batch acceptance (2.172 / 2.131 / 2.071 / 2.118) overlaps B's (2.160 / 2.152 / 2.183 / 2.118). Two S boots cannot separate this from noise. The GPU_PLAN arm-S gate would call a drop of 1% or more "REVERT or retry with TOPK=1024", and s13's fresh batch (2.071) is 4.1% under B's pooled mean acceptance (2.159). The lever stays promoted as s8 decided, with this open. Next step: an S-vs-WOA-only ABAB, or the TOPK=1024 retry. The bench_decode and four_numbers cells gain on both ms/step and tok/s: four_numbers prose 40.37, and bench prose median-run acceptance 2.525 is inside the B band of 2.513 / 2.597.
+
+**s13 four_numbers** (`s13-promote-final/four_numbers/four_numbers.json`, 11.5 min, not partial, serve_env_ranks_match true, lever_disarmed false):
+- prose 9x: 40.37 tok/s at 63.03 ms/step, acceptance 2.566, post-EOS 0.61.
+- micro, 3 runs: pp_warm 759.6 (8k) / 766.8 (32k), pp_novel 808.8 / 800.2.
+- MemAvailable after 32k: 21.3 / 22.37 GiB.
+- L.A.I.L, 3 runs: 33.98.
+- prose_long c=1: 33.13 tok/s at 62.88 ms/step, acceptance 2.09, natural finish length.
+- prose_long c=2: 23.52 per stream, 45.94 aggregate, 86.89 ms/step.
+
+**Warm-prefix finding.** four_numbers' warm-prefix cell got 0 of 2048 expected hits on a 2058-token prompt (TTFT 2.76 s cold, 2.67 s warm). Rechecks in the same boot (`13-warm-prefix-*.log`) show that a repeat either hits fully or not at all, depending on how far the prompt runs past the last 128-token boundary. With the hit point P = floor((N−1)/128)·128, a repeat of N tokens missed when N−P was 10, 14, 25, 55 or 58. It hit when N−P was 68, 97, 99, 116, 117, 118 or 127: for example 1791→1664, 2372→2304 and 4086→3968 tokens, with TTFT 0.33–0.46 s. An identical 8k resend hit 7936 tokens (TTFT 0.4 s, `13-prefix-resend-8k.log`). The s0 warm-prefix hit (N=2037, N−P=117) is in the hit band. Nothing in round 34 touches the KV cache manager. Whether the R33 config has the same band was not tested. The four_numbers warm-prefix gate (hit fraction ≥ 0.9) therefore depends on the random prompt length.
+
+**Quality --full** (`s13-promote-final/quality_full.json`, 1554.8 s) passes against `quality-baseline/full.json`:
+- NLL 0.243755 / 0.242506 over 2 runs (repeat delta 0.001249); baseline 0.243098.
+- Decode median |dlogprob| 0.01621. Tools exact_args 21/22.
+- Needle 9/9, including all three 131072 cells.
+- GSM8K thinking off: 92/100 against the baseline's 94/100. The discordant items split 2 vs 0 (idx 611 and 689; s12's stock-head boot also missed 689), exact binomial p = 0.5. The Wilson upper bound, 0.9589, clears the 0.94 gate.
+- GSM8K thinking on: 38/40, the same two misses as the baseline.
+- MMLU: 199/228 against 197/228 (discordant 2 s13-only vs 4 baseline-only).
+- A/A hazard 0.02088, golden hazard 0.02033.
+Before and after deltas for every metric are in `s13-promote-final/final.json`.
+
+**Serve left UP**: canonical-e13, round-34 defaults, started 2026-09-25T01:24:43Z from the perf-review-0924 worktree. Smoke returned 323 and Red. The strict audit was ok at ready, after FULL, after C2-STRESS and at the end. disarm_scan rc was 0, prefetch v3 stayed armed on both ranks, and 0 post-ready TileLang JIT warnings appeared. C2-STRESS passed 12/12.
+
+### Stages
+
+- **s0 (live baseline, 2026-09-24).** The aged R33 serve ran with prefetch v3 already self-disabled; see the section above.
+- **s1 (microbenches, serve down, `s1-microbench/`).**
+  - WOA prepack is bitwise equal; 31.75 → 25.0 us/call at M=3.
+  - MHC prenorm split-K 16 → 40 goes 18.08 → 11.17 us at T=4 (maxabs 6e-6).
+  - p2b srcsort: SASS identical, but cold time only −0.37 / +1.41 / +0.83%, below the 3% gate.
+  - deep_gemm is slower than b12x on every dense shape (−3.1% to −12.0%).
+  - Dual-rail NCCL: busbw +64–77%, but small-message latency +9.5–30%.
+  - Requant probe: Viterbi+refit relerr 0.2616 vs stock 0.3773 (MSE ratio 0.4805). A full pack takes 12.61 h on 2 nodes with exllamav3 1.5.1. The probe is weight-space only; model quality was not measured.
+  - review-e13 was built and is identical on both nodes.
+- **s2 (old config, fresh boot, `s2-old-fresh/`).** This is the "before" above. C2-STRESS did not reproduce the prefetch bug (L.A.I.L 32.44 → 31.91, still armed).
+- **s3 (B1: new code, levers off, e12, `s3-B1-new-defaults/`).**
+  - L.A.I.L 34.11; prose 39.10 at 64.26 ms/step against s2's 67.77. The per-run ranges do not overlap.
+  - The strict audit is clean, and env parity with boot-lm.sh holds except for the expected new names.
+- **s4 (E1: WILLNEED + STREAM_FEED, e12, `s4-E1-willneed/`).**
+  - Novel prefill: 8k 798.3 (4.23x s3), 32k 805.7 (3.43x). Warm 8k 747.2 (−1.9%). Decode fadv/call is 0.0.
+  - 'Loading weights took' −6.3% on TP0 and −20.6% on TP1.
+  - Worker-death drill: run.sh exited 1 35 s after `docker kill`, saved both ranks' logs and left no orphans.
+- **s5 / s7 (C1 / C2: WOA_PREPACK + MHC40, e13).**
+  - The ABAB against s3 / s6 gives prose c=1 −0.60 ms/step (B spread 0.27), with tok/s flat.
+  - The trace shows WOA −0.71 / −0.81 and MHC −0.47 / −0.58 ms/step.
+  - C1 failed quick quality (A/A hazard 0.03409 > 0.03206). Verdict: WOA promote, MHC reject.
+  - The post-ready TileLang JIT of `mhc_pre_big_fuse_with_norm` (about 13 s on the first request) comes with the e13 image and is intermittent. It appeared in B2, C1 and C2, but not in s8, s12 or s13.
+- **s6 (B2: e13 with WILLNEED + STREAM_FEED, decode levers off, `s6-B2-defaults-e13/`).** L.A.I.L 34.48, prose 40.12 at 64.53 ms/step.
+- **s8 (S: WOA + SPARSE_MARKOV, `s8-S-sparse-markov/`).**
+  - ms/step against the B mean: prose −0.825, structured −0.45, L.A.I.L −0.245, post-stress −1.35.
+  - L.A.I.L 34.51. Quick quality passed. Verdict: promote (one boot, see above).
+- **s10 (diagnostics, `s10-diag-census-skew/`).**
+  - The step census could not see FULL-graph decode; fixed in bffbae8.
+  - The MoE duplicate-expert fraction is 0.2987 per layer (random 0.0232), a realistic ceiling of about 5.1–5.2 ms/step. The next MoE step is a coop kernel that reads each expert once, microbenched on the saved routing first.
+  - Rank 0 (spark1) is the straggler inside target: +1.32 ms/step non-NCCL kernel time (+2.2%).
+- **s12 (lm_head A/B, `s12-lmhead-quality-ab/`).**
+  - Stock bf16 head against mxfp8: ΔNLL −0.00045, GSM8K 94/94, MMLU 197/197, and the flip hazard is inside the control.
+  - The stock head costs −6.2% L.A.I.L. Verdict: keep mxfp8.
+
+### Prefetch v3 c=2 self-disable bug
+
+On the aged R33 serve (up since 2026-09-22 11:55Z), prefetch v3 hit `IndexError` at `engram.py:1598 _prefetch_worker` 3 times per rank during the 09-24 quality run with its c=2 phase, then logged "dsv41: engram prefetch disabled after 3 errors" on both ranks (worker 13:42:58.751Z, head 13:43:44.500Z; `s1-microbench/aged/`).
+
+Measured impact on that serve, prefetch off: L.A.I.L 27.44 (s0, 10 runs, 76 ms/step) and 28.82 (s1, 3 runs). A fresh boot of the same config with prefetch armed gave 32.44 (s2). That is −15.4% / −11.2%, but it also includes about 2.3 days of uptime (swap 6.7 / 3.8 GiB), so not all of the gap is attributed to the disable.
+
+The direct cost shows in the s0 worker log: decode-sized Engram gathers read 2.63 ms/call before the disable and 10.80 ms/call after.
+
+Cause: no record_stream on the side-stream copies, an intermittent allocator race. The fix is 2ebb78d, and tools/disarm_scan.sh in four_numbers makes a runtime disarm invalidate a capture. After the fix, s3, s5, s6, s7, s8 and s13 all ran bench c=2, quality c2 and C2-STRESS (12 c=2 requests). Prefetch v3 stayed armed on both ranks with 0 IndexError lines. The old code did not reproduce the bug on a fresh boot either (s2), which matches a race that needs uptime.
+
+### Not done / open
+
+- The SPARSE_MARKOV acceptance question above.
+- An MHC-only ABAB with a larger selfcons sample, if MHC is re-opened.
+- The coop MoE kernel microbench.
+- The Viterbi requant pack build (12.61 h).
+- hb-3 (G8 balloon re-judge).
+- Drill (b), head failure.
+- E2 (MAX_ROWS=256), not needed.
+- A warmup key for the intermittent e13 TileLang JIT.
+- The warm-prefix band on the R33 config.
