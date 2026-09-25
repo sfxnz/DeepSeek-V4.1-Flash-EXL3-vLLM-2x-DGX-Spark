@@ -1,0 +1,27 @@
+k3 comm fix pass: final microbench + correctness suite (spark2, GPU lock, pmon clean before and
+after every run, SM 2190 MHz while busy).
+
+Code under test: 25197da (the lever as committed: fork at the MoE-AR start, join after the next
+layer's qkv_a in DeepseekV4Attention._split_qkv_and_norm, default budget = the whole next
+fused_wqa_wkv). Later commits change only docstrings, docs and the harness's reporting.
+
+h1a-1gpu   engine selftest; the lever through its own hooks (ar_l2_prefetch_gpu.py) at the
+           default budget, m = 1..8: capture/replay, bitwise GEMM outputs; twin_smoke_1gpu
+h1b-1gpu   the same hooks at 5.5 MiB; host_node_latency PM QoS check (C)
+h1c-lever-entryjoin  comparison only: the lever with its earlier join point (the next layer's
+           entry), both budgets, m = 1..8. It ran on a working tree whose
+           docker/patch/ar_l2_prefetch.py had md5 42bf54791879bb6cc4b947516a762788 (the
+           8fa0183 hooks); kernel_study/comm/ar_l2_prefetch_gpu.py md5 4c206033c20fbd88823d21cb830a97a8.
+           Against the spin the entry join is 3.5..5.7 us per window worse with the whole
+           qkv_a and 0.9..2.6 us worse at 5.5 MiB, so the later join stays.
+h2-p2b     p2b-window probe on the served p2b with real pack weights (in-kernel and separate-
+           kernel prefetch before p2b), one-hot bitwise checks
+i1-arwindow  two ranks on one GB10, real NCCL AR, m = 1..8, 300 replays, 11 arms
+i1b-focus    the same at m = 4 / 8, 1000 replays, two arm orders: startq vs startj x budgets
+i2-twin      nccl_twin_check --device-check at c=1 (keep, twin, keep_qos, twin_qos) and c=2 sizes
+
+Reading i1-arwindow: d_net_excl_p2b leaves out the p2b stand-in's own span, which carries a slot-
+in-cycle artifact of this one-GPU emulation. That is right for every arm except 'in/full', whose
+prefetch cost IS inside that span: there the stand-in slows by +26..+81 us and d_total is
++1.9..+60.5 us, a loss, consistent with the real p2b in h2 (zero-sum). ar_window_nccl.py now
+reports d_net_excl_p2b = null for 'in' arms.

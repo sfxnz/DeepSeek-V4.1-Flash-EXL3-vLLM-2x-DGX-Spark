@@ -14,30 +14,36 @@ of the next layer's fused_wqa_wkv weight and scale.
 What it buys is a range (k3 comm fix pass). The AR does not leave DRAM idle: NCCL's LL
 all-reduce over the net transport with GDR off polls host-memory buffers and waits on NIC
 DMA in the same LPDDR5x, so the prefetch burst delays the late rank's AR, which is the
-critical path.
-- Optimistic end: the AR replaced by a 5-CTA clock spin that touches no memory
-  (l2_prefetch_window.py, ar_l2_prefetch_gpu.py). 5.5 MiB gives -20.2 us per prefetched
-  window (qkv_a 47.1 -> 23.1 us), about -0.75 ms/step over 37 windows.
+critical path. Numbers are per prefetched window; x37 windows gives ms/step.
+- Optimistic end: the AR replaced by a 5-CTA clock spin that touches no memory, through
+  this lever's own hooks (kernel_study/comm/ar_l2_prefetch_gpu.py, m = 1..8): the whole
+  qkv_a -15.7..-17.3 us (qkv_a 47.1 -> 16.4-18.7 us), 5.5 MiB -20.6..-22.3 us; about
+  -0.6 / -0.8 ms/step at c=1.
 - Pessimistic end: a real NCCL AR between two ranks on one GB10 (MPS, a different
   NCCL_HOSTID per rank -> NET/IB loopback, serve NCCL env), a p2b stand-in before the AR,
-  and the lever's own join after the AR (kernel_study/comm/ar_window_nccl.py). The late
-  rank's AR slows by +16..+18 us at 5.5 MiB and +23..+27 us with the whole qkv_a, while
-  qkv_a saves 20..23 and 30..33 us. Net per window at m=4: -1.9..-4.5 (5.5 MiB) and
-  -7.2..-8.7 us (whole qkv_a); at m=8: -0.2..-4.3 and -1.0..-2.0 us. With the whole
-  qkv_a that is -0.27..-0.32 ms/step at c=1 and -0.04..-0.07 at c=2. The emulated
-  ranks share one GPU, DRAM and NIC (the emulated m=4 AR is 72-83 us against 22.7 in
-  the serve).
-Placement, issue and budget come from that real-AR data at m=4 and m=8 (two arm orders,
-1000 replays each):
-- Fork at the AR start. A fork after the AR moves the slowdown onto mHC (+20 us at
-  5.5 MiB, +34 us for the whole qkv_a).
-- Keep the 1-CTA burst. A paced issue, a closed-loop TMA ring or multi-CTA issue loses
-  more on the AR or warms less.
-- Prefetch the whole qkv_a: best at m=4 in both orders, a tie at m=8.
-Moving the prefetch before p2b does not win. As a separate kernel its run time is
-serialized, because p2b fills every SM's register file. Issued by p2b itself it is
-zero-sum, because p2b is DRAM-bound where it streams (p2b_prefetch_probe.py).
-The serve mechanism boot checks the rest (results/2026-09-25-kernels/comm/
+  and this lever's fork and join points (kernel_study/comm/ar_window_nccl.py, 'startq').
+  The late rank's AR slows by +23..+27 us with the whole qkv_a and by +14..+20 us at
+  5.5 MiB, while qkv_a saves 28..32 and 20..24 us. Net over three runs: the whole qkv_a
+  -1.9..-8.1 us at m=4 and +2.4..-4.3 at m=8; 5.5 MiB -2.0..-3.2 and +2.7..-0.6. That is
+  -0.07..-0.30 ms/step at c=1 and +0.09..-0.16 at c=2. The emulated ranks share one GPU,
+  DRAM and NIC, and the emulated m=4 AR is 72-88 us against 22.7 us in the serve.
+Placement, issue, budget and join come from that data at m=4 and m=8 (1000 replays, two
+arm orders, plus 300-replay sweeps of m = 1..8):
+- Fork at the AR start. A fork after the AR moves the slowdown onto mHC: +18..+20 us at
+  5.5 MiB, +32..+34 us for the whole qkv_a.
+- Keep the 1-CTA burst. Paced issue, a closed-loop TMA ring and multi-CTA issue each lose
+  more on the AR or warm less.
+- Prefetch the whole qkv_a. With the real AR at m=4 it beats 5.5 MiB in both 1000-replay
+  runs (-8.1 / -6.0 vs -3.2 / -3.1 us) and ties in the 300-replay sweep (-1.9 vs -2.0);
+  at m=8 the two tie. 5.5 MiB wins only against the spin.
+- Join after the next layer's qkv_a (below), not at its entry. Through the lever's own
+  hooks against the spin, the entry join gives -10.0..-14.2 us with the whole qkv_a and
+  -19.7..-20.4 at 5.5 MiB: 3.5..5.7 and 0.9..2.6 us per window worse in every m. With the
+  real AR the two joins are equal within noise.
+A prefetch before p2b does not win. As a separate kernel its run time is serialized,
+because p2b fills every SM's register file. Issued by p2b itself it is zero-sum, because
+p2b is DRAM-bound where it streams (p2b_prefetch_probe.py).
+The serve mechanism boot decides the rest (results/2026-09-25-kernels/comm/
 serve_arm_plan.txt). E fails if the late rank's MoE AR slows by at least what qkv_a saves.
 
 Hooks (all in the target model; the draft model's layers never get a plan):
@@ -56,9 +62,8 @@ Hooks (all in the target model; the draft model's layers never get a plan):
   capture, so every captured segment is closed with no stream still forked. The join
   sits there, not at the next layer's entry (right after the AR), because the 1-CTA
   kernel stays resident until the TMA has taken its requests (22 us at 3 MiB, 31 at
-  5.5, 44 for the whole qkv_a). A join at the entry stalled mhc_post whenever the
-  prefetch outlasted the AR: +1.4..+2.2 us with the real AR, ~+20 us against the spin
-  with the whole qkv_a.
+  5.5, 44 for the whole qkv_a). A join at the entry stalls mhc_post whenever the
+  prefetch outlasts the AR (measured above).
 Numerics: unchanged (cache warm-up only). Self-disarm on anchor drift or when the
 Triton prefetch kernel fails its eager trial launch.
 Top-level imports are stdlib only.

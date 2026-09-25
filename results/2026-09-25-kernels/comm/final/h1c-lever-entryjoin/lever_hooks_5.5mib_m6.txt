@@ -1,0 +1,86 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip ar_l2_prefetch: DSV41_AR_L2_PREFETCH is not 1
+dsv41-patch skip pm_qos: DSV41_PM_QOS_US is not set
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+INFO 09-25 18:44:17 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 18:44:17 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+dsv41: ar l2 prefetch engaged: 7/8 layers, 5.50 MiB per MoE all-reduce window (next layer fused_wqa_wkv)
+{
+ "what": "ar_l2_prefetch through its own hooks, single GPU, stand-in decoder stack in one CUDA graph",
+ "layers": 8,
+ "m": 6,
+ "replays": 200,
+ "budget_bytes": 5767168,
+ "capture_replay_ok": true,
+ "gemm_outputs_bitwise_equal": true,
+ "forks_on": 22,
+ "summary": {
+  "off": {
+   "forward": {
+    "median": 2558.85,
+    "p10": 2539.42,
+    "p90": 2590.56,
+    "n": 200
+   },
+   "qkv_a_first": {
+    "median": 47.1,
+    "p10": 46.3,
+    "p90": 48.16,
+    "n": 200
+   },
+   "qkv_a_rest": {
+    "median": 48.1,
+    "p10": 46.91,
+    "p90": 49.15,
+    "n": 1400
+   }
+  },
+  "on": {
+   "forward": {
+    "median": 2420.34,
+    "p10": 2401.92,
+    "p90": 2458.21,
+    "n": 200
+   },
+   "qkv_a_first": {
+    "median": 47.22,
+    "p10": 46.46,
+    "p90": 48.26,
+    "n": 200
+   },
+   "qkv_a_rest": {
+    "median": 23.42,
+    "p10": 22.88,
+    "p90": 25.34,
+    "n": 1400
+   }
+  }
+ },
+ "time": "2026-09-25T18:44:20Z",
+ "delta_forward_us": -138.51,
+ "delta_per_prefetched_layer_us": -19.79
+}

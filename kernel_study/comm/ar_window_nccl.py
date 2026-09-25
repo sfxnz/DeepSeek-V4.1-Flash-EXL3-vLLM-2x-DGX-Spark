@@ -393,6 +393,7 @@ def main() -> int:
             if name in r1:
                 s["rank1_ar"] = r1[name]
             summary[name] = s
+        a_by_name = {a["name"]: a for a in arms}
         for name, s in summary.items():  # deltas vs the same-AR-kind baseline (none / spin:none)
             b = summary.get("spin:none" if name.startswith("spin:") else "none")
             if b is None:
@@ -402,14 +403,17 @@ def main() -> int:
             # The decision metric: per replay, pf + (p2b end -> wq_b end), i.e. everything but the p2b
             # stand-in's own span (its speed varies with the arm's slot in the replay cycle in this
             # one-GPU emulation, before any fork); median per arm, minus the baseline's median.
-            s["d_net_excl_p2b"] = round(s["decision"]["median"] - b["decision"]["median"], 2)
+            # Not for 'in' arms: their prefetch cost is inside the stand-in span (read d_total, which
+            # carries the slot noise, or the real-p2b probe p2b_prefetch_probe.py).
+            s["d_net_excl_p2b"] = (None if a_by_name[name]["place"] == "in"
+                                   else round(s["decision"]["median"] - b["decision"]["median"], 2))
         results[str(m)] = summary
         for name, s in summary.items():
             print(f"m={m} {name:28s} pf {s['pf']['median']:5.1f} p2b {s['p2b']['median']:6.1f} "
                   f"ar {s['ar']['median']:6.1f} [{s['ar']['p10']:.1f}, {s['ar']['p90']:.1f}] "
                   f"mhc {s['mhc_post']['median'] + s['mhc_pre']['median']:5.1f} qkv_a {s['qkv_a']['median']:5.1f} "
                   f"wq_b {s['wq_b']['median']:6.1f} total {s['total']['median']:7.1f} "
-                  f"[{s['total']['p10']:.1f}, {s['total']['p90']:.1f}] | net {s.get('d_net_excl_p2b', 0):+6.1f} = "
+                  f"[{s['total']['p10']:.1f}, {s['total']['p90']:.1f}] | net {s.get('d_net_excl_p2b') or 0:+6.1f} = "
                   f"pf {s.get('d_pf', 0):+5.1f} p2b {s.get('d_p2b', 0):+5.1f} ar {s.get('d_ar', 0):+5.1f} "
                   f"mhc {s.get('d_mhc_post', 0) + s.get('d_mhc_pre', 0):+5.1f} qkv_a {s.get('d_qkv_a', 0):+5.1f} "
                   f"wq_b {s.get('d_wq_b', 0):+5.1f} eq {s['gemm_bitwise_equal_to_none']}", flush=True)

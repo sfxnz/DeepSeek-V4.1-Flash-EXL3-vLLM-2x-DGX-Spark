@@ -320,3 +320,40 @@ Two-node NCCL runs need both GPUs: they are prepared here and scheduled for the 
     50.2 us, back to back in a graph 29.7 -> 34.5, after a 2x-L2 read 30.4 -> 37.8; m=8 62.3 -> 72.7 /
     51.9 -> 54.0 / 54.0 -> 60.6 (rank 0). Rejected (flags.md).
 
+#17 The lever's join point, the final suite, the warmup split
+    Join point. The lever used to join its side stream at the next layer's entry, right after the
+    AR. The 1-CTA prefetch kernel stays resident ~44 us for the whole qkv_a (31 us at 5.5 MiB), so a
+    short AR left mhc_post waiting. 25197da moves the join into
+    DeepseekV4Attention._split_qkv_and_norm: after the next layer's qkv_a, before the breakable
+    graph's eager break (anchors and their order checked on the pinned attention.py). Nothing
+    between the fork and that join breaks the capture: mhc_post / mhc_pre are plain kernels, and
+    layers before an Engram get no plan.
+    Through the lever's own hooks against the spin (final/h1a, h1b vs h1c), us per window at m =
+    1/3/4/6/8:
+      whole qkv_a  join after qkv_a -15.7 -15.7 -17.0 -17.3 -17.3 | entry join -10.0 -13.0 -12.6 -13.2 -14.2
+      5.5 MiB      join after qkv_a -20.6 -22.3 -21.7 -21.8 -21.5 | entry join -20.4 -19.7 -19.9 -19.8 -20.2
+    With the real AR the two are equal within noise:
+      i1b (1000 replays, two orders): startq -8.1 / -6.0 at m=4 and -4.3 / -2.1 at m=8;
+                                      startj -8.2 / -5.0 and -3.4 / -2.3.
+      i1 sweep (m = 1..8, 300 replays): startq -5.0 -8.7 -1.9 -0.1 +2.4;
+                                        startj -6.4 -8.8 -8.7 -1.6 -3.4.
+    Kept: the join after qkv_a (never worse, better when the AR is short against the prefetch).
+    Final E range, the committed lever, whole qkv_a: -0.07..-0.30 ms/step at c=1 with the real AR
+    (pessimistic) to -0.63 against the spin; c=2 +0.09..-0.16 to -0.64.
+    Final suite (results/2026-09-25-kernels/comm/final/, NOTE.txt; spark2, pmon clean, 2190 MHz):
+    - the lever's hooks: capture/replay OK and GEMM outputs bitwise equal at m = 1/3/4/6/8, both
+      budgets, both join points.
+    - p2b probe (h2) reproduces #13: pre/tri/full +8.9..+12.1 us, in/full -1.0..+0.0 (zero-sum),
+      warm ceiling -26.9..-31.4; one-hot and graph-vs-eager checks pass at every m.
+    - real-AR harness (i1, i1b): GEMM and AR outputs bitwise equal to none in every arm. The
+      in/full arm's d_net_excl_p2b left out its own cost (the stand-in slows +26..+81 us,
+      d_total +1.9..+60.5: a loss); the harness now reports null there.
+    - twin device check (i2), c=1 keep / twin / keep_qos / twin_qos and c=2 keep / twin: 330 of
+      330 steps on both ranks, 0 bad, 0 host mismatches; twin router graph 90 / eager 750.
+    - twin_smoke_1gpu OK (mixing 0, NCCL 2.30.7); host-node PM QoS: none 213.5 / 257.6 us, 20 us
+      3.8 / 4.3 us, 50 us 380 / 403 us (reproduces #7); engine selftest reproduces (tri 46.9 us).
+    Warmup scope (review). The tools/warmup.py cut has its own commit now (3c4fb7f, "k3: warmup:
+    ..."), split out of the PM QoS commit by rebuilding the unpushed branch with cherry-picks (no
+    -i). The rebuilt tip's tree is byte-identical to the old tip (empty git diff); tests pass at the
+    warmup commit (574) and at the tip. The first serve boot runs the post-ready JIT check.
+

@@ -1,0 +1,43 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip ar_l2_prefetch: DSV41_AR_L2_PREFETCH is not 1
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 488
+dsv41-patch ok pm_qos: armed
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+INFO 09-25 18:35:32 [pynccl.py:120] vLLM is using nccl==2.30.7
+INFO 09-25 18:35:32 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 18:35:32 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+m=4 startj/tri/5.5               pf   1.1 p2b  500.6 ar   78.5 [72.7, 88.7] mhc  38.3 qkv_a  32.2 wq_b  110.6 total   766.7 [753.7, 787.0] | net   -1.4 = pf  -0.0 p2b  -1.7 ar +17.5 mhc  +2.3 qkv_a -20.7 wq_b  -0.0 eq True
+m=4 startj/tri/full              pf   1.1 p2b  500.9 ar   86.2 [80.0, 96.0] mhc  36.5 qkv_a  22.2 wq_b  110.0 total   762.7 [748.5, 783.3] | net   -5.0 = pf  -0.0 p2b  -1.5 ar +25.2 mhc  +0.5 qkv_a -30.7 wq_b  -0.6 eq True
+m=4 startq/tri/5.5               pf   1.1 p2b  500.8 ar   78.4 [72.4, 87.9] mhc  35.7 qkv_a  31.2 wq_b  112.5 total   764.9 [752.4, 785.1] | net   -3.1 = pf  -0.0 p2b  -1.6 ar +17.4 mhc  -0.4 qkv_a -21.6 wq_b  +1.9 eq True
+m=4 startq/tri/full              pf   1.1 p2b  500.7 ar   85.5 [79.4, 95.7] mhc  36.1 qkv_a  21.9 wq_b  111.6 total   761.2 [747.5, 782.1] | net   -6.0 = pf  -0.0 p2b  -1.7 ar +24.5 mhc  +0.0 qkv_a -30.9 wq_b  +1.0 eq True
+m=4 none                         pf   1.2 p2b  502.3 ar   61.0 [54.9, 71.3] mhc  36.0 qkv_a  52.9 wq_b  110.7 total   769.3 [756.2, 789.1] | net   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq True
+m=8 startj/tri/5.5               pf   1.2 p2b 1010.1 ar   81.5 [75.3, 95.0] mhc  38.1 qkv_a  32.7 wq_b  112.3 total  1278.7 [1254.4, 1331.2] | net   -0.8 = pf  -0.0 p2b  -4.5 ar +17.9 mhc  +1.8 qkv_a -20.2 wq_b  -0.8 eq True
+m=8 startj/tri/full              pf   1.2 p2b 1010.1 ar   89.0 [82.8, 102.2] mhc  37.8 qkv_a  22.7 wq_b  112.6 total  1276.0 [1252.9, 1328.3] | net   -2.3 = pf  -0.0 p2b  -4.5 ar +25.4 mhc  +1.5 qkv_a -30.2 wq_b  -0.5 eq True
+m=8 startq/tri/5.5               pf   1.2 p2b 1010.3 ar   81.6 [75.4, 94.1] mhc  36.1 qkv_a  32.3 wq_b  114.7 total  1277.5 [1254.4, 1328.6] | net   -0.6 = pf  -0.0 p2b  -4.4 ar +18.1 mhc  -0.2 qkv_a -20.5 wq_b  +1.6 eq True
+m=8 startq/tri/full              pf   1.2 p2b 1009.6 ar   89.0 [83.0, 101.9] mhc  36.1 qkv_a  22.5 wq_b  114.4 total  1275.9 [1252.3, 1325.6] | net   -2.1 = pf  -0.0 p2b  -5.0 ar +25.4 mhc  -0.2 qkv_a -30.4 wq_b  +1.3 eq True
+m=8 none                         pf   1.2 p2b 1014.6 ar   63.5 [57.0, 76.0] mhc  36.3 qkv_a  52.9 wq_b  113.1 total  1284.2 [1263.4, 1332.3] | net   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq True
+NCCL version 2.30.7+cuda13.3

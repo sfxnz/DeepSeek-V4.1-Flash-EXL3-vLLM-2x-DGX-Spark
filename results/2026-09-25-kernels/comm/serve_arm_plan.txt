@@ -15,8 +15,10 @@ B  DSV41_NCCL_EAGER_TWIN=1   NCCL_GRAPH_MIXING_SUPPORT=0 + eager-only twin TP co
                              Arms only on NCCL 2.30.7 (the validated release); a group with
                              >1 rank and no working PyNccl refuses to boot.
 E  DSV41_AR_L2_PREFETCH=1    L2 prefetch of the next qkv_a, forked at each target MoE all-reduce
-                             start, joined at the next layer's entry (DSV41_AR_L2_PREFETCH_MIB,
-                             default 10 = the whole next fused_wqa_wkv, 9.02 MiB).
+                             start, joined after the next layer's qkv_a (in DeepseekV4Attention.
+                             _split_qkv_and_norm, before the breakable graph's eager break)
+                             (DSV41_AR_L2_PREFETCH_MIB, default 10 = the whole next
+                             fused_wqa_wkv, 9.02 MiB).
 
 Expected, c=1 ms/step (basis in iterations.txt; ranges, not promises)
   C  -0.7 .. -2.0   graph startup (1.13 ms/step) is the host node / proxy thread waking up from
@@ -32,12 +34,13 @@ Expected, c=1 ms/step (basis in iterations.txt; ranges, not promises)
                     In the one-GPU two-rank emulation the neighbour slowdown did not reproduce;
                     the one consistent gain was the draft phase (eager collective during an
                     outstanding graph), -0.22 ms/step in 3/3 reps (review).
-  E  -0.04 .. -0.75 a range, not a number. Spin stand-in for the AR (no memory traffic):
-                    -20.2 us x 37 windows = -0.75 (optimistic). A real NCCL AR on one GB10 (two
-                    ranks, NET/IB loopback, p2b stand-in, the lever's own join after the AR):
-                    the late rank's AR slows +23..+27 us, qkv_a saves 30..33 us, net -7.2..-8.7
-                    us per window at m=4 = -0.27..-0.32 (pessimistic: the emulated ranks share
-                    one GPU, DRAM and NIC); at m=8 -1.0..-2.0 us = -0.04..-0.07 at c=2.
+  E  -0.07 .. -0.63 a range, not a number (whole qkv_a, the lever's fork and join points).
+                    Spin stand-in for the AR (no memory traffic), through the lever's own hooks:
+                    -15.7..-17.3 us x 37 windows = -0.63 (optimistic). A real NCCL AR on one GB10
+                    (two ranks, NET/IB loopback, p2b stand-in): the late rank's AR slows +23..+27
+                    us, qkv_a saves 28..32 us, net -1.9..-8.1 us per window at m=4 = -0.07..-0.30
+                    (pessimistic: the emulated ranks share one GPU, DRAM and NIC); at m=8
+                    +2.4..-4.3 us = +0.09..-0.16 at c=2.
   c=2: C and B about the same absolute ms/step (sweep: B -3.06 modeled at c=2); E ~0.
 
 Preconditions (both nodes)
@@ -142,9 +145,10 @@ spans, not by tok/s alone)
        - the late rank's MoE-AR kernel duration (per AR, the rank whose kernel starts last;
          rank 0 on most layers),
        - the span from MoE-AR start to qkv_a end on that rank,
-       - qkv_a (47.6 -> ~18-25 us expected), mhc_post / hc_prenorm, and the gap from MoE-AR
-         end to mhc_post start (the join: the 1-CTA prefetch kernel runs ~44 us for the whole
-         qkv_a and must not outlast the AR by much),
+       - qkv_a (47.6 -> ~16-19 us expected), mhc_post / hc_prenorm (the prefetch still streams
+         while mHC runs if it outlasts the AR), and the gap from qkv_a end to the next kernel
+         (the join: the 1-CTA prefetch kernel runs ~44 us from the AR start for the whole
+         qkv_a, so it should be done by then),
        - one l2 prefetch kernel per MoE all-reduce.
 
 What falsifies each expectation (and what then)
@@ -160,7 +164,7 @@ What falsifies each expectation (and what then)
   E  E fails if the late rank's MoE AR slows by at least what qkv_a saves: the per-layer
      MoE-AR-start -> qkv_a-end span is not shorter than A's by more than the boot-to-boot
      spread. Then try DSV41_AR_L2_PREFETCH_MIB=5.5 once (a shorter kernel and a smaller AR hit:
-     +16..+18 us for 20..23 us of qkv_a in the emulation), else keep off. qkv_a not faster at
+     +14..+20 us for 20..24 us of qkv_a in the emulation), else keep off. qkv_a not faster at
      all: L2 not retained through the real NCCL window; keep off.
   Not a lever (closed in the fix pass): DMA-BUF GDR for the AR. NCCL_CUMEM_ENABLE=1 leaves GDR
   at 0 (cuMemGdrSupport 0; the image's libmlx5 has no mlx5dv_reg_dmabuf_mr) and costs +5..+15

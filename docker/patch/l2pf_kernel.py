@@ -7,7 +7,7 @@ as long as the transfer (43-47 us for 9.46 MB, ~205 GB/s; kernel_study/comm/
 l2pf_engine_selftest.py). Same instruction stream as the C++ kernel of
 kernel_study/comm/l2_prefetch_window.py: bulk60 and its Triton twin tri60 both measured
 -21.7 us per window against a clock-spin AR stand-in; against a real NCCL AR the window
-nets -0.2..-8.7 us (ar_l2_prefetch.py docstring). Top-level imports are stdlib only.
+nets +2.7..-8.1 us (ar_l2_prefetch.py docstring). Top-level imports are stdlib only.
 """
 
 from __future__ import annotations
