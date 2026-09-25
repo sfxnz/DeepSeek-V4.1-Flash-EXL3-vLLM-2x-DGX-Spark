@@ -1,0 +1,81 @@
+DSV41_MHC_DET_SPLITS=16: serve-arm validation plan (ARMS.md loop, one lever, ABAB)
+===================================================================================
+
+What changes in the serve. Decode mHC for T <= 16 tokens per call: the target verify rows
+(T = 4 at c=1, 8 at c=2) and the draft rows (T = 3 / 6). Per sublayer, mhc_post, the DeepGEMM
+TF32 prenorm GEMM and the TileLang fused norm become mhc_det_post, mhc_det_gemm_t8/_t16 and
+mhc_det_norm. Every output is bitwise the stock one, so greedy token streams are unchanged by
+construction. Prefill (T > 16) keeps the stock kernels.
+Cost: about 107 MiB of GPU memory per rank (packed fn: 86 x 1.23 MiB + 0.3 MiB for the
+broadcast), plus one NVRTC compile (~1-2 s) and a bitwise self-test at weight load. No image
+rebuild: canonical-e13 as is. The kernels come from docker/patch (NVRTC through cuda.bindings).
+
+Preconditions
+- The requant is finished or paused, and spark1's GPU has no foreign process
+  (`nvidia-smi pmon -c 1` on both nodes: only Xorg / gnome-shell). Contaminated boots are
+  void (profile stage, section 0).
+- The serve is down on both nodes. Run from the worktree that carries the lever
+  (k3/mhc-det, or its merge). `python3 -m unittest discover -s tests -q` and
+  `python3 kit/render.py --check` pass.
+
+Boots (A = baseline, B = lever; order A B A B, `./stop.sh` between boots)
+  A:  ./stop.sh && AUDIT=strict ./run.sh
+  B:  ./stop.sh && AUDIT=strict DSV41_MHC_DET_SPLITS=16 ./run.sh
+Nothing else differs. run.sh forwards DSV41_MHC_DET_SPLITS to both ranks via FORWARD_ENVS.
+
+Engagement (B boots, both ranks, before any measurement)
+- The AUDIT=strict post-ready audit must pass. It expects "dsv41: mhc det engaged" in the head
+  and worker logs, and fails on any "dsv41: mhc det lever is OFF" line
+  (tools/engagement_audit.py PATCHES).
+- `docker logs dsv41-flash-exl3 2>&1 | grep 'mhc det'` on each node shows:
+    dsv41: mhc det armed (DSV41_MHC_DET_SPLITS=16) ...           (once per process)
+    dsv41: mhc det engaged: target: 81 fn packed ...              (40 layers x 2 + broadcast)
+    dsv41: mhc det engaged: draft: 6 fn packed ...                (3 draft layers x 2)
+  A second "engaged: target: 1 fn packed" line may appear: if the load hooks run twice, the
+  broadcast fn is rewritten in place (copy_) and is re-packed and re-tested. It must show no
+  "lever is OFF" line (disarm = self-test mismatch, image drift, or an unpacked fn met during
+  graph capture).
+- After the benches, check the logs again (`tools/disarm_scan.sh`). No "lever is OFF" line may
+  have appeared at runtime.
+- JIT: no "TileLang begins to compile" and no NVRTC/DeepGEMM compile after
+  "Application startup complete" beyond what the A boot shows (03-jit-check style grep). The
+  det path adds no TileLang variant; its NVRTC module compiles once, in prepare().
+
+Per boot, in this order (ARMS.md step 5; identical on A and B)
+  1. python3 smoke_chat.py && python3 smoke_vision.py      ('323', 'red')
+  2. tests/correctness.sh                                   (8/8)
+  3. python3 tools/measure_lail_prose.py --runs 10          (L.A.I.L n=10: tok/s, acceptance, ms/step)
+  4. python3 bench_decode.py --runs 9                       (prose/structured, c=1 and c=2)
+  5. tools/four_numbers.sh --arm mhcdet-<A|B><n>
+  6. python3 tests/quality_eval.py --quick \
+       --baseline results/2026-09-24-review/quality-baseline/quick.json \
+       --out results/2026-09-25-kernels/mhc-det/serve/<boot>/quality_quick.json   (exit 0)
+
+Keep rule (ARMS.md step 6)
+- Primary: prose_median_ms_per_step and prose_long c=1 median_ms_per_step, B vs A over the
+  A,B,A,B sequence at matched acceptance. The bitwise kernels do not change drafting, so
+  per-boot median_run_acceptance_len of A and B must overlap. If they do not, something else
+  changed: stop and investigate. Promote when the median improvement exceeds the larger A/B
+  boot spread AND every B boot beats the A median.
+- Expected: -1.0 to -1.4 ms/step at c=1, from about -0.99 ms per 86-sublayer pass in the
+  serve-like graph (path_time_final.json, T=4). The in-serve stock mHC costs 2.92 ms/step vs 2.14
+  in the isolated chain, so the serve saving may be larger. c=2 (T=8 target, 6 draft):
+  about -0.98 ms/pass.
+- Non-inferiority: pp_warm / pp_novel 8k/32k within spread (prefill path untouched),
+  prose_long c=2 aggregate, warm-prefix hit fraction, boot floors (MemAvailable: +107 MiB of
+  GPU memory per rank), benches/e2e.py exit 0.
+- Quality: quick eval must pass. Numerics are bitwise, so decode NLL and the decode-vs-prefill
+  probe should read the same as A, and the golden hazard should sit at A's own A/A level. A
+  larger golden hazard than the A/A control would point to a kernel that is not bitwise in the
+  serve context. Stop and compare kernels on captured activations.
+
+Optional profile boot (separate from the measured boots; profile stage section 7 recipe)
+  ./stop.sh && AUDIT=strict DSV41_MHC_DET_SPLITS=16 \
+    EXTRA_ARGS='--profiler-config {"profiler":"torch","torch_profiler_dir":"/tmp/dsv41-traces"}' ./run.sh
+  then tools/profile_window.sh (c=1 L.A.I.L window) and the round-3 analyzer. Expect per step:
+  mhc_det_gemm_t8 86 calls (~8-9 us), mhc_det_norm 86, mhc_det_post ~89. Expect no
+  sm120_tf32_hc_prenorm_gemm, mhc_pre_big_fuse_with_norm or mhc_post_tilelang in decode graphs.
+  The categories mhc_prenorm_gemm + mhc_pre_fuse + mhc_post should drop from 2.92 ms/step to about 1.1-1.5.
+
+Rollback: unset DSV41_MHC_DET_SPLITS (the default, 0). The lever only rebinds Python names and
+adds packed buffers, and a self-test mismatch keeps the stock path.

@@ -1,0 +1,70 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+[14:15:01] : Warning: T.vectorized loop over `i_hci` with extent 4 is lowered as a serial loop because TileLang could not find a valid vectorization plan. Scalar accumulator updates inside the loop are a common cause; move reductions to T.unroll or T.serial if this is intended.
+Traceback (most recent call last):
+  File "/repo/kernel_study/mhc_det/bench_async.py", line 134, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/repo/kernel_study/mhc_det/bench_async.py", line 111, in main
+    torch.cuda.synchronize()
+  File "/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py", line 1219, in synchronize
+    return torch._C._cuda_synchronize()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.AcceleratorError: CUDA error: an illegal memory access was encountered
+Search for `cudaErrorIllegalAddress' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+
+terminate called after throwing an instance of 'c10::AcceleratorError'
+  what():  CUDA error: an illegal memory access was encountered
+Search for `cudaErrorIllegalAddress' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+
+Exception raised from insert_events at /__w/pytorch/pytorch/c10/cuda/CUDACachingAllocator.cpp:4355 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0xc8 (0xe1f6e05ae158 in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10.so)
+frame #1: c10::cuda::c10_cuda_check_implementation(int, char const*, char const*, unsigned int, bool) + 0x834 (0xe1f6e06e9b54 in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10_cuda.so)
+frame #2: <unknown function> + 0x425a70 (0xe1f6e06c5a70 in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10_cuda.so)
+frame #3: <unknown function> + 0x43527c (0xe1f6e06d527c in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10_cuda.so)
+frame #4: <unknown function> + 0x437030 (0xe1f6e06d7030 in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10_cuda.so)
+frame #5: <unknown function> + 0x489870 (0xe1f6e0589870 in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10.so)
+frame #6: c10::TensorImpl::~TensorImpl() + 0x14 (0xe1f6e0546164 in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10.so)
+frame #7: <unknown function> + 0x5e47e8 (0xe1f7026247e8 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_python.so)
+frame #8: <unknown function> + 0xb43c7c (0xe1f702b83c7c in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_python.so)
+frame #9: python3() [0x5238a4]
+frame #10: python3() [0x4f5d28]
+frame #11: python3() [0x4f5aa0]
+frame #12: python3() [0x4f9f5c]
+frame #13: python3() [0x523720]
+frame #14: python3() [0x4d5834]
+frame #15: python3() [0x5a525c]
+frame #16: python3() [0x5a5264]
+frame #17: python3() [0x4f2a84]
+<omitting python frames>
+frame #19: python3() [0x684950]
+frame #20: python3() [0x67b2d0]
+frame #24: <unknown function> + 0x284c4 (0xe1f792a884c4 in /lib/aarch64-linux-gnu/libc.so.6)
+frame #25: __libc_start_main + 0x98 (0xe1f792a88598 in /lib/aarch64-linux-gnu/libc.so.6)
+

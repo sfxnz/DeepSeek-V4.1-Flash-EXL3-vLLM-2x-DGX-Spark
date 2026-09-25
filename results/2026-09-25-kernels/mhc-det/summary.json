@@ -1,0 +1,469 @@
+{
+ "workstream": "mhc-det",
+ "env": {
+  "DSV41_MHC_DET_SPLITS": "16 enables (only value; 0/unset = off, stock). Conflicts refused: DSV41_MHC_DECODE_SPLITS!=0, DSV41_MHC_NO_DEEPGEMM=1"
+ },
+ "scope": "decode mHC per sublayer for T<=16 tokens: mhc_post + prenorm GEMM + fused norm; T>16 (prefill) stays stock",
+ "numerics": "bitwise equal to the stock 16-split path (DeepGEMM TF32 prenorm GEMM + TileLang mhc_post + TileLang mhc_pre_big_fuse_with_norm)",
+ "stock_determinism": "stock split-K is deterministic: 1000 runs, 0 differing elements, at 16 and 40 splits, GEMM and whole stock pre (gemm_check.json)",
+ "gemm_serve_like_us": {
+  "stock_dg16_T1": {
+   "median": 15.564,
+   "p10": 15.529,
+   "p90": 15.644,
+   "GBps": 129.1,
+   "pct_of_250": 51.6
+  },
+  "det_pk_T1": {
+   "median": 7.888,
+   "p10": 7.849,
+   "p90": 7.939,
+   "GBps": 161.2,
+   "pct_of_250": 64.5
+  },
+  "stock_dg16_T3": {
+   "median": 15.641,
+   "p10": 15.6,
+   "p90": 15.706,
+   "GBps": 133.9,
+   "pct_of_250": 53.5
+  },
+  "det_pk_T3": {
+   "median": 8.648,
+   "p10": 8.609,
+   "p90": 8.696,
+   "GBps": 156.9,
+   "pct_of_250": 62.7
+  },
+  "stock_dg16_T4": {
+   "median": 16.037,
+   "p10": 15.998,
+   "p90": 16.097,
+   "GBps": 133.2,
+   "pct_of_250": 53.3
+  },
+  "det_pk_T4": {
+   "median": 8.671,
+   "p10": 8.287,
+   "p90": 8.77,
+   "GBps": 161.3,
+   "pct_of_250": 64.5
+  },
+  "stock_dg16_T6": {
+   "median": 15.356,
+   "p10": 15.307,
+   "p90": 15.413,
+   "GBps": 144.7,
+   "pct_of_250": 57.9
+  },
+  "det_pk_T6": {
+   "median": 8.163,
+   "p10": 8.12,
+   "p90": 8.21,
+   "GBps": 181.8,
+   "pct_of_250": 72.7
+  },
+  "stock_dg16_T8": {
+   "median": 15.188,
+   "p10": 15.139,
+   "p90": 15.261,
+   "GBps": 151.9,
+   "pct_of_250": 60.7
+  },
+  "det_pk_T8": {
+   "median": 8.642,
+   "p10": 8.595,
+   "p90": 8.713,
+   "GBps": 181.6,
+   "pct_of_250": 72.6
+  },
+  "stock_dg16_T16": {
+   "median": 15.032,
+   "p10": 14.97,
+   "p90": 15.14,
+   "GBps": 176.1,
+   "pct_of_250": 70.4
+  },
+  "det_pk_T16": {
+   "median": 8.785,
+   "p10": 8.733,
+   "p90": 8.842,
+   "GBps": 217.4,
+   "pct_of_250": 87.0
+  }
+ },
+ "gemm_single_call_us": {
+  "stock_dg16_T1_K20480_cold": {
+   "median": 18.464,
+   "p10": 18.4,
+   "p90": 18.56,
+   "GBps": 108.8,
+   "pct_of_250": 43.5
+  },
+  "det_pk_T1_K20480_cold": {
+   "median": 11.296,
+   "p10": 11.232,
+   "p90": 11.392,
+   "GBps": 112.5,
+   "pct_of_250": 45.0
+  },
+  "stock_dg40_T1_K20480_cold": {
+   "median": 14.336,
+   "p10": 13.344,
+   "p90": 15.392,
+   "GBps": 140.3,
+   "pct_of_250": 56.1
+  },
+  "stock_dg16_T1_K20480_warm": {
+   "median": 17.536,
+   "p10": 17.344,
+   "p90": 17.664,
+   "GBps": 114.5,
+   "pct_of_250": 45.8
+  },
+  "det_pk_T1_K20480_warm": {
+   "median": 7.264,
+   "p10": 7.104,
+   "p90": 7.36,
+   "GBps": 175.0,
+   "pct_of_250": 70.0
+  },
+  "stock_dg40_T1_K20480_warm": {
+   "median": 11.392,
+   "p10": 11.2,
+   "p90": 11.52,
+   "GBps": 176.5,
+   "pct_of_250": 70.6
+  },
+  "stock_dg16_T3_K20480_cold": {
+   "median": 18.432,
+   "p10": 18.432,
+   "p90": 18.56,
+   "GBps": 113.6,
+   "pct_of_250": 45.4
+  },
+  "det_pk_T3_K20480_cold": {
+   "median": 11.264,
+   "p10": 11.232,
+   "p90": 11.392,
+   "GBps": 120.4,
+   "pct_of_250": 48.2
+  },
+  "stock_dg40_T3_K20480_cold": {
+   "median": 14.336,
+   "p10": 13.312,
+   "p90": 14.464,
+   "GBps": 146.6,
+   "pct_of_250": 58.6
+  },
+  "stock_dg16_T3_K20480_warm": {
+   "median": 17.536,
+   "p10": 17.344,
+   "p90": 17.632,
+   "GBps": 119.4,
+   "pct_of_250": 47.8
+  },
+  "det_pk_T3_K20480_warm": {
+   "median": 7.392,
+   "p10": 7.328,
+   "p90": 9.216,
+   "GBps": 183.5,
+   "pct_of_250": 73.4
+  },
+  "stock_dg40_T3_K20480_warm": {
+   "median": 11.392,
+   "p10": 11.168,
+   "p90": 11.488,
+   "GBps": 184.4,
+   "pct_of_250": 73.8
+  },
+  "stock_dg16_T4_K20480_cold": {
+   "median": 18.464,
+   "p10": 18.432,
+   "p90": 18.528,
+   "GBps": 115.7,
+   "pct_of_250": 46.3
+  },
+  "det_pk_T4_K20480_cold": {
+   "median": 11.264,
+   "p10": 10.272,
+   "p90": 11.392,
+   "GBps": 124.2,
+   "pct_of_250": 49.7
+  },
+  "stock_dg40_T4_K20480_cold": {
+   "median": 14.304,
+   "p10": 13.312,
+   "p90": 14.432,
+   "GBps": 150.0,
+   "pct_of_250": 60.0
+  },
+  "stock_dg16_T4_K20480_warm": {
+   "median": 17.504,
+   "p10": 17.344,
+   "p90": 17.632,
+   "GBps": 122.0,
+   "pct_of_250": 48.8
+  },
+  "det_pk_T4_K20480_warm": {
+   "median": 9.28,
+   "p10": 7.552,
+   "p90": 9.408,
+   "GBps": 150.8,
+   "pct_of_250": 60.3
+  },
+  "stock_dg40_T4_K20480_warm": {
+   "median": 9.344,
+   "p10": 9.216,
+   "p90": 9.44,
+   "GBps": 229.7,
+   "pct_of_250": 91.9
+  },
+  "stock_dg16_T6_K20480_cold": {
+   "median": 18.464,
+   "p10": 18.432,
+   "p90": 18.56,
+   "GBps": 120.3,
+   "pct_of_250": 48.1
+  },
+  "det_pk_T6_K20480_cold": {
+   "median": 11.264,
+   "p10": 10.336,
+   "p90": 11.392,
+   "GBps": 131.8,
+   "pct_of_250": 52.7
+  },
+  "stock_dg40_T6_K20480_cold": {
+   "median": 13.44,
+   "p10": 13.312,
+   "p90": 14.432,
+   "GBps": 166.4,
+   "pct_of_250": 66.5
+  },
+  "stock_dg16_T6_K20480_warm": {
+   "median": 17.536,
+   "p10": 17.344,
+   "p90": 17.632,
+   "GBps": 126.7,
+   "pct_of_250": 50.7
+  },
+  "det_pk_T6_K20480_warm": {
+   "median": 9.344,
+   "p10": 9.12,
+   "p90": 9.44,
+   "GBps": 158.8,
+   "pct_of_250": 63.5
+  },
+  "stock_dg40_T6_K20480_warm": {
+   "median": 9.344,
+   "p10": 9.248,
+   "p90": 9.472,
+   "GBps": 239.3,
+   "pct_of_250": 95.7
+  },
+  "stock_dg16_T8_K20480_cold": {
+   "median": 18.432,
+   "p10": 18.368,
+   "p90": 18.528,
+   "GBps": 125.1,
+   "pct_of_250": 50.1
+  },
+  "det_pk_T8_K20480_cold": {
+   "median": 11.264,
+   "p10": 10.304,
+   "p90": 11.392,
+   "GBps": 139.3,
+   "pct_of_250": 55.7
+  },
+  "stock_dg40_T8_K20480_cold": {
+   "median": 14.304,
+   "p10": 13.312,
+   "p90": 14.464,
+   "GBps": 162.6,
+   "pct_of_250": 65.0
+  },
+  "stock_dg16_T8_K20480_warm": {
+   "median": 17.472,
+   "p10": 17.344,
+   "p90": 17.6,
+   "GBps": 132.0,
+   "pct_of_250": 52.8
+  },
+  "det_pk_T8_K20480_warm": {
+   "median": 9.28,
+   "p10": 9.152,
+   "p90": 9.44,
+   "GBps": 169.1,
+   "pct_of_250": 67.6
+  },
+  "stock_dg40_T8_K20480_warm": {
+   "median": 9.344,
+   "p10": 9.216,
+   "p90": 9.408,
+   "GBps": 248.9,
+   "pct_of_250": 99.6
+  },
+  "stock_dg16_T16_K20480_cold": {
+   "median": 18.432,
+   "p10": 18.432,
+   "p90": 18.464,
+   "GBps": 143.6,
+   "pct_of_250": 57.4
+  },
+  "det_pk_T16_K20480_cold": {
+   "median": 10.24,
+   "p10": 10.208,
+   "p90": 10.304,
+   "GBps": 186.5,
+   "pct_of_250": 74.6
+  },
+  "stock_dg40_T16_K20480_cold": {
+   "median": 14.16,
+   "p10": 13.312,
+   "p90": 15.168,
+   "GBps": 189.6,
+   "pct_of_250": 75.9
+  },
+  "stock_dg16_T16_K20480_warm": {
+   "median": 17.44,
+   "p10": 17.28,
+   "p90": 17.6,
+   "GBps": 151.8,
+   "pct_of_250": 60.7
+  },
+  "det_pk_T16_K20480_warm": {
+   "median": 11.264,
+   "p10": 9.664,
+   "p90": 11.456,
+   "GBps": 169.5,
+   "pct_of_250": 67.8
+  },
+  "stock_dg40_T16_K20480_warm": {
+   "median": 9.408,
+   "p10": 9.312,
+   "p90": 11.232,
+   "GBps": 285.4,
+   "pct_of_250": 114.2
+  },
+  "stock_dg16_T4_K5120_cold": {
+   "median": 8.224,
+   "p10": 8.16,
+   "p90": 8.352,
+   "GBps": 65.5,
+   "pct_of_250": 26.2
+  },
+  "det_pk_T4_K5120_cold": {
+   "median": 6.144,
+   "p10": 6.112,
+   "p90": 6.144,
+   "GBps": 57.7,
+   "pct_of_250": 23.1
+  },
+  "stock_dg16_T4_K5120_warm": {
+   "median": 7.36,
+   "p10": 7.136,
+   "p90": 7.424,
+   "GBps": 73.2,
+   "pct_of_250": 29.3
+  },
+  "det_pk_T4_K5120_warm": {
+   "median": 5.28,
+   "p10": 5.088,
+   "p90": 5.344,
+   "GBps": 67.2,
+   "pct_of_250": 26.9
+  }
+ },
+ "path_per_86_sublayers_us": {
+  "stock_T1": {
+   "median": 1999.296,
+   "p10": 1996.832,
+   "p90": 2005.76,
+   "per_sublayer": 23.248
+  },
+  "det_stock_norm_T1": {
+   "median": 1127.232,
+   "p10": 1123.232,
+   "p90": 1132.192,
+   "per_sublayer": 13.107
+  },
+  "det_T1": {
+   "median": 1040.848,
+   "p10": 1036.448,
+   "p90": 1045.12,
+   "per_sublayer": 12.103
+  },
+  "stock_T3": {
+   "median": 2136.064,
+   "p10": 2132.224,
+   "p90": 2141.152,
+   "per_sublayer": 24.838
+  },
+  "det_stock_norm_T3": {
+   "median": 1191.264,
+   "p10": 1187.2,
+   "p90": 1198.88,
+   "per_sublayer": 13.852
+  },
+  "det_T3": {
+   "median": 1130.832,
+   "p10": 1126.432,
+   "p90": 1134.752,
+   "per_sublayer": 13.149
+  },
+  "stock_T4": {
+   "median": 2141.488,
+   "p10": 2138.016,
+   "p90": 2147.392,
+   "per_sublayer": 24.901
+  },
+  "det_stock_norm_T4": {
+   "median": 1204.352,
+   "p10": 1200.288,
+   "p90": 1209.472,
+   "per_sublayer": 14.004
+  },
+  "det_T4": {
+   "median": 1145.92,
+   "p10": 1142.08,
+   "p90": 1150.912,
+   "per_sublayer": 13.325
+  },
+  "stock_T6": {
+   "median": 2142.528,
+   "p10": 2139.456,
+   "p90": 2149.664,
+   "per_sublayer": 24.913
+  },
+  "det_stock_norm_T6": {
+   "median": 1225.792,
+   "p10": 1220.96,
+   "p90": 1231.008,
+   "per_sublayer": 14.253
+  },
+  "det_T6": {
+   "median": 1157.072,
+   "p10": 1153.792,
+   "p90": 1161.12,
+   "per_sublayer": 13.454
+  },
+  "stock_T8": {
+   "median": 2145.856,
+   "p10": 2142.656,
+   "p90": 2151.84,
+   "per_sublayer": 24.952
+  },
+  "det_stock_norm_T8": {
+   "median": 1268.96,
+   "p10": 1263.968,
+   "p90": 1276.64,
+   "per_sublayer": 14.755
+  },
+  "det_T8": {
+   "median": 1168.4,
+   "p10": 1165.504,
+   "p90": 1172.192,
+   "per_sublayer": 13.586
+  }
+ }
+}

@@ -145,3 +145,45 @@ per run under runs/<tag>/), image dsv41-flash-exl3-sm121:canonical-e13, SM clock
     Re-checked: GEMM 4656/4656 bitwise (87 fn x T 1..16 x families), 1000-run det 0, graph
     0/100 (gemm-check-v6); whole recurrence 430/430 x 6 T, 1000-run 0, graph 0/100
     (path-check-v7); lever smoke PASS (lever-smoke-v4).
+11. Tried and dropped: coefficient half on a side stream (DSV41_MHC_DET_ASYNC prototype). The
+    prenorm GEMM + sinkhorn feed only the next post and the next pre's layer_input, so they
+    were forked onto a side stream after the post (event fork/join, joined at the next det post)
+    with the fused norm split into a layer_input-only kernel on the main stream. Measured with a
+    sublayer workload (each sublayer: post -> pre -> layer_input @ W1 @ W2, W 5120x2048 bf16,
+    42 MB per sublayer, the output feeding the next post; one graph per arm; run
+    bench-async-n2048): T=4 per 86-sublayer pass, work only 20851.7 us; mHC cost stock 1988.8,
+    det 950.3, det async 868.1 us; all bitwise equal. The side stream hides the GEMM latency but
+    its 1.23 MB per sublayer still competes for DRAM with the concurrent work, so it saved only
+    82 us per pass (~0.1 ms/step). The T=8 leg of the same run hit an illegal-address error in the
+    experimental path (graph capture with record_stream on the side stream). Not worth the
+    stream-ordering risk in the serve: reverted, the script removed (stdout kept in runs/).
+    => the fn stream (1.23 MB x 86 = 106 MB/step, 0.42 ms at 250 GB/s) is the floor that remains.
+12. Final numbers on the shipped code (gemm_time_final.json, path_time_final.json,
+    prof-path-final; summary.json):
+    GEMM serve-like per call (86 real fn, cold, median (p10/p90), GB/s = unique bytes / time):
+      T   stock DeepGEMM 16-split          det GEMM
+      1   15.56 (15.53/15.64) 129.1 GB/s     7.89 (7.85/7.94) 161.2 GB/s  64.5% of 250
+      3   15.64 (15.60/15.71) 133.9          8.65 (8.61/8.70) 156.9       62.7%
+      4   16.04 (16.00/16.10) 133.2          8.67 (8.29/8.77) 161.3       64.5%
+      6   15.36 (15.31/15.41) 144.7          8.16 (8.12/8.21) 181.8       72.7%
+      8   15.19 (15.14/15.26) 151.9          8.64 (8.60/8.71) 181.6       72.6%
+     16   15.03 (14.97/15.14) 176.1          8.79 (8.73/8.84) 217.4       87.0%
+    GEMM single call, CUDA events (1 us resolution), cold read-only flush / warm, T=4:
+      stock 18.46 (18.43/18.53) / 17.50 (17.34/17.63); det 11.26 (10.27/11.39) / 9.28 (7.55/9.41).
+      K=5120 broadcast T=4: stock 8.22 / 7.36; det 6.14 / 5.28.
+    Whole mHC path, 86 sublayers per pass (post + pre), median (p10/p90) us:
+      T   stock                     det                       saved
+      1   1999.3 (1996.8/2005.8)    1040.8 (1036.4/1045.1)    -958.5  (-47.9%)
+      3   2136.1 (2132.2/2141.2)    1130.8 (1126.4/1134.8)    -1005.3 (-47.1%)
+      4   2141.5 (2138.0/2147.4)    1145.9 (1142.1/1150.9)    -995.6  (-46.5%)
+      6   2142.5 (2139.5/2149.7)    1157.1 (1153.8/1161.1)    -985.4  (-46.0%)
+      8   2145.9 (2142.7/2151.8)    1168.4 (1165.5/1172.2)    -977.5  (-45.6%)
+    Kernel sums per pass, T=4 (prof-path-final): stock GEMM 16.00 x 85 + 6.77 (K=5120), fused
+    norm 4.80 x 86, post 2.88 x 84; det GEMM 7.65 x 86, det norm 8.03 x 86 (it starts 4.45 us
+    before the GEMM ends; its tail after the GEMM is ~3.6 us), det post 1.41 x 84.
+    Projection for the serve at c=1: -1.0 ms/step (isolated chain) to -1.4 ms/step (if the
+    det path keeps the stock path's 1.36x in-serve inflation: 2.92 vs 2.14 ms), i.e. ~1.6-2.2%
+    of a 63 ms step. c=2: about the same per pass.
+    Remaining floor: the fn stream, 106 MB/step = 0.42 ms at 250 GB/s. The det path takes
+    ~1.15 ms/pass; the rest is the sinkhorn chain (19 x 2 dependent IEEE divisions + 4 shuffles,
+    ~2.4 us per sublayer) and the post -> x -> GEMM start latency.
