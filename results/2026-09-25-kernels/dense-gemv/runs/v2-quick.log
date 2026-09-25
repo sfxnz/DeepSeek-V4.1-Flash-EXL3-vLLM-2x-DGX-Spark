@@ -1,0 +1,49 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T13:09:54Z
+lock acquired 2026-09-25T13:09:54Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+qkv_a           N=  1792 K=  5120: bitwise 64/64 cases, graph replay ok (6 captures)
+wq_b            N= 16384 K=  1280: bitwise 64/64 cases, graph replay ok (6 captures)
+shared_down     N=  5120 K=  1152: bitwise 64/64 cases, graph replay ok (6 captures)
+ALL_OK
+dsv41-indexer-workspace: already applied
+qkv_a          M=4 cold med us: b12x_e2e   49.12 b12x_gemm   47.10 read   43.01 | gv_fused_w4s4k128g28   62.50 (-21.4%) | gv_preq_w4s4k128g28   59.92 (-21.4%) | gv_fused_w8s3k128g14   59.42 (-17.3%) | gv_preq_w8s3k128g14   59.39 (-20.7%) | gv_fused_w2s4k128g56   81.95 (-40.1%) | gv_preq_w2s4k128g56   75.78 (-37.8%) | gv_fused_w2s6k128g56   84.00 (-41.5%) | gv_preq_w2s6k128g56   76.80 (-38.7%) | gv_fused_w1s6k128g112  126.98 (-61.3%) | gv_preq_w1s6k128g112  104.54 (-54.9%) | gv_fused_w1s8k128g112  129.02 (-61.9%) | gv_preq_w1s8k128g112  104.51 (-54.9%)
+wq_b           M=4 cold med us: b12x_e2e  100.85 b12x_gemm  100.32 read   92.16 | gv_fused_w4s4k128g256  116.80 (-13.7%) | gv_preq_w4s4k128g256  115.74 (-13.3%) | gv_fused_w8s3k128g128  117.79 (-14.4%) | gv_preq_w8s3k128g128  117.76 (-14.8%) | gv_fused_w8s4k128g128  116.74 (-13.6%) | gv_preq_w8s4k128g128  116.72 (-14.1%) | gv_fused_w2s4k128g512  117.76 (-14.4%) | gv_preq_w2s4k128g512  116.70 (-14.0%) | gv_fused_w2s6k128g512  117.76 (-14.4%) | gv_preq_w2s6k128g512  115.74 (-13.3%) | gv_fused_w1s6k128g1024  122.88 (-17.9%) | gv_preq_w1s6k128g1024  117.73 (-14.8%) | gv_fused_w1s8k128g1024  121.39 (-16.9%) | gv_preq_w1s8k128g1024  115.74 (-13.3%)
+wo_b           M=4 cold med us: b12x_e2e  105.41 b12x_gemm  101.38 read   92.16 | gv_fused_w4s4k128g80  129.04 (-18.3%) | gv_preq_w4s4k128g80  125.95 (-19.5%) | gv_fused_w8s3k128g40  127.01 (-17.0%) | gv_preq_w8s3k128g40  125.98 (-19.5%) | gv_fused_w8s4k128g40  124.90 (-15.6%) | gv_preq_w8s4k128g40  123.87 (-18.2%) | gv_fused_w2s4k128g160  145.44 (-27.5%) | gv_preq_w2s4k128g160  135.30 (-25.1%) | gv_fused_w2s6k128g160  144.27 (-26.9%) | gv_preq_w2s6k128g160  134.11 (-24.4%) | gv_fused_w1s6k128g320  184.22 (-42.8%) | gv_preq_w1s6k128g320  157.66 (-35.7%) | gv_fused_w1s8k128g320  233.47 (-54.9%) | gv_preq_w1s8k128g320  192.51 (-47.3%)
+shared_down    M=4 cold med us: b12x_e2e   32.77 b12x_gemm   31.71 read   28.67 | gv_fused_w4s4k128g80   36.86 (-11.1%) | gv_preq_w4s4k128g80   36.86 (-14.0%) | gv_fused_w8s3k128g40   37.89 (-13.5%) | gv_preq_w8s3k128g40   37.86 (-16.2%) | gv_fused_w8s4k128g40   38.88 (-15.7%) | gv_preq_w8s4k128g40   37.92 (-16.4%) | gv_fused_w2s4k128g160   38.91 (-15.8%) | gv_preq_w2s4k128g160   37.89 (-16.3%) | gv_fused_w2s6k128g160   37.92 (-13.6%) | gv_preq_w2s6k128g160   36.86 (-14.0%) | gv_fused_w1s6k128g320   39.97 (-18.0%) | gv_preq_w1s6k128g320   37.92 (-16.4%) | gv_fused_w1s8k128g320   44.03 (-25.6%) | gv_preq_w1s8k128g320   39.94 (-20.6%)
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 141 busy 64 sm_median 2190 sm_min_busy 2190 mem ['[N/A]'] power_median 8.6 W
+rc=0

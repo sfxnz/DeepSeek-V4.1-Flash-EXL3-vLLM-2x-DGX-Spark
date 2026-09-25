@@ -1,0 +1,55 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T13:19:57Z
+lock acquired 2026-09-25T13:19:57Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+qkv_a           N=  1792 K=  5120: bitwise 32/32 cases, graph replay ok (3 captures)
+wq_b            N= 16384 K=  1280: bitwise 32/32 cases, graph replay ok (3 captures)
+wo_b            N=  5120 K=  4096: bitwise 32/32 cases, graph replay ok (3 captures)
+shared_gate_up  N=  2304 K=  5120: bitwise 32/32 cases, graph replay ok (3 captures)
+shared_down     N=  5120 K=  1152: bitwise 32/32 cases, graph replay ok (3 captures)
+indexer_wq_b    N=  4096 K=  1280: bitwise 32/32 cases, graph replay ok (3 captures)
+Traceback (most recent call last):
+  File "/repo/kernel_study/dense_gemv/correctness.py", line 202, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/repo/kernel_study/dense_gemv/correctness.py", line 143, in main
+    gext.gemv(x, None, None, w.view(torch.uint8), wsc, sm, y1, W, STG, KSP, grid, False)
+  File "/repo/kernel_study/dense_gemv/correctness.py", line 125, in gemv
+    ext3.gemv3(x_, q_, s_, w_, sc_, sm_, y_, W_, S_, K_, g3, pdl_)
+RuntimeError: smem attr 108128
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 50 busy 4 sm_median 2190 sm_min_busy 2190 mem ['[N/A]'] power_median 4.2 W
+rc=1

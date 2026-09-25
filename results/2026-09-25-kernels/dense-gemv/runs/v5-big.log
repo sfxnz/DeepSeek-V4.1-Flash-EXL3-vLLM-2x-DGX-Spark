@@ -1,0 +1,46 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T14:05:02Z
+lock acquired 2026-09-25T14:05:42Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41-indexer-workspace: already applied
+lm_head         correctness: 458/458 bitwise (incl. graph replay)
+lm_head        M=1 cold us: b12x_e2e 1528.88 b12x_gemm 1527.33 read 1343.58 | best fused w2s2k1024m4g48 1462.30 ( +4.6%) | best preq w2s2k1024m4g48 1460.27 ( +4.6%)
+lm_head        M=3 cold us: b12x_e2e 1523.73 b12x_gemm 1521.71 read 1333.31 | best fused w2s2k1024m4g48 1461.33 ( +4.3%) | best preq w1s2k512m8g48 1459.26 ( +4.3%)
+lm_head        M=4 cold us: b12x_e2e 1529.90 b12x_gemm 1527.36 read 1332.82 | best fused w3s2k512m8g48 1466.43 ( +4.3%) | best preq w1s2k512m8g48 1464.90 ( +4.3%)
+lm_head        M=8 cold us: b12x_e2e 1536.93 b12x_gemm 1531.87 read 1336.91 | best fused w3s2k512m8g48 1473.02 ( +4.3%) | best preq w1s2k512m8g48 1470.61 ( +4.2%)
+engram_wkv      correctness: 598/598 bitwise (incl. graph replay)
+engram_wkv     M=1 cold us: b12x_e2e  716.86 b12x_gemm  715.87 read  641.57 | best fused w2s2k512m4g48  666.69 ( +7.5%) | best preq w1s2k512m8g48  667.68 ( +7.2%)
+engram_wkv     M=3 cold us: b12x_e2e  725.02 b12x_gemm  723.04 read  652.94 | best fused w2s2k512m4g48  669.73 ( +8.3%) | best preq w2s2k512m4g48  669.76 ( +8.0%)
+engram_wkv     M=4 cold us: b12x_e2e  726.05 b12x_gemm  724.03 read  651.34 | best fused w2s2k512m4g48  669.76 ( +8.4%) | best preq w2s2k512m4g48  669.76 ( +8.1%)
+engram_wkv     M=8 cold us: b12x_e2e  729.15 b12x_gemm  727.10 read  634.42 | best fused w2s2k512m8g48  673.87 ( +8.2%) | best preq w1s2k512m8g48  677.92 ( +7.3%)
+Traceback (most recent call last):
+  File "/repo/kernel_study/dense_gemv/bench4.py", line 256, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/repo/kernel_study/dense_gemv/bench4.py", line 98, in main
+    copies = build_copies(name, R)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/repo/kernel_study/dense_gemv/timing.py", line 37, in build_copies
+    w, s2d = weights.load(name, layer)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/repo/kernel_study/dense_gemv/weights.py", line 88, in load
+    out = _fp8(f"mtp.{layer}.main_proj")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/repo/kernel_study/dense_gemv/weights.py", line 60, in _fp8
+    w = _get(name + ".weight", rows, cols)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/repo/kernel_study/dense_gemv/weights.py", line 49, in _get
+    f = os.path.join(PACK, _index()[name])
+                           ~~~~~~~~^^^^^^
+KeyError: 'mtp.1.main_proj.weight'
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 451 busy 260 sm_median 2190 sm_min_busy 2190 mem ['[N/A]'] power_median 18.1 W
+rc=1

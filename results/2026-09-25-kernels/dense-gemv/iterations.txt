@@ -1,0 +1,69 @@
+dense-gemv iteration log (k3, 2026-09-25)
+==========================================
+Machine: spark2 GB10 (sm_121a, 48 SMs, 24 MiB L2), image dsv41-flash-exl3-sm121:canonical-e13,
+microbench only, spark2 GPU under .worktrees-spark2/.gpu.lock, pmon checked before every run
+(only Xorg/gnome-shell with no SM use were ever present). SM clock 2190 MHz in every run
+(runs/*.clocks.csv). Numbers are cold medians (us) unless noted; b12x = production
+FlashInfer mm_mxfp8(auto) on SM121 (tile 16x64 / 16x128, no swap), b12x_e2e = FlashInfer
+mxfp8_quantize (cute-dsl) + b12x, the serve's call from a bf16 activation.
+
+Numerics decision (made before any timing): reproduce b12x bit for bit. Same activation
+MXFP8 quant rule (FlashInfer cute-dsl mxfp8_quantize PTX, copied verbatim), same
+mma.sync m16n8k32 kind::mxf8f6f4 block_scale scale_vec::1X e4m3 x e4m3 ue8m0 instruction,
+k blocks chained into one fp32 accumulator in increasing k from 0.0, bf16 RN output. No
+split-K (it would reorder the chain). Why: bitwise-equal output is quality-neutral by
+construction (no dNLL gate needed, serve A/B is perf-only); bf16 activations would change
+the numerics of ~230 GEMMs/step and need the quality harness, and they double the
+activation bytes and need e4m3->bf16 converts in the inner loop. The MMA is issued swap-AB
+(weights = 16-row A operand, M<=8 activation rows = n8 B operand); measured bitwise equal
+to b12x's A=activation orientation on every case below.
+
+Protocol lessons (benchutil.py docstring has the final protocol):
+ P1 A linear read-flush left the buffer placed right after the flush buffer warm
+    (75.8 vs 95.2 us for 21 MB): stream prefetch past the flush. -> hashed-order flush.
+ P2 Even hashed, a buffer re-read every iteration stayed partly cached (274-284 GB/s > the
+    273 GB/s DRAM peak) in some placements: scan-resistant L2/SLC replacement keeps re-hit
+    lines. -> every arm rotates over >= 64 distinct copies of REAL layer weights
+    (>= 512 MiB), arms read different copies per iteration, double 64 MiB hashed flush
+    before every timed call. With that no arm ever exceeded 237 GB/s.
+ P3 Event timestamps have ~1 us granularity on GB10 (1.024 us steps) -> medians of 200
+    samples + p10/p90 + mean; A/B arms interleaved (ABBA) in one process.
+ P4 In the serve the activation was just written by the previous kernel: the cold
+    protocol re-touches the activation after the flush (weights cold, activation L2-hot).
+
+Calibration (calib2.py, pure read of the weight bytes, cold): best read us / GB/s
+  shared_down 5.90 MB 28.7 (206) | qkv_a 9.18 MB 43.0 (214) | gate_up 11.8 MB 53.3 (222)
+  wq_b/wo_b 21.0 MB 92.2 (228) | main_proj 78.6 MB 332 (237) | engram 157 MB 665 (237)
+  lm_head 331 MB 1396 (237). Short kernels pay ~4 us of ramp+tail.
+persm.py: one SM pulls 56 GB/s with 64-128 KB of LDG in flight; 4 SMs x 64 KB reach
+  226 GB/s -> loaded DRAM latency ~1.1 us, ~256 KB in flight saturates the chip.
+ringcal.py: a per-warp cp.async ring fetching 16 rows x KC contiguous bytes per stage
+  streams at the flat-read roofline once KC >= 512 (qkv_a 43.07 vs flat 42.98; wo_b 93.2
+  vs 92.2); KC = 128 (v1/v2) loses 15-30% (short per-row bursts over ~1800 row streams).
+
+Iterations (M = 4 unless noted; % = b12x/ours - 1, + is faster)
+ v1  per-warp cp.async ring, KC=128, whole activation staged before the loop (one
+     16-B load per iteration, latency-serialised). Bitwise 128/128 per shape (8 shapes,
+     2 layers, M 1..8, 4 activation distributions, both scale modes) + graph replay.
+     qkv_a 71.7 vs b12x_e2e 49.2 (-31%), wo_b 145 vs 106 (-27%), wq_b 121 vs 101 (-16%).
+     DROPPED: slow.
+ v2  batched staging loads (8 per thread per round), rows >= M masked instead of staged.
+     qkv_a 62.5 (-21%), wo_b 129 (-18%), wq_b 117 (-14%), down 36.9 (-11%). Diagnostics:
+     no-MMA 62.5, no-staging 55.3 -> the stream itself and the staging were both slow.
+ v3  weights via cp.async.bulk (TMA engine), 16 per-row copies of 128-256 B per stage,
+     mbarrier ring, persistent grid. Bitwise ok; 2x SLOWER (qkv_a 82-150, wo_b 133-233):
+     per-copy TMA overhead dominates at 128-256 B. DROPPED.
+ v4  KC = 384..1280 per-row bursts (the ringcal finding): 58-60 us qkv_a, still -19%.
+     Diag: stream-only 52 us vs ring_read 43 with the same ring. Cause found by bisection:
+     stage size 16*KC + 16 B of scales = 8208 B left every other stage 16-B (not 128-B)
+     aligned in smem; cp.async to 128-B-misaligned destinations cost 20%. Aligning stages
+     to 128 B: stream-only 43.2 us (= roofline), full kernel 50.2. Remaining cost:
+     activation staging before the first MMA (+6.3 us at M=4 W=4, +24.6 us at M=8 W=2),
+     not queueing (staging issued first: same), not hot/cold activation (same).
+ v5  progressive staging: the activation is quantized one KC-span ahead of use inside
+     the first tile's loop (CTA-wide, one __syncthreads per span, next span's loads
+     issued an iteration early). Bitwise 352/352 (qkv_a, wo_b, gate_up), 246/246 (wq_b),
+     210/210 (down) incl. graph replay. M=4: qkv_a fused 45.15 vs b12x_e2e 47.26 (+4.7%);
+     wo_b 94.27 vs 101.57 (+7.7%); wq_b preq 95.3 vs b12x_gemm 99.4 (+4.2%); down 30.82 vs
+     32.70 (+6.1%); gate_up 56.38 vs 60.38 (+7.1%). M=8: qkv_a 46.08 vs 48.13 (+4.4%),
+     wo_b 95.23 vs 102.40 (+7.5%). Within 4-5% of the pure-read time. KEPT.
