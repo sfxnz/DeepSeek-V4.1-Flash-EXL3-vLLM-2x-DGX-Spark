@@ -41,6 +41,15 @@ def _pinned_pynccl_methods() -> dict[str, list[str]]:
     return out
 
 
+class FakeNcclLib:
+    """NCCLLibrary stand-in: only the version query."""
+
+    version = "2.30.7"
+
+    def ncclGetVersion(self):
+        return FakeNcclLib.version
+
+
 class FakePyNccl:
     """Signatures copied from the pinned PyNcclCommunicator (checked below)."""
 
@@ -49,6 +58,7 @@ class FakePyNccl:
     def __init__(self, group=None, device=None, tag="twin"):
         self.group, self.device, self.tag = group, device, tag
         self.disabled, self.world_size, self.rank = False, 2, 0
+        self.nccl = FakeNcclLib()
         self.calls: list = []
         FakePyNccl.made.append(self)
 
@@ -271,9 +281,30 @@ class CudaCommunicator:
 '''
 
 
+VALID = lambda: "2.30.7"  # noqa: E731 - the canonical-e13 image's NCCL (nccl_eager_twin.VALIDATED_NCCL)
+
+# A group with world_size ranks whose PyNccl communicator is disabled (library load failure,
+# VLLM_DISABLE_PYNCCL) or missing, as vLLM's CudaCommunicator leaves it.
+FAKE_CC_NO_PYNCCL = '''
+class CudaCommunicator:
+    def __init__(self, cpu_group, device=None, device_group=None, unique_name="",
+                 global_ranks=None, global_world_size=None, tcp_store_group=None, use_all2all=False):
+        self.cpu_group, self.device, self.unique_name = cpu_group, device, unique_name
+        self.world_size = global_world_size or 1
+        self.pynccl_comm = None
+        if unique_name.startswith("tp") and self.world_size > 1:
+            self.pynccl_comm = PyNcclCommunicator(
+                group=self.cpu_group if tcp_store_group is None else tcp_store_group,
+                device=self.device,
+            )
+            self.pynccl_comm.disabled = True
+'''
+
+
 class InstallTests(unittest.TestCase):
     def setUp(self):
         FakePyNccl.made = []
+        FakeNcclLib.version = "2.30.7"
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
 
@@ -313,10 +344,10 @@ class InstallTests(unittest.TestCase):
         cc, mods = self._modules(FAKE_CC)
         env, logs = {nt.ENV: "1"}, []
         with mock.patch.dict(sys.modules, mods):
-            self.assertEqual(nt.install(env, logs.append), "armed")
+            self.assertEqual(nt.install(env, logs.append, VALID), "armed")
             wrapped = cc.CudaCommunicator.__init__
             self.assertTrue(wrapped._dsv41_eager_twin)
-            self.assertEqual(nt.install(env, logs.append), "armed")
+            self.assertEqual(nt.install(env, logs.append, VALID), "armed")
             self.assertIs(cc.CudaCommunicator.__init__, wrapped)
         self.assertEqual(env[nt.MIXING_ENV], "0")
 
@@ -324,7 +355,7 @@ class InstallTests(unittest.TestCase):
         cc, mods = self._modules(FAKE_CC)
         env, logs = {nt.ENV: "1"}, []
         with mock.patch.dict(sys.modules, mods):
-            nt.install(env, logs.append)
+            nt.install(env, logs.append, VALID)
             tp = cc.CudaCommunicator("cpu", device="cuda:0", unique_name="tp:0")
             ep = cc.CudaCommunicator("cpu", device="cuda:0", unique_name="ep:0")
             off = cc.CudaCommunicator("cpu", device="cuda:0", unique_name="off:0")
@@ -343,7 +374,7 @@ class InstallTests(unittest.TestCase):
         cc, mods = self._modules(FAKE_CC.replace("tcp_store_group is None", "tcp_store_group == None"))
         env, logs = {nt.ENV: "1"}, []
         with mock.patch.dict(sys.modules, mods):
-            self.assertEqual(nt.install(env, logs.append), "disarmed")
+            self.assertEqual(nt.install(env, logs.append, VALID), "disarmed")
             self.assertFalse(getattr(cc.CudaCommunicator.__init__, "_dsv41_eager_twin", False))
         self.assertNotIn(nt.MIXING_ENV, env)
         self.assertTrue(logs[0].startswith(nt.LOG_DISARMED[0]))
@@ -360,15 +391,62 @@ class InstallTests(unittest.TestCase):
         with mock.patch.dict(sys.modules, mods):
             # check_anchors reads the class's own namespace: a subclass adding a method
             # is exactly what a changed image would look like.
-            self.assertEqual(nt.install(env, logs.append), "disarmed")
+            self.assertEqual(nt.install(env, logs.append, VALID), "disarmed")
         self.assertIn("all_to_all", logs[0])
         self.assertNotIn(nt.MIXING_ENV, env)
 
     def test_missing_vllm_disarms(self):
         env, logs = {nt.ENV: "1"}, []
         with mock.patch.dict(sys.modules, {"vllm": None}):
+            self.assertEqual(nt.install(env, logs.append, VALID), "disarmed")
+        self.assertNotIn(nt.MIXING_ENV, env)
+
+    def test_unvalidated_nccl_disarms_before_touching_anything(self):
+        cc, mods = self._modules(FAKE_CC)
+        env, logs = {nt.ENV: "1"}, []
+        with mock.patch.dict(sys.modules, mods):
+            self.assertEqual(nt.install(env, logs.append, lambda: "2.31.0"), "disarmed")
+            self.assertFalse(getattr(cc.CudaCommunicator.__init__, "_dsv41_eager_twin", False))
+        self.assertNotIn(nt.MIXING_ENV, env)
+        self.assertTrue(logs[0].startswith(nt.LOG_DISARMED[0]))
+        self.assertIn("2.31.0", logs[0])
+
+    def test_unreadable_nccl_version_disarms(self):
+        def boom():
+            raise OSError("libnccl.so.2: cannot open shared object file")
+
+        env, logs = {nt.ENV: "1"}, []
+        self.assertEqual(nt.install(env, logs.append, boom), "disarmed")
+        self.assertNotIn(nt.MIXING_ENV, env)
+        self.assertIn("libnccl", logs[0])
+
+    def test_default_version_reader_goes_through_vllm(self):
+        # Without an injected reader install() asks vLLM's NCCLLibrary; no vLLM -> disarm.
+        env, logs = {nt.ENV: "1"}, []
+        with mock.patch.dict(sys.modules, {"vllm": None}):
             self.assertEqual(nt.install(env, logs.append), "disarmed")
         self.assertNotIn(nt.MIXING_ENV, env)
+
+    def test_multi_rank_group_without_pynccl_refuses(self):
+        cc, mods = self._modules(FAKE_CC_NO_PYNCCL)
+        env, logs = {nt.ENV: "1"}, []
+        with mock.patch.dict(sys.modules, mods):
+            self.assertEqual(nt.install(env, logs.append, VALID), "armed")
+            with self.assertRaisesRegex(RuntimeError, "REFUSED: group tp:0 has 2 ranks"):
+                cc.CudaCommunicator("cpu", device="cuda:0", unique_name="tp:0", global_world_size=2)
+            with self.assertRaisesRegex(RuntimeError, "REFUSED: group ep:0 has 2 ranks"):
+                cc.CudaCommunicator("cpu", device="cuda:0", unique_name="ep:0", global_world_size=2)
+            one = cc.CudaCommunicator("cpu", device="cuda:0", unique_name="dp:0", global_world_size=1)
+        self.assertIsNone(one.pynccl_comm)  # one rank: no collectives, nothing to route
+
+    def test_stock_comm_on_unvalidated_nccl_refuses(self):
+        cc, mods = self._modules(FAKE_CC)
+        env, logs = {nt.ENV: "1"}, []
+        with mock.patch.dict(sys.modules, mods):
+            self.assertEqual(nt.install(env, logs.append, VALID), "armed")
+            FakeNcclLib.version = "2.29.2"  # e.g. VLLM_NCCL_SO_PATH points elsewhere
+            with self.assertRaisesRegex(RuntimeError, "REFUSED: group tp:0: NCCL 2.29.2 is not validated"):
+                cc.CudaCommunicator("cpu", device="cuda:0", unique_name="tp:0")
 
 
 class WiringTests(unittest.TestCase):

@@ -35,6 +35,18 @@ What this does.
 NCCL's other unsupported case, parallel graph launches on different streams without
 dependencies, does not arise: vLLM replays the target and draft graphs on one stream.
 
+Why a version gate. The ncclConfig docs define graphUsageMode 0 as "no graphs" (2 =
+several graphs, mixing allowed), and NCCL 2.30.7 logs "Comm config graphUsageMode is set
+to 0 but the user is capturing graphs on the stream. Violating graphUsageMode semantics
+can lead to hangs!" once per captured collective (434 lines per rank at boot: 5 target
+and 3 draft capture sizes). The lever relies on 2.30.7's source, where
+strongstream.cc keys nothing but `mixing` on the mode; another NCCL may key more on it.
+So install() disarms (mixing stays on) unless the NCCL that vLLM's PyNccl loads is in
+VALIDATED_NCCL, and every stock communicator is re-checked when its group is built.
+A group with more than one rank but no working PyNccl communicator (library load
+failure, VLLM_DISABLE_PYNCCL) would send its collectives through torch.distributed with
+mixing off and no twin: that raises (REFUSED) instead of continuing.
+
 Numerics: unchanged. The same NCCL algorithm, protocol and channel choice run on the
 same buffers; only which communicator object issues each call changes.
 
@@ -84,10 +96,25 @@ INIT_ANCHORS = (
     "group=self.cpu_group if tcp_store_group is None else tcp_store_group",
 )
 INIT_PARAMS = ("cpu_group", "device", "unique_name", "tcp_store_group")
+# NCCL releases whose source was read for this lever (graphUsageMode only selects mixing).
+VALIDATED_NCCL = ("2.30.7",)
 
 
 def lever_on(env) -> bool:
     return (env.get(ENV, "0") or "0") == "1"
+
+
+def nccl_version() -> str:
+    """Version of the NCCL library vLLM's PyNccl loads (VLLM_NCCL_SO_PATH, else libnccl.so.2)."""
+    from vllm.distributed.device_communicators.pynccl_wrapper import NCCLLibrary
+
+    return NCCLLibrary().ncclGetVersion()
+
+
+def check_nccl_version(version: str) -> None:
+    if version not in VALIDATED_NCCL:
+        raise RuntimeError(f"NCCL {version} is not validated for {MIXING_ENV}=0 (validated: "
+                           f"{', '.join(VALIDATED_NCCL)}); re-read its graphUsageMode handling first")
 
 
 def group_kind(unique_name: str) -> str:
@@ -236,9 +263,21 @@ def wrap_init(orig_init, pynccl_cls, capturing, log=print):
     def __init__(self, *args, **kwargs):
         orig_init(self, *args, **kwargs)
         comm = getattr(self, "pynccl_comm", None)
-        if comm is None or getattr(comm, "disabled", True) or isinstance(comm, GraphEagerRouter):
+        if isinstance(comm, GraphEagerRouter):
             return
         name = getattr(self, "unique_name", "") or "?"
+        if comm is None or getattr(comm, "disabled", True):
+            world = int(getattr(self, "world_size", 1) or 1)
+            if world > 1:  # its collectives would go through torch.distributed with mixing off
+                raise RuntimeError(
+                    f"dsv41: nccl eager twin REFUSED: group {name} has {world} ranks but no working PyNccl "
+                    f"communicator, so {MIXING_ENV}=0 would reach torch.distributed without a twin. "
+                    f"Set {ENV}=0.")
+            return
+        try:
+            check_nccl_version(comm.nccl.ncclGetVersion())
+        except Exception as exc:  # noqa: BLE001 - mixing is already off in this process: stop
+            raise RuntimeError(f"dsv41: nccl eager twin REFUSED: group {name}: {exc}. Set {ENV}=0.") from exc
         if group_kind(name) != "tp":
             self.pynccl_comm = GraphEagerRouter(comm, None, capturing, name, positions, log)
             log(f"dsv41: nccl eager twin guard on {name}: eager-only, a captured call raises")
@@ -258,8 +297,9 @@ def wrap_init(orig_init, pynccl_cls, capturing, log=print):
     return __init__
 
 
-def install(env=None, log=print) -> str:
-    """'off' | 'armed' | 'disarmed'. Sets NCCL_GRAPH_MIXING_SUPPORT=0 only when armed."""
+def install(env=None, log=print, version=None) -> str:
+    """'off' | 'armed' | 'disarmed'. Sets NCCL_GRAPH_MIXING_SUPPORT=0 only when armed.
+    version() returns the NCCL version string (default: nccl_version, read through vLLM)."""
     env = os.environ if env is None else env
 
     def say(msg):
@@ -271,6 +311,7 @@ def install(env=None, log=print) -> str:
             say(f"dsv41: nccl eager twin REFUSED: {MIXING_ENV}=0 without {ENV}=1 is unsafe here; reset to 1")
         return "off"
     try:
+        check_nccl_version((nccl_version if version is None else version)())
         from vllm.distributed.device_communicators import cuda_communicator as cc
         from vllm.distributed.device_communicators.pynccl import PyNcclCommunicator
 
