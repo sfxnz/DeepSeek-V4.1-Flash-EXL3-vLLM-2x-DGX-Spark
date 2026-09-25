@@ -1,0 +1,13 @@
+# launch spark1 2026-09-25T11:24:19Z
+docker run -d --name dsv41-requant --restart no --gpus all --network none --memory 24g --user 1000:1000 -e HOME=/tmp -e PYTHONPATH=/usr/local/lib/python3.12/dist-packages -e PYTHONUNBUFFERED=1 -v /home/sfxnz/.cache/huggingface:/cache/huggingface:ro -v /home/sfxnz/projects/data/dsv41-requant-viterbi:/home/sfxnz/projects/data/dsv41-requant-viterbi -v /home/sfxnz/projects/data/dsv41-requant-viterbi/code:/repo:ro --entrypoint python3 dsv41-quant151 -S /repo/tools/requant_full.py run --node spark1 --order asc --out /home/sfxnz/projects/data/dsv41-requant-viterbi
+# image sha256:ba0ac163ef95dcdce2b403293956f6dc08e2df8d80a4dbadae39d37736c27d6f
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0          -     -      -      -      -      -      -      -    -              
+clocks.current.sm [MHz], clocks.current.memory [MHz], power.draw [W], utilization.gpu [%]
+208 MHz, [N/A], 4.45 W, 0 %
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.9Gi        74Gi       2.2Mi        43Gi       115Gi
+Swap:           15Gi       2.7Gi        13Gi
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p2  3.7T  3.1T  437G  88% /

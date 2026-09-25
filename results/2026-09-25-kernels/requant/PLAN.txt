@@ -1,0 +1,189 @@
+DSV41 routed-expert Viterbi re-encode: operating plan
+======================================================
+Written 2026-09-25 by the k3 requant stage. Branch perf/kernels-r3, driver tools/requant_full.py.
+
+OUT=/home/sfxnz/projects/data/dsv41-requant-viterbi   (same path on spark1 and spark2)
+
+1. What runs
+------------
+- Driver: tools/requant_full.py @ 371f9a1. Workers run the frozen copy in OUT/code (OUT/code/COMMIT),
+  so later edits in the worktree do not change the running job. OUT/code is synced to spark2.
+- Image: dsv41-quant151 (sha256:ba0ac163ef95dcdce2b403293956f6dc08e2df8d80a4dbadae39d37736c27d6f),
+  exllamav3 1.5.1 @958ec93. Loaded on both nodes, same ID (docker save | ssh spark2 docker load, 2m38s).
+- Encoder: exllamav3 1.5.1 quantize_tiles (tail-biting Viterbi, not greedy) through the recipe's
+  _quantize_fast (meta-H q_fallback, skip_g_scale), 2.0 bpw, MCG codebook (p2b cb=1), K=2, tile_chunk 4608
+  (bitwise equal to 256). Then refit_scales with H = I (closed form, requant_probe.refit_identity), kept
+  per tensor only when relerr does not rise. Per-tensor RNG seed = crc32(tensor name), so a unit's output
+  does not depend on which node encodes it or in what order.
+- Source (read-only): ~/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-V4.1-Flash/snapshots/
+  dba1be0a40aa45a94ad051997016db3960a90277. That is the snapshot the original pack was built from. spark1 has all
+  shards. spark2 has source shards 23-42 only.
+- Reference (read-only): snapshots/2.0bpw-mcg of models--sfxnz--DeepSeek-V4.1-Flash-EXL3. It is used for the
+  layout check and the stock relerr column. 2.0bpw-mcg-lmhead-mxfp8 symlinks its shards 3-42 here.
+- Units: 40 output shards, model-00003 through model-00042. Each has 1152 routed-expert tensors (w1/w2/w3 of
+  384 experts), 46,080 tensors in total.
+- Gate per unit, fixed before the run. A unit that fails any check is never written to shards/. The worker
+  retries it once, then stops.
+    * every relerr is finite, and the unit mean relerr is <= 0.97 x the stock 2.0bpw-mcg mean on the same tensors
+    * the safetensors layout matches the same 2.0bpw-mcg shard: keys, dtypes, shapes, data offsets and file size
+    * non-expert tensors and .mcg markers are byte-equal to the reference shard
+    * every written trellis/suh/svh reloads equal to the encoded tensor
+- Outputs, kept on the node that encoded them:
+    OUT/shards/model-000NN-of-00048.safetensors   (3,585,xxx,xxx bytes each, mode 0644, owner sfxnz)
+    OUT/units/NN.json      unit record + 1152 per-tensor rows (viterbi / final / stock relerr, refit kept,
+                           t_enc / t_all seconds)
+    OUT/logs/run-<node>.log  worker log: claims, 32-tensor progress lines, DONE per unit
+- State, on spark1 only (OUT/state):
+    units.json                    unit -> shard file
+    claims/NN/                    claim, made by atomic mkdir (spark2 does it through ssh spark1)
+    claims/NN/owner.json          node that claimed the unit
+    claims/NN/heartbeat.json      progress, rewritten every 32 tensors
+    done/NN.json                  verified unit: node, sha256, size, relerr stats, timings, code commit
+    manifest.json                 aggregate of done/, refreshed after every unit
+    DONE                          global marker, written when all 40 units have done records
+
+2. Correctness check before the long run (unit 00003, 2026-09-25 10:34-11:22Z, spark1)
+-------------------------------------------------------------------------------------
+- relerr, 1152 tensors: mean 0.261558 (min 0.261227, max 0.261663). Stock: 0.377539. MSE ratio 0.4800.
+  Per-tensor final/stock ratio is 0.6914-0.6940, so every tensor improved. Refit was kept on 1152/1152.
+- Safetensors header is byte-identical to 2.0bpw-mcg/model-00003: 470,400 B, 4638 tensors. File size is
+  3,585,021,280 bytes in both. Non-expert tensors and the 1152 .mcg markers are byte-equal.
+- First 8 tensors: tile_chunk 256 vs 4608 is bitwise equal (trellis/suh/svh). Closed-form refit is within
+  1.17e-8 relerr of upstream refit_scales.
+- Host numpy sanity: suh/svh finite. svh is no longer exactly +-1: the refit column scales are 0.925..1.072, where
+  stock is exactly 1.0. suh |max| is 0.0285 (stock 0.0288). Every serving path multiplies by the fp16 svh:
+  p2b had_hf_r_128_inner(sv), coop scale_h4(svh), exllamav3 reconstruct. So this is the same format.
+  A kernel change that assumes |svh| == 1 would break this pack.
+- sha256 c4eea513fcc85aeed4e4811b90d0bc5fe01cbd1c2439defe2ead26dacaefa28c. The worker reused this output
+  as unit 00003 after re-hashing it.
+- Evidence: perf/kernels-r3 results/2026-09-25-kernels/requant/
+
+3. spark1 worker (RUNNING since 2026-09-25T11:24:19Z)
+-----------------------------------------------------
+  docker run -d --name dsv41-requant --restart no --gpus all --network none --memory 24g --user 1000:1000 -e HOME=/tmp -e PYTHONPATH=/usr/local/lib/python3.12/dist-packages -e PYTHONUNBUFFERED=1 -v /home/sfxnz/.cache/huggingface:/cache/huggingface:ro -v /home/sfxnz/projects/data/dsv41-requant-viterbi:/home/sfxnz/projects/data/dsv41-requant-viterbi -v /home/sfxnz/projects/data/dsv41-requant-viterbi/code:/repo:ro --entrypoint python3 dsv41-quant151 -S /repo/tools/requant_full.py run --node spark1 --order asc --out /home/sfxnz/projects/data/dsv41-requant-viterbi
+
+  (python3 OUT/code/tools/requant_full.py launch-cmd --node spark1 --order asc prints the same command.)
+  spark1 claims units in ascending order (00003 upward). spark1's GPU is shared with a foreign headless
+  Chromium process (not ours, do not kill it). Chromium only slows the requant. It does not change the output.
+
+4. spark2 join (exact command; run it from spark1)
+--------------------------------------------------
+Preconditions:
+- The kernel microbench work on spark2 is finished. The worker takes and HOLDS spark2's GPU lock
+  (.worktrees-spark2/.gpu.lock, the lock the microbench runs use with flock -w 7200) for its whole life. Kernel
+  runs queued behind it will time out.
+- No serve is running on either node.
+- These are already in place: image dsv41-quant151 on spark2 (same ID); OUT/code synced (COMMIT 371f9a1); ssh
+  from a spark2 container to spark1 through the mounted host ssh binary (tested with the driver's SshStore:
+  claim, resume, write, ls and read of the real state).
+
+  ssh spark2 'mkdir -p /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2 && touch /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock && rsync -a --delete spark1:/home/sfxnz/projects/data/dsv41-requant-viterbi/code/ /home/sfxnz/projects/data/dsv41-requant-viterbi/code/ && { docker rm dsv41-requant 2>/dev/null || true; } && docker run -d --name dsv41-requant --restart no --gpus all --network host --memory 24g --user 1000:1000 -e HOME=/tmp -e PYTHONPATH=/usr/local/lib/python3.12/dist-packages -e PYTHONUNBUFFERED=1 -v /home/sfxnz/.cache/huggingface:/cache/huggingface:ro -v /home/sfxnz/projects/data/dsv41-requant-viterbi:/home/sfxnz/projects/data/dsv41-requant-viterbi -v /home/sfxnz/projects/data/dsv41-requant-viterbi/code:/repo:ro -v /usr/bin/ssh:/usr/bin/ssh:ro -v /home/sfxnz/.ssh:/home/sfxnz/.ssh:ro -v /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock:/home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock --entrypoint python3 dsv41-quant151 -S /repo/tools/requant_full.py run --node spark2 --order desc --out /home/sfxnz/projects/data/dsv41-requant-viterbi --state-host spark1 --ssh-dir /home/sfxnz/.ssh --gpu-lock /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock'
+
+- The touch has to come first. If the lock file is missing, docker creates a directory at that path, and that
+  breaks the lock for everyone.
+- To join without holding the lock, drop both the -v ...gpu.lock and the --gpu-lock arguments.
+- spark2 claims units in descending order (00042 downward) and skips units that have no local source (< 23).
+  If spark2 is about to run out while spark1 still has low units left, stage those sources on spark2 (for NN in the
+  wanted units): rsync -aL spark1:~/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-V4.1-Flash/snapshots/dba1be0a40aa45a94ad051997016db3960a90277/model-000NN-of-00048.safetensors /home/sfxnz/projects/data/dsv41-requant-viterbi/src/
+  Then relaunch spark2 with the same command plus
+  --src /cache/huggingface/hub/models--deepseek-ai--DeepSeek-V4.1-Flash/snapshots/dba1be0a40aa45a94ad051997016db3960a90277 --src /home/sfxnz/projects/data/dsv41-requant-viterbi/src
+  (the first --src must be the HF snapshot, because the index is read from it).
+  At the ETAs below, spark2 stops near unit 27 at the lowest, so staging is not expected to be needed.
+
+5. Status check
+---------------
+  python3 /home/sfxnz/projects/data/dsv41-requant-viterbi/code/tools/requant_full.py status          # on spark1
+  ssh spark2 python3 /home/sfxnz/projects/data/dsv41-requant-viterbi/code/tools/requant_full.py status --state-host spark1
+  (add --json for a machine-readable report)
+  docker ps --filter name=dsv41-requant ; ssh spark2 docker ps --filter name=dsv41-requant
+  tail -3 /home/sfxnz/projects/data/dsv41-requant-viterbi/logs/run-spark1.log ; ssh spark2 tail -3 /home/sfxnz/projects/data/dsv41-requant-viterbi/logs/run-spark2.log
+  status prints: units done by node, in-flight units (tensors done, s/tensor, heartbeat age, STALE after
+  15 min without a heartbeat), per-node rate, and ETA from the nodes that are active now.
+
+6. DONE marker and manifest
+---------------------------
+  DONE:     spark1:/home/sfxnz/projects/data/dsv41-requant-viterbi/state/DONE
+            (JSON: revision, units_total, relerr_mean_final, relerr_mean_stock, mse_ratio_vs_stock, completed)
+  manifest: spark1:/home/sfxnz/projects/data/dsv41-requant-viterbi/state/manifest.json
+            (unit -> node, host, file, size, sha256, relerr stats, gate, timings, code commit)
+  Test: ssh spark1 test -f /home/sfxnz/projects/data/dsv41-requant-viterbi/state/DONE && echo done
+
+7. Stop, resume, failures
+-------------------------
+- Graceful stop after the current unit: touch OUT/STOP (all nodes), or OUT/STOP.spark1 / OUT/STOP.spark2 (one
+  node). Remove the file before resuming.
+- Hard stop: docker stop dsv41-requant. The node keeps its claim. On resume, that node re-encodes the
+  unfinished unit. A shard that was fully written and verified is reused after a sha256 re-check.
+- Resume, on the same node: docker rm dsv41-requant, then run the same launch command (section 3 or 4).
+  It is idempotent. Units that have done records are skipped, and this node's unfinished claim is resumed.
+- If a unit fails twice (gate, verify or CUDA error), the worker exits with rc 2 and keeps the claim.
+  Look at OUT/logs/run-<node>.log and OUT/units/NN.failed.json. Never loosen the gate to get past a failure.
+- A claim can go STALE on a node that will not come back. First make sure no worker runs on that node
+  (docker ps there). Then rm -r OUT/state/claims/NN on spark1. The next worker to pass that unit claims it.
+  If no worker is left running, relaunch one.
+- After a reboot nothing restarts on its own (--restart no). Resume as above.
+
+8. Throughput and ETA (measured 2026-09-25, spark1)
+---------------------------------------------------
+- Quiet GPU (spark1 while Chromium is idle; expected on spark2): 1.90-1.92 s/tensor all-in, of which
+  quantize_tiles is 1.81-1.83 s (Viterbi kernel, 48 SMs at 1 block/SM). The driver's other work is ~0.1 s/tensor:
+  CPU MXFP4 dequant 0.03 s, three reconstructions, refit, fp64 relerr. Unit 00004: t_enc 2.465 s, t_all 2.573 s,
+  so the driver adds 4.2%. Save + verify + sha256 of a shard takes ~3 s.
+- spark1 with Chromium active: 2.2-4.2 s/tensor per 32-tensor window. Whole units:
+    00003 (check run, 8 double-encoded tensors)   2.505 s/tensor, 48.2 min wall
+    00004 (worker)                                 2.573 s/tensor, 49.5 min wall
+- spark1 alone, 38 units after 2026-09-25T12:14Z (43,776 tensors):
+    1.95 s/t (Chromium idle all the time)  -> 2026-09-26T11:56Z (23.7 h)
+    2.55 s/t (as measured, units 3-4)      -> 2026-09-26T19:14Z (31.0 h)   <- planning ETA
+    3.20 s/t (Chromium busy all the time)  -> 2026-09-27T03:08Z (38.9 h)
+- spark2 joins (spark1 2.55 s/t, spark2 1.92 s/t on its clean GPU, combined 0.913 tensors/s):
+    join 2026-09-25T20:00Z -> ETA 2026-09-26T05:58Z (spark1 ~24 units, spark2 ~16: 42 down to ~27)
+    join 2026-09-26T00:00Z -> ETA 2026-09-26T08:15Z (spark1 ~27 units, spark2 ~13)
+  The last unit adds up to one unit time of tail (~37-50 min) if the nodes do not finish together.
+  `status` recomputes the ETA from live heartbeats.
+- Memory (unit 00004):
+    * worker anon RSS grows ~6 MB/tensor and returns to 1.2 GiB between units (no carry-over)
+    * VmHWM 18.4 GiB, including mmap'd source/ref/new shard pages
+    * cgroup memory.peak 18.8 GiB (page cache included) of --memory 24g; memory.events high/max/oom all 0
+    * host MemAvailable >= 103 GiB
+- Disk: each unit shard is 3.585 GB, 143.4 GB for all 40. Free space at launch: spark1 441 GB, spark2 687 GB.
+  After assembly both nodes hold all 40 shards (hard links into the HF cache, no second copy). spark1 ends near
+  298 GB free, spark2 near 544 GB.
+
+9. Assembly (after DONE; run on BOTH nodes)
+-------------------------------------------
+  on spark1:  python3 /home/sfxnz/projects/data/dsv41-requant-viterbi/code/tools/requant_full.py assemble --node spark1
+  on spark2:  ssh spark2 python3 /home/sfxnz/projects/data/dsv41-requant-viterbi/code/tools/requant_full.py assemble --node spark2 --state-host spark1
+
+  What assemble does (host python, stdlib only, idempotent):
+  a. Refuses unless state/DONE exists. Rebuilds the manifest from state/done/ and refuses unless all 40 units have
+     records. It does not read manifest.json for this, because a stale manifest could let an old shard through.
+  b. For every unit made on the other node: rsync -a --partial <node>:OUT/shards/<file> into OUT/shards/. Then every
+     one of the 40 files must match the manifest's size and sha256.
+  c. Builds ~/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8/
+     by mirroring snapshots/2.0bpw-mcg-lmhead-mxfp8:
+       - model-00003..00042: hard links to OUT/shards (same filesystem; a symlink out of the HF cache would
+         dangle inside the serve container, which mounts only the cache)
+       - model-00043 (the lm_head MXFP8 re-encode): symlink ../2.0bpw-mcg-lmhead-mxfp8/model-00043-of-00048.safetensors
+       - model-00001/00002/00044..00048 and config.json, tokenizer*, LICENSE, etc.: the base's relative links
+         (../2.0bpw-mcg/...). Non-expert tensors are unchanged and byte-equal (verified per unit).
+       - model.safetensors.index.json: copied from the lmhead base, since tensor names and shard map are unchanged.
+         It carries lm_head.weight / lm_head.weight_scale, so DSV41_LMHEAD_MXFP8 engages.
+       - requant-viterbi-manifest.json: the manifest (not read by vLLM)
+  d. Checks that the index weight_map equals the union of all 48 shard headers, and that each unit shard's inode
+     is the verified output.
+  config.json is still quant_method exl3 at 2.0 bpw MCG: same format, so no new config is needed.
+
+10. Serving the new pack (not before the ARMS gate)
+---------------------------------------------------
+  SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8 ./run.sh
+  run.sh resolve_snapshot: refs/<rev> is absent, so it uses snapshots/<rev>/ under HF_CACHE. SNAPSHOT_SHA is in
+  run.sh's worker_config list, so spark2 resolves the same revision in its own cache. This is why the assembled
+  snapshot has to exist on both nodes. Leave the serve pin (recipe.yaml revision 2.0bpw-mcg-lmhead-mxfp8) unchanged
+  until it passes:
+    - smoke_chat 323 and smoke_vision
+    - correctness --full
+    - ARMS.md step 6 ABAB against 2.0bpw-mcg-lmhead-mxfp8: ms/step at matched acceptance, noise-aware gate,
+      quality quick and full
+  The decode kernel is unchanged, so any speed change comes through DSpark acceptance only. That is unproven.
+  Also check that p2b/coop engage as before (strict audit) and that lm_head MXFP8 does not self-disarm.

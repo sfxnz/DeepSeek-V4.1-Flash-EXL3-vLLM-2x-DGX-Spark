@@ -780,3 +780,20 @@ S=249 steps (SSE chunks; acc 2.056 in-window). Results/2026-09-21-trace3/.
   after 3 errors per rank on the aged R33 serve): fixed in 2ebb78d, and it
   held through C2-STRESS in s3, s5-s8 and s13. Full account and numbers:
   results/RESULTS.md round 34.
+
+## Round 35 — 2026-09-25 k3: full Viterbi re-encode of the routed experts RUNNING (pack lever, not promoted)
+- `tools/requant_full.py` re-encodes all 40 expert shards (46,080 tensors) from the MXFP4 source.
+  Encoder: exllamav3 1.5.1 Viterbi + refit_scales (H = I). Format: 2.0bpw MCG K=2. Resumable across both
+  Sparks: spark1 claims ascending, spark2 claims descending over ssh. Target revision
+  `2.0bpw-mcg-viterbi-lmhead-mxfp8`. Plan, commands and ETA:
+  `/home/sfxnz/projects/data/dsv41-requant-viterbi/PLAN.txt`.
+- Unit 00003 (1152 tensors) against the served 2.0bpw-mcg shard:
+  - relerr 0.26156 vs 0.37754, MSE ratio 0.480; every tensor at 0.691-0.694x of stock.
+  - safetensors header byte-identical; non-expert tensors and `.mcg` markers byte-equal.
+  - tile_chunk 4608 bitwise equal to 256.
+  - Evidence: `results/2026-09-25-kernels/requant/`.
+- Format note for kernel work: refit makes `svh` a real per-column scale (0.925-1.072, stock is exactly
+  ±1), and `suh` moves slightly. p2b (`had_hf_r_128_inner(sv)`), coop (`scale_h4(svh)`) and exllamav3
+  reconstruct already multiply by the fp16 values. Do not add a kernel shortcut that assumes |svh| == 1.
+- Serve pin unchanged. The pack goes to an ARMS step-6 ABAB after assembly: smoke 323, correctness --full,
+  quality quick+full. Any speed effect comes through acceptance only.
