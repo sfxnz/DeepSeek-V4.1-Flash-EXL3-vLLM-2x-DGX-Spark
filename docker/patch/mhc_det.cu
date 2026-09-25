@@ -69,8 +69,6 @@ DEV void mma_tf32(float (&d)[4], u32 a0, u32 a1, u32 a2, u32 a3, u32 b0, u32 b1)
       : "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(b0), "r"(b1));
 }
 DEV float bf16f(u16 v) { return __uint_as_float(((u32)v) << 16); }
-// fp32 -> tf32 bits, round to nearest even (finite inputs; fn has no NaN/Inf/denormals).
-DEV u32 rne_tf32(u32 b) { return (b + 0xFFFu + ((b >> 13) & 1u)) & ~0x1FFFu; }
 
 // Optional phase timestamps (kernel_study profiling only: compiled with -DMHC_DET_PROF).
 #ifdef MHC_DET_PROF
@@ -96,24 +94,23 @@ __device__ unsigned long long g_prof[64 * 16];
 
 #define MHC_SPLITS 16
 #define STAGE_KB 2
-#define FS_PAD 4           // f32 fn row pad in smem: rows start 4 banks apart
 #define XS_PAD 8           // bf16 x row pad in smem: rows start 4 banks apart
 #define PK_KB_BYTES 1280   // packed fn bytes per (split, n-tile, k-block)
 
-// Packed fn (PK): per (split, n-tile, k-block) the RNE tf32 bits (top 19 bits of fp32) of the
+// Packed fn: per (split, n-tile, k-block) the RNE tf32 bits (top 19 bits of fp32) of the
 // 32 lanes' 16 B-fragment values: hi [2][32 lanes][8 x u16] = bits 31..16, lo [32 lanes][16 x
 // 4 bit] = bits 15..13. Lane (g, t) value i: ks = i >> 1, k = kb*64 + ks*8 + t + 4*(i & 1),
 // row = n-tile*8 + g. 1280 B per k-block instead of 2048 B; the MMA sees identical bits.
 // Stage-major: [stage][cta = split*3 + n-tile][nkb(stage) x 1280 B], so each stage of all 48
 // CTAs is one contiguous region (stream_probe.json: 6.6 vs 7.5 us for 48 x 25.6 KB cold).
 //
-// grid (3 n-tiles, 16 splits), block 32. x [T, K] bf16, fn [24, K] f32 or packed
-// -> mixes [16, T, 24] f32, sqr [16, T] f32. ROW1: T may exceed 8 (rows g + 8 are live).
+// grid (3 n-tiles, 16 splits), block 32. x [T, K] bf16, packed fn -> mixes [16, T, 24] f32,
+// sqr [16, T] f32. ROW1: T may exceed 8 (rows g + 8 are live).
 #ifndef PREFETCH_STAGES
 #define PREFETCH_STAGES 4  // fn stages issued before griddepcontrol.wait (sweep_prefetch.json)
 #endif
-template <bool PK, bool ROW1>
-DEV void gemm_body(const u16* __restrict__ x, const void* __restrict__ fnsrc, float* __restrict__ mixes,
+template <bool ROW1>
+DEV void gemm_body(const u16* __restrict__ x, const unsigned char* __restrict__ fnp, float* __restrict__ mixes,
                    float* __restrict__ sqr, const int T, const int K) {
   extern __shared__ __align__(128) unsigned char smem[];
   const int nt = blockIdx.x, s = blockIdx.y;
@@ -122,26 +119,17 @@ DEV void gemm_body(const u16* __restrict__ x, const void* __restrict__ fnsrc, fl
   const int kbps = K / (64 * MHC_SPLITS);
   const int kspan = kbps * 64;
   const int k0 = s * kspan;
-  const int fs = kspan + FS_PAD;
   const int xs = kspan + XS_PAD;
-  const int fn_bytes = PK ? kbps * PK_KB_BYTES : 8 * fs * 4;
+  const int fn_bytes = kbps * PK_KB_BYTES;
   unsigned char* fsm = smem;
   u16* xsm = (u16*)(smem + fn_bytes);
   const int nstage = (kbps + STAGE_KB - 1) / STAGE_KB;
   u64* bars = (u64*)(smem + fn_bytes + ((T * xs * 2 + 15) & ~15));
   auto issue_fn = [&](int st) {
     const int kb_lo = st * STAGE_KB, nkb = min(STAGE_KB, kbps - kb_lo);
-    if (PK) {
-      const unsigned char* src =
-          (const unsigned char*)fnsrc + ((size_t)MHC_SPLITS * 3 * kb_lo + (size_t)cta * nkb) * PK_KB_BYTES;
-      mbar_arrive_expect_tx(&bars[st], (u32)(nkb * PK_KB_BYTES));
-      bulk_g2s(fsm + kb_lo * PK_KB_BYTES, src, nkb * PK_KB_BYTES, &bars[st]);
-    } else {
-      mbar_arrive_expect_tx(&bars[st], (u32)(8 * nkb * 256));
-      for (int r = 0; r < 8; ++r)
-        bulk_g2s(fsm + (r * fs + kb_lo * 64) * 4, (const float*)fnsrc + (size_t)(nt * 8 + r) * K + k0 + kb_lo * 64,
-                 nkb * 256, &bars[st]);
-    }
+    const unsigned char* src = fnp + ((size_t)MHC_SPLITS * 3 * kb_lo + (size_t)cta * nkb) * PK_KB_BYTES;
+    mbar_arrive_expect_tx(&bars[st], (u32)(nkb * PK_KB_BYTES));
+    bulk_g2s(fsm + kb_lo * PK_KB_BYTES, src, nkb * PK_KB_BYTES, &bars[st]);
   };
   PROF(0);
   if (lane == 0) {
@@ -173,7 +161,6 @@ DEV void gemm_body(const u16* __restrict__ x, const void* __restrict__ fnsrc, fl
   const bool r0 = g < T, r1 = ROW1 && (g + 8 < T);
   const u16* xr0 = xsm + g * xs;
   const u16* xr1 = xsm + (g + 8) * xs;
-  const float* fr = (const float*)fsm + g * fs;
   for (int st = 0; st < nstage; ++st) {
     mbar_wait(&bars[st], 0);
     if (st < 12) PROF(4 + (st >> 1));
@@ -182,16 +169,11 @@ DEV void gemm_body(const u16* __restrict__ x, const void* __restrict__ fnsrc, fl
     for (int j = 0; j < STAGE_KB; ++j) {
       const int kb = kb_lo + j;
       if (kb >= kb_hi) break;
-      u32 hw[8];
-      uint2 lo = make_uint2(0u, 0u);
-      if (PK) {
-        const unsigned char* blk = fsm + kb * PK_KB_BYTES;
-        const uint4 h0 = *(const uint4*)(blk + lane * 16);
-        const uint4 h1 = *(const uint4*)(blk + 512 + lane * 16);
-        lo = *(const uint2*)(blk + 1024 + lane * 8);
-        hw[0] = h0.x; hw[1] = h0.y; hw[2] = h0.z; hw[3] = h0.w;
-        hw[4] = h1.x; hw[5] = h1.y; hw[6] = h1.z; hw[7] = h1.w;
-      }
+      const unsigned char* blk = fsm + kb * PK_KB_BYTES;
+      const uint4 h0 = *(const uint4*)(blk + lane * 16);
+      const uint4 h1 = *(const uint4*)(blk + 512 + lane * 16);
+      const uint2 lo = *(const uint2*)(blk + 1024 + lane * 8);
+      const u32 hw[8] = {h0.x, h0.y, h0.z, h0.w, h1.x, h1.y, h1.z, h1.w};
 #pragma unroll
       for (int ks = 0; ks < 8; ++ks) {
         const int k = kb * 64 + ks * 8 + t;
@@ -199,16 +181,10 @@ DEV void gemm_body(const u16* __restrict__ x, const void* __restrict__ fnsrc, fl
         const float fa2 = r0 ? bf16f(xr0[k + 4]) : 0.f;
         const float fa1 = r1 ? bf16f(xr1[k]) : 0.f;
         const float fa3 = r1 ? bf16f(xr1[k + 4]) : 0.f;
-        u32 b0, b1;
-        if (PK) {
-          const u32 w = hw[ks];                                      // values 2ks (low), 2ks+1 (high)
-          const u32 nib = (ks < 4 ? lo.x : lo.y) >> (8 * (ks & 3));  // nibbles 2ks, 2ks+1
-          b0 = (w << 16) | ((nib & 7u) << 13);
-          b1 = (w & 0xffff0000u) | (((nib >> 4) & 7u) << 13);
-        } else {
-          b0 = rne_tf32(__float_as_uint(fr[k]));
-          b1 = rne_tf32(__float_as_uint(fr[k + 4]));
-        }
+        const u32 w = hw[ks];                                      // values 2ks (low), 2ks+1 (high)
+        const u32 nib = (ks < 4 ? lo.x : lo.y) >> (8 * (ks & 3));  // nibbles 2ks, 2ks+1
+        const u32 b0 = (w << 16) | ((nib & 7u) << 13);
+        const u32 b1 = (w & 0xffff0000u) | (((nib >> 4) & 7u) << 13);
         mma_tf32(d, __float_as_uint(fa0), __float_as_uint(fa1), __float_as_uint(fa2), __float_as_uint(fa3), b0, b1);
         if (nt == 0) {
           acc0 = __fadd_rn(acc0, __fmaf_rn(fa0, fa0, __fmul_rn(fa2, fa2)));
@@ -235,16 +211,14 @@ DEV void gemm_body(const u16* __restrict__ x, const void* __restrict__ fnsrc, fl
   PROF(11);
 }
 
-#define GEMM_KERNEL(NAME, PK, ROW1)                                                                     \
+#define GEMM_KERNEL(NAME, ROW1)                                                                         \
   extern "C" __global__ void __launch_bounds__(32, 1)                                                  \
-      NAME(const u16* __restrict__ x, const void* __restrict__ fn, float* __restrict__ mixes,          \
+      NAME(const u16* __restrict__ x, const unsigned char* __restrict__ fnp, float* __restrict__ mixes, \
            float* __restrict__ sqr, int T, int K) {                                                    \
-    gemm_body<PK, ROW1>(x, fn, mixes, sqr, T, K);                                                      \
+    gemm_body<ROW1>(x, fnp, mixes, sqr, T, K);                                                         \
   }
-GEMM_KERNEL(mhc_det_gemm_f32_t8, false, false)
-GEMM_KERNEL(mhc_det_gemm_f32_t16, false, true)
-GEMM_KERNEL(mhc_det_gemm_pk_t8, true, false)
-GEMM_KERNEL(mhc_det_gemm_pk_t16, true, true)
+GEMM_KERNEL(mhc_det_gemm_t8, false)
+GEMM_KERNEL(mhc_det_gemm_t16, true)
 
 // ---------------------------------------------------------------------------------------------
 // Bitwise replica of the TileLang mhc_post kernel (vLLM kernels/mhc/tilelang_kernels.py):

@@ -139,3 +139,9 @@ per run under runs/<tag>/), image dsv41-flash-exl3-sm121:canonical-e13, SM clock
 - MMA latency on GB10 (probe_mma_latency.json): dependent mma.sync m16n8k8 TF32 chain 31.4
   cycles per MMA (3 independent chains interleaved: 56.9 cycles per step of 3). The det GEMM
   chain runs 52 cycles per k-step (0.19 us per k-block): 160 steps = 3.8 us vs a 2.3 us floor.
+10. Cleanup: the f32-fn GEMM variant (a bench reference since item 4) removed from the shipped
+    kernel and host; the GEMM is pk-only (mhc_det_gemm_t8 / _t16). probe_b_round ported to pk
+    with host pre-rounding: rne 60/60, trunc 0/60, rna 0/60 (runs/probe-bround-pk).
+    Re-checked: GEMM 4656/4656 bitwise (87 fn x T 1..16 x families), 1000-run det 0, graph
+    0/100 (gemm-check-v6); whole recurrence 430/430 x 6 T, 1000-run 0, graph 0/100
+    (path-check-v7); lever smoke PASS (lever-smoke-v4).

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Which fp32 -> tf32 treatment of fn reproduces the stock DeepGEMM prenorm GEMM bitwise?
 
-The det f32 kernel feeds raw bits (the tensor core truncates). Here fn is pre-rounded on the
-host (round-to-nearest-away, round-to-nearest-even) and the det kernel output is compared with
-the stock kernel on real fn / real embeddings.
+fn is pre-rounded on the host (truncate / round-to-nearest-away) or left to pack_fn's own
+round-to-nearest-even, packed, run through the det GEMM, and compared with the stock kernel on
+real fn / real embeddings. (A raw fp32 B operand is truncated by the mma itself: probe.py.)
+First run (commit 61697f5, f32 kernel variant): rne 60/60, trunc/rna/raw 0/60.
 """
 from __future__ import annotations
 
@@ -38,7 +39,7 @@ def main() -> int:
     emb = C.embeddings(64)
     dk = mhc_det.DetKernels()
     out = {}
-    for mode in ("raw", "trunc", "rna", "rne"):
+    for mode in ("trunc", "rna", "rne"):
         n_eq = n = 0
         for li, (name, fn) in enumerate(fns[:20]):
             k = fn.shape[1]
@@ -49,7 +50,7 @@ def main() -> int:
                 vdg.tf32_hc_prenorm_gemm(x, fn, rm, rs, 16)
                 m = torch.empty_like(rm)
                 s = torch.empty_like(rs)
-                dk.gemm_f32(x, rounded(fn, mode), m, s)
+                dk.gemm_pk(x, mhc_det.pack_fn(rounded(fn, mode)), m, s)
                 n += 1
                 n_eq += int(C.bitwise_equal(m, rm))
         out[mode] = {"bitwise_equal_cases": n_eq, "cases": n}
@@ -60,10 +61,10 @@ def main() -> int:
     rm = torch.empty(16, 4, 24, device="cuda")
     rs = torch.empty(16, 4, device="cuda")
     vdg.tf32_hc_prenorm_gemm(x, fn, rm, rs, 16)
-    for mode in ("raw", "rna", "rne"):
+    for mode in ("trunc", "rna", "rne"):
         m = torch.empty_like(rm)
         s = torch.empty_like(rs)
-        dk.gemm_f32(x, rounded(fn, mode), m, s)
+        dk.gemm_pk(x, mhc_det.pack_fn(rounded(fn, mode)), m, s)
         out[f"elem_eq_frac_{mode}"] = float((m.view(torch.int32) == rm.view(torch.int32)).float().mean())
     print(json.dumps(out), flush=True)
     with open("/repo/results/2026-09-25-kernels/mhc-det/probe_b_round.json", "w") as fh:

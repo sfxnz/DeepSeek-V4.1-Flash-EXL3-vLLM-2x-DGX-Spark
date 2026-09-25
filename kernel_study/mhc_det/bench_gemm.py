@@ -52,13 +52,10 @@ def check(args) -> dict:
                 ref_m = torch.empty(16, t, 24, device="cuda")
                 ref_s = torch.empty(16, t, device="cuda")
                 stock_gemm(vdg, x, fn, ref_m, ref_s, 16)
-                for arm in ("f32", "pk"):
+                for arm in ("pk",):
                     m = torch.full((16, t, 24), float("nan"), device="cuda")
                     s = torch.full((16, t), float("nan"), device="cuda")
-                    if arm == "f32":
-                        dk.gemm_f32(x, fn, m, s)
-                    else:
-                        dk.gemm_pk(x, packed[name], m, s)
+                    dk.gemm_pk(x, packed[name], m, s)
                     ok = C.bitwise_equal(m, ref_m) and C.bitwise_equal(s, ref_s)
                     n_cmp += 1
                     if not ok:
@@ -78,7 +75,6 @@ def check(args) -> dict:
     for t in (4, 8):
         x = C.make_x("emb", t, C.K_FULL, seed=7 + t, emb=emb)
         arms = {
-            "det_f32": lambda m, s: dk.gemm_f32(x, fn, m, s),
             "det_pk": lambda m, s: dk.gemm_pk(x, packed[name], m, s),
             "stock_dg16": lambda m, s: stock_gemm(vdg, x, fn, m, s, 16),
         }
@@ -132,12 +128,12 @@ def check(args) -> dict:
     # CUDA graph capture + replay equality (static buffers, capture sizes)
     for t in (1, 3, 4, 6, 8):
         x = C.make_x("emb", t, C.K_FULL, seed=99 + t, emb=emb)
-        for arm in ("f32", "pk"):
+        for arm in ("pk",):
             m_e = torch.empty(16, t, 24, device="cuda")
             s_e = torch.empty(16, t, device="cuda")
             m_g = torch.empty_like(m_e)
             s_g = torch.empty_like(s_e)
-            call = (lambda m, s: dk.gemm_f32(x, fn, m, s)) if arm == "f32" else (lambda m, s: dk.gemm_pk(x, packed[name], m, s))
+            call = lambda m, s: dk.gemm_pk(x, packed[name], m, s)  # noqa: E731
             call(m_e, s_e)
             torch.cuda.synchronize()
             g = torch.cuda.CUDAGraph()
@@ -178,13 +174,11 @@ def timing(args) -> dict:
         outs = {sp: (torch.empty(sp, t, 24, device="cuda"), torch.empty(sp, t, device="cuda")) for sp in (16, 40)}
         arms = {
             "stock_dg16": lambda: stock_gemm(vdg, x, f, *outs[16], 16),
-            "det_f32": lambda: dk.gemm_f32(x, f, *outs[16]),
             "det_pk": lambda: dk.gemm_pk(x, packed[fname], *outs[16]),
         }
         if k == C.K_FULL:
             arms["stock_dg40"] = lambda: stock_gemm(vdg, x, f, *outs[40], 40)
-        fn_bytes = {"stock_dg16": 24 * k * 4, "stock_dg40": 24 * k * 4, "det_f32": 24 * k * 4,
-                    "det_pk": 24 * k * 2.5}
+        fn_bytes = {"stock_dg16": 24 * k * 4, "stock_dg40": 24 * k * 4, "det_pk": 24 * k * 2.5}
         for cold in (True, False):
             r = timer.run(arms, iters=args.iters, warmup=20, cold=cold, pre=(lambda: x.copy_(x_src)) if cold else None)
             for arm, st in r.items():
@@ -206,7 +200,6 @@ def timing(args) -> dict:
         base = lambda c: xs[c].copy_(xsrc[c])  # noqa: E731
         arms = {
             "stock_dg16": lambda c: stock_gemm(vdg, xs[c], dec[c][1], m, s, 16),
-            "det_f32": lambda c: dk.gemm_f32(xs[c], dec[c][1], m, s),
             "det_pk": lambda c: dk.gemm_pk(xs[c], packed[dec[c][0]], m, s),
         }
         for arm, call in arms.items():

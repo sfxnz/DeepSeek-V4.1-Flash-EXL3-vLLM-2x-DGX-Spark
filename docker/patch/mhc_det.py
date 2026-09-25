@@ -26,7 +26,7 @@ import os
 HERE = os.path.dirname(os.path.abspath(__file__))
 SPLITS = 16  # the stock decode split-K the det kernels reproduce bitwise
 STAGE_KB = 2
-FS_PAD, XS_PAD = 4, 8
+XS_PAD = 8
 PK_KB_BYTES = 1280
 MAX_T = 16
 
@@ -41,12 +41,10 @@ def kb_per_split(k: int) -> int:
     return k // (64 * SPLITS)
 
 
-def smem_bytes(t: int, k: int, packed: bool) -> int:
+def smem_bytes(t: int, k: int) -> int:
     kbps = kb_per_split(k)
-    kspan = kbps * 64
     nstage = -(-kbps // STAGE_KB)
-    fn_bytes = kbps * PK_KB_BYTES if packed else 8 * (kspan + FS_PAD) * 4
-    return fn_bytes + _align16(t * (kspan + XS_PAD) * 2) + nstage * 8
+    return kbps * PK_KB_BYTES + _align16(t * (kbps * 64 + XS_PAD) * 2) + nstage * 8
 
 
 def pack_fn(fn):
@@ -93,10 +91,7 @@ class DetKernels:
         self.mod = Module(self.src, "mhc_det.cu", opts=opts)
         self._post = self.mod.function("mhc_det_post")
         self._norm = self.mod.function("mhc_det_norm")
-        self._gemm = {
-            (packed, big): self.mod.function(f"mhc_det_gemm_{'pk' if packed else 'f32'}_t{16 if big else 8}")
-            for packed in (False, True) for big in (False, True)
-        }
+        self._gemm = {big: self.mod.function(f"mhc_det_gemm_t{16 if big else 8}") for big in (False, True)}
 
     @staticmethod
     def _check(x, mixes, sqr) -> tuple[int, int]:
@@ -107,21 +102,16 @@ class DetKernels:
             raise ValueError(f"bad output shapes {tuple(mixes.shape)} {tuple(sqr.shape)}")
         return t, k
 
-    def gemm(self, x, fn, mixes, sqr, packed: bool, pdl: bool = True) -> None:
+    def gemm_pk(self, x, fnp, mixes, sqr, pdl: bool = True) -> None:
+        """Det prenorm GEMM: x [T, K] bf16, fnp = pack_fn(fn) -> mixes [16, T, 24], sqr [16, T]."""
         t, k = self._check(x, mixes, sqr)
-        self._gemm[(packed, t > 8)].launch(
-            (3, SPLITS), (32,), smem_bytes(t, k, packed),
-            [(x.data_ptr(), ctypes.c_void_p), (fn.data_ptr(), ctypes.c_void_p),
+        self._gemm[t > 8].launch(
+            (3, SPLITS), (32,), smem_bytes(t, k),
+            [(x.data_ptr(), ctypes.c_void_p), (fnp.data_ptr(), ctypes.c_void_p),
              (mixes.data_ptr(), ctypes.c_void_p), (sqr.data_ptr(), ctypes.c_void_p),
              (t, ctypes.c_int), (k, ctypes.c_int)],
             pdl=pdl,
         )
-
-    def gemm_f32(self, x, fn, mixes, sqr, pdl: bool = True) -> None:
-        self.gemm(x, fn, mixes, sqr, packed=False, pdl=pdl)
-
-    def gemm_pk(self, x, fnp, mixes, sqr, pdl: bool = True) -> None:
-        self.gemm(x, fnp, mixes, sqr, packed=True, pdl=pdl)
 
     def norm(self, mixes, sqrsum, hc_scale, hc_base, residual, pre_mix, norm_weight, post, comb,
              layer_input, pre_mix_out, rms_numel, rms_eps, hc_pre_eps, sinkhorn_eps, post_mult,

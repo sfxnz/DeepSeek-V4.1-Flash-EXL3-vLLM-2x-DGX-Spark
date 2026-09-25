@@ -183,7 +183,7 @@ class KernelSourceTests(unittest.TestCase):
     def test_kernels_the_host_launches_exist(self) -> None:
         cu = (PATCH / "mhc_det.cu").read_text()
         names = set(re.findall(r'GEMM_KERNEL\((\w+),', cu)) | set(re.findall(r"^\s+(mhc_det_\w+)\(", cu, re.M))
-        for name in ("mhc_det_gemm_pk_t8", "mhc_det_gemm_pk_t16", "mhc_det_post"):
+        for name in ("mhc_det_gemm_t8", "mhc_det_gemm_t16", "mhc_det_post", "mhc_det_norm"):
             self.assertIn(name, names)
 
     def test_no_atomics(self) -> None:
@@ -198,7 +198,7 @@ class KernelSourceTests(unittest.TestCase):
             mhc_det.kb_per_split(4096 + 64)
         for k in (5120, 20480):
             for t in range(1, mhc_det.MAX_T + 1):
-                self.assertLessEqual(mhc_det.smem_bytes(t, k, packed=True), 101376, (t, k))
+                self.assertLessEqual(mhc_det.smem_bytes(t, k), 101376, (t, k))
 
     def test_audit_knows_the_lever(self) -> None:
         sys.path.insert(0, str(ROOT / "tools"))
