@@ -236,7 +236,8 @@ class ClaimTests(unittest.TestCase):
 
     def test_status_eta(self) -> None:
         now = time.time()
-        self.local.write("done/00003.json", json.dumps({"node": "spark1", "sec_per_tensor": 2.5,
+        self.local.write("done/00003.json", json.dumps({"node": "spark1", "sec_per_tensor": 2.5, "wall_s": 3456,
+                                                        "tensors": 1152,
                                                         "stats": {"final": {"mean": 0.26}, "stock": {"mean": 0.38}}}))
         for u, node, age, k in (("00004", "spark1", 30, 576), ("00042", "spark2", 3600, 100)):
             self.local.mkdir(f"claims/{u}")
@@ -258,6 +259,16 @@ class ClaimTests(unittest.TestCase):
         self.assertIn("00042 on spark2", out.getvalue())
         self.assertIn("STALE", out.getvalue())
         self.assertIn("ETA 20", out.getvalue())
+
+
+    def test_rate_from_done_wall_time(self) -> None:
+        for u, wall in (("00003", 3456), ("00004", 2304), ("00041", 4608)):
+            self.local.write(f"done/{u}.json", json.dumps({"node": "spark1", "sec_per_tensor": 1.0, "wall_s": wall,
+                                                           "tensors": 1152}))
+        rep = rf.status_report(self.local)
+        self.assertAlmostEqual(rep["rates_tensors_per_s"]["spark1"], 1 / 3.0)  # median wall/tensor
+        self.assertEqual(rep["active_nodes"], [])
+        self.assertIsNone(rep["eta_s"])
 
 
 class LaunchTests(unittest.TestCase):
@@ -317,9 +328,14 @@ class AssembleTests(unittest.TestCase):
             write_shard(f, {f"layers.{int(u)}.ffn.experts.0.w1.trellis":
                             {"dtype": "I16", "shape": [1], "data_offsets": [0, 2]}}, b"\1\1")
             self.units[u] = {"unit": u, "file": f.name, "node": "spark1", "size": f.stat().st_size,
-                             "sha256": rf.sha256_file(f)}
+                             "sha256": rf.sha256_file(f),
+                             "stats": {"final": {"mean": 0.2616}, "stock": {"mean": 0.3773}}}
         st = rf.LocalStore(self.out / "state")
-        st.write("manifest.json", json.dumps({"units": self.units}))
+        rf.init_state(st, {u: r["file"] for u, r in self.units.items()})
+        for u, r in self.units.items():
+            st.write(f"done/{u}.json", json.dumps(r))
+        # A stale manifest (one unit behind) must not drive the assembly.
+        st.write("manifest.json", json.dumps({"units": {"00003": self.units["00003"]}}))
 
     def tearDown(self) -> None:
         self.tmp.cleanup()
@@ -348,6 +364,13 @@ class AssembleTests(unittest.TestCase):
         self.assertFalse((snap / "model.safetensors.index.json").is_symlink())
         self.assertTrue((snap / "requant-viterbi-manifest.json").is_file())
         self.assertIn("2 re-encoded shards", self._assemble())  # idempotent
+
+    def test_requires_every_unit(self) -> None:
+        st = rf.LocalStore(self.out / "state")
+        st.write("DONE", "{}")
+        os.unlink(self.out / "state" / "done" / "00004.json")
+        with self.assertRaisesRegex(SystemExit, "1/2 units"):
+            self._assemble()
 
     def test_rejects_tampered_unit(self) -> None:
         rf.LocalStore(self.out / "state").write("DONE", "{}")

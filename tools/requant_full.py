@@ -383,8 +383,9 @@ def status_report(store: LocalStore, now: float | None = None) -> dict:
         if not inflight[u]["stale"] and hb.get("sec_per_tensor"):
             rates[owner.get("node")] = 1.0 / hb["sec_per_tensor"]
     per_node: dict[str, list[float]] = {}
-    for rec in done.values():
-        per_node.setdefault(rec["node"], []).append(rec["sec_per_tensor"])
+    for rec in done.values():  # wall time includes the save, verify and sha256 of the shard
+        spt = rec["wall_s"] / rec["tensors"] if rec.get("wall_s") and rec.get("tensors") else rec["sec_per_tensor"]
+        per_node.setdefault(rec["node"], []).append(spt)
     for node, spt in per_node.items():
         rates.setdefault(node, 1.0 / sorted(spt)[len(spt) // 2])
     remaining = sum(TENSORS_PER_UNIT for u in units if u not in done and u not in inflight)
@@ -763,7 +764,12 @@ def cmd_assemble(args) -> int:
     store = make_store(args)
     if store.read("DONE") is None:
         raise SystemExit("state/DONE missing: the re-encode is not complete")
-    man = json.loads(store.read("manifest.json"))
+    # Rebuild from done/ rather than trust manifest.json: two workers finishing
+    # together can leave a manifest one unit behind, and a unit missing here
+    # would fall back to the base revision's old shard.
+    man = refresh_manifest(store, json.loads(store.read("units.json")))
+    if not man["complete"]:
+        raise SystemExit(f"only {man['units_done']}/{man['units_total']} units have done records")
     shards = out / "shards"
     shards.mkdir(parents=True, exist_ok=True)
     for u, rec in sorted(man["units"].items()):
