@@ -26,10 +26,12 @@ placements against the real AR, on one GB10:
 Arms alternate replay by replay in one process; every arm's qkv_a / wq_b outputs and
 AR output are checked bitwise against arm 'none'. Arm grammar (--arms, comma list):
   none | warm/<budget> (budget read into L2 before e0: the in-situ ceiling)
-  <pre|start|startj|after>/<engine>/<budget>   engine: l2pf_variants.parse_engine;
+  <pre|start|startj|startq|after>/<engine>/<budget>   engine: l2pf_variants.parse_engine;
                                           start forks at the AR start and joins at the end;
-                                          startj joins right after the AR, before mhc_post,
-                                          as the lever does (next layer's entry)
+                                          startj joins right after the AR, before mhc_post
+                                          (the lever's first join point, the next layer's
+                                          entry); startq joins right after qkv_a (the lever's
+                                          join point now: DeepseekV4Attention._split_qkv_and_norm)
   in/<budget> | in0                       the p2b stand-in's own CTAs issue the TMA L2 prefetch
                                           in their prologue (k_read_pf = p2b_pf_bench.py's
                                           prologue); in0 = that kernel with no ranges
@@ -108,7 +110,7 @@ def parse_arm(name: str) -> dict:
     if parts[0] == "warm" and len(parts) == 2:
         arm["warm"] = parse_budget(parts[1])
         return arm
-    if len(parts) != 3 or parts[0] not in ("pre", "start", "startj", "after"):
+    if len(parts) != 3 or parts[0] not in ("pre", "start", "startj", "startq", "after"):
         raise ValueError(name)
     import l2pf_variants
 
@@ -170,7 +172,7 @@ def main() -> int:
         launch0 = l2pf_variants.launcher(ext0, l2pf_kernel.launcher(torch), args.sm_mhz)
         scratch = torch.zeros(1 << 20, dtype=torch.uint8, device=dev)
         for a in arms:
-            if a["place"] in ("pre", "start", "startj", "after"):
+            if a["place"] in ("pre", "start", "startj", "startq", "after"):
                 launch0(a["engine"], scratch, scratch.numel())
         torch.cuda.synchronize()
         tick("engine pre-validation")
@@ -302,7 +304,7 @@ def main() -> int:
                 elif standin.numel():
                     ext.k_read(standin, m * 6 * EXPERT_BYTES, 48, 2, sink)
                 e["e_p2b"].record()
-                if a["place"] in ("start", "startj"):
+                if a["place"] in ("start", "startj", "startq"):
                     fork(e)
                 if a["ar"] == "nccl":
                     comm.all_reduce(x_in, x_out)
@@ -324,6 +326,8 @@ def main() -> int:
                 e["e1"].record()
                 oa = vfi.mm_mxfp8(q, wa.t(), s, sa, out_dtype=torch.bfloat16, backend="auto")
                 e["e2"].record()
+                if a["place"] == "startq":  # the lever joins here now: after the next layer's qkv_a
+                    cur.wait_stream(side)
                 qb, sbq = mxfp8_e4m3_quantize(xb_in, is_sf_swizzled_layout=True)
                 ob = vfi.mm_mxfp8(qb, wb.t(), sbq, sb, out_dtype=torch.bfloat16, backend="auto")
                 e["e3"].record()
@@ -356,7 +360,7 @@ def main() -> int:
                     continue
                 e = ev[a["name"]]
                 for k, (x, y) in SPANS.items():
-                    if k == "prefetch" and a["place"] not in ("start", "startj", "after"):
+                    if k == "prefetch" and a["place"] not in ("start", "startj", "startq", "after"):
                         continue
                     res[a["name"]][k].append(e[x].elapsed_time(e[y]) * 1e3)
                 # per replay: everything this arm adds except the p2b stand-in's own span
@@ -383,7 +387,7 @@ def main() -> int:
                 s["p2b_standin_gbps"] = round(m * 6 * EXPERT_BYTES / (s["p2b"]["median"] * 1e3), 1)
             if a["place"] and a.get("budget"):
                 nbytes = sum(n for _, n in plan_for(a["budget"]))
-                span = s["prefetch"] if a["place"] in ("start", "startj", "after") else s["pf"]
+                span = s["prefetch"] if a["place"] in ("start", "startj", "startq", "after") else s["pf"]
                 s["prefetch_bytes"] = nbytes
                 s["prefetch_kernel_us"] = span["median"]
             if name in r1:

@@ -3,10 +3,13 @@
 
 A stand-in decoder stack runs the lever's real wrap() / Prefetcher / l2pf_kernel code
 inside a CUDA graph. Per layer, in the serve's order:
-  qkv_a b12x GEMM on this layer's weights -> p2b stand-in (a 2x-L2 streaming read, so
-  every layer's qkv_a starts cold as after the routed MoE) -> MoE AR stand-in
-  (MoERunner._maybe_reduce_final_output: a 22.7 us 5-CTA spin) -> mHC stand-in (the
-  real mhc_post + mhc_pre TileLang kernels) -> next layer.
+  mHC (the real mhc_post + mhc_pre TileLang kernels) -> qkv_a b12x GEMM on this layer's
+  weights -> DeepseekV4Attention._split_qkv_and_norm stand-in (where the lever joins) ->
+  p2b stand-in (a 2x-L2 streaming read, so every layer's qkv_a starts cold as after the
+  routed MoE) -> MoE AR stand-in (MoERunner._maybe_reduce_final_output: a 22.7 us 5-CTA
+  spin, where the lever forks) -> next layer.
+The spin touches no memory, so this is the lever's optimistic bound (a real NCCL AR slows
+under the prefetch: ar_window_nccl.py).
 Two model instances, lever on and off (separate classes, only one wrapped), captured
 once each and replayed alternately. Reports per-layer qkv_a time and the forward time
 (median, p10/p90), checks the GEMM outputs bitwise equal, and that capture + replay
@@ -44,6 +47,7 @@ def main() -> int:
     ap_.add_argument("--ar-us", type=float, default=22.7)
     ap_.add_argument("--sm-mhz", type=float, default=2190.0)
     ap_.add_argument("--build-dir", default="/repo/kernel_study/comm/.l2pf_build3")
+    ap_.add_argument("--mib", type=float, default=0.0, help="prefetch budget (default: the lever's default)")
     ap_.add_argument("--json")
     args = ap_.parse_args()
 
@@ -91,11 +95,16 @@ def main() -> int:
                 ext.spin(args.ar_us * args.sm_mhz, 5)  # the MoE all-reduce stand-in
                 return states
 
+        class Attn:
+            def _split_qkv_and_norm(self, qr_kv):  # the lever joins a pending prefetch here
+                return qr_kv
+
         class Layer:
             def __init__(self, i):
                 self.i, self.engram, self.runner = i, None, Runner()
                 self.attn = types.SimpleNamespace(fused_wqa_wkv=types.SimpleNamespace(
                     weight=weights[i][0], weight_scale=weights[i][1]))
+                self.attn_impl = Attn()
 
             def forward(self, x):
                 res2 = mhc_tl.mhc_post_tilelang(x_ar, residual, post_mix, res_mix)
@@ -109,6 +118,7 @@ def main() -> int:
                                             self.attn.fused_wqa_wkv.weight_scale, out_dtype=torch.bfloat16,
                                             backend="auto")
                 e[1].record()
+                self.attn_impl._split_qkv_and_norm(outs[self.i])
                 ext.read_l2(flush, flush.numel(), 48, False, sink)  # p2b stand-in: L2 cold again
                 return self.runner._maybe_reduce_final_output(x)
 
@@ -122,15 +132,16 @@ def main() -> int:
                     x = layer.forward(x)
                 return x
 
-        return Layer, Model, Runner, events, outs
+        return Layer, Model, Runner, Attn, events, outs
 
+    budget = ap.budget_bytes({ap.MIB_ENV: str(args.mib)} if args.mib else {})
     arms = {}
     for tag in ("off", "on"):
-        Layer, Model, Runner, events, outs = make_model(tag)
+        Layer, Model, Runner, Attn, events, outs = make_model(tag)
         pf = None
         if tag == "on":
             pf = ap.Prefetcher(l2pf_kernel.launcher(torch), torch)
-            ap.wrap(Layer, Model, Runner, pf, ap.budget_bytes({}), lambda msg: print(msg, flush=True))
+            ap.wrap(Layer, Model, Runner, Attn, pf, budget, lambda msg: print(msg, flush=True))
         model = Model()
         total = (torch.cuda.Event(enable_timing=True, external=True), torch.cuda.Event(enable_timing=True, external=True))
         s = torch.cuda.Stream()
@@ -163,7 +174,7 @@ def main() -> int:
     bitwise = all(torch.equal(a, b) for a, b in zip(arms["off"]["outs"], arms["on"]["outs"]))
     out = {
         "what": "ar_l2_prefetch through its own hooks, single GPU, stand-in decoder stack in one CUDA graph",
-        "layers": n_layers, "m": m, "replays": args.replays, "budget_bytes": ap.budget_bytes({}),
+        "layers": n_layers, "m": m, "replays": args.replays, "budget_bytes": budget,
         "capture_replay_ok": True, "gemm_outputs_bitwise_equal": bitwise,
         "forks_on": arms["on"]["pf"].forks,
         "summary": {t: {k: stats(v) for k, v in r.items()} for t, r in res.items()},

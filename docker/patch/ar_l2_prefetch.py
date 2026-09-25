@@ -45,14 +45,20 @@ Hooks (all in the target model; the draft model's layers never get a plan):
   layer's fused_wqa_wkv weight and weight_scale, the same fraction of each, total
   <= budget. No plan when the next layer has an Engram (its 162 MB wkv GEMM owns that
   window) or for the last layer. After the forward, a pending prefetch is joined.
-- DeepseekV4DecoderLayer.forward joins any pending prefetch on entry (keeps
-  breakable-graph segments free of forked streams), arms its plan, runs, disarms. The
-  join is right after the AR: the 1-CTA kernel stays resident until the TMA has taken
-  its requests (22 us at 3 MiB, 31 at 5.5, 44 for the whole qkv_a), so a prefetch that
-  outlasts the AR stalls mhc_post (+1.4..+2.2 us measured with the real AR).
+- DeepseekV4DecoderLayer.forward arms its plan, runs, disarms.
 - MoERunner._maybe_reduce_final_output (the call that all-reduces routed + shared)
   forks the side stream and launches the prefetch before running the AR, when a plan
   is armed and the batch has <= 64 tokens (decode).
+- DeepseekV4Attention._split_qkv_and_norm joins a pending prefetch. The attention
+  forward calls it right after _run_parallel_input_projections has launched qkv_a
+  (fused_wqa_wkv), the GEMM the prefetch warms, and before _prepare_and_attn_fn, the
+  breakable graph's eager break. Nothing between the fork and this join breaks the
+  capture, so every captured segment is closed with no stream still forked. The join
+  sits there, not at the next layer's entry (right after the AR), because the 1-CTA
+  kernel stays resident until the TMA has taken its requests (22 us at 3 MiB, 31 at
+  5.5, 44 for the whole qkv_a). A join at the entry stalled mhc_post whenever the
+  prefetch outlasted the AR: +1.4..+2.2 us with the real AR, ~+20 us against the spin
+  with the whole qkv_a.
 Numerics: unchanged (cache warm-up only). Self-disarm on anchor drift or when the
 Triton prefetch kernel fails its eager trial launch.
 Top-level imports are stdlib only.
@@ -74,6 +80,13 @@ CHUNK = 16384
 LAYER_ANCHORS = ("x = self.attn(positions, x, None)", "x = self.ffn(x, input_ids)")
 MODEL_ANCHORS = ("islice(self.layers, self.start_layer, self.end_layer)",)
 RUNNER_ANCHORS = ("states = tensor_model_parallel_all_reduce(states)",)
+# In DeepseekV4Attention.forward, in this order: qkv_a launched, then the join point, then the
+# breakable-graph eager break.
+ATTN_ANCHORS = (
+    "qr_kv, kv_score, indexer_weights = self._run_parallel_input_projections(",
+    "qr, qr_scale, kv = self._split_qkv_and_norm(qr_kv)",
+    "self._prepare_and_attn_fn(",
+)
 
 
 def lever_on(env) -> bool:
@@ -140,18 +153,25 @@ class Prefetcher:
         self.forks += 1
 
 
-def check_anchors(layer_cls, model_cls, runner_cls) -> None:
+def check_anchors(layer_cls, model_cls, runner_cls, attn_cls) -> None:
     for cls, meth, anchors in ((layer_cls, "forward", LAYER_ANCHORS), (model_cls, "forward", MODEL_ANCHORS),
-                               (runner_cls, "_maybe_reduce_final_output", RUNNER_ANCHORS)):
+                               (runner_cls, "_maybe_reduce_final_output", RUNNER_ANCHORS),
+                               (attn_cls, "forward", ATTN_ANCHORS)):
         src = inspect.getsource(getattr(cls, meth))
         for a in anchors:
             if a not in src:
                 raise RuntimeError(f"{cls.__name__}.{meth} anchor missing: {a!r}")
+    src = inspect.getsource(attn_cls.forward)
+    at = [src.index(a) for a in ATTN_ANCHORS]
+    if at != sorted(at):
+        raise RuntimeError(f"{attn_cls.__name__}.forward: qkv_a, _split_qkv_and_norm and the eager break "
+                           "are no longer in that order")
 
 
-def wrap(layer_cls, model_cls, runner_cls, pf: Prefetcher, budget: int, log=print) -> None:
+def wrap(layer_cls, model_cls, runner_cls, attn_cls, pf: Prefetcher, budget: int, log=print) -> None:
     layer_fwd, model_fwd = layer_cls.forward, model_cls.forward
     reduce_final = runner_cls._maybe_reduce_final_output
+    split_orig = attn_cls._split_qkv_and_norm
 
     def build_plans(model) -> None:
         """First eager forward: plans plus one trial launch (compiles the kernel)."""
@@ -184,7 +204,6 @@ def wrap(layer_cls, model_cls, runner_cls, pf: Prefetcher, budget: int, log=prin
             pf.join()
 
     def layer_forward(self, *args, **kwargs):
-        pf.join()
         pf.armed = getattr(self, "_dsv41_l2pf_plan", None)
         try:
             return layer_fwd(self, *args, **kwargs)
@@ -197,13 +216,18 @@ def wrap(layer_cls, model_cls, runner_cls, pf: Prefetcher, budget: int, log=prin
             pf.fork(plan)
         return reduce_final(self, states, *args, **kwargs)
 
+    def split_qkv_and_norm(self, *args, **kwargs):
+        pf.join()  # qkv_a, which the prefetch warmed, is already on the stream
+        return split_orig(self, *args, **kwargs)
+
     for fn, orig in ((model_forward, model_fwd), (layer_forward, layer_fwd),
-                     (maybe_reduce_final_output, reduce_final)):
+                     (maybe_reduce_final_output, reduce_final), (split_qkv_and_norm, split_orig)):
         fn.__wrapped__ = orig
         fn._dsv41_l2pf = True
     model_cls.forward = model_forward
     layer_cls.forward = layer_forward
     runner_cls._maybe_reduce_final_output = maybe_reduce_final_output
+    attn_cls._split_qkv_and_norm = split_qkv_and_norm
 
 
 def install(env=None, log=print) -> str:
@@ -219,15 +243,16 @@ def install(env=None, log=print) -> str:
         budget = budget_bytes(env)
         import torch
         from vllm.model_executor.layers.fused_moe.runner.moe_runner import MoERunner
+        from vllm.models.deepseek_v4_1.attention import DeepseekV4Attention
         from vllm.models.deepseek_v4_1.nvidia.model import DeepseekV4DecoderLayer, DeepseekV4Model
 
         if getattr(DeepseekV4Model.forward, "_dsv41_l2pf", False):
             return "armed"
-        check_anchors(DeepseekV4DecoderLayer, DeepseekV4Model, MoERunner)
+        check_anchors(DeepseekV4DecoderLayer, DeepseekV4Model, MoERunner, DeepseekV4Attention)
         import l2pf_kernel
 
         pf = Prefetcher(l2pf_kernel.launcher(torch), torch)
-        wrap(DeepseekV4DecoderLayer, DeepseekV4Model, MoERunner, pf, budget, say)
+        wrap(DeepseekV4DecoderLayer, DeepseekV4Model, MoERunner, DeepseekV4Attention, pf, budget, say)
     except Exception as exc:  # noqa: BLE001 - never half-apply
         say(f"dsv41: ar l2 prefetch DISARMED: {exc!r}")
         return "disarmed"
