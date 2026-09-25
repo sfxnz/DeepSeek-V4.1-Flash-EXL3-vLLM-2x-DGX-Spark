@@ -83,10 +83,14 @@ def main() -> int:
 
     torch.set_default_dtype(torch.bfloat16)
     from safetensors import safe_open
+    from vllm.config import VllmConfig, set_current_vllm_config
     from vllm.distributed import init_distributed_environment, initialize_model_parallel
     from vllm.model_executor.layers.linear import ColumnParallelLinear, ReplicatedLinear
     from vllm_exl3.exl3 import Exl3Config
 
+    # a default config context, as vLLM's own unit tests use (no model config: the
+    # linear method takes the default dtype, bf16 here, as the serve's bf16 model)
+    set_current_vllm_config(VllmConfig()).__enter__()
     init_distributed_environment(world_size=1, rank=0, local_rank=0,
                                  distributed_init_method="tcp://127.0.0.1:29571", backend="nccl")
     initialize_model_parallel(tensor_model_parallel_size=1)
