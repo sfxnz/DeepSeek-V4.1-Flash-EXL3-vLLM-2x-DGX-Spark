@@ -122,7 +122,7 @@ Two-node NCCL runs need both GPUs: they are prepared here and scheduled for the 
       multi-CTA TMA issue (8/48 CTAs): qkv_a only 25-27 us (requests from exiting CTAs complete
       partially): -17.5..-18.0;  fork after the AR (mHC window only): -1.2
     Projection: ~-21.7 us per MoE-AR window x 40 = ~-0.87 ms/step at c=1, if the real NCCL LL AR
-    (5 CTAs polling host memory) behaves like the spin. The attn-AR window (shared gate_up + router
+    (5 CTAs polling host memory) behaves like the spin. [Fix pass: it does not; see #12.] The attn-AR window (shared gate_up + router
     gate) is bounded by the routing glue chain (balanced with the shared expert today). Not built
     yet: needs a side-stream fork inside the MoE AR call site, the next layer's qkv_a pointers and a
     join before the next attention op (breakable-graph segments must not leave a stream forked).
@@ -174,7 +174,8 @@ Two-node NCCL runs need both GPUs: they are prepared here and scheduled for the 
       qkv_a on prefetched layers 47.1 [46.1, 48.2] -> 23.1 [21.7, 24.6] us;
       forward 2540.4 [2536.3, 2547.4] -> 2398.8 [2393.7, 2406.0] us = -20.2 us per prefetched layer.
     Projection: 37 windows x ~20 us = ~-0.75 ms/step at c=1 (same per layer at c=2, m=8), if the real
-    NCCL LL AR (5 CTAs polling host memory) leaves DRAM as idle as the spin does.
+    NCCL LL AR (5 CTAs polling host memory) leaves DRAM as idle as the spin does. [Fix pass: it does
+    not; the real-AR range is -0.27..-0.32 ms/step at c=1 with the whole qkv_a, see #12.]
     Tests: tests/test_ar_l2_prefetch.py (13, incl. pinned e13 model.py / moe_runner.py anchors).
 
 #9  Attn-AR window (shared gate_up + router gate prefetch): NOT BUILT, measured why
@@ -215,3 +216,74 @@ Two-node NCCL runs need both GPUs: they are prepared here and scheduled for the 
     floor (~9 us at m=4) is NCCL's LL mechanics (two proxy hand-offs, host-memory polling, launch).
     No other NCCL knob beats KEEP (profile sweep); the best config is KEEP + mixing off, made safe by
     the twin (#4). Phase-2 cells (mix0 + proxy_big / bare / stream-ordering 0) run in the window (A2).
+
+--- fix pass (review of 8098d34), 2026-09-25 evening ---------------------------------------------
+
+#12 E against a real NCCL all-reduce (the blocking review item)
+    Harness: kernel_study/comm/ar_window_nccl.py via two_rank_mps.sh (the review's recipe): two ranks
+    on one GB10 under MPS, a different NCCL_HOSTID per rank, so NCCL connects them via NET/IB (RoCE
+    loopback on rocep1s0f1, GDR 0) with the serve's NCCL env; PM QoS 20 held. Rank 1 replays only the
+    AR and arrives first (rank 0 is late on 72% of the serve's ARs); rank 0 replays, per arm: 2x-L2
+    streaming read (the rest of the model) ; e0 ; [pre prefetch] ; p2b stand-in (m x 6 x 4.42 MB with
+    ld.global.cs = p2b's evict-first loads, 48 CTAs; the real p2b is cooperative and cannot share the
+    GPU with rank 1's resident AR kernel) ; [fork] ; AR ; [lever join] ; mhc_post ; mhc_pre ; quant ;
+    qkv_a b12x ; quant ; wq_b b12x. Arms alternate replay by replay; GEMM and AR outputs bitwise
+    equal to 'none' in every arm (spin arms vs spin:none). Engines (l2pf_variants.py, SASS checked:
+    UBLKPF.L2, CCTL.E.PF2, LDG.E.EF): tri (the lever), burst:cN (TMA bulk prefetch from N CTAs),
+    pf:cN (per-thread prefetch.global.L2), paced:<GB/s>, ring:<depth>x<KiB> (closed-loop TMA copies
+    into a smem ring, <= 99 KiB: GB10's opt-in limit is 101376 B), tload. Engine selftest
+    (p2b-window-v2/engine_selftest.txt, 9.46 MB after a 2x-L2 flush): tri 46.9 us kernel, read after
+    13.8 us (warm; cold 46); burst:c8 24.0 / 28.5 (half lands); pf:c48 12.2 / 40.5 (~15% lands);
+    paced:150 68.8; ring:6x16 196 (48 GB/s); tload:64 548.
+    v2 (m = 1/3/4/6/8, 300 replays, 14 arms; ar-window-nccl/v2/), net per window = pf + AR + mHC +
+    quant + qkv_a + wq_b span-median deltas vs none, us (AR delta):
+      start/tri/5.5 (shipped)   -9.9  -5.3  -1.5  -3.1  +0.7   (AR +14..+18)
+      start/tri/full            -5.4  -9.2  -8.2  -4.1  -4.3   (AR +21..+28)
+      after/tri/5.5             -4.2  -3.3  -2.6  -0.8  -4.3   (mHC +18..+20 instead)
+      start/paced:100/5.5      +18.7  -4.9 -15.1  -4.8  +2.9   (AR +7..+42, erratic)
+      start/ring:6x16/5.5      +81.3 +56.4 +17.8 +65.1 +43.2   (AR +38..+103)
+      start/burst:c48/5.5       -2.8  -1.9  -2.6  -2.9  +1.6   (warms less)
+      pre/tri/full             +12.2 +10.9  +9.5  +9.9 +12.0   (AR unchanged; the kernel is serial)
+      pre/pf:c192/full          +5.7  +6.4  +5.8  +7.4  +9.0
+      warm/full (ceiling)      -26.6 -30.9 -32.0 -32.1 -30.0
+      spin:start/tri/5.5       -19.7 -22.6 -16.3 -16.1 -19.0   (the builder's stand-in, reproduced)
+    v3-focus (m=4/8, 1000 replays, two arm orders; join at the end): start/tri/5.5 -5.6 -4.1 / -4.8
+    -4.7; start/tri/full -8.5 -6.5 / -6.3 -2.8; after/tri/5.5 -4.6 -3.4 / -3.7 -1.7; after/tri/full
+    +0.6 -2.2 / -2.0 +1.7 (mHC +32..+34); start/tri/3 -2.6 -2.4 / -2.7 +1.4.
+    v4-leverjoin (the lever joins at the next layer's entry = right after the AR, before mhc_post;
+    'startj'): m=4 startj/tri/full -8.7 / -7.2, startj/tri/7 -4.7 / -4.9, startj/tri/5.5 -4.5 /
+    -1.9, startj/tri/3 -0.7 / -0.9, startj/burst:c8/full +0.2 / -0.2; m=8 full -2.0 / -1.0,
+    5.5 -4.3 / -0.2. The join costs mhc_post +1.4..+2.2 us (prefetch kernel 22 / 31 / 36 / 44 us at
+    3 / 5.5 / 7 MiB / whole qkv_a).
+    Emulation caveats: the emulated late-rank AR is 72-83 us at m=4 (serve 22.7); the p2b stand-in's
+    own span varies with the arm's slot in the replay cycle (up to +40 us at m=8, tight within an
+    arm), so it is excluded, and the harness now reports the decision span per replay (pf + p2b end
+    -> wq_b end). The spin is the optimistic bound, this emulation the pessimistic one.
+    Decision (m=4 and m=8): fork at the AR start (after the AR moves the cost onto mHC), keep the
+    1-CTA Triton burst, prefetch the whole qkv_a (best at m=4 in both orders, a tie at m=8):
+    DSV41_AR_L2_PREFETCH_MIB default 5.5 -> 10. Range: -0.27..-0.32 ms/step at c=1 (pessimistic) to
+    -0.75 (spin), -0.04..-0.07 at c=2. The serve mechanism boot measures the late rank's MoE-AR kernel
+    and the AR-start -> qkv_a-end span per layer against A; E fails if the AR slows by at least the
+    qkv_a saving (serve_arm_plan.txt).
+
+#13 Prefetch in the p2b window instead (review missed opportunity (b)): measured, no win
+    kernel_study/comm/p2b_prefetch_probe.py, spark2, the served p2b (SORT=0 bench build), real rank-0
+    pack weights for qkv_a / wq_b (layer 10), census routing, 300 replays, m = 1/3/4/6/8. The first
+    version timed from after the prefetch launch; v2 includes the prefetch kernel in the span.
+    Lines prefetched with normal priority survive p2b's evict-first stream (warm/full: qkv_a 47 ->
+    16 us, the ceiling). But p2b is a cooperative launch that fills every SM's register file, so it
+    cannot overlap anything. d_total (us):
+      pre/tri/full          +11.3 +9.6 +8.6 +9.3 +9.6   (kernel +40: the 1-CTA TMA issue is resident
+                                                         ~as long as its transfer)
+      pre/burst:c8/full      +2.2 +3.6 +2.7 +3.7 +3.7   (kernel +23.5, half the lines land)
+      pre/pf:c48/full        +2.0 +3.3 +3.8 +3.3 +4.5   (kernel +10, ~15% of the prefetches land)
+      pre/burst:c48/full+wqb:8  +9.3..+15.5
+    In-kernel (p2b-window-in; kernel_study/comm/p2b_pf_bench.py: the same p2b plus a prologue where
+    thread 0 of each block issues TMA L2 prefetches for its share of up to 4 ranges; bench only):
+      in0 (prologue, no ranges)  +0.8 -1.3 -0.5 +0.3 +0.9   (free when off)
+      in/full                    -0.1 -2.7 -1.5 -1.7 +0.2   (p2b +8.6..+16.4, qkv_a -9.5..-18.2)
+      in/full+wqb:4..12          -1.8..+20.5
+    Zero-sum: p2b is DRAM-bound where it streams (its 78% average hides phases at the roof), the
+    prefetch displaces its traffic and about half the requests do not land. Correctness: qkv_a / wq_b
+    bitwise equal to none in every arm and m; p2b bitwise under one-hot routing weights (normalized
+    weights: fp32 atomicAdd slot order varies; reported, not gated); graph replay == eager.

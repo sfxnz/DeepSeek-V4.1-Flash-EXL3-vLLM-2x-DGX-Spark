@@ -1,0 +1,58 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip ar_l2_prefetch: DSV41_AR_L2_PREFETCH is not 1
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 180
+dsv41-patch ok pm_qos: armed
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+[E925 15:49:37.375313095 socket.cpp:1028] [c10d] The client socket has timed out after 150000ms while trying to connect to (127.0.0.1, 29811).
+[W925 15:49:37.385172634 TCPStore.cpp:340] [c10d] TCP client failed to connect/validate to host 127.0.0.1:29811 - retrying (try=0, timeout=150000ms, delay=45168ms): The client socket has timed out after 150000ms while trying to connect to (127.0.0.1, 29811).
+Exception raised from throwTimeoutError at /__w/pytorch/pytorch/torch/csrc/distributed/c10d/socket.cpp:1030 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0xc8 (0xffc850d4e158 in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10.so)
+frame #1: c10::DistError::DistError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x78 (0xffc850d4ed48 in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10.so)
+frame #2: c10::DistNetworkError::DistNetworkError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x78 (0xffc850d4f0c8 in /usr/local/lib/python3.12/dist-packages/torch/lib/libc10.so)
+frame #3: <unknown function> + 0x714cb34 (0xffc86e74cb34 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #4: <unknown function> + 0x714fe4c (0xffc86e74fe4c in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #5: <unknown function> + 0x71501ac (0xffc86e7501ac in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #6: <unknown function> + 0x7150710 (0xffc86e750710 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #7: <unknown function> + 0x70b4a6c (0xffc86e6b4a6c in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #8: c10d::TCPStore::TCPStore(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, c10d::TCPStoreOptions const&) + 0x30c (0xffc86e6be88c in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cpu.so)
+frame #9: <unknown function> + 0x1259ff0 (0xffc873a99ff0 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_python.so)
+frame #10: <unknown function> + 0x627784 (0xffc872e67784 in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_python.so)
+frame #11: python3() [0x50336c]
+frame #12: python3() [0x4c6d78]
+<omitting python frames>
+frame #14: python3() [0x522628]
+frame #15: python3() [0x51dbc4]
+frame #16: <unknown function> + 0x625fdc (0xffc872e65fdc in /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_python.so)
+frame #19: python3() [0x4d0960]
+frame #20: python3() [0x560164]
+frame #21: python3() [0x503680]
+frame #25: python3() [0x59af54]
+frame #26: python3() [0x680274]
+frame #31: <unknown function> + 0x284c4 (0xffc9032084c4 in /lib/aarch64-linux-gnu/libc.so.6)
+frame #32: __libc_start_main + 0x98 (0xffc903208598 in /lib/aarch64-linux-gnu/libc.so.6)
+
+HANG: rank 1 no progress for 150.0s after start

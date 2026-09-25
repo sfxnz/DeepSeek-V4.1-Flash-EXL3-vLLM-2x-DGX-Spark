@@ -1,0 +1,108 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip ar_l2_prefetch: DSV41_AR_L2_PREFETCH is not 1
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 67
+dsv41-patch ok pm_qos: armed
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+INFO 09-25 17:33:12 [pynccl.py:120] vLLM is using nccl==2.30.7
+INFO 09-25 17:33:12 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 17:33:12 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+NCCL version 2.30.7+cuda13.3
+[17:33:21] : Warning: T.vectorized loop over `i_hci` with extent 4 is lowered as a serial loop because TileLang could not find a valid vectorization plan. Scalar accumulator updates inside the loop are a common cause; move reductions to T.unroll or T.serial if this is intended.
+2026-09-25 17:33:15  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-25 17:33:20  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-25 17:33:21  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_post_tilelang` with `out_idx=None`
+2026-09-25 17:33:21  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_post_tilelang`
+m=1 none                         pf   1.1 p2b  117.9 ar   23.6 [22.8, 26.5] mhc  33.9 qkv_a  47.4 wq_b  101.4 total   331.0 [327.4, 334.9] | d_total   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq True
+m=1 warm/full                    pf   1.0 p2b  117.8 ar   23.6 [22.5, 26.0] mhc  33.8 qkv_a  18.6 wq_b  103.7 total   303.9 [299.6, 307.2] | d_total  -27.1 = pf  -0.0 p2b  -0.2 ar  +0.1 mhc  -0.1 qkv_a -28.8 wq_b  +2.3 eq True
+m=1 start/tri/5.5                pf   1.0 p2b  117.2 ar   38.7 [37.7, 41.0] mhc  33.6 qkv_a  22.9 wq_b  101.3 total   319.5 [315.5, 325.6] | d_total  -11.4 = pf  -0.0 p2b  -0.7 ar +15.1 mhc  -0.3 qkv_a -24.6 wq_b  -0.1 eq True
+m=1 start/tri/full               pf   1.0 p2b  117.4 ar   47.4 [46.3, 48.9] mhc  33.8 qkv_a  18.4 wq_b  101.3 total   324.4 [320.8, 328.9] | d_total   -6.5 = pf  -0.0 p2b  -0.5 ar +23.8 mhc  -0.0 qkv_a -29.0 wq_b  -0.2 eq True
+m=1 after/tri/5.5                pf   1.0 p2b  118.2 ar   23.4 [20.2, 25.7] mhc  52.3 qkv_a  24.6 wq_b  101.9 total   326.4 [323.3, 330.7] | d_total   -4.5 = pf  -0.0 p2b  +0.3 ar  -0.2 mhc +18.4 qkv_a -22.8 wq_b  +0.4 eq True
+m=1 start/paced:100/5.5          pf   0.9 p2b  117.3 ar   65.6 [65.3, 66.0] mhc  32.6 qkv_a  24.5 wq_b  101.4 total   348.9 [347.2, 351.2] | d_total  +17.9 = pf  -0.1 p2b  -0.6 ar +42.0 mhc  -1.2 qkv_a -22.9 wq_b  -0.1 eq True
+m=1 start/ring:6x16/5.5          pf   1.0 p2b  117.5 ar  127.0 [126.7, 127.2] mhc  32.7 qkv_a  24.6 wq_b  102.2 total   410.7 [409.3, 412.7] | d_total  +79.7 = pf  -0.1 p2b  -0.5 ar +103.4 mhc  -1.1 qkv_a -22.8 wq_b  +0.8 eq True
+m=1 start/burst:c48/5.5          pf   1.0 p2b  117.4 ar   38.0 [35.6, 41.0] mhc  33.6 qkv_a  30.7 wq_b  101.3 total   326.6 [322.3, 330.8] | d_total   -4.3 = pf  -0.0 p2b  -0.5 ar +14.4 mhc  -0.3 qkv_a -16.8 wq_b  -0.1 eq True
+m=1 pre/tri/full                 pf  42.3 p2b  118.0 ar   23.8 [22.9, 26.5] mhc  33.9 qkv_a  18.7 wq_b  101.0 total   343.4 [339.7, 346.1] | d_total  +12.4 = pf +41.2 p2b  +0.1 ar  +0.2 mhc  +0.0 qkv_a -28.8 wq_b  -0.5 eq True
+m=1 pre/burst:c48/full           pf  28.5 p2b  117.7 ar   23.5 [20.7, 26.2] mhc  33.5 qkv_a  25.0 wq_b  101.4 total   335.6 [331.6, 338.9] | d_total   +4.6 = pf +27.5 p2b  -0.2 ar  -0.1 mhc  -0.4 qkv_a -22.4 wq_b  -0.1 eq True
+m=1 pre/pf:c192/full             pf  16.9 p2b  117.7 ar   23.5 [21.9, 26.1] mhc  33.8 qkv_a  37.1 wq_b  101.7 total   335.9 [332.1, 339.9] | d_total   +5.0 = pf +15.9 p2b  -0.2 ar  -0.1 mhc  -0.0 qkv_a -10.3 wq_b  +0.3 eq True
+m=1 pre/burst:c48/full+wqb:8     pf  51.1 p2b  117.8 ar   23.6 [20.5, 26.3] mhc  33.9 qkv_a  26.6 wq_b   81.8 total   339.6 [335.8, 344.1] | d_total   +8.6 = pf +50.0 p2b  -0.1 ar  -0.0 mhc  +0.0 qkv_a -20.8 wq_b -19.6 eq True
+m=1 spin:none                    pf   1.1 p2b  117.5 ar   28.6 [28.4, 28.7] mhc  32.8 qkv_a  48.1 wq_b  101.5 total   335.9 [334.3, 338.1] | d_total   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq False
+m=1 spin:start/tri/5.5           pf   1.1 p2b  117.4 ar   30.8 [30.0, 31.8] mhc  32.7 qkv_a  24.6 wq_b  103.2 total   315.7 [314.3, 318.1] | d_total  -20.2 = pf  +0.0 p2b  -0.1 ar  +2.1 mhc  -0.1 qkv_a -23.5 wq_b  +1.7 eq False
+m=3 none                         pf   1.1 p2b  353.3 ar   46.3 [42.2, 54.0] mhc  34.9 qkv_a  49.0 wq_b  105.2 total   596.8 [590.7, 605.3] | d_total   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq True
+m=3 warm/full                    pf   1.1 p2b  352.7 ar   46.1 [40.7, 53.3] mhc  35.5 qkv_a  18.4 wq_b  104.5 total   564.6 [558.6, 572.4] | d_total  -32.2 = pf  -0.0 p2b  -0.7 ar  -0.1 mhc  +0.6 qkv_a -30.6 wq_b  -0.7 eq True
+m=3 start/tri/5.5                pf   1.1 p2b  352.7 ar   64.1 [58.6, 70.4] mhc  34.9 qkv_a  26.7 wq_b  104.5 total   589.9 [583.8, 598.0] | d_total   -6.9 = pf  -0.0 p2b  -0.6 ar +17.8 mhc  -0.1 qkv_a -22.3 wq_b  -0.7 eq True
+m=3 start/tri/full               pf   1.1 p2b  349.4 ar   67.7 [62.4, 74.1] mhc  35.5 qkv_a  18.5 wq_b  104.5 total   582.9 [577.5, 590.4] | d_total  -13.9 = pf  +0.1 p2b  -4.0 ar +21.4 mhc  +0.6 qkv_a -30.6 wq_b  -0.6 eq True
+m=3 after/tri/5.5                pf   1.1 p2b  354.2 ar   47.1 [42.8, 55.0] mhc  55.1 qkv_a  24.9 wq_b  105.1 total   593.9 [585.7, 603.4] | d_total   -2.9 = pf  +0.0 p2b  +0.9 ar  +0.8 mhc +20.2 qkv_a -24.2 wq_b  -0.1 eq True
+m=3 start/paced:100/5.5          pf   1.0 p2b  352.3 ar   65.8 [64.8, 67.5] mhc  34.9 qkv_a  25.0 wq_b  105.0 total   589.8 [587.7, 594.9] | d_total   -7.0 = pf  -0.1 p2b  -1.1 ar +19.5 mhc  -0.1 qkv_a -24.1 wq_b  -0.2 eq True
+m=3 start/ring:6x16/5.5          pf   1.1 p2b  353.1 ar  127.0 [126.6, 127.3] mhc  32.9 qkv_a  26.6 wq_b  104.5 total   651.2 [648.2, 656.4] | d_total  +54.4 = pf  -0.0 p2b  -0.2 ar +80.8 mhc  -2.0 qkv_a -22.4 wq_b  -0.7 eq True
+m=3 start/burst:c48/5.5          pf   1.1 p2b  349.2 ar   60.3 [55.3, 67.9] mhc  35.2 qkv_a  32.8 wq_b  105.0 total   590.2 [584.2, 597.8] | d_total   -6.6 = pf  +0.0 p2b  -4.2 ar +14.1 mhc  +0.3 qkv_a -16.2 wq_b  -0.2 eq True
+m=3 pre/tri/full                 pf  42.0 p2b  353.3 ar   46.5 [42.3, 54.0] mhc  35.1 qkv_a  18.4 wq_b  105.4 total   607.2 [601.1, 616.1] | d_total  +10.4 = pf +41.0 p2b  -0.0 ar  +0.2 mhc  +0.1 qkv_a -30.6 wq_b  +0.3 eq True
+m=3 pre/burst:c48/full           pf  28.7 p2b  352.9 ar   46.1 [42.3, 53.3] mhc  35.2 qkv_a  26.6 wq_b  104.5 total   601.0 [595.5, 609.9] | d_total   +4.2 = pf +27.6 p2b  -0.4 ar  -0.1 mhc  +0.3 qkv_a -22.4 wq_b  -0.7 eq True
+m=3 pre/pf:c192/full             pf  19.5 p2b  352.2 ar   46.5 [41.9, 52.9] mhc  35.5 qkv_a  36.7 wq_b  104.7 total   600.9 [595.6, 608.3] | d_total   +4.1 = pf +18.4 p2b  -1.1 ar  +0.2 mhc  +0.6 qkv_a -12.3 wq_b  -0.5 eq True
+m=3 pre/burst:c48/full+wqb:8     pf  52.4 p2b  351.3 ar   46.1 [41.6, 53.0] mhc  35.4 qkv_a  28.6 wq_b   85.3 total   605.2 [599.1, 613.1] | d_total   +8.4 = pf +51.3 p2b  -2.0 ar  -0.2 mhc  +0.5 qkv_a -20.4 wq_b -19.9 eq True
+m=3 spin:none                    pf   1.1 p2b  353.2 ar   28.7 [28.5, 28.7] mhc  34.6 qkv_a  49.4 wq_b  105.4 total   577.7 [575.2, 583.6] | d_total   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq False
+m=3 spin:start/tri/5.5           pf   1.1 p2b  353.0 ar   30.9 [30.7, 31.8] mhc  33.1 qkv_a  27.0 wq_b  104.4 total   557.0 [554.0, 564.1] | d_total  -20.7 = pf  +0.0 p2b  -0.2 ar  +2.2 mhc  -1.5 qkv_a -22.5 wq_b  -1.0 eq False
+m=4 none                         pf   1.1 p2b  482.3 ar   88.5 [79.1, 100.1] mhc  35.7 qkv_a  50.4 wq_b  107.0 total   770.5 [760.6, 783.3] | d_total   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq True
+m=4 warm/full                    pf   1.1 p2b  485.3 ar   88.7 [79.5, 100.1] mhc  35.6 qkv_a  17.8 wq_b  107.4 total   740.3 [727.4, 752.9] | d_total  -30.2 = pf  -0.0 p2b  +3.0 ar  +0.2 mhc  -0.1 qkv_a -32.6 wq_b  +0.4 eq True
+m=4 start/tri/5.5                pf   1.2 p2b  493.7 ar  105.5 [95.5, 117.2] mhc  35.7 qkv_a  32.7 wq_b  106.0 total   779.0 [764.8, 790.8] | d_total   +8.5 = pf  +0.0 p2b +11.4 ar +17.0 mhc  -0.0 qkv_a -17.7 wq_b  -1.0 eq True
+m=4 start/tri/full               pf   1.2 p2b  483.3 ar  111.5 [102.7, 123.4] mhc  35.6 qkv_a  20.4 wq_b  105.9 total   762.8 [749.9, 776.0] | d_total   -7.7 = pf  +0.0 p2b  +1.0 ar +23.0 mhc  -0.1 qkv_a -30.0 wq_b  -1.1 eq True
+m=4 after/tri/5.5                pf   1.2 p2b  483.0 ar   89.5 [79.3, 98.4] mhc  54.9 qkv_a  26.5 wq_b  107.8 total   766.1 [755.1, 778.2] | d_total   -4.4 = pf  +0.0 p2b  +0.7 ar  +1.0 mhc +19.2 qkv_a -23.8 wq_b  +0.9 eq True
+m=4 start/paced:100/5.5          pf   1.1 p2b  483.5 ar   96.0 [85.8, 106.4] mhc  35.8 qkv_a  27.6 wq_b  107.0 total   754.8 [741.3, 765.9] | d_total  -15.8 = pf  -0.0 p2b  +1.2 ar  +7.5 mhc  +0.1 qkv_a -22.7 wq_b  +0.1 eq True
+m=4 start/ring:6x16/5.5          pf   1.2 p2b  494.1 ar  126.6 [124.6, 127.5] mhc  35.1 qkv_a  30.7 wq_b  106.0 total   799.7 [788.5, 803.8] | d_total  +29.2 = pf  +0.1 p2b +11.8 ar +38.1 mhc  -0.7 qkv_a -19.6 wq_b  -1.0 eq True
+m=4 start/burst:c48/5.5          pf   1.2 p2b  483.2 ar  104.2 [92.4, 116.1] mhc  35.6 qkv_a  33.1 wq_b  105.9 total   767.3 [755.8, 779.4] | d_total   -3.2 = pf  +0.0 p2b  +0.9 ar +15.7 mhc  -0.1 qkv_a -17.2 wq_b  -1.1 eq True
+m=4 pre/tri/full                 pf  42.7 p2b  482.4 ar   88.8 [79.0, 98.8] mhc  35.7 qkv_a  18.3 wq_b  106.7 total   778.5 [767.0, 789.0] | d_total   +8.0 = pf +41.6 p2b  +0.1 ar  +0.3 mhc  -0.0 qkv_a -32.0 wq_b  -0.3 eq True
+m=4 pre/burst:c48/full           pf  29.6 p2b  485.4 ar   88.6 [77.5, 100.1] mhc  35.6 qkv_a  30.1 wq_b  107.7 total   780.5 [766.8, 791.8] | d_total   +9.9 = pf +28.5 p2b  +3.1 ar  +0.1 mhc  -0.1 qkv_a -20.3 wq_b  +0.7 eq True
+m=4 pre/pf:c192/full             pf  21.5 p2b  496.5 ar   88.9 [78.3, 98.6] mhc  35.7 qkv_a  36.4 wq_b  106.0 total   790.2 [778.4, 799.5] | d_total  +19.7 = pf +20.4 p2b +14.2 ar  +0.4 mhc  +0.0 qkv_a -14.0 wq_b  -1.0 eq True
+m=4 pre/burst:c48/full+wqb:8     pf  52.0 p2b  487.4 ar   88.4 [78.6, 98.1] mhc  35.8 qkv_a  30.6 wq_b   88.1 total   786.2 [775.1, 797.4] | d_total  +15.7 = pf +50.9 p2b  +5.1 ar  -0.1 mhc  +0.1 qkv_a -19.8 wq_b -18.9 eq True
+m=4 spin:none                    pf   1.1 p2b  481.1 ar   28.7 [28.5, 28.8] mhc  34.9 qkv_a  51.2 wq_b  105.6 total   709.6 [706.6, 712.6] | d_total   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq False
+m=4 spin:start/tri/5.5           pf   1.1 p2b  481.3 ar   32.0 [30.8, 33.3] mhc  35.7 qkv_a  30.7 wq_b  105.8 total   694.2 [688.5, 697.3] | d_total  -15.4 = pf  +0.0 p2b  +0.2 ar  +3.4 mhc  +0.8 qkv_a -20.5 wq_b  +0.1 eq False
+m=6 none                         pf   1.1 p2b  721.8 ar   48.3 [41.5, 57.1] mhc  35.3 qkv_a  47.1 wq_b  107.1 total   965.9 [957.2, 982.0] | d_total   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq True
+m=6 warm/full                    pf   1.1 p2b  729.4 ar   47.5 [41.0, 56.9] mhc  35.7 qkv_a  16.8 wq_b  105.7 total   943.1 [934.0, 954.4] | d_total  -22.8 = pf  -0.0 p2b  +7.5 ar  -0.7 mhc  +0.4 qkv_a -30.3 wq_b  -1.4 eq True
+m=6 start/tri/5.5                pf   1.2 p2b  739.8 ar   66.4 [60.4, 76.3] mhc  35.7 qkv_a  26.6 wq_b  105.9 total   983.5 [973.0, 996.4] | d_total  +17.6 = pf  +0.0 p2b +18.0 ar +18.1 mhc  +0.4 qkv_a -20.5 wq_b  -1.2 eq True
+m=6 start/tri/full               pf   1.2 p2b  725.1 ar   75.9 [69.2, 84.9] mhc  34.8 qkv_a  16.9 wq_b  105.8 total   967.7 [957.5, 980.8] | d_total   +1.9 = pf  +0.0 p2b  +3.2 ar +27.6 mhc  -0.5 qkv_a -30.2 wq_b  -1.2 eq True
+m=6 after/tri/5.5                pf   1.2 p2b  721.3 ar   47.4 [40.6, 57.2] mhc  55.3 qkv_a  25.6 wq_b  108.4 total   964.0 [956.6, 977.3] | d_total   -1.8 = pf  +0.0 p2b  -0.5 ar  -0.9 mhc +19.9 qkv_a -21.4 wq_b  +1.4 eq True
+m=6 start/paced:100/5.5          pf   1.1 p2b  726.5 ar   67.4 [65.5, 70.0] mhc  34.8 qkv_a  22.9 wq_b  107.9 total   967.9 [959.2, 982.3] | d_total   +2.0 = pf  -0.0 p2b  +4.7 ar +19.1 mhc  -0.6 qkv_a -24.2 wq_b  +0.9 eq True
+m=6 start/ring:6x16/5.5          pf   1.2 p2b  739.8 ar  127.0 [126.6, 128.3] mhc  35.8 qkv_a  30.9 wq_b  108.1 total  1049.1 [1045.3, 1057.1] | d_total  +83.2 = pf  +0.0 p2b +18.0 ar +78.7 mhc  +0.5 qkv_a -16.2 wq_b  +1.0 eq True
+m=6 start/burst:c48/5.5          pf   1.2 p2b  725.4 ar   62.2 [54.0, 73.1] mhc  34.9 qkv_a  30.5 wq_b  107.3 total   968.6 [960.7, 984.0] | d_total   +2.8 = pf  +0.0 p2b  +3.6 ar +13.9 mhc  -0.5 qkv_a -16.6 wq_b  +0.2 eq True
+m=6 pre/tri/full                 pf  42.9 p2b  721.9 ar   47.9 [41.8, 57.1] mhc  35.5 qkv_a  16.8 wq_b  105.7 total   976.9 [968.3, 992.4] | d_total  +11.0 = pf +41.7 p2b  +0.1 ar  -0.4 mhc  +0.2 qkv_a -30.3 wq_b  -1.4 eq True
+m=6 pre/burst:c48/full           pf  30.3 p2b  730.2 ar   47.4 [41.0, 57.1] mhc  35.6 qkv_a  24.7 wq_b  106.0 total   982.5 [971.7, 998.5] | d_total  +16.6 = pf +29.1 p2b  +8.4 ar  -0.9 mhc  +0.3 qkv_a -22.4 wq_b  -1.1 eq True
+m=6 pre/pf:c192/full             pf  20.6 p2b  739.4 ar   48.4 [41.3, 58.2] mhc  35.6 qkv_a  34.8 wq_b  106.7 total   991.7 [981.0, 1007.6] | d_total  +25.8 = pf +19.4 p2b +17.5 ar  +0.1 mhc  +0.3 qkv_a -12.3 wq_b  -0.4 eq True
+m=6 pre/burst:c48/full+wqb:8     pf  51.0 p2b  725.6 ar   46.8 [40.1, 55.1] mhc  35.5 qkv_a  26.7 wq_b   88.3 total   981.1 [969.9, 996.3] | d_total  +15.2 = pf +49.9 p2b  +3.8 ar  -1.5 mhc  +0.2 qkv_a -20.4 wq_b -18.8 eq True
+m=6 spin:none                    pf   1.1 p2b  720.9 ar   28.7 [28.6, 28.8] mhc  35.2 qkv_a  51.2 wq_b  106.6 total   951.3 [948.3, 959.5] | d_total   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq False
+m=6 spin:start/tri/5.5           pf   1.1 p2b  721.7 ar   31.8 [30.8, 32.8] mhc  35.4 qkv_a  30.7 wq_b  107.5 total   935.0 [931.9, 942.7] | d_total  -16.3 = pf  +0.0 p2b  +0.8 ar  +3.1 mhc  +0.3 qkv_a -20.5 wq_b  +1.0 eq False
+m=8 none                         pf   1.2 p2b  984.9 ar   67.7 [60.8, 74.8] mhc  37.0 qkv_a  51.5 wq_b  108.5 total  1257.2 [1246.6, 1276.8] | d_total   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq True
+m=8 warm/full                    pf   1.2 p2b  977.0 ar   66.6 [58.6, 73.6] mhc  37.4 qkv_a  18.1 wq_b  111.6 total  1218.1 [1209.0, 1244.2] | d_total  -39.1 = pf  -0.0 p2b  -7.9 ar  -1.2 mhc  +0.5 qkv_a -33.4 wq_b  +3.1 eq True
+m=8 start/tri/5.5                pf   1.5 p2b 1022.3 ar   82.2 [73.2, 89.6] mhc  37.7 qkv_a  34.6 wq_b  110.5 total  1293.4 [1282.9, 1317.4] | d_total  +36.1 = pf  +0.3 p2b +37.3 ar +14.4 mhc  +0.7 qkv_a -16.9 wq_b  +2.0 eq True
+m=8 start/tri/full               pf   1.2 p2b  990.0 ar   90.6 [82.9, 96.3] mhc  37.6 qkv_a  22.4 wq_b  109.8 total  1257.3 [1248.2, 1280.5] | d_total   +0.1 = pf  +0.0 p2b  +5.0 ar +22.8 mhc  +0.6 qkv_a -29.1 wq_b  +1.3 eq True
+m=8 after/tri/5.5                pf   1.2 p2b  984.8 ar   65.7 [59.0, 72.1] mhc  56.9 qkv_a  28.4 wq_b  109.5 total  1252.3 [1242.9, 1270.6] | d_total   -5.0 = pf  +0.0 p2b  -0.1 ar  -2.0 mhc +19.9 qkv_a -23.2 wq_b  +1.0 eq True
+m=8 start/paced:100/5.5          pf   1.1 p2b  974.1 ar   86.0 [79.6, 92.0] mhc  37.7 qkv_a  30.5 wq_b  112.0 total  1248.3 [1239.0, 1269.8] | d_total   -8.9 = pf  -0.1 p2b -10.9 ar +18.2 mhc  +0.7 qkv_a -21.1 wq_b  +3.5 eq True
+m=8 start/ring:6x16/5.5          pf   1.5 p2b 1023.1 ar  129.4 [128.4, 131.4] mhc  36.6 qkv_a  31.0 wq_b  109.8 total  1339.6 [1334.3, 1358.5] | d_total  +82.3 = pf  +0.3 p2b +38.2 ar +61.6 mhc  -0.4 qkv_a -20.5 wq_b  +1.3 eq True
+m=8 start/burst:c48/5.5          pf   1.2 p2b  990.0 ar   78.1 [70.2, 85.6] mhc  37.3 qkv_a  40.5 wq_b  109.4 total  1261.4 [1253.0, 1285.1] | d_total   +4.2 = pf  +0.0 p2b  +5.1 ar +10.3 mhc  +0.3 qkv_a -11.0 wq_b  +0.9 eq True
+m=8 pre/tri/full                 pf  42.2 p2b  984.2 ar   68.3 [60.7, 74.6] mhc  37.7 qkv_a  20.3 wq_b  109.4 total  1267.8 [1257.6, 1287.4] | d_total  +10.5 = pf +40.9 p2b  -0.8 ar  +0.6 mhc  +0.7 qkv_a -31.2 wq_b  +0.9 eq True
+m=8 pre/burst:c48/full           pf  28.9 p2b  976.8 ar   66.3 [59.6, 72.5] mhc  37.2 qkv_a  33.2 wq_b  112.0 total  1260.8 [1252.6, 1285.8] | d_total   +3.6 = pf +27.7 p2b  -8.1 ar  -1.4 mhc  +0.3 qkv_a -18.3 wq_b  +3.5 eq True
+m=8 pre/pf:c192/full             pf  22.6 p2b 1025.8 ar   66.8 [60.1, 73.1] mhc  37.8 qkv_a  38.6 wq_b  109.1 total  1305.6 [1295.5, 1324.6] | d_total  +48.4 = pf +21.4 p2b +40.9 ar  -0.9 mhc  +0.8 qkv_a -12.9 wq_b  +0.7 eq True
+m=8 pre/burst:c48/full+wqb:8     pf  51.3 p2b  990.1 ar   65.1 [58.9, 71.6] mhc  37.7 qkv_a  32.4 wq_b   92.9 total  1274.6 [1266.3, 1294.4] | d_total  +17.4 = pf +50.1 p2b  +5.2 ar  -2.7 mhc  +0.7 qkv_a -19.1 wq_b -15.6 eq True
+m=8 spin:none                    pf   1.2 p2b  984.0 ar   28.6 [28.4, 28.8] mhc  35.3 qkv_a  52.2 wq_b  110.2 total  1218.6 [1213.7, 1233.7] | d_total   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq False
+m=8 spin:start/tri/5.5           pf   1.2 p2b  984.4 ar   31.8 [30.7, 32.5] mhc  35.2 qkv_a  30.8 wq_b  109.5 total  1200.1 [1195.0, 1215.5] | d_total  -18.6 = pf  +0.0 p2b  +0.5 ar  +3.1 mhc  -0.0 qkv_a -21.4 wq_b  -0.7 eq False

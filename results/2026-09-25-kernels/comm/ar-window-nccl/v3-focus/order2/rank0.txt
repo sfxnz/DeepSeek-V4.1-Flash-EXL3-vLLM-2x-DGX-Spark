@@ -1,0 +1,45 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip ar_l2_prefetch: DSV41_AR_L2_PREFETCH is not 1
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 489
+dsv41-patch ok pm_qos: armed
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+INFO 09-25 17:46:14 [pynccl.py:120] vLLM is using nccl==2.30.7
+INFO 09-25 17:46:15 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 17:46:15 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+m=4 after/tri/full               pf   1.2 p2b  504.8 ar   71.7 [59.2, 85.8] mhc  69.8 qkv_a  18.4 wq_b  111.6 total   785.1 [767.5, 801.8] | net   -1.1 = pf  +0.1 p2b  -2.9 ar  -0.8 mhc +34.0 qkv_a -35.5 wq_b  +0.0 eq True
+m=4 after/tri/5.5                pf   1.1 p2b  507.8 ar   72.5 [60.3, 85.7] mhc  56.2 qkv_a  30.3 wq_b  111.4 total   785.7 [766.3, 804.6] | net   -3.6 = pf  +0.0 p2b  +0.1 ar  +0.0 mhc +20.3 qkv_a -23.6 wq_b  -0.2 eq True
+m=4 start/tri/full               pf   1.2 p2b  504.1 ar   97.2 [83.7, 109.9] mhc  36.1 qkv_a  22.4 wq_b  111.6 total   779.0 [759.8, 795.6] | net   -6.5 = pf  +0.1 p2b  -3.6 ar +24.7 mhc  +0.2 qkv_a -31.6 wq_b  +0.0 eq True
+m=4 start/tri/5.5                pf   1.2 p2b  508.6 ar   89.9 [77.0, 103.5] mhc  36.2 qkv_a  32.4 wq_b  111.3 total   785.3 [766.0, 803.8] | net   -4.7 = pf  +0.0 p2b  +0.9 ar +17.5 mhc  +0.3 qkv_a -21.6 wq_b  -0.3 eq True
+m=4 start/tri/3                  pf   1.2 p2b  504.3 ar   83.4 [70.5, 96.2] mhc  36.3 qkv_a  40.2 wq_b  111.5 total   783.4 [764.5, 800.7] | net   -2.3 = pf  +0.1 p2b  -3.4 ar +10.9 mhc  +0.4 qkv_a -13.8 wq_b  -0.0 eq True
+m=4 none                         pf   1.1 p2b  507.7 ar   72.5 [60.5, 85.7] mhc  35.9 qkv_a  54.0 wq_b  111.6 total   789.1 [771.2, 807.2] | net   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq True
+m=8 after/tri/full               pf   1.2 p2b 1008.5 ar   59.8 [55.0, 65.4] mhc  69.4 qkv_a  18.5 wq_b  113.7 total  1275.3 [1264.5, 1294.3] | net   +0.6 = pf  +0.0 p2b -20.6 ar  +0.4 mhc +33.4 qkv_a -34.9 wq_b  +2.0 eq True
+m=8 after/tri/5.5                pf   1.2 p2b 1028.1 ar   59.0 [54.7, 64.9] mhc  55.9 qkv_a  30.3 wq_b  113.4 total  1292.3 [1280.6, 1311.5] | net   -2.0 = pf  +0.0 p2b  -0.9 ar  -0.4 mhc +19.9 qkv_a -23.0 wq_b  +1.7 eq True
+m=8 start/tri/full               pf   1.2 p2b 1007.4 ar   85.0 [80.6, 90.7] mhc  36.1 qkv_a  24.0 wq_b  112.6 total  1267.9 [1248.8, 1289.8] | net   -5.7 = pf  +0.0 p2b -21.7 ar +25.5 mhc  +0.1 qkv_a -29.4 wq_b  +1.0 eq True
+m=8 start/tri/5.5                pf   1.2 p2b 1026.8 ar   75.6 [70.8, 80.6] mhc  36.0 qkv_a  32.6 wq_b  111.7 total  1287.7 [1274.8, 1304.5] | net   -5.4 = pf  +0.0 p2b  -2.2 ar +16.2 mhc  -0.0 qkv_a -20.8 wq_b  +0.1 eq True
+m=8 start/tri/3                  pf   1.2 p2b 1006.8 ar   70.7 [66.3, 76.5] mhc  36.1 qkv_a  40.7 wq_b  114.5 total  1271.7 [1259.2, 1291.2] | net   -1.3 = pf  +0.0 p2b -22.3 ar +11.3 mhc  +0.1 qkv_a -12.7 wq_b  +2.9 eq True
+m=8 none                         pf   1.2 p2b 1029.0 ar   59.4 [54.9, 64.9] mhc  36.0 qkv_a  53.4 wq_b  111.6 total  1295.3 [1284.3, 1313.8] | net   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq True
+NCCL version 2.30.7+cuda13.3

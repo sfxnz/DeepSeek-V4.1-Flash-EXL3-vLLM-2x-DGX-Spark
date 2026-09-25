@@ -141,7 +141,12 @@ class PlanTests(unittest.TestCase):
             self.assertEqual(n % 16, 0)
 
     def test_budget_env(self):
-        self.assertEqual(ap.budget_bytes({}), int(5.5 * 2**20))
+        self.assertEqual(ap.budget_bytes({}), 10 * 2**20)
+        # The default covers all of the next layer's fused_wqa_wkv (weight + scale) at TP=2.
+        qkv_a = 1792 * 5120 + 1792 * 5120 // 32
+        self.assertEqual(ap.split_budget([1792 * 5120, 1792 * 5120 // 32], ap.budget_bytes({})),
+                         [1792 * 5120, 1792 * 5120 // 32])
+        self.assertLess(qkv_a, ap.budget_bytes({}))
         self.assertEqual(ap.budget_bytes({ap.MIB_ENV: "4"}), 4 * 2**20)
         for bad in ("0", "-1", "21"):
             with self.assertRaises(ValueError):

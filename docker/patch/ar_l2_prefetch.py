@@ -1,27 +1,55 @@
 """Warm L2 with the next layer's qkv_a weights while the MoE all-reduce runs.
 
 DSV41_AR_L2_PREFETCH=1 (default 0, run.sh FORWARD_ENVS); DSV41_AR_L2_PREFETCH_MIB
-(default 5.5) is the byte budget per window. sitecustomize calls install().
+(default 10, which covers all of the next layer's fused_wqa_wkv: 9.02 MiB at TP=2) is
+the byte budget per window. sitecustomize calls install().
 
 Why (k3 comm, overlap the AR with independent work). After each MoE all-reduce the
 target layer runs AR (~22.7 us, 5 NCCL CTAs) -> mhc_post -> mhc_pre -> act quant ->
-qkv_a (fused_wqa_wkv, 9.46 MB MXFP8 at TP=2) with DRAM mostly idle until qkv_a, which
-then streams its weights cold (47.6 us in the r3 serve profile). A side stream forked
-right before the AR issues a TMA L2 prefetch (cp.async.bulk.prefetch.L2, one CTA) of
-the first budget bytes of the next layer's fused_wqa_wkv weight and scale.
-kernel_study/comm/l2_prefetch_window.py (single GPU, the serve's mHC / quant / b12x
-kernels, cold L2 as after p2b, 300 replays per arm): 5.7 MB prefetched -> window +2.0
-us, qkv_a 47.1 -> 22.5 us, window + qkv_a + wq_b 211.0 -> 189.3 us (-21.7); the Triton
-kernel used here (l2pf_triton twin) measured the same -21.7.
+qkv_a (fused_wqa_wkv, 9.46 MB MXFP8 at TP=2), and qkv_a streams its weights cold (47.6
+us in the r3 serve profile). A side stream forked right before the AR issues a TMA L2
+prefetch (cp.async.bulk.prefetch.L2, one CTA; l2pf_kernel.py) of the first budget bytes
+of the next layer's fused_wqa_wkv weight and scale.
+
+What it buys is a range (k3 comm fix pass). The AR does not leave DRAM idle: NCCL's LL
+all-reduce over the net transport with GDR off polls host-memory buffers and waits on NIC
+DMA in the same LPDDR5x, so the prefetch burst delays the late rank's AR, which is the
+critical path.
+- Optimistic end: the AR replaced by a 5-CTA clock spin that touches no memory
+  (l2_prefetch_window.py, ar_l2_prefetch_gpu.py). 5.5 MiB gives -20.2 us per prefetched
+  window (qkv_a 47.1 -> 23.1 us), about -0.75 ms/step over 37 windows.
+- Pessimistic end: a real NCCL AR between two ranks on one GB10 (MPS, a different
+  NCCL_HOSTID per rank -> NET/IB loopback, serve NCCL env), a p2b stand-in before the AR,
+  and the lever's own join after the AR (kernel_study/comm/ar_window_nccl.py). The late
+  rank's AR slows by +16..+18 us at 5.5 MiB and +23..+27 us with the whole qkv_a, while
+  qkv_a saves 20..23 and 30..33 us. Net per window at m=4: -1.9..-4.5 (5.5 MiB) and
+  -7.2..-8.7 us (whole qkv_a); at m=8: -0.2..-4.3 and -1.0..-2.0 us. With the whole
+  qkv_a that is -0.27..-0.32 ms/step at c=1 and -0.04..-0.07 at c=2. The emulated
+  ranks share one GPU, DRAM and NIC (the emulated m=4 AR is 72-83 us against 22.7 in
+  the serve).
+Placement, issue and budget come from that real-AR data at m=4 and m=8 (two arm orders,
+1000 replays each):
+- Fork at the AR start. A fork after the AR moves the slowdown onto mHC (+20 us at
+  5.5 MiB, +34 us for the whole qkv_a).
+- Keep the 1-CTA burst. A paced issue, a closed-loop TMA ring or multi-CTA issue loses
+  more on the AR or warms less.
+- Prefetch the whole qkv_a: best at m=4 in both orders, a tie at m=8.
+Moving the prefetch before p2b does not win. As a separate kernel its run time is
+serialized, because p2b fills every SM's register file. Issued by p2b itself it is
+zero-sum, because p2b is DRAM-bound where it streams (p2b_prefetch_probe.py).
+The serve mechanism boot checks the rest (results/2026-09-25-kernels/comm/
+serve_arm_plan.txt). E fails if the late rank's MoE AR slows by at least what qkv_a saves.
 
 Hooks (all in the target model; the draft model's layers never get a plan):
 - DeepseekV4Model.forward builds, once per model, a plan for layer i: the next
   layer's fused_wqa_wkv weight and weight_scale, the same fraction of each, total
   <= budget. No plan when the next layer has an Engram (its 162 MB wkv GEMM owns that
   window) or for the last layer. After the forward, a pending prefetch is joined.
-- DeepseekV4DecoderLayer.forward joins any pending prefetch on entry (the side kernel
-  only issues requests, so this costs nothing measurable and keeps breakable-graph
-  segments free of forked streams), arms its plan, runs, disarms.
+- DeepseekV4DecoderLayer.forward joins any pending prefetch on entry (keeps
+  breakable-graph segments free of forked streams), arms its plan, runs, disarms. The
+  join is right after the AR: the 1-CTA kernel stays resident until the TMA has taken
+  its requests (22 us at 3 MiB, 31 at 5.5, 44 for the whole qkv_a), so a prefetch that
+  outlasts the AR stalls mhc_post (+1.4..+2.2 us measured with the real AR).
 - MoERunner._maybe_reduce_final_output (the call that all-reduces routed + shared)
   forks the side stream and launches the prefetch before running the AR, when a plan
   is armed and the batch has <= 64 tokens (decode).
@@ -40,7 +68,7 @@ LOG_DISARMED = "dsv41: ar l2 prefetch DISARMED"
 
 ENV = "DSV41_AR_L2_PREFETCH"
 MIB_ENV = "DSV41_AR_L2_PREFETCH_MIB"
-DEFAULT_MIB = 5.5
+DEFAULT_MIB = 10.0  # >= fused_wqa_wkv's 9.02 MiB at TP=2: all of the next qkv_a
 MAX_TOKENS = 64
 CHUNK = 16384
 LAYER_ANCHORS = ("x = self.attn(positions, x, None)", "x = self.ffn(x, input_ids)")

@@ -1,10 +1,13 @@
 """TMA L2 prefetch kernel for ar_l2_prefetch.py (Triton, inline PTX, compiled on first use).
 
 One program of BLOCK lanes; lane i issues cp.async.bulk.prefetch.L2.global for 16 KiB
-chunks i, i + BLOCK, ... of [base, base + nbytes). The requests are fire-and-forget;
-the kernel ends once they are issued. Same instruction stream as the C++ kernel of
-kernel_study/comm/l2_prefetch_window.py (bulk60 and its Triton twin tri60 both
-measured -21.7 us per window). Top-level imports are stdlib only.
+chunks i, i + BLOCK, ... of [base, base + nbytes). The requests are fire-and-forget,
+but the CTA stays resident until the TMA unit has taken them, so the kernel runs about
+as long as the transfer (43-47 us for 9.46 MB, ~205 GB/s; kernel_study/comm/
+l2pf_engine_selftest.py). Same instruction stream as the C++ kernel of
+kernel_study/comm/l2_prefetch_window.py: bulk60 and its Triton twin tri60 both measured
+-21.7 us per window against a clock-spin AR stand-in; against a real NCCL AR the window
+nets -0.2..-8.7 us (ar_l2_prefetch.py docstring). Top-level imports are stdlib only.
 """
 
 from __future__ import annotations
