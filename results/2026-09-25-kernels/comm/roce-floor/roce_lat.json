@@ -1,0 +1,229 @@
+{
+ "what": "RoCE one-way latency floor spark1 -> spark2 (perftest ping-pong, RC, reports RTT/2), serve down, no GPU involved",
+ "date": "2026-09-25",
+ "link": "rocep1s0f1 (enp1s0f1np1, 200 Gb/s port, PCIe-limited), RoCE v2, GID idx 3 (spark1) / 4 (spark2), active MTU 1024",
+ "cmd": "server: ssh spark2 <tool> -d rocep1s0f1 -x 4 -F -s S -n 5000 -p P ; client: <tool> -d rocep1s0f1 -x 3 -F -s S -n 5000 -p P 10.100.8.2",
+ "host_load_note": "spark1 ran the requant (GPU + CPU) during this measurement; the tool polls one CPU core",
+ "rows": [
+  {
+   "op": "ib_send_lat",
+   "bytes": 8,
+   "iters": 5000,
+   "t_min_us": 1.34,
+   "t_typical_us": 1.43,
+   "t_avg_us": 1.5,
+   "t_stdev_us": 0.12,
+   "p99_us": 2.57,
+   "p999_us": 3.59
+  },
+  {
+   "op": "ib_send_lat",
+   "bytes": 64,
+   "iters": 5000,
+   "t_min_us": 1.43,
+   "t_typical_us": 1.53,
+   "t_avg_us": 1.58,
+   "t_stdev_us": 0.1,
+   "p99_us": 2.46,
+   "p999_us": 3.23
+  },
+  {
+   "op": "ib_send_lat",
+   "bytes": 1024,
+   "iters": 5000,
+   "t_min_us": 2.3,
+   "t_typical_us": 2.42,
+   "t_avg_us": 2.56,
+   "t_stdev_us": 0.19,
+   "p99_us": 4.03,
+   "p999_us": 4.85
+  },
+  {
+   "op": "ib_send_lat",
+   "bytes": 4096,
+   "iters": 5000,
+   "t_min_us": 2.66,
+   "t_typical_us": 2.94,
+   "t_avg_us": 3.11,
+   "t_stdev_us": 0.24,
+   "p99_us": 4.94,
+   "p999_us": 5.89
+  },
+  {
+   "op": "ib_send_lat",
+   "bytes": 10240,
+   "iters": 5000,
+   "t_min_us": 3.22,
+   "t_typical_us": 3.64,
+   "t_avg_us": 3.91,
+   "t_stdev_us": 0.35,
+   "p99_us": 5.92,
+   "p999_us": 6.87
+  },
+  {
+   "op": "ib_send_lat",
+   "bytes": 20480,
+   "iters": 5000,
+   "t_min_us": 4.1,
+   "t_typical_us": 4.67,
+   "t_avg_us": 4.93,
+   "t_stdev_us": 0.36,
+   "p99_us": 6.91,
+   "p999_us": 7.6
+  },
+  {
+   "op": "ib_send_lat",
+   "bytes": 40960,
+   "iters": 5000,
+   "t_min_us": 5.84,
+   "t_typical_us": 6.5,
+   "t_avg_us": 6.68,
+   "t_stdev_us": 0.32,
+   "p99_us": 8.39,
+   "p999_us": 9.63
+  },
+  {
+   "op": "ib_send_lat",
+   "bytes": 81920,
+   "iters": 5000,
+   "t_min_us": 9.16,
+   "t_typical_us": 9.96,
+   "t_avg_us": 10.12,
+   "t_stdev_us": 0.29,
+   "p99_us": 11.84,
+   "p999_us": 12.74
+  },
+  {
+   "op": "ib_send_lat",
+   "bytes": 262144,
+   "iters": 5000,
+   "t_min_us": 21.92,
+   "t_typical_us": 22.64,
+   "t_avg_us": 22.84,
+   "t_stdev_us": 0.45,
+   "p99_us": 24.74,
+   "p999_us": 26.96
+  },
+  {
+   "op": "ib_send_lat",
+   "bytes": 524288,
+   "iters": 5000,
+   "t_min_us": 41.3,
+   "t_typical_us": 42.62,
+   "t_avg_us": 42.74,
+   "t_stdev_us": 0.66,
+   "p99_us": 45.27,
+   "p999_us": 46.14
+  },
+  {
+   "op": "ib_write_lat",
+   "bytes": 8,
+   "iters": 5000,
+   "t_min_us": 1.37,
+   "t_typical_us": 1.47,
+   "t_avg_us": 1.56,
+   "t_stdev_us": 0.13,
+   "p99_us": 2.71,
+   "p999_us": 3.84
+  },
+  {
+   "op": "ib_write_lat",
+   "bytes": 64,
+   "iters": 5000,
+   "t_min_us": 1.38,
+   "t_typical_us": 1.46,
+   "t_avg_us": 1.55,
+   "t_stdev_us": 0.11,
+   "p99_us": 2.5,
+   "p999_us": 3.78
+  },
+  {
+   "op": "ib_write_lat",
+   "bytes": 1024,
+   "iters": 5000,
+   "t_min_us": 2.2,
+   "t_typical_us": 2.37,
+   "t_avg_us": 2.51,
+   "t_stdev_us": 0.19,
+   "p99_us": 4.0,
+   "p999_us": 4.86
+  },
+  {
+   "op": "ib_write_lat",
+   "bytes": 4096,
+   "iters": 5000,
+   "t_min_us": 2.63,
+   "t_typical_us": 2.92,
+   "t_avg_us": 3.11,
+   "t_stdev_us": 0.26,
+   "p99_us": 4.99,
+   "p999_us": 5.56
+  },
+  {
+   "op": "ib_write_lat",
+   "bytes": 10240,
+   "iters": 5000,
+   "t_min_us": 3.18,
+   "t_typical_us": 3.55,
+   "t_avg_us": 3.72,
+   "t_stdev_us": 0.29,
+   "p99_us": 5.66,
+   "p999_us": 6.77
+  },
+  {
+   "op": "ib_write_lat",
+   "bytes": 20480,
+   "iters": 5000,
+   "t_min_us": 4.1,
+   "t_typical_us": 4.71,
+   "t_avg_us": 4.91,
+   "t_stdev_us": 0.33,
+   "p99_us": 6.79,
+   "p999_us": 7.46
+  },
+  {
+   "op": "ib_write_lat",
+   "bytes": 40960,
+   "iters": 5000,
+   "t_min_us": 5.78,
+   "t_typical_us": 6.57,
+   "t_avg_us": 6.77,
+   "t_stdev_us": 0.3,
+   "p99_us": 8.53,
+   "p999_us": 9.33
+  },
+  {
+   "op": "ib_write_lat",
+   "bytes": 81920,
+   "iters": 5000,
+   "t_min_us": 9.04,
+   "t_typical_us": 10.37,
+   "t_avg_us": 10.45,
+   "t_stdev_us": 0.35,
+   "p99_us": 12.16,
+   "p999_us": 13.29
+  },
+  {
+   "op": "ib_write_lat",
+   "bytes": 262144,
+   "iters": 5000,
+   "t_min_us": 21.86,
+   "t_typical_us": 22.98,
+   "t_avg_us": 23.03,
+   "t_stdev_us": 0.35,
+   "p99_us": 24.94,
+   "p999_us": 25.78
+  },
+  {
+   "op": "ib_write_lat",
+   "bytes": 524288,
+   "iters": 5000,
+   "t_min_us": 41.08,
+   "t_typical_us": 41.91,
+   "t_avg_us": 42.16,
+   "t_stdev_us": 0.44,
+   "p99_us": 44.61,
+   "p999_us": 45.51
+  }
+ ]
+}

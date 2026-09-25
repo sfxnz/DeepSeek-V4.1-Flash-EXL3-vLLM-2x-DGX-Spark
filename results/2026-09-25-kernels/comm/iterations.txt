@@ -1,0 +1,103 @@
+k3 comm workstream: iteration log (2026-09-25)
+==============================================
+Worktree .worktrees/k3-comm, branch k3/comm (from perf/kernels-r3 e266092).
+Inputs: results/2026-09-25-kernels/profile/ (timeline-r3, c1/*, nccl-sweep.json, nccl-graph-diag.txt).
+GPU rules this session: spark1 GPU = requant + a foreign chromium (never used here); spark2 GPU =
+single-GPU microbenches under spark2:.worktrees-spark2/.gpu.lock, pmon recorded before each run.
+Two-node NCCL runs need both GPUs: they are prepared here and scheduled for the serve window.
+
+#0  Collective inventory per decode step (r3 c=1 profile, rank 0 = pacing rank)
+    Where / op / size per rank                          n/step  kernel med  p10   p90   mean   ms/step
+    target graph  AR bf16 m=4 40 KiB  Ring LL 5 ch        80     22.8 us   20.5  34.8  36.6   2.932
+    target graph  AG engram rows 24 KiB  LL 6 ch            2     18.4      15.0  22.3  19.0   0.038
+    draft graph   AR bf16 m=3 30 KiB  Ring LL 3 ch          7     21.4      19.2  181.8 64.8   0.453
+    draft graph   AG logits m=3 379 KiB Ring Simple 8 ch    1     77.2      32.8  94.7  71.8   0.072
+    eager         AG logits m=4 505 KiB Ring Simple 8 ch    1     92.3      38.9  111.9 82.9   0.083
+    eager         AR embed m=4 40 KiB                       1     21.6      19.9  52.9  33.1   0.033
+    => 88 AR + 4 AG = 92 collectives/step, 3.61 ms/step of NCCL kernel time on rank 0 (6.10 on rank 1,
+       which waits on rank 0). c=2: the same calls at m=8 target (80 KiB AR) / m=6 draft.
+    Critical-path split (rank 0): floor 88 x 20.1 us (p10 of per-call min, c1-skew.json) = 1.77 ms;
+    graph startup 1.13 ms (target AR0 +619 us mean, draft AR0 +510 us: c1_graph_startup.txt);
+    rank-skew wait: rank 0 1.34 ms, rank 1 3.92 ms (rank 0 is the straggler on 72% of calls).
+    Hidden cost not in NCCL kernels: the k3 sweep's gapped graph model (neighbour slowdown + gaps)
+    gives 6.19 ms/step KEEP vs 3.10 ms/step with NCCL_GRAPH_MIXING_SUPPORT=0 (c=1).
+    Model structure (image deepseek_v4_1/nvidia/model.py + fused_moe runner): 2 ARs per layer are
+    structural. attn: wo_b RowParallel AR; FFN: shared expert down_proj has reduce_results=False and
+    is summed into the routed output before ONE final AR (moe_runner._maybe_reduce_final_output), so
+    the MoE and shared-expert reductions are already combined. Nothing sits between an AR and its
+    consumer except the mHC post/pre (non-linear in the residual), so no AR can be deferred or fused
+    with the next one. Sequence parallel (RS+AG) would be 2 collectives per AR: worse.
+
+#1  RoCE latency floor (no GPU): roce-floor/roce_lat.json
+    perftest RC, spark1 -> spark2, rocep1s0f1, MTU 1024, 5000 iters, t_typical one-way:
+    8 B 1.47 us | 10 KiB 3.55 | 20 KiB 4.71 | 40 KiB 6.57 | 80 KiB 10.37 | 256 KiB 22.98 | 512 KiB 41.91
+    (ib_send_lat within 0.1 us). A 2-rank ring AR at m=4 is 2 sequential hops of 20 KiB payload,
+    40 KiB of LL lines each: wire floor 2 x 6.57 = 13.1 us. NCCL in-graph steady cost 22.5 us
+    (mixing off) -> ~9.4 us of NCCL overhead per AR (kernel start, two proxy hand-offs, host-memory
+    polling: GDR 0 because NCCL_CUMEM_ENABLE=0). The kernel median in the serve (22.8 us) is already
+    within 2.7 us of the p10 floor (20.1 us).
+
+#2  One-hop AR for TP=2 (AllGather + local add): DROPPED on arithmetic, no code
+    Idea: 2-rank AG is one ring step, AR is two; sum the two halves locally (bitwise equal to NCCL's
+    2-operand bf16 sum: a+b is commutative and the fp32 add of two bf16 values rounds once).
+    Measured in the serve at the same kind of size: engram AG 24 KiB/rank 18.4 us (r0) / 20.1 (r1)
+    vs AR at 24 KiB ~20.4 us (40 KiB AR 22.8 us minus 16 KiB x 0.152 us/KiB, the sweep's mix0
+    slope). The second hop costs ~2 us; the extra add kernel + in-graph gap costs 2-4 us.
+    Net <= 0. Fusing the add into mhc_post would mean editing the TileLang mhc_post kernel for
+    <= 0.16 ms/step. Not worth it.
+
+#3  vLLM custom all-reduce / symmetric memory across two nodes: NOT APPLICABLE (verified)
+    Boot log (profile .run-state/audit-*-20260925-092514.log), both ranks:
+      "Custom collectives are disabled because this multi-node group does not have MNNVL-capable
+       GPUs on every rank." (custom_all_reduce.py:201; the multi-node path is MNNVL only)
+      "FlashInfer All Reduce is disabled because it is not supported for world_size=2."
+      "SymmMemCommunicator: Device capability 12.1 not supported"
+      "Using ['PYNCCL'] all-reduce backends ... for group 'tp:0'" (and 'ep:0')
+    NCCL itself: "Symmetric memory is not supported. cuMemEnable 0, globalGinSupport 0,
+    cuMemGdrSupport 0" and "Connected all rings, use ring PXN 0 GDR 0" (sweep logs). Custom AR,
+    quick-reduce, torch symm-mem, flashinfer/trtllm AR and NCCL symmetric kernels all need
+    load/store access to the peer (NVLink/P2P/MNNVL); over RoCE the only path is the NCCL net
+    transport with a CPU proxy.
+
+#4  Lever: DSV41_NCCL_EAGER_TWIN=1 (docker/patch/nccl_eager_twin.py), default off
+    Mechanism read in nccl 2.30.7 source (github tag v2.30.7-1):
+      init.cc 2066-2076: NCCL_GRAPH_MIXING_SUPPORT=0 -> graphUsageMode 0; strongstream.cc:
+      mixing == (graphUsageMode == 2) is the only switch. With mixing on, each captured collective
+      adds an external serialEvent wait at the head of NCCL's device/host capture chains and an
+      event-record node per collective (recordEventOnStream), and an eager launch on a comm with
+      graph plans may be pushed through a host task behind the graph's host nodes
+      (enqueue.cc ncclLaunchPrepare: persistentRefs + cudaEventQuery(hostStream.serialEvent)).
+      With NCCL_CUMEM_ENABLE=0, runtimeConn is off (init.cc 1552): every ring/tree connection is
+      made in ncclCommInitRank, so a comm first used inside a capture needs no runtime connect.
+    Design: the TP CudaCommunicator gets a second PyNcclCommunicator (twin) built right after the
+      stock one; pynccl_comm becomes a router that sends a call to the stock comm only when the
+      stream it launches on is capturing, else to the twin. Other groups with a PyNccl comm (ep:0,
+      unused) get an eager-only guard that raises on a captured call. The patch writes
+      NCCL_GRAPH_MIXING_SUPPORT=0 only after the class wrap is in place; NCCL_GRAPH_MIXING_SUPPORT=0
+      without the lever is reset to 1 (REFUSED marker). Anchors: CudaCommunicator.__init__ source and
+      signature, the full public PyNcclCommunicator API (any unrouted new method disarms), the stream
+      parameter position of every routed method.
+    Tests: tests/test_nccl_eager_twin.py (21 CPU tests incl. pinned e13 fixtures), full suite 566 OK
+      (10 torch-gated skips), render --check 0. In-image CPU check: check_anchors passes on the real
+      e13 classes; install() arms, is idempotent, and resets a stray mixing=0.
+    Single-GPU smoke on spark2 (twin-smoke/twin_smoke_1gpu.json, pmon: only Xorg/gnome-shell):
+      capture predicate true for the capturing current stream, the explicit capture stream and a
+      joined side stream, false for an idle stream; eager call -> twin, captured AR + AG -> stock comm;
+      500 graph replays each followed by an eager twin AR while the graph is outstanding, NCCL mode 0,
+      outputs bitwise equal. (One-rank NCCL comms: no proxy, so this checks plumbing, not the network
+      hazard; that is tools/nccl_twin_check.py in the serve window.)
+    Expected (modeled from the clean k3 sweep, not yet a serve number): -3.08 ms/step c=1,
+      -3.06 ms/step c=2; lower bound = gap + kernel shrink only (~3 us gap + ~2.5 us kernel per call
+      x 88) = -0.5 ms/step if the neighbour slowdown does not reproduce in the serve.
+
+#5  Two-node validation harness for the serve window: tools/nccl_twin_check.{py,sh}
+    Reproduces the serve's decode step on both GPUs with the serve down: target graph 40 x
+    [work 431 us ; AR ; work 149 us ; work 547 us ; AR] + engram AG at layers 1/14, eager logits AG
+    issued while the target graph is outstanding, draft graph (embed AR + 3 x 2 AR + logits AG),
+    eager embed AR while the draft graph is outstanding; host one step ahead. Arms: keep (one comm,
+    mixing on = serve today) vs twin (the lever); twin_so0 and mix0_single (the unsupported case)
+    are diagnostics. Every output is checked bitwise each 10 steps (seed-derived small integers).
+    Selftest on spark2, one GPU, one-rank comms (twin-check-selftest/*.json, pmon clean):
+    60 steps per arm, 0 mismatches in all 4 arms, router counts graph 90 (82 target + 8 draft
+    captures) / eager 220. Timings there are one-rank local copies: harness check only, not data.
+    Tests: tests/test_nccl_twin_check.py (8 CPU tests). Full suite 574 OK, render --check 0.

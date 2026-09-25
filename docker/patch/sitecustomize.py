@@ -1162,5 +1162,21 @@ except SystemExit as _g8sf_exit:
 except Exception as _g8sf_err:
     print(f"dsv41: g8 stream feed skipped: {_g8sf_err!r}", flush=True)
 
+# NCCL graph mixing off behind an eager-only twin communicator (docker/patch/nccl_eager_twin.py).
+# Runs at interpreter start, before any NCCL communicator exists in this process.
+def _p_nccl_eager_twin():
+    import nccl_eager_twin
+
+    state = nccl_eager_twin.install()
+    if state == "off":
+        raise _PatchSkip("DSV41_NCCL_EAGER_TWIN is not 1")
+    if state != "armed":
+        raise RuntimeError(f"nccl_eager_twin {state}; NCCL graph mixing stays on")
+    return state
+
+
+_patch("nccl_eager_twin", _p_nccl_eager_twin)
+
+
 # Env-gated decode levers (docker/patch/decode_levers.py; each is off by default).
 _patch("decode_levers", lambda: __import__("decode_levers").install())
