@@ -289,6 +289,10 @@ extern "C" __global__ void __launch_bounds__(64)
 //                wait, while the prenorm GEMM (the primary) streams. Safe: the GEMM triggers only
 //                after its own griddepcontrol.wait, so the post is complete when this starts;
 //                its reads use ld.global.cg (L2, no stale L1).
+// The two halves are device functions (norm_coef, norm_li) with three entries: mhc_det_norm (both,
+// one launch after the GEMM) and, for DSV41_MHC_DET_OVERLAP, mhc_det_norm_li (layer_input alone,
+// right after the post: waits on it first) and mhc_det_norm_coef (the coefficient half alone,
+// after the GEMM on the side stream). Same device code, so the same bits in every entry.
 #define NORM_H 5120
 DEV uint2 ldcg_u2(const void* p) {
   uint2 v;
@@ -315,142 +319,180 @@ DEV float colsum4(float v) {
   return __fadd_rn(__fadd_rn(v, a8), __fadd_rn(a4, a12));
 }
 
-extern "C" __global__ void __launch_bounds__(288, 1)
-    mhc_det_norm(const float* __restrict__ mixes_p, const float* __restrict__ sqr_p,
-                 const float* __restrict__ hc_scale, const float* __restrict__ hc_base,
-                 const u16* __restrict__ residual, const float* __restrict__ pre_mix_in,
-                 const u16* __restrict__ norm_w, float* __restrict__ post_mix, float* __restrict__ comb_mix,
-                 u16* __restrict__ layer_input, float* __restrict__ pre_mix_out, const int T,
-                 const float rms_numel, const float rms_eps, const float hc_pre_eps, const float sk_eps,
-                 const float post_mult, const int sk_repeat, const float norm_eps) {
+// Coefficient half (one warp per token): split sums, sigmoids, sinkhorn. Reads the GEMM partials
+// after griddepcontrol.wait; the weights it needs are fetched before the wait.
+DEV void norm_coef(float* mixes_s, const float* __restrict__ mixes_p, const float* __restrict__ sqr_p,
+                   const float* __restrict__ hc_scale, const float* __restrict__ hc_base,
+                   float* __restrict__ post_mix, float* __restrict__ comb_mix, float* __restrict__ pre_mix_out,
+                   const int T, const float rms_numel, const float rms_eps, const float hc_pre_eps,
+                   const float sk_eps, const float post_mult, const int sk_repeat, const int tok, const int lane) {
+  if (lane == 0) PROFN(0);
+  // weights: fetch before waiting on the GEMM
+  const float s0 = hc_scale[0], s1 = hc_scale[1], s2 = hc_scale[2];
+  const float bpre = hc_base[lane & 3], bpost = hc_base[4 + (lane & 3)];
+  const float bsk = hc_base[(lane & 15) + 8];
+  pdl_wait();
+  if (lane == 0) PROFN(1);
+  float rms = 0.f;
+  for (int s = 0; s < MHC_SPLITS; ++s) rms = __fadd_rn(rms, sqr_p[s * T + tok]);
+  rms = rsqrtf(__fadd_rn(__fdiv_rn(rms, rms_numel), rms_eps));
+  const int j = lane % 24;
+  float mix = 0.f;
+  for (int s = 0; s < MHC_SPLITS; ++s) mix = __fadd_rn(mix, mixes_p[((size_t)s * T + tok) * 24 + j]);
+  mix = __fmul_rn(mix, rms);
+  if (lane < 24) mixes_s[lane] = mix;
+  __syncwarp();
+  if (lane == 0) PROFN(2);
+  if (lane < 4) {
+    const float e0 = expf(__fsub_rn(0.f, __fmaf_rn(mixes_s[lane], s0, bpre)));
+    pre_mix_out[tok * 4 + lane] = __fadd_rn(__fdiv_rn(1.f, __fadd_rn(1.f, e0)), hc_pre_eps);
+    const float e1 = expf(__fsub_rn(0.f, __fmaf_rn(mixes_s[lane + 4], s1, bpost)));
+    post_mix[tok * 4 + lane] = __fmul_rn(__fdiv_rn(1.f, __fadd_rn(1.f, e1)), post_mult);
+  }
+  // Sinkhorn exactly as TileLang: one element per lane (lanes 16..31 compute copies), row sums
+  // rowsum4, column sums colsum4, fmaxf over shfl_xor 2,1 for the row max. (One row per lane
+  // with 4 divisions each measured 2x slower: iterations.txt item 9.)
+  const int c = (lane & 15) + 8;
+  float cm = __fmaf_rn(mixes_s[c], s2, bsk);
+  float rmax = fmaxf(-__int_as_float(0x7f800000), cm);
+  rmax = fmaxf(rmax, __shfl_xor_sync(0xffffffffu, rmax, 2));
+  rmax = fmaxf(rmax, __shfl_xor_sync(0xffffffffu, rmax, 1));
+  cm = expf(__fsub_rn(cm, rmax));
+  cm = __fadd_rn(__fdiv_rn(cm, rowsum4(__fadd_rn(0.f, cm))), sk_eps);
+  cm = __fdiv_rn(cm, __fadd_rn(colsum4(__fadd_rn(0.f, cm)), sk_eps));
+  if (lane == 0) PROFN(3);
+  for (int it = 0; it < sk_repeat - 1; ++it) {
+    cm = __fdiv_rn(cm, __fadd_rn(rowsum4(__fadd_rn(0.f, cm)), sk_eps));
+    cm = __fdiv_rn(cm, __fadd_rn(colsum4(__fadd_rn(0.f, cm)), sk_eps));
+  }
+  if (lane < 16) comb_mix[tok * 16 + lane] = cm;
+  if (lane == 0) PROFN(4);
+}
+
+// layer_input half (256 threads per token, lt = 0..255, named barrier 1): needs only the post
+// output (residual) and the carried pre-mix. The caller orders it after the post.
+DEV void norm_li(u16* rounded_s, float* part_s, float* rsqrt_s, const u16* __restrict__ residual,
+                 const float* __restrict__ pre_mix_in, const u16* __restrict__ norm_w, u16* __restrict__ layer_input,
+                 const float norm_eps, const int tok, const int lt, const bool wait_first) {
+  uint2 wv[5];  // norm weight, fetched first (a weight: independent of the primary)
+#pragma unroll
+  for (int q = 0; q < 5; ++q) wv[q] = ldcg_u2(norm_w + 4 * (lt + 256 * q));
+  if (wait_first) pdl_wait();
+  float pre[4] = {1.f, 0.f, 0.f, 0.f};
+  if (pre_mix_in != nullptr) {
+    const float4 pm = *(const float4*)(pre_mix_in + tok * 4);
+    pre[0] = pm.x; pre[1] = pm.y; pre[2] = pm.z; pre[3] = pm.w;
+  }
+  const u16* rb = residual + (size_t)tok * 4 * NORM_H;
+  // weighted stream sum, bf16 round: 5 chunks of 4 positions per thread (p = 4*(lt + 256q))
+#pragma unroll
+  for (int q = 0; q < 5; ++q) {
+    const int p = 4 * (lt + 256 * q);
+    uint2 xv[4];
+#pragma unroll
+    for (int hc = 0; hc < 4; ++hc) xv[hc] = ldcg_u2(rb + hc * NORM_H + p);
+    float ol[4];
+#pragma unroll
+    for (int e = 0; e < 4; ++e) {
+      float acc = 0.f;
+#pragma unroll
+      for (int hc = 0; hc < 4; ++hc) {
+        const u32 w = (e < 2) ? xv[hc].x : xv[hc].y;
+        acc = __fmaf_rn(pre[hc], (e & 1) ? bf16_hi(w) : bf16_lo(w), acc);
+      }
+      ol[e] = acc;
+    }
+    *(uint2*)(rounded_s + p) = make_uint2(bf16x2_rn(ol[0], ol[1]), bf16x2_rn(ol[2], ol[3]));
+  }
+  bar_named(1, 256);
+  if (lt < 64) {
+    float acc[16];
+#pragma unroll
+    for (int i = 0; i < 16; ++i) acc[i] = 0.f;
+#pragma unroll
+    for (int hb = 0; hb < 5; ++hb) {
+#pragma unroll
+      for (int half = 0; half < 2; ++half) {
+        const uint4 v = *(const uint4*)(rounded_s + hb * 1024 + half * 512 + lt * 8);
+        const u32 w[4] = {v.x, v.y, v.z, v.w};
+#pragma unroll
+        for (int e = 0; e < 8; ++e) {
+          const float f = (e & 1) ? bf16_hi(w[e >> 1]) : bf16_lo(w[e >> 1]);
+          acc[half * 8 + e] = __fmaf_rn(f, f, acc[half * 8 + e]);
+        }
+      }
+    }
+    float sq = 0.f;
+#pragma unroll
+    for (int rv = 0; rv < 16; ++rv) sq = __fadd_rn(sq, acc[(rv & 1) * 8 + (rv >> 1)]);
+    part_s[lt] = sq;
+  }
+  bar_named(1, 256);
+  if (lt < 32) {
+    float y = __fadd_rn(part_s[lt], part_s[lt + 32]);
+    y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 16));
+    y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 8));
+    y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 4));
+    y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 2));
+    y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 1));
+    if (lt == 0) *rsqrt_s = rsqrtf(__fadd_rn(__fdiv_rn(y, (float)NORM_H), norm_eps));
+  }
+  bar_named(1, 256);
+  const float r = *rsqrt_s;
+  u16* lo = layer_input + (size_t)tok * NORM_H;
+#pragma unroll
+  for (int q = 0; q < 5; ++q) {
+    const int p = 4 * (lt + 256 * q);
+    const uint2 rv = *(const uint2*)(rounded_s + p);
+    const float o0 = __fmul_rn(__fmul_rn(bf16_lo(rv.x), r), bf16_lo(wv[q].x));
+    const float o1 = __fmul_rn(__fmul_rn(bf16_hi(rv.x), r), bf16_hi(wv[q].x));
+    const float o2 = __fmul_rn(__fmul_rn(bf16_lo(rv.y), r), bf16_lo(wv[q].y));
+    const float o3 = __fmul_rn(__fmul_rn(bf16_hi(rv.y), r), bf16_hi(wv[q].y));
+    *(uint2*)(lo + p) = make_uint2(bf16x2_rn(o0, o1), bf16x2_rn(o2, o3));
+  }
+  if (lt == 0) PROFN(5);
+  // layer_input is written: the next kernel may launch. PDL dependents still wait for this grid
+  // before reading (the vLLM contract: PDL-launched kernels call griddepcontrol.wait first).
+  pdl_trigger();
+}
+
+#define NORM_ARGS                                                                                        \
+  const float *__restrict__ mixes_p, const float *__restrict__ sqr_p, const float *__restrict__ hc_scale, \
+      const float *__restrict__ hc_base, const u16 *__restrict__ residual, const float *__restrict__ pre_mix_in, \
+      const u16 *__restrict__ norm_w, float *__restrict__ post_mix, float *__restrict__ comb_mix,            \
+      u16 *__restrict__ layer_input, float *__restrict__ pre_mix_out, const int T, const float rms_numel,     \
+      const float rms_eps, const float hc_pre_eps, const float sk_eps, const float post_mult,                \
+      const int sk_repeat, const float norm_eps
+
+// Fused (one launch after the GEMM): warp 0 = coefficients, warps 1..8 = layer_input. The
+// layer_input half runs BEFORE the wait, while the prenorm GEMM (the primary) streams. Safe: the
+// GEMM triggers only after its own griddepcontrol.wait, so the post is complete when this starts;
+// its reads use ld.global.cg (L2, no stale L1).
+extern "C" __global__ void __launch_bounds__(288, 1) mhc_det_norm(NORM_ARGS) {
   __shared__ float mixes_s[24];
   __shared__ __align__(16) u16 rounded_s[NORM_H];
   __shared__ float part_s[64];
   __shared__ float rsqrt_s;
-  const int tok = blockIdx.x, tid = threadIdx.x, lane = tid & 31;
-  if (tid < 32) {
-    if (lane == 0) PROFN(0);
-    // weights: fetch before waiting on the GEMM
-    const float s0 = hc_scale[0], s1 = hc_scale[1], s2 = hc_scale[2];
-    const float bpre = hc_base[lane & 3], bpost = hc_base[4 + (lane & 3)];
-    const float bsk = hc_base[(lane & 15) + 8];
-    pdl_wait();
-    if (lane == 0) PROFN(1);
-    float rms = 0.f;
-    for (int s = 0; s < MHC_SPLITS; ++s) rms = __fadd_rn(rms, sqr_p[s * T + tok]);
-    rms = rsqrtf(__fadd_rn(__fdiv_rn(rms, rms_numel), rms_eps));
-    const int j = lane % 24;
-    float mix = 0.f;
-    for (int s = 0; s < MHC_SPLITS; ++s) mix = __fadd_rn(mix, mixes_p[((size_t)s * T + tok) * 24 + j]);
-    mix = __fmul_rn(mix, rms);
-    if (lane < 24) mixes_s[lane] = mix;
-    __syncwarp();
-    if (lane == 0) PROFN(2);
-    if (lane < 4) {
-      const float e0 = expf(__fsub_rn(0.f, __fmaf_rn(mixes_s[lane], s0, bpre)));
-      pre_mix_out[tok * 4 + lane] = __fadd_rn(__fdiv_rn(1.f, __fadd_rn(1.f, e0)), hc_pre_eps);
-      const float e1 = expf(__fsub_rn(0.f, __fmaf_rn(mixes_s[lane + 4], s1, bpost)));
-      post_mix[tok * 4 + lane] = __fmul_rn(__fdiv_rn(1.f, __fadd_rn(1.f, e1)), post_mult);
-    }
-    // Sinkhorn exactly as TileLang: one element per lane (lanes 16..31 compute copies), row sums
-    // rowsum4, column sums colsum4, fmaxf over shfl_xor 2,1 for the row max. (One row per lane
-    // with 4 divisions each measured 2x slower: iterations.txt item 9.)
-    const int c = (lane & 15) + 8;
-    float cm = __fmaf_rn(mixes_s[c], s2, bsk);
-    float rmax = fmaxf(-__int_as_float(0x7f800000), cm);
-    rmax = fmaxf(rmax, __shfl_xor_sync(0xffffffffu, rmax, 2));
-    rmax = fmaxf(rmax, __shfl_xor_sync(0xffffffffu, rmax, 1));
-    cm = expf(__fsub_rn(cm, rmax));
-    cm = __fadd_rn(__fdiv_rn(cm, rowsum4(__fadd_rn(0.f, cm))), sk_eps);
-    cm = __fdiv_rn(cm, __fadd_rn(colsum4(__fadd_rn(0.f, cm)), sk_eps));
-    if (lane == 0) PROFN(3);
-    for (int it = 0; it < sk_repeat - 1; ++it) {
-      cm = __fdiv_rn(cm, __fadd_rn(rowsum4(__fadd_rn(0.f, cm)), sk_eps));
-      cm = __fdiv_rn(cm, __fadd_rn(colsum4(__fadd_rn(0.f, cm)), sk_eps));
-    }
-    if (lane < 16) comb_mix[tok * 16 + lane] = cm;
-    if (lane == 0) PROFN(4);
-  } else {
-    const int lt = tid - 32;  // 0..255
-    float pre[4] = {1.f, 0.f, 0.f, 0.f};
-    if (pre_mix_in != nullptr) {
-      const float4 pm = *(const float4*)(pre_mix_in + tok * 4);
-      pre[0] = pm.x; pre[1] = pm.y; pre[2] = pm.z; pre[3] = pm.w;
-    }
-    uint2 wv[5];  // norm weight, fetched first (a weight: independent of the primary)
-#pragma unroll
-    for (int q = 0; q < 5; ++q) wv[q] = ldcg_u2(norm_w + 4 * (lt + 256 * q));
-    const u16* rb = residual + (size_t)tok * 4 * NORM_H;
-    // weighted stream sum, bf16 round: 5 chunks of 4 positions per thread (p = 4*(lt + 256q))
-#pragma unroll
-    for (int q = 0; q < 5; ++q) {
-      const int p = 4 * (lt + 256 * q);
-      uint2 xv[4];
-#pragma unroll
-      for (int hc = 0; hc < 4; ++hc) xv[hc] = ldcg_u2(rb + hc * NORM_H + p);
-      float ol[4];
-#pragma unroll
-      for (int e = 0; e < 4; ++e) {
-        float acc = 0.f;
-#pragma unroll
-        for (int hc = 0; hc < 4; ++hc) {
-          const u32 w = (e < 2) ? xv[hc].x : xv[hc].y;
-          acc = __fmaf_rn(pre[hc], (e & 1) ? bf16_hi(w) : bf16_lo(w), acc);
-        }
-        ol[e] = acc;
-      }
-      *(uint2*)(rounded_s + p) = make_uint2(bf16x2_rn(ol[0], ol[1]), bf16x2_rn(ol[2], ol[3]));
-    }
-    bar_named(1, 256);
-    if (lt < 64) {
-      float acc[16];
-#pragma unroll
-      for (int i = 0; i < 16; ++i) acc[i] = 0.f;
-#pragma unroll
-      for (int hb = 0; hb < 5; ++hb) {
-#pragma unroll
-        for (int half = 0; half < 2; ++half) {
-          const uint4 v = *(const uint4*)(rounded_s + hb * 1024 + half * 512 + lt * 8);
-          const u32 w[4] = {v.x, v.y, v.z, v.w};
-#pragma unroll
-          for (int e = 0; e < 8; ++e) {
-            const float f = (e & 1) ? bf16_hi(w[e >> 1]) : bf16_lo(w[e >> 1]);
-            acc[half * 8 + e] = __fmaf_rn(f, f, acc[half * 8 + e]);
-          }
-        }
-      }
-      float sq = 0.f;
-#pragma unroll
-      for (int rv = 0; rv < 16; ++rv) sq = __fadd_rn(sq, acc[(rv & 1) * 8 + (rv >> 1)]);
-      part_s[lt] = sq;
-    }
-    bar_named(1, 256);
-    if (lt < 32) {
-      float y = __fadd_rn(part_s[lt], part_s[lt + 32]);
-      y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 16));
-      y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 8));
-      y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 4));
-      y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 2));
-      y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 1));
-      if (lt == 0) rsqrt_s = rsqrtf(__fadd_rn(__fdiv_rn(y, (float)NORM_H), norm_eps));
-    }
-    bar_named(1, 256);
-    const float r = rsqrt_s;
-    u16* lo = layer_input + (size_t)tok * NORM_H;
-#pragma unroll
-    for (int q = 0; q < 5; ++q) {
-      const int p = 4 * (lt + 256 * q);
-      const uint2 rv = *(const uint2*)(rounded_s + p);
-      const float o0 = __fmul_rn(__fmul_rn(bf16_lo(rv.x), r), bf16_lo(wv[q].x));
-      const float o1 = __fmul_rn(__fmul_rn(bf16_hi(rv.x), r), bf16_hi(wv[q].x));
-      const float o2 = __fmul_rn(__fmul_rn(bf16_lo(rv.y), r), bf16_lo(wv[q].y));
-      const float o3 = __fmul_rn(__fmul_rn(bf16_hi(rv.y), r), bf16_hi(wv[q].y));
-      *(uint2*)(lo + p) = make_uint2(bf16x2_rn(o0, o1), bf16x2_rn(o2, o3));
-    }
-    if (lt == 0) PROFN(5);
-    // layer_input is written: the next kernel may launch while the coefficient warp finishes
-    // the sinkhorn. PDL dependents still wait for this grid before reading (the vLLM contract:
-    // PDL-launched kernels call griddepcontrol.wait / gdc_wait first); non-PDL ones start after.
-    pdl_trigger();
-  }
+  const int tok = blockIdx.x, tid = threadIdx.x;
+  if (tid < 32)
+    norm_coef(mixes_s, mixes_p, sqr_p, hc_scale, hc_base, post_mix, comb_mix, pre_mix_out, T, rms_numel, rms_eps,
+              hc_pre_eps, sk_eps, post_mult, sk_repeat, tok, tid);
+  else
+    norm_li(rounded_s, part_s, &rsqrt_s, residual, pre_mix_in, norm_w, layer_input, norm_eps, tok, tid - 32, false);
+}
+
+// Split launches (overlap mode): layer_input alone right after the post (its primary: waits
+// before reading), and the coefficient half alone after the GEMM on the side stream. Same device
+// code as the fused kernel, so the same bits.
+extern "C" __global__ void __launch_bounds__(256, 1) mhc_det_norm_li(NORM_ARGS) {
+  __shared__ __align__(16) u16 rounded_s[NORM_H];
+  __shared__ float part_s[64];
+  __shared__ float rsqrt_s;
+  norm_li(rounded_s, part_s, &rsqrt_s, residual, pre_mix_in, norm_w, layer_input, norm_eps, blockIdx.x, threadIdx.x,
+          true);
+}
+extern "C" __global__ void __launch_bounds__(32, 1) mhc_det_norm_coef(NORM_ARGS) {
+  __shared__ float mixes_s[24];
+  norm_coef(mixes_s, mixes_p, sqr_p, hc_scale, hc_base, post_mix, comb_mix, pre_mix_out, T, rms_numel, rms_eps,
+            hc_pre_eps, sk_eps, post_mult, sk_repeat, blockIdx.x, threadIdx.x);
 }

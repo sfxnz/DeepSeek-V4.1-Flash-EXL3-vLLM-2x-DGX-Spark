@@ -17,6 +17,8 @@ Every output is bitwise the stock one (kernel_study/mhc_det, results/2026-09-25-
 After weight load every packed fn (GEMM), every sublayer's whole pre (GEMM + norm, the layer's
 real parameters) and the post are checked bitwise against the stock kernels on the GPU; any
 mismatch leaves the stock path in place for the process (LOG_DISARMED).
+DSV41_MHC_DET_OVERLAP=1 (mhc_det_overlap.py) moves each pre's prenorm GEMM + sinkhorn under the
+next TP all-reduce on a side stream; the fused norm is then launched as its two halves.
 
 Imported lazily; top level is stdlib only so importing this module cannot fail.
 """
@@ -94,7 +96,7 @@ class DetKernels:
             self.src = fh.read()
         self.mod = Module(self.src, "mhc_det.cu", opts=opts)
         self._post = self.mod.function("mhc_det_post")
-        self._norm = self.mod.function("mhc_det_norm")
+        self._norm = self.mod.function("mhc_det_norm")  # the split entries resolve on first use
         self._gemm = {big: self.mod.function(f"mhc_det_gemm_t{16 if big else 8}") for big in (False, True)}
 
     @staticmethod
@@ -119,11 +121,14 @@ class DetKernels:
 
     def norm(self, mixes, sqrsum, hc_scale, hc_base, residual, pre_mix, norm_weight, post, comb,
              layer_input, pre_mix_out, rms_numel, rms_eps, hc_pre_eps, sinkhorn_eps, post_mult,
-             sinkhorn_repeat, norm_eps, pdl: bool = True) -> None:
-        """Bitwise TileLang mhc_pre_big_fuse_with_norm (hidden 5120, 16 splits, save_pre_mix)."""
+             sinkhorn_repeat, norm_eps, pdl: bool = True, part: str = "both") -> None:
+        """Bitwise TileLang mhc_pre_big_fuse_with_norm (hidden 5120, 16 splits, save_pre_mix).
+        part "both": one launch after the GEMM; "li": layer_input only (after the post); "coef":
+        post_mix / comb_mix / pre_mix_out only (after the GEMM)."""
         t = residual.shape[0]
-        self._norm.launch(
-            (t,), (288,), 0,
+        fn = self._norm if part == "both" else self.mod.function(f"mhc_det_norm_{part}")
+        fn.launch(
+            (t,), ({"both": 288, "li": 256, "coef": 32}[part],), 0,
             [(mixes.data_ptr(), ctypes.c_void_p), (sqrsum.data_ptr(), ctypes.c_void_p),
              (hc_scale.data_ptr(), ctypes.c_void_p), (hc_base.data_ptr(), ctypes.c_void_p),
              (residual.data_ptr(), ctypes.c_void_p),
@@ -164,11 +169,13 @@ def det_post(dk, x, residual, post_layer_mix, comb_res_mix):
 
 def det_pre_delayed(dk, fnp, residual, fn, hc_scale, hc_base, rms_eps, hc_pre_eps, hc_sinkhorn_eps,
                     hc_post_mult_value, sinkhorn_repeat, pre_mix=None, x=None, norm_weight=None,
-                    norm_eps=1e-6, det_norm=True):
+                    norm_eps=1e-6, det_norm=True, defer=None):
     """vLLM mhc_pre_delayed_tilelang on the det kernels: same buffers, the same 16-split
     partials and the same fused-norm arithmetic, so every output is bitwise the stock one.
-    det_norm=False keeps the TileLang fused norm (kernel_study A/B only). Callers check
-    eligibility (_pre_eligible: T <= MAX_T, hidden 5120, norm_weight set, stock split count 16)."""
+    det_norm=False keeps the TileLang fused norm (kernel_study A/B only). defer (overlap mode,
+    mhc_det_overlap.defer): launch layer_input now and hand the prenorm GEMM + coefficient half
+    to defer(launch, keep). Callers check eligibility (_pre_eligible: T <= MAX_T, hidden 5120,
+    norm_weight set, stock split count 16)."""
     import torch
     from vllm.model_executor.kernels.mhc.warmup import MHC_PRE_NORM_KERNEL
 
@@ -185,11 +192,22 @@ def det_pre_delayed(dk, fnp, residual, fn, hc_scale, hc_base, rms_eps, hc_pre_ep
     outputs = (post.unsqueeze(-1), comb.view(num_tokens, hc_mult, hc_mult), layer_input, next_pre_mix)
     mixes = torch.empty(SPLITS, num_tokens, mix_size, dtype=torch.float32, device=dev)
     sqrsum = torch.empty(SPLITS, num_tokens, dtype=torch.float32, device=dev)
+    nargs = (mixes, sqrsum, hc_scale, hc_base, residual, pre_mix, norm_weight, post, comb, layer_input,
+             next_pre_mix, input_size, rms_eps, hc_pre_eps, hc_sinkhorn_eps, hc_post_mult_value,
+             sinkhorn_repeat, norm_eps)
+    if defer is not None:
+        dk.norm(*nargs, part="li")
+
+        def launch():
+            dk.gemm_pk(x, fnp, mixes, sqrsum, pdl=False)  # first kernel after a fork: no PDL edge
+            dk.norm(*nargs, part="coef")
+
+        defer(launch, (x, fnp, mixes, sqrsum, residual, pre_mix, hc_scale, hc_base, norm_weight, post, comb,
+                       layer_input, next_pre_mix))
+        return outputs
     dk.gemm_pk(x, fnp, mixes, sqrsum)
     if det_norm:
-        dk.norm(mixes, sqrsum, hc_scale, hc_base, residual, pre_mix, norm_weight, post, comb, layer_input,
-                next_pre_mix, input_size, rms_eps, hc_pre_eps, hc_sinkhorn_eps, hc_post_mult_value,
-                sinkhorn_repeat, norm_eps)
+        dk.norm(*nargs)
         return outputs
     MHC_PRE_NORM_KERNEL(
         mixes, sqrsum, hc_scale, hc_base, residual, post, comb, layer_input, norm_weight,
@@ -240,6 +258,8 @@ class _State:
         self.stock_post = None
         self.stock_pre = None
         self.misses = 0
+        self.captured = False  # a CUDA graph holds packed-fn pointers
+        self.ovl = None  # mhc_det_overlap, when DSV41_MHC_DET_OVERLAP=1 armed
 
 
 _S = _State()
@@ -331,13 +351,44 @@ def _selftest_post(device) -> str | None:
     return None
 
 
+def _selftest_overlap(layer, fn, packed, tokens) -> str | None:
+    """The split path (layer_input now; GEMM + coefficient half forked to the side stream, or
+    launched in place) vs the stock pre, bitwise, on this layer's real parameters."""
+    import torch
+
+    ov = _S.ovl
+    norm = layer.attn_norm
+    args = (layer.hc_attn_scale, layer.hc_attn_base, layer.rms_norm_eps, layer.hc_eps, layer.hc_eps,
+            layer.hc_post_alpha, layer.hc_sinkhorn_iters)
+    dev = fn.device
+    for t in tokens:
+        g = torch.Generator(device=dev).manual_seed(57 * t + 3)
+        residual = (torch.randn(t, 4, 5120, device=dev, generator=g) * 4).to(torch.bfloat16)
+        pre_mix = torch.softmax(torch.randn(t, 4, device=dev, generator=g), -1).contiguous()
+        kw = dict(pre_mix=pre_mix, norm_weight=norm.weight, norm_eps=norm.variance_epsilon)
+        ref = _S.stock_pre(residual, fn, *args, **kw)
+        for how in ("fork", "in_place"):
+            got = det_pre_delayed(_S.dk, packed, residual, fn, *args, **kw, defer=ov.defer)
+            if how == "fork":
+                ov._fork(ov._S.pending)
+            ov.settle()
+            for name, a, b in zip(("post_mix", "comb_mix", "layer_input", "pre_mix"), ref, got):
+                if not torch.equal(_bits(a), _bits(b)):
+                    return f"overlap {how} T={t} {name}: {int((_bits(a) != _bits(b)).sum())} elements differ"
+    torch.cuda.synchronize()
+    return None
+
+
 def prepare(model, label: str) -> None:
     """After weight load: compile the kernels, pack every mHC fn, self-test bitwise, engage.
 
     Self-tests (all bitwise, on this GPU, with the layers' real weights): the det GEMM vs
     DeepGEMM at T 1/4/8/16 for every fn; the whole det pre vs the stock pre (T=4 every
     sublayer, T 1/16 on the first; the layer-0 broadcast input; no carried pre-mix); the det
-    post vs TileLang mhc_post. Any mismatch leaves the stock path for the whole process."""
+    post vs TileLang mhc_post. Any mismatch leaves the stock path for the whole process.
+    With DSV41_MHC_DET_OVERLAP armed: the split pre (layer_input, then GEMM + coefficient half
+    forked to the side stream, and launched in place) vs the stock pre at T 1/4/16 on the first
+    layer; a mismatch keeps the fused det pre (overlap OFF marker), then it engages."""
     if _S.failed:
         return
     try:
@@ -386,15 +437,38 @@ def prepare(model, label: str) -> None:
         )
     except Exception as exc:  # noqa: BLE001 - the lever never breaks the load
         _disarm(f"{label}: prepare failed: {exc!r}; stock kernels stay")
+        return
+    ov = _S.ovl
+    if ov is None or ov._S.failed or not ov._S.armed:
+        return
+    try:
+        layer = layers[0]
+        fn = layer.hc_attn_fn
+        err = _selftest_overlap(layer, fn, _lookup(fn), (1, 4, 16))
+    except Exception as exc:  # noqa: BLE001
+        err = f"self-test raised {exc!r}"
+    if err:
+        ov._disarm(f"{label}: split path self-test failed ({err}); the fused det pre stays")
+        return
+    ov.engage(label, "layer_input right after the post; prenorm GEMM + sinkhorn forked under the next "
+                     "all-reduce; split path bitwise equal to stock (fork and in place, T 1/4/16)")
 
 
 def _lookup(fn):
-    ent = _S.packed.get(fn.data_ptr())
-    if ent is not None and ent[0] == tuple(fn.shape) and ent[1] == fn._version:
-        return ent[2]
     import torch
 
-    if torch.cuda.is_current_stream_capturing():
+    capturing = torch.cuda.is_current_stream_capturing()
+    ent = _S.packed.get(fn.data_ptr())
+    if ent is not None and ent[0] == tuple(fn.shape) and ent[1] == fn._version:
+        _S.captured = _S.captured or capturing
+        return ent[2]
+    if ent is not None and _S.captured:
+        # A captured graph holds the old packed copy and cannot be re-pointed: never re-pack (the
+        # old buffer stays alive) and leave the det path for the process, loudly.
+        _disarm(f"an mHC fn {tuple(fn.shape)} changed in place after CUDA-graph capture; captured graphs "
+                "keep its old packed copy (this recipe never reloads weights)")
+        return None
+    if capturing:
         _S.misses += 1
         if _S.misses == 1:
             print(f"dsv41: mhc det lever is OFF for an unpacked fn {tuple(fn.shape)} during graph "
@@ -406,6 +480,8 @@ def _lookup(fn):
 def _post(x, residual, post_layer_mix, comb_res_mix):
     import torch
 
+    if _S.ovl is not None:
+        _S.ovl.settle()  # a deferred coefficient half of the previous pre feeds this post
     if (_S.on and residual.dim() == 3 and 1 <= residual.shape[0] <= MAX_T and residual.shape[1] == 4
             and residual.shape[2] % 256 == 0 and residual.dtype == torch.bfloat16
             and x.dtype == torch.bfloat16 and tuple(x.shape) == (residual.shape[0], residual.shape[2])
@@ -440,12 +516,16 @@ def _pre_eligible(residual, fn, pre_mix, x, norm_weight) -> bool:
 
 def _pre(residual, fn, hc_scale, hc_base, rms_eps, hc_pre_eps, hc_sinkhorn_eps, hc_post_mult_value,
          sinkhorn_repeat, pre_mix=None, x=None, norm_weight=None, norm_eps=1e-6):
+    ov = _S.ovl
+    if ov is not None:
+        ov.settle()  # pre_mix may be a deferred output
     if _pre_eligible(residual, fn, pre_mix, x, norm_weight):
         packed = _lookup(fn)
         if packed is not None:
             return det_pre_delayed(_S.dk, packed, residual, fn, hc_scale, hc_base, rms_eps, hc_pre_eps,
                                    hc_sinkhorn_eps, hc_post_mult_value, sinkhorn_repeat, pre_mix=pre_mix,
-                                   x=x, norm_weight=norm_weight, norm_eps=norm_eps)
+                                   x=x, norm_weight=norm_weight, norm_eps=norm_eps,
+                                   defer=ov.defer if ov is not None and ov.active() else None)
     return _S.stock_pre(residual, fn, hc_scale, hc_base, rms_eps, hc_pre_eps, hc_sinkhorn_eps,
                         hc_post_mult_value, sinkhorn_repeat, pre_mix=pre_mix, x=x,
                         norm_weight=norm_weight, norm_eps=norm_eps)
@@ -471,6 +551,10 @@ def install(env=None) -> None:
         _disarm(str(exc))
         return
     if n is None:
+        if (env.get("DSV41_MHC_DET_OVERLAP", "0") or "0").strip() not in ("", "0"):
+            import mhc_det_overlap
+
+            mhc_det_overlap._disarm(f"needs {ENV}={SPLITS} (the det lever is off)")
         return
     import importlib
 
@@ -495,3 +579,7 @@ def install(env=None) -> None:
     _after(m.DeepseekV4Model, "finalize_mhc_broadcast_weights", "target", lambda self: self)
     _after(d.DSparkDeepseekV4ForCausalLM, "load_weights", "draft", lambda self: self)
     print(f"dsv41: mhc det armed ({ENV}={n}): packs and self-tests mHC weights after load", flush=True)
+    import mhc_det_overlap
+
+    if mhc_det_overlap.install(env) == "armed":
+        _S.ovl = mhc_det_overlap

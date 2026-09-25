@@ -254,3 +254,105 @@ per run under runs/<tag>/), image dsv41-flash-exl3-sm121:canonical-e13, SM clock
     (SIGKILL after 15 s) and a named container removed before the lock is released, so a hung
     job cannot hold the shared GPU (review nit 3).
 
+16. The fn stream and the sinkhorn under the TP all-reduce (review missed opportunities 2 and 3).
+    In the serve every mHC post follows a TP all-reduce (attention wo_b, MoE final reduce:
+    NCCL RING_LL over RoCE, median 22.8 us, 80 per step, DRAM nearly idle). The reviewer measured
+    the fn stream as not a hard floor (every packed fn L2-hot: 1140.0 -> 960.7 us per pass at
+    T=4). Two ways to use the all-reduce window, measured with kernel_study/mhc_det/overlap_probe.py
+    (one GPU; per sublayer: AR stand-in = 5 CTAs spinning --ar-us on globaltimer with no memory
+    traffic, then x = bf16(src + y_prev); post; pre; work stand-in = 48x256 threads streaming 4 MB
+    of their own weight buffer with ld.global.cs, y = layer_input; one CUDA graph per arm, arms
+    round-robin with a rotating order, 200 reps, mHC us per pass = arm - (stand-ins only)):
+      pf   fork a side stream before the AR, 1-CTA cp.async.bulk.prefetch.L2 of the next
+           sublayer's packed fn (16 KiB requests), join before the post.
+      ovl  split the pre: layer_input right after the post (mhc_det_norm_li, main stream); the
+           prenorm GEMM + coefficient half (mhc_det_norm_coef) deferred and forked onto a side
+           stream right before the NEXT all-reduce (they feed only the next post and the next
+           pre's layer_input); join before that post.
+    Both bitwise equal to stock on every output of every sublayer (eager and 20 graph replays).
+    Paired median (p10/p90) vs det, us per 86-sublayer pass (overlap_probe_*.json):
+      AR 22.7 us, shipped source (ov-probe-final):
+        T=1 pf -164.0 (-173.8/-155.4)  ovl -724.7 (-734.0/-716.1)   mHC per pass: stock 2157.1,
+                                                                    det 1087.7, ovl 363.7
+        T=3 pf -142.3                  ovl -720.9 (-731.9/-709.9)
+        T=4 pf  -95.2                  ovl -601.1 (-616.6/-588.3)   stock 2039.4, det 1042.3, ovl 441.4
+        T=6 pf -100.7                  ovl -592.0 (-744.3/-578.0)
+        T=8 pf  -84.1                  ovl -725.1 (-750.5/-575.1)   stock 2159.6, det 1118.7, ovl 450.2
+      AR 22.7 us, earlier run (ovl-probe-v2): ovl T=1 -708.6, T=3 -592.4, T=4 -723.8, T=6 -731.6,
+        T=8 -743.5; pf -99 .. -180. The spread between runs is the known bimodality of the det and
+        stock arms (about 1040 vs 1120 us for det): ovl saves ~590-745 us per pass either way.
+      AR 12 us (ovl-probe-ar12): ovl T=4 -736.5, T=8 -755.9.
+      AR 6 us, shorter than the side work (ov-probe-final-ar6, ovl-probe-ar6): ovl T=4 -431.6 /
+        -561.8, T=8 -738.3 / -586.7.
+    ovl hides the GEMM (DRAM idle in the window, so the fn stream is free) and the whole sinkhorn
+    tail; pf only the fn's first-byte latency. pf is subsumed by ovl and not built. In the probe
+    the mHC path per pass goes stock ~2040-2180 -> det ~1040-1120 -> ovl ~360-460 us. (ovl-probe
+    v1/v2/ar12/ar6 used a variant file identical to the shipped mhc_det.cu minus one 4-line
+    comment, sha256 68d17b7d...; ov-probe-final* is the shipped source.)
+    Not measurable on one GPU: how NCCL RING_LL (5 CTAs polling host memory, which on GB10 is the
+    same LPDDR5x) behaves while the side stream reads 1.23 MB at up to ~250 GB/s; the stand-in
+    spins without memory traffic. The serve arm has to show it (serve_validation_plan.txt, C).
+    The builder's item-11 side-stream prototype (fork after the post, overlapping the sublayer's
+    own DRAM-bound work) saved 82 us per pass and faulted at T=8 (illegal address reported at a
+    tensor free, CUDACachingAllocator insert_events, i.e. record_stream on the side stream); the
+    script was removed, so the fault cannot be re-run. The design here removes that failure mode:
+    nothing is allocated on the side stream, there is no record_stream, and every tensor the
+    side stream touches is held by the pending record until the join. race_check (graph capture
+    and replay at T 1..16 with changing inputs) and compute-sanitizer memcheck on the split path
+    are clean (item 18).
+17. Lever DSV41_MHC_DET_OVERLAP=1 (needs DSV41_MHC_DET_SPLITS=16; default 0; run.sh FORWARD_ENVS;
+    docker/patch/mhc_det_overlap.py; audit markers "dsv41: mhc det overlap engaged" /
+    "dsv41: mhc det overlap is OFF", gated on both envs in tools/engagement_audit.py).
+    - Kernel: the fused norm's two halves are device functions (norm_coef, norm_li) behind three
+      entries: mhc_det_norm (fused, unchanged behaviour), mhc_det_norm_li (256 threads; weight
+      fetched, then griddepcontrol.wait, then the post output and the carried pre-mix; triggers
+      its dependent after layer_input), mhc_det_norm_coef (32 threads; weights, wait, partials).
+    - Host: det_pre_delayed(defer=...) launches norm_li and hands launch() (GEMM with no PDL
+      edge, being first after a fork, then norm_coef) plus every tensor it touches to
+      mhc_det_overlap.defer. GroupCoordinator.all_reduce is wrapped (both TP all-reduces before a
+      post go through it: tensor_model_parallel_all_reduce -> get_tp_group().all_reduce; anchors
+      checked at install and pinned in tests/fixtures/dsv41_ar_sites_e13.pin.txt): if a pre is
+      pending on this stream in this capture state, fork the side stream and launch it there.
+      _post and _pre settle first: join the side stream, or launch in place if no all-reduce
+      forked it (TP=1, an all-reduce on another stream: correct, but slower than the fused path).
+      A pending record that crossed a capture boundary raises (never expected: every forward in
+      the pinned model and draft ends with a post; tests pin it).
+    - Load: prepare() self-tests the split path (forked and in place, T 1/4/16, first layer's
+      real parameters) bitwise vs the stock pre before it engages; a mismatch keeps the fused path.
+    - Review hazard (packed fn is a copy): after any CUDA-graph capture has used a packed fn, an
+      in-place change of that fn is refused (no re-pack; the captured copy stays alive; the det
+      lever turns OFF loudly) instead of re-packing into a new buffer the graphs do not see.
+18. Checks committed to kernel_study (review missed opportunity 5) and their results on the
+    final source: race_check.py (reviewer's changing-input PDL race test + the overlap arms, run
+    through mhc_det_overlap itself; negative controls built from the shipped source by exact
+    one-occurrence edits), edge_check.py (reviewer's adversarial inputs + the split path),
+    sanitize.py/san.sh (compute-sanitizer memcheck/racecheck/synccheck on every entry incl. the
+    split kernels on a side stream; initcheck without a kernel filter and with the caching
+    allocator off, plus two canaries), lever_smoke.py --overlap (the lever through the real
+    patched vLLM names and the real wrapped GroupCoordinator.all_reduce).
+    Expectations fixed before the runs: 0 mismatches / 0 failures / 0 sanitizer errors on the
+    shipped code; each negative control detected in the arms it targets. Results (runs ov-*,
+    san-*; spark2, pmon clean before and after every run, SM 2190 MHz):
+    - lever smoke (ov-lever-smoke): the fused lever unchanged by the refactor, PASS.
+    - lever smoke --overlap (ov-lever-smoke-ovl): overlap armed and engaged after the self-test;
+      a 2-layer chain (4 pres, 4 all-reduces, final post) through the patched names bitwise equal
+      to the stock chain at T 1/3/4/6/8/16 with the all-reduce (4 forks, 4 joins) and without it
+      (4 in-place launches); T 17/64 stock (0 forks); captured in one CUDA graph (4 forks
+      captured, nothing pending after), 50 replays equal to eager. PASS.
+    - path check on the refactored fused norm (ov-path-check): 430/430 x 6 T, 1000/200-run
+      determinism 0, graph 0/100 x 5 T; post 96/96.
+    - race_check (ov-race, 20 reps x 430 outputs x T 1/3/4/6/8/16): 0 mismatches in det_graph,
+      det_eager, ovl_graph, ovl_eager and stock_graph. Negative controls (T 4/8, 5 reps):
+      gemm_nowait det_graph 2090/2088; coef_nowait det_graph 2130/2130 and ovl_graph 2130/2130;
+      li_nowait ovl_graph 2045/804; ovl_nojoin ovl_graph 2102/2111 -- each detected exactly in
+      its target arms (eager arms never see these races: launches are too far apart).
+    - edge_check (ov-edge): GEMM 448, fused pre 1680, split pre 3360 (1680 forked + 1680 in
+      place), post 64 cases: 0 failures, 0 NaN-payload-only differences (strictly bitwise).
+    - compute-sanitizer (san-*): memcheck 0 errors, racecheck 0 hazards, synccheck 0 errors on 128
+      det pre calls (fused, split forked, split in place; 48 forks, 32 in place) + 16 posts, T
+      1..16, K 20480 and 5120. initcheck (no kernel filter, caching allocator off): 0 reports on
+      the 40 real pre calls + posts at T 1/5/8/9/16 (the first report comes after their "ok:"
+      line); the canaries report exactly the 71,680 expected uninitialized loads (post 20,480;
+      GEMM cp.async 30,720; norm ld.cg 20,480).
+    - SASS (sass/mhc_det.sass): registers norm 72, norm_li 72, norm_coef 40, post 40, gemm_t8 44,
+      gemm_t16 58; no local memory; post and both GEMM kernels byte-identical to 850ee65.

@@ -26,7 +26,8 @@
 - DSV41_P2B_COOP=2 selects the dataflow coop kernel (widen_p2b_dataflow in
   docker/Dockerfile.e15). Same warning when that .so has no dataflow code.
 - DSV41_MHC_DET_SPLITS=16 lives in mhc_det.py: bitwise-stock decode mHC (post
-  + prenorm GEMM) on faster kernels. Here: its install step.
+  + prenorm GEMM) on faster kernels. Here: its install step (it also installs
+  DSV41_MHC_DET_OVERLAP=1, mhc_det_overlap.py).
 
 Top-level imports are stdlib only, so importing this module cannot fail.
 """

@@ -1,0 +1,1531 @@
+========= COMPUTE-SANITIZER
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+ok: 40 det pre calls (fused, split forked, split in place) + posts; forks 15, in place 10; checksum-finite=True
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (0,0,0) in block (8,2,0)
+=========     Address 0xf0356f117000
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (1,0,0) in block (8,2,0)
+=========     Address 0xf0356f117008
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (2,0,0) in block (8,2,0)
+=========     Address 0xf0356f117010
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (3,0,0) in block (8,2,0)
+=========     Address 0xf0356f117018
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (4,0,0) in block (8,2,0)
+=========     Address 0xf0356f117020
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (5,0,0) in block (8,2,0)
+=========     Address 0xf0356f117028
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (6,0,0) in block (8,2,0)
+=========     Address 0xf0356f117030
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (7,0,0) in block (8,2,0)
+=========     Address 0xf0356f117038
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (8,0,0) in block (8,2,0)
+=========     Address 0xf0356f117040
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (9,0,0) in block (8,2,0)
+=========     Address 0xf0356f117048
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (10,0,0) in block (8,2,0)
+=========     Address 0xf0356f117050
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (11,0,0) in block (8,2,0)
+=========     Address 0xf0356f117058
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (12,0,0) in block (8,2,0)
+=========     Address 0xf0356f117060
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (13,0,0) in block (8,2,0)
+=========     Address 0xf0356f117068
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (14,0,0) in block (8,2,0)
+=========     Address 0xf0356f117070
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (15,0,0) in block (8,2,0)
+=========     Address 0xf0356f117078
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (16,0,0) in block (8,2,0)
+=========     Address 0xf0356f117080
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (17,0,0) in block (8,2,0)
+=========     Address 0xf0356f117088
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (18,0,0) in block (8,2,0)
+=========     Address 0xf0356f117090
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (19,0,0) in block (8,2,0)
+=========     Address 0xf0356f117098
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (20,0,0) in block (8,2,0)
+=========     Address 0xf0356f1170a0
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (21,0,0) in block (8,2,0)
+=========     Address 0xf0356f1170a8
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (22,0,0) in block (8,2,0)
+=========     Address 0xf0356f1170b0
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (23,0,0) in block (8,2,0)
+=========     Address 0xf0356f1170b8
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (24,0,0) in block (8,2,0)
+=========     Address 0xf0356f1170c0
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (25,0,0) in block (8,2,0)
+=========     Address 0xf0356f1170c8
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (26,0,0) in block (8,2,0)
+=========     Address 0xf0356f1170d0
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (27,0,0) in block (8,2,0)
+=========     Address 0xf0356f1170d8
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (28,0,0) in block (8,2,0)
+=========     Address 0xf0356f1170e0
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (29,0,0) in block (8,2,0)
+=========     Address 0xf0356f1170e8
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (30,0,0) in block (8,2,0)
+=========     Address 0xf0356f1170f0
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (31,0,0) in block (8,2,0)
+=========     Address 0xf0356f1170f8
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (32,0,0) in block (8,2,0)
+=========     Address 0xf0356f117100
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (33,0,0) in block (8,2,0)
+=========     Address 0xf0356f117108
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (34,0,0) in block (8,2,0)
+=========     Address 0xf0356f117110
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (35,0,0) in block (8,2,0)
+=========     Address 0xf0356f117118
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (36,0,0) in block (8,2,0)
+=========     Address 0xf0356f117120
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (37,0,0) in block (8,2,0)
+=========     Address 0xf0356f117128
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (38,0,0) in block (8,2,0)
+=========     Address 0xf0356f117130
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (39,0,0) in block (8,2,0)
+=========     Address 0xf0356f117138
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (40,0,0) in block (8,2,0)
+=========     Address 0xf0356f117140
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (41,0,0) in block (8,2,0)
+=========     Address 0xf0356f117148
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (42,0,0) in block (8,2,0)
+=========     Address 0xf0356f117150
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (43,0,0) in block (8,2,0)
+=========     Address 0xf0356f117158
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (44,0,0) in block (8,2,0)
+=========     Address 0xf0356f117160
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (45,0,0) in block (8,2,0)
+=========     Address 0xf0356f117168
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (46,0,0) in block (8,2,0)
+=========     Address 0xf0356f117170
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (47,0,0) in block (8,2,0)
+=========     Address 0xf0356f117178
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (48,0,0) in block (8,2,0)
+=========     Address 0xf0356f117180
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (49,0,0) in block (8,2,0)
+=========     Address 0xf0356f117188
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (50,0,0) in block (8,2,0)
+=========     Address 0xf0356f117190
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (51,0,0) in block (8,2,0)
+=========     Address 0xf0356f117198
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (52,0,0) in block (8,2,0)
+=========     Address 0xf0356f1171a0
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (53,0,0) in block (8,2,0)
+=========     Address 0xf0356f1171a8
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (54,0,0) in block (8,2,0)
+=========     Address 0xf0356f1171b0
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (55,0,0) in block (8,2,0)
+=========     Address 0xf0356f1171b8
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (56,0,0) in block (8,2,0)
+=========     Address 0xf0356f1171c0
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (57,0,0) in block (8,2,0)
+=========     Address 0xf0356f1171c8
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (58,0,0) in block (8,2,0)
+=========     Address 0xf0356f1171d0
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+========= Uninitialized __global__ memory read of size 8 bytes
+=========     at mhc_det_post+0x1b0
+=========     by thread (59,0,0) in block (8,2,0)
+=========     Address 0xf0356f1171d8
+=========     Saved host backtrace up to driver entry point at kernel launch time
+=========         Host Frame:  [0x52f5b] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x1a827] in cydriver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame:  [0x2a57db] in driver.cpython-312-aarch64-linux-gnu.so
+=========         Host Frame: PyObject_Vectorcall [0xc372b] in python3
+=========         Host Frame: _PyEval_EvalFrameDefault [0x163aa3] in python3
+=========         Host Frame: PyEval_EvalCode [0x161df3] in python3
+=========         Host Frame:  [0x19af53] in python3
+=========         Host Frame:  [0x280273] in python3
+=========         Host Frame: _PyRun_SimpleFileObject [0x27fe47] in python3
+=========         Host Frame: _PyRun_AnyFileObject [0x27fc13] in python3
+=========         Host Frame: Py_RunMain [0x28ac1b] in python3
+=========         Host Frame: Py_BytesMain [0x28a7d7] in python3
+=========         Host Frame:  [0x284c3] in libc.so.6
+=========         Host Frame: __libc_start_main [0x28597] in libc.so.6
+=========         Host Frame: _start [0x1f60af] in python3
+=========         Host Frame: launch in mhc_det_rt.py:83
+=========         Host Frame: post in mhc_det.py:152
+=========         Host Frame: det_post in mhc_det.py:166
+=========         Host Frame: main in sanitize.py:76
+========= 
+CANARY-1-DONE
+CANARY-2-DONE
+========= ERROR SUMMARY: 71680 errors
+========= ERROR SUMMARY: 71620 errors were not printed. Use --print-limit option to adjust the number of printed errors

@@ -79,3 +79,35 @@ Optional profile boot (separate from the measured boots; profile stage section 7
 
 Rollback: unset DSV41_MHC_DET_SPLITS (the default, 0). The lever only rebinds Python names and
 adds packed buffers, and a self-test mismatch keeps the stock path.
+
+Arm C: DSV41_MHC_DET_OVERLAP=1 on top of B (mhc_det_overlap.py; iterations.txt items 16-19)
+------------------------------------------------------------------------------------------
+Run after the B-vs-A decision, as its own ABAB with B as the baseline:
+  B:  ./stop.sh && AUDIT=strict DSV41_MHC_DET_SPLITS=16 ./run.sh
+  C:  ./stop.sh && AUDIT=strict DSV41_MHC_DET_SPLITS=16 DSV41_MHC_DET_OVERLAP=1 ./run.sh
+What changes: each decode pre launches only layer_input (mhc_det_norm_li) right after the post.
+Its prenorm GEMM + sinkhorn (mhc_det_gemm_t8/_t16 + mhc_det_norm_coef) go to a side stream
+forked at the next TP all-reduce (wo_b's, or the MoE final reduce), and the next post joins
+that stream first. The kernels and arithmetic are the same, so outputs are bitwise equal:
+lever_smoke --overlap through the real hooks, race_check, edge_check.
+Engagement (both ranks): "dsv41: mhc det overlap armed", then "dsv41: mhc det overlap engaged:
+target: ..." and "...: draft: ..." (the split path is self-tested at load). There must be no
+"dsv41: mhc det overlap is OFF" line. The strict audit gates both markers on DSV41_MHC_DET_SPLITS=16
+together with DSV41_MHC_DET_OVERLAP=1.
+Per boot: the same list as A/B (smokes, correctness 8/8, L.A.I.L n=10, bench_decode, four
+numbers, quick quality). Keep rule: as for B (C vs B, matched acceptance).
+Expected: -0.6 to -0.75 ms/step at c=1 (overlap_probe: -592..-756 us per 86-sublayer pass,
+12-22.7 us window; -432..-738 with a 6 us window). c=2 is about the same per pass.
+Watch in a profile boot: ncclDevKernel_AllReduce_* median time per call vs B. The side stream
+reads 1.23 MB during each all-reduce, and NCCL RING_LL polls host memory, which on GB10 is the
+same LPDDR5x. If the AR median rises by more than ~7 us, C gives most of its gain back; the
+one-GPU probe cannot see this. Expected trace: per step 86 mhc_det_gemm_t8 and 86
+mhc_det_norm_coef on a second stream, each inside an AllReduce; 86 mhc_det_norm_li and no
+mhc_det_norm on the main stream.
+Interaction: k3/comm's DSV41_AR_L2_PREFETCH=1 also forks at the MoE all-reduce and fills the
+window with up to 5.5 MiB of qkv_a prefetch. Measure C with it off first. If both are on,
+re-measure; a smaller DSV41_AR_L2_PREFETCH_MIB may be needed so the 1.23 MB fn read and the GEMM
+still finish inside the window.
+Needs TP >= 2: without an all-reduce between two pres the deferred work launches in place (the
+same bits, but slower than the fused path).
+Rollback: DSV41_MHC_DET_OVERLAP=0 (the default).

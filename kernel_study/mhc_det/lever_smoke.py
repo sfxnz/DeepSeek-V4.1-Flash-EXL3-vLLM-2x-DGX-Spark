@@ -5,6 +5,13 @@ install() against the real vLLM modules, prepare() on a module tree holding real
 then the patched model-module names (what DeepseekV4DecoderLayer.forward calls) vs the stock
 functions, bitwise, eager and inside a CUDA graph; T > 16 and an unpacked fn during capture
 must take the stock path.
+
+--overlap: the same with DSV41_MHC_DET_OVERLAP=1. A layer-shaped chain through the patched names
+(pre -> all-reduce -> post -> pre ... -> final post, 2 layers) where the all-reduce is the real,
+wrapped GroupCoordinator.all_reduce on a world-size-1 group (it returns its input after the
+hook forked the deferred coefficient half): bitwise vs the stock chain at T 1/3/4/6/8/16, fork
+and join counts, the no-all-reduce variant (in-place launch), T > 16 stock, and the chain
+captured in one CUDA graph (50 replays vs eager). Writes lever_smoke_overlap.json.
 """
 from __future__ import annotations
 
@@ -48,7 +55,101 @@ def same(a, b) -> bool:
     return bool((ints(a) == ints(b)).all())
 
 
+def overlap_main() -> int:
+    import mhc_det_overlap as ovl
+    from vllm.distributed import parallel_state as ps
+
+    res = {}
+    mhc_det.install({"DSV41_MHC_DET_SPLITS": "16", "DSV41_MHC_DET_OVERLAP": "1"})
+    m = importlib.import_module(mhc_det.MODEL_MOD)
+    res["patched"] = [m.mhc_post_tilelang is mhc_det._post, m.mhc_pre_delayed_tilelang is mhc_det._pre,
+                      getattr(ps.GroupCoordinator.all_reduce, "_dsv41_mhc_ovl", False), mhc_det._S.ovl is ovl]
+    names = []
+    for p in ("layers.0", "layers.7"):
+        for sub in ("attn", "ffn"):
+            names += [f"{p}.hc_{sub}_fn", f"{p}.hc_{sub}_scale", f"{p}.hc_{sub}_base", f"{p}.{sub}_norm.weight"]
+    w = C.load(names)
+    bc = w["layers.0.hc_attn_fn"].float().view(-1, 4, 5120).sum(dim=1).contiguous()
+    tree = torch.nn.Sequential(DeepseekV4DecoderLayer(w, "layers.0", bc), DeepseekV4DecoderLayer(w, "layers.7"))
+    mhc_det.prepare(tree, "smoke")
+    res["det_on"], res["overlap_on"] = mhc_det._S.on, ovl.active()
+    emb = C.embeddings(64)
+
+    class _G:  # GroupCoordinator.all_reduce returns its input at world size 1 (after the hook)
+        world_size = 1
+
+    def ar(x):
+        return ps.GroupCoordinator.all_reduce(_G(), x)
+
+    def chain(post_f, pre_f, ar_f, t, xs):
+        l0, l1 = tree[0], tree[1]
+        args = lambda layer, sub: (getattr(layer, f"hc_{sub}_scale"), getattr(layer, f"hc_{sub}_base"),  # noqa: E731
+                                   1e-20, 1e-6, 1e-6, 2.0, 20)
+        e = emb[:t] if t <= 64 else emb.repeat(2, 1)[:t]
+        rb = e.unsqueeze(1).expand(-1, 4, -1).contiguous()
+        pm, cm, li, pr = pre_f(rb, bc, *args(l0, "attn"), x=e, norm_weight=l0.attn_norm.weight, norm_eps=1e-20)
+        outs = [rb, pm, cm, li, pr]
+        residual = rb
+        for k, (layer, sub) in enumerate(((l0, "ffn"), (l1, "attn"), (l1, "ffn"))):
+            residual = post_f(ar_f(xs[k]), residual, pm, cm)
+            pm, cm, li, pr = pre_f(residual, getattr(layer, f"hc_{sub}_fn"), *args(layer, sub), pre_mix=pr,
+                                   norm_weight=getattr(layer, f"{sub}_norm").weight, norm_eps=1e-20)
+            outs += [residual, pm, cm, li, pr]
+        outs.append(post_f(ar_f(xs[3]), residual, pm, cm))  # the model's final post
+        return outs
+
+    rows = []
+    for t in (1, 3, 4, 6, 8, 16, 17, 64):
+        g = torch.Generator(device="cuda").manual_seed(500 + t)
+        xs = [(torch.randn(t, 5120, device="cuda", generator=g) * 2).bfloat16() for _ in range(4)]
+        ref = chain(mhc_det._S.stock_post, mhc_det._S.stock_pre, lambda x: x, t, xs)
+        f0, i0 = ovl._S.forks, ovl._S.in_place
+        got = chain(m.mhc_post_tilelang, m.mhc_pre_delayed_tilelang, ar, t, xs)
+        f1, i1 = ovl._S.forks, ovl._S.in_place
+        got2 = chain(m.mhc_post_tilelang, m.mhc_pre_delayed_tilelang, lambda x: x, t, xs)  # no all-reduce
+        torch.cuda.synchronize()
+        rows.append({"T": t, "bitwise_with_all_reduce": same(ref, got), "bitwise_without": same(ref, got2),
+                     "forks": f1 - f0, "in_place": ovl._S.in_place - i1, "pending_after": ovl._S.pending is not None})
+    res["chain"] = rows
+    t = 4
+    g = torch.Generator(device="cuda").manual_seed(99)
+    xs = [(torch.randn(t, 5120, device="cuda", generator=g) * 2).bfloat16() for _ in range(4)]
+    eager = [o.clone() for o in chain(m.mhc_post_tilelang, m.mhc_pre_delayed_tilelang, ar, t, xs)]
+    st = torch.cuda.Stream()
+    st.wait_stream(torch.cuda.current_stream())
+    with torch.cuda.stream(st):
+        chain(m.mhc_post_tilelang, m.mhc_pre_delayed_tilelang, ar, t, xs)
+    torch.cuda.current_stream().wait_stream(st)
+    torch.cuda.synchronize()
+    graph = torch.cuda.CUDAGraph()
+    f0 = ovl._S.forks
+    with torch.cuda.graph(graph):
+        out = chain(m.mhc_post_tilelang, m.mhc_pre_delayed_tilelang, ar, t, xs)
+    res["capture"] = {"forks_captured": ovl._S.forks - f0, "pending_after": ovl._S.pending is not None}
+    bad = 0
+    for _ in range(50):
+        for o in out:
+            if o.dtype == torch.bfloat16 and o.dim() == 2:
+                o.zero_()  # layer_input
+        graph.replay()
+        torch.cuda.synchronize()
+        bad += int(not same(out, eager))
+    res["capture"]["mismatching_replays_of_50"] = bad
+    print(json.dumps(res, indent=1), flush=True)
+    ok = (all(res["patched"]) and res["det_on"] and res["overlap_on"] and bad == 0
+          and res["capture"]["forks_captured"] == 4 and not res["capture"]["pending_after"]
+          and all(r["bitwise_with_all_reduce"] and r["bitwise_without"] and not r["pending_after"] for r in rows)
+          and all((r["forks"], r["in_place"]) == ((4, 4) if r["T"] <= 16 else (0, 0)) for r in rows))
+    res["pass"] = ok
+    with open("/repo/results/2026-09-25-kernels/mhc-det/lever_smoke_overlap.json", "w") as fh:
+        json.dump(res, fh, indent=1)
+    print("PASS" if ok else "FAIL", flush=True)
+    return 0 if ok else 1
+
+
 def main() -> int:
+    if "--overlap" in sys.argv:
+        return overlap_main()
     res = {}
     mhc_det.install({"DSV41_MHC_DET_SPLITS": "16"})
     m = importlib.import_module(mhc_det.MODEL_MOD)

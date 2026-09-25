@@ -35,6 +35,7 @@ PATCHES = {
     "widen_p2b_dataflow.py": {"DSV41_P2B_COOP": "2"},  # printed by the patched vllm_exl3_c
     "dense_gemv.py": {"DSV41_DENSE_GEMV": "1"},  # opt-in lever; armed line expected when on
     "mhc_det.py": {"DSV41_MHC_DET_SPLITS": "16"},
+    "mhc_det_overlap.py": {"DSV41_MHC_DET_SPLITS": "16", "DSV41_MHC_DET_OVERLAP": "1"},
 }
 # vLLM's own line (vllm/compilation/breakable_cudagraph.py:290 in the pinned image).
 BREAKABLE_CUDAGRAPH = "Breakable CUDA graph enabled"
