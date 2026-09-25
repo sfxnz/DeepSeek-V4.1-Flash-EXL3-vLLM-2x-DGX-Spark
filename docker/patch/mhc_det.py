@@ -9,11 +9,14 @@ order). It is deterministic; its cost is the GEMM's layout (16 CTAs, 8 warps eac
 - the prenorm GEMM -> det GEMM: the same 16 splits, the same mma.sync m16n8k8 TF32 chain per
   (split, 8-column n-tile), fn pre-packed once as its exact RNE-tf32 bits (19 of 32 bits), one
   warp per chain on 48 CTAs,
-- the TileLang fused norm is unchanged.
+- the TileLang fused norm -> det norm: the same operations in the same order (split sums,
+  sigmoids, 20-step sinkhorn with the TileLang butterflies, RMSNorm with the TileLang sumsq
+  order); its layer_input half runs during the GEMM, its coefficient warp after it.
 Every output is bitwise the stock one (kernel_study/mhc_det, results/2026-09-25-kernels/mhc-det).
 16 is the only accepted value: it names the stock decode split-K that the kernels reproduce.
-After weight load every packed fn and the post kernel are checked bitwise against the stock
-kernels on the GPU; any mismatch leaves the stock path in place (LOG_DISARMED).
+After weight load every packed fn (GEMM), every sublayer's whole pre (GEMM + norm, the layer's
+real parameters) and the post are checked bitwise against the stock kernels on the GPU; any
+mismatch leaves the stock path in place for the process (LOG_DISARMED).
 
 Imported lazily; top level is stdlib only so importing this module cannot fail.
 """
@@ -29,6 +32,7 @@ STAGE_KB = 2
 XS_PAD = 8
 PK_KB_BYTES = 1280
 MAX_T = 16
+NORM_H = 5120  # hidden size compiled into mhc_det_norm
 
 
 def _align16(n: int) -> int:
@@ -161,11 +165,10 @@ def det_post(dk, x, residual, post_layer_mix, comb_res_mix):
 def det_pre_delayed(dk, fnp, residual, fn, hc_scale, hc_base, rms_eps, hc_pre_eps, hc_sinkhorn_eps,
                     hc_post_mult_value, sinkhorn_repeat, pre_mix=None, x=None, norm_weight=None,
                     norm_eps=1e-6, det_norm=True):
-    """vLLM mhc_pre_delayed_tilelang with the prenorm GEMM swapped for the det kernel.
-
-    Same buffers, same 16-split partials (bitwise), same TileLang fused-norm kernel, so every
-    output is bitwise the stock one. Callers check eligibility (T <= MAX_T, norm_weight set,
-    stock split count 16)."""
+    """vLLM mhc_pre_delayed_tilelang on the det kernels: same buffers, the same 16-split
+    partials and the same fused-norm arithmetic, so every output is bitwise the stock one.
+    det_norm=False keeps the TileLang fused norm (kernel_study A/B only). Callers check
+    eligibility (_pre_eligible: T <= MAX_T, hidden 5120, norm_weight set, stock split count 16)."""
     import torch
     from vllm.model_executor.kernels.mhc.warmup import MHC_PRE_NORM_KERNEL
 
@@ -421,7 +424,8 @@ def _pre_eligible(residual, fn, pre_mix, x, norm_weight) -> bool:
 
     if not (_S.on and norm_weight is not None and residual.dim() == 3 and residual.dtype == torch.bfloat16
             and residual.is_contiguous() and residual.is_cuda and 1 <= residual.shape[0] <= MAX_T
-            and residual.shape[1] == 4):
+            and tuple(residual.shape[1:]) == (4, NORM_H) and norm_weight.dtype == torch.bfloat16
+            and norm_weight.is_contiguous() and norm_weight.numel() == NORM_H):
         return False
     t = residual.shape[0]
     k = x.shape[1] if x is not None else 4 * residual.shape[2]
