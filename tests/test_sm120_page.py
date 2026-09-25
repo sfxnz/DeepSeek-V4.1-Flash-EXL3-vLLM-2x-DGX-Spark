@@ -475,9 +475,19 @@ class Sm120PageTests(unittest.TestCase):
             def forward(self):
                 return "t"
 
+        class TargetCG:
+            def run_fullgraph(self, desc):
+                return "tg"
+
+        class DraftCG:
+            def run_fullgraph(self, desc):
+                return None
+
         leaves = {
             "vllm.v1.worker.gpu.spec_decode.dspark.speculator": ("DSparkSpeculator", Spec),
             "vllm.models.deepseek_v4_1.nvidia.model": ("DeepseekV4Model", Model),
+            "vllm.v1.worker.gpu.cudagraph_utils": ("ModelCudaGraphManager", TargetCG),
+            "vllm.v1.worker.gpu.spec_decode.dflash.cudagraph": ("DFlashCudaGraphManager", DraftCG),
         }
         names = {leaf.rsplit(".", k)[0] for leaf in leaves for k in range(leaf.count(".") + 1)}
         saved = {n: sys.modules.get(n) for n in names}
@@ -500,6 +510,11 @@ class Sm120PageTests(unittest.TestCase):
             )
             self.assertTrue(all(dt >= 0 for _, dt in rec))
             self.assertIn("pre_draft n=2", self.mod.format_census_totals(self.mod.census_totals(rec)))
+            # FULL-graph decode: replays, not forward/_generate_draft.
+            rec.clear()
+            self.assertEqual(TargetCG().run_fullgraph(0), "tg")
+            DraftCG().run_fullgraph(0)
+            self.assertEqual([name for name, _ in rec], ["target", "pre_draft", "draft"])
             rec.clear()  # atexit dump prints nothing
         finally:
             for n, m in saved.items():

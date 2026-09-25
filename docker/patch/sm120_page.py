@@ -857,6 +857,25 @@ def install_step_census(records: list | None = None) -> list:
         DeepseekV4Model.forward = wrap_gpu(DeepseekV4Model.forward, "target")
     except Exception:
         pass
+    # FULL-graph decode replays without calling forward/_generate_draft.
+    try:
+        from vllm.v1.worker.gpu.cudagraph_utils import ModelCudaGraphManager
+
+        ModelCudaGraphManager.run_fullgraph = wrap_gpu(
+            ModelCudaGraphManager.run_fullgraph, "target"
+        )
+    except Exception:
+        pass
+    try:
+        from vllm.v1.worker.gpu.spec_decode.dflash.cudagraph import (
+            DFlashCudaGraphManager,
+        )
+
+        DFlashCudaGraphManager.run_fullgraph = wrap_gpu(
+            DFlashCudaGraphManager.run_fullgraph, "draft"
+        )
+    except Exception:
+        pass
     try:
         from vllm.models.deepseek_v4_1.common.engram import EngramDiskStager
 
