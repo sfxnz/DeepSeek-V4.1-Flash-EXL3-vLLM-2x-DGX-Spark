@@ -1,0 +1,108 @@
+# r3 c=1 L.A.I.L rank0  source=/home/sfxnz/projects/data/dsv41-traces/r3-c1-20260925-083142/rank0/dp0_pp0_tp0_dcp0_ep0_rank0.1790325151611832821.pt.trace.json.gz
+steps=248 (dropped outliers 1), peak=250.0 GB/s
+
+## target graph 620: m=4 steps=248
+step wall ms median 64.45 p10 62.22 p90 72.99 mean 66.2; device busy 60.752 idle 5.445; kernel sum 66.423
+phases (ms/step median): target_graph_ms 52.12, draft_graph_ms 5.13, eager_after_target_ms 2.52, eager_before_next_target_ms 4.33
+cudaGraphLaunch host us (median): target 3411.64, draft 447.1
+
+category                  ms/step  launch/step
+p2b_moe                    23.168         40.0
+dense_b12x                 21.379        231.0
+woa_einsum                  3.726         43.0
+nccl_allreduce              3.418         88.0
+cutlass_bf16_gemm           3.038        106.0
+torch_eltwise               2.934        972.0
+mhc_prenorm_gemm            1.920         86.0
+sparse_mla                  1.278         86.0
+router_topk                 0.918         43.0
+deepgemm_fp8fp4_other       0.882          6.0
+triton                      0.710        127.1
+act_quant                   0.602        226.0
+mhc_pre_fuse                0.552         86.0
+mhc_post                    0.443         89.0
+other                       0.419        178.0
+indexer                     0.350         64.0
+rope_kv_cache               0.266          9.0
+nccl_allgather              0.193          4.0
+sampler_argmax              0.104          9.0
+memcpy                      0.093         63.1
+norm                        0.020          6.0
+woa_pack                    0.005          3.0
+memset                      0.003          4.0
+
+GEMM/GEMV/MoE role           n/step   us med     p10     p90  ms/step       MB    GB/s  %peak  roof us recov ms
+routed_moe_p2b                 40.0    546.4   532.5   658.4   23.168   106.17   194.3   77.7    424.7     6.18
+wq_b                           43.0    113.4   107.1   120.2    4.974    21.63   190.7   76.3     86.5    1.255
+wo_b                           43.0    105.3   100.7   115.5    4.713    21.63   205.3   82.1     86.5    0.994
+wo_a                           43.0     82.1    77.2   110.7    3.726     17.3   210.8   84.3     69.2    0.751
+lm_head                         2.0   1499.3  1484.9  1652.8    3.125    341.3   227.6   91.0   1365.2    0.389
+shared_gate_up                 43.0     58.5    55.1    64.1    2.608    12.17   208.0   83.2     48.7    0.514
+qkv_a                          43.0     47.6    45.1    66.6    2.250     9.46   198.8   79.5     37.8    0.624
+hc_prenorm                     86.0     20.7    16.0    24.6    1.920     1.97    94.8   37.9      7.9    1.241
+engram_wkv                      2.0    758.0   729.1   811.1    1.565    162.2   214.0   85.6    648.8    0.267
+shared_down                    43.0     30.1    28.6    32.4    1.362     6.08   202.2   80.9     24.3    0.317
+router_gate                    40.0     19.9    18.7    24.2    0.893     3.93   197.6   79.0     15.7    0.265
+bf16_gemm_grid2x1x1             8.0     81.2    68.2   124.1    0.751                                          
+router_gate_splitk_reduce      44.0     15.1     1.5    30.5    0.661                                          
+draft_moe_gate_up               3.0    197.8   138.8   246.4    0.601                                          
+main_proj                       1.0    389.8   383.4   429.4    0.403     81.1   208.1   83.2    324.4    0.078
+draft_router_gate               3.0    106.1   101.5   117.9    0.346     1.31    12.4    5.0      5.2    0.331
+bf16_gemm_grid8x8x16            3.0     97.7    70.3   107.7    0.286                                          
+draft_moe_down                  3.0     92.6    67.0   117.2    0.280                                          
+indexer_wq_b                    8.0     27.7    26.0    30.4    0.232     5.41   195.2   78.1     21.6    0.059
+draft_ctx_kv                    3.0     46.7    45.0    50.0    0.146     9.46   202.7   81.1     37.8    0.033
+bf16_gemm_grid8x4x16            1.0     69.0    66.7    73.8    0.070                                          
+bf16_gemm_grid8x1x1             4.0      5.2     5.0     5.5    0.023                                          
+bf16_gemm_grid64x1x1            3.0      2.3     2.2     2.7    0.008                                          
+
+NCCL op         where   grid         n/step   us med     p10     p90    mean  ms/step
+nccl_allreduce  target  [5, 1, 1]      80.0     22.8    20.5    34.8    36.6    2.932
+nccl_allreduce  draft   [3, 1, 1]       7.0     21.4    19.2   181.8    64.8    0.453
+nccl_allgather  eager   [8, 1, 1]       1.0     92.3    38.9   111.9    82.9    0.083
+nccl_allgather  draft   [8, 1, 1]       1.0     77.2    32.8    94.7    71.8    0.072
+nccl_allgather  target  [6, 1, 1]       2.0     18.4    15.0    22.3    19.0    0.038
+nccl_allreduce  eager   [5, 1, 1]       1.0     21.6    19.9    52.9    33.1    0.033
+
+idle gaps (device idle, all streams), top by ms/step:
+    3.201 ms/step    1.00/step x   3200.8 us  eager:Memcpy DtoH  -> eager:Memcpy HtoD   (next via cudaMemcpyAsync, host-bound 1.0)
+           host (main thread, % of gap): vllm/v1/worker/gpu/model_runner.py(1533): execute_model 100.0%; vllm/models/deepseek_v4_1/nvidia/model_state.py(85): prepare_inputs 99.9%; vllm/models/deepseek_v4_1/common/engram.py(1747): stage 99.8%; concurrent/futures/_base.py(463): exception 94.4%; threading.py(323): wait 94.0%; <built-in method acquire of _thread.lock object at 0xe7d2114dfbc0> 93.5%
+    0.227 ms/step    1.00/step x    227.8 us  draft:vllm::vocab_embedding::vocab_parallel_embedding_ -> draft:ncclDevKernel_AllReduce_Sum_bf16_RING_LL  (next via cudaGraphLaunch, host-bound 0.0)
+           host (main thread, % of gap): vllm/v1/worker/gpu/model_runner.py(1533): execute_model 99.8%; vllm/models/deepseek_v4_1/nvidia/model_state.py(85): prepare_inputs 99.8%; vllm/models/deepseek_v4_1/common/engram.py(1747): stage 99.8%; torch/cuda/streams.py(245): synchronize 99.8%; <built-in method synchronize of Event object at 0xe7d2680d7bd0> 99.8%
+    0.222 ms/step   38.55/step x      5.7 us  target:wo_b -> target:ncclDevKernel_AllReduce_Sum_bf16_RING_LL  (next via cudaGraphLaunch, host-bound 0.05)
+    0.219 ms/step   38.78/step x      5.6 us  target:aten:vectorized_elementwise_kernel/CUDAFunctor_add -> target:ncclDevKernel_AllReduce_Sum_bf16_RING_LL  (next via cudaGraphLaunch, host-bound 0.04)
+    0.131 ms/step    1.00/step x    130.7 us  eager:Memcpy HtoD  -> -:<end>  (next via ?, host-bound 0.0)
+           host (main thread, % of gap): vllm/v1/worker/gpu/model_runner.py(1533): execute_model 99.7%; vllm/v1/worker/gpu/cudagraph_utils.py(639): run_fullgraph 72.8%; vllm/v1/worker/gpu/cudagraph_utils.py(449): run_fullgraph 71.3%; torch/cuda/graphs.py(182): replay 62.9%; <built-in method replay of pybind11_builtins.pybind11_detail_function_record_v1_system_lib 61.4%
+    0.057 ms/step   17.48/step x      3.3 us  eager:at_cuda_detail::cub::detail::scan::DeviceScanIni -> eager:at_cuda_detail::cub::detail::scan::DeviceScanKer  (next via cudaLaunchKernel, host-bound 0.0)
+    0.052 ms/step   16.23/step x      3.2 us  eager: -> eager:aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda  (next via cudaLaunchKernel, host-bound 0.0)
+    0.044 ms/step   14.17/step x      3.1 us  eager:aten:unrolled_elementwise_kernel/CUDAFunctor_add -> eager:  (next via cudaLaunchKernel, host-bound 0.0)
+    0.043 ms/step   12.69/step x      3.4 us  eager:Memcpy DtoD  -> eager:aten:vectorized_elementwise_kernel/compare_scalar_kernel  (next via cudaLaunchKernel, host-bound 0.0)
+    0.032 ms/step   10.29/step x      3.1 us  eager:Memcpy DtoD  -> eager:aten:vectorized_elementwise_kernel/FillFunctor  (next via cudaLaunchKernel, host-bound 0.0)
+    0.027 ms/step    1.02/step x     26.6 us  eager:Memcpy HtoD  -> eager:Memcpy HtoD   (next via cudaMemcpyAsync, host-bound 0.88)
+    0.026 ms/step    8.24/step x      3.2 us  eager:aten:vectorized_elementwise_kernel/FillFunctor -> eager:_compute_swa_indices_and_lens_kernel  (next via cuLaunchKernelEx, host-bound 0.0)
+    0.023 ms/step    3.00/step x      7.8 us  draft:wo_b -> draft:ncclDevKernel_AllReduce_Sum_bf16_RING_LL  (next via cudaGraphLaunch, host-bound 0.0)
+    0.019 ms/step    3.00/step x      6.4 us  draft:aten:vectorized_elementwise_kernel/CUDAFunctor_add -> draft:ncclDevKernel_AllReduce_Sum_bf16_RING_LL  (next via cudaGraphLaunch, host-bound 0.0)
+    0.013 ms/step    0.17/step x     73.4 us  eager:Memcpy DtoH  -> eager:_expand_idx_mapping_kernel  (next via cuLaunchKernelEx, host-bound 0.0)
+           host (main thread, % of gap): vllm/v1/worker/gpu/model_runner.py(1533): execute_model 94.7%; vllm/models/deepseek_v4_1/nvidia/model_state.py(85): prepare_inputs 94.7%; vllm/models/deepseek_v4_1/common/engram.py(1747): stage 94.7%; torch/cuda/streams.py(245): synchronize 94.7%; <built-in method synchronize of Event object at 0xe7d2680d7bd0> 94.7%
+
+glue (non-anchor small kernels): 1879.1 launches/step, kernel 7.421 ms, span 12.332 ms, exposed (no anchor kernel running) 8.76 ms per step; top chains by exposed time:
+   3.419 ms exposed  3.286 span  0.027 kern   1.00/step   13.0 launches [nccl_allreduce -> <end>] (2 variants) e.g. 13: Memcpy DtoD , _gather_lookback_kernel, aten:vectorized_elementwise_kernel/AUnaryFunctor, aten:vectorized_elementwise_kernel/AUnaryFunctor, aten:vectorized_elementwise_kernel/BinaryFunctor, aten:vectorized_elementwise_kernel/AUnaryFunctor, aten:vectorized_elementwise_kernel/AUnaryFunctor, aten:vectorized_elementwise_kernel/BinaryFunctor, _hash_ids_kernel, aten:elementwise_kernel/gpu_kernel_impl_nocast ...
+   1.099 ms exposed  1.095 span  0.411 kern   1.00/step  258.1 launches [bf16_gemm_grid64x1x1 -> nccl_allreduce] (95 variants) e.g. 258: aten:_scatter_gather_elementwise_kernel/_cuda_scatter_gather_internal_kernel, aten:reduce_kernel/ReduceOp, memcpy32_post, aten:index_elementwise_kernel/gpu_index_kernel, aten:index_elementwise_kernel/gpu_index_kernel, aten:vectorized_elementwise_kernel/FillFunctor, aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda, Memcpy HtoD , Memcpy HtoD , Memcpy HtoD  ...
+   0.723 ms exposed  0.716 span  0.675 kern   8.00/step   80.0 launches [indexer_wq_b -> sparse_mla] (3 variants) e.g. 8: kernel_cutlass_kernel_vllmmodelsdeepseek_v4nvidi, aten:vectorized_elementwise_kernel/FillFunctor, deep_gemm::sm120_fp8_paged_mqa_logits, _candidate_flags_kernel, _mask_candidates_kernel, vllm::topKPerRowDecode, vllm::topKPerRowDecode, _compute_global_topk_indices_and_lens_kernel
+   0.501 ms exposed  0.243 span  0.207 kern  39.92/step  119.8 launches [routed_moe_p2b -> nccl_allreduce] (1 variants) e.g. 3: aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda, aten:vectorized_elementwise_kernel/bfloat16_copy_kernel_cuda, aten:vectorized_elementwise_kernel/CUDAFunctor_add
+   0.418 ms exposed  0.188 span  0.072 kern   1.00/step   40.0 launches [draft_ctx_kv -> nccl_allreduce] (2 variants) e.g. 40: vllm::rms_norm_kernel, aten:vectorized_elementwise_kernel/FillFunctor, vllm::deepseek_v4_fused_ops::fusedDeepseekV4QNor, aten:unrolled_elementwise_kernel/CUDAFunctor_add, , aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda, at_cuda_detail::cub::detail::scan::DeviceScanIni, at_cuda_detail::cub::detail::scan::DeviceScanKer, compute_cuda_kernel, aten:indexSelectSmallIndex ...
+   0.386 ms exposed  0.449 span  0.447 kern  83.00/step   89.0 launches [nccl_allreduce -> hc_prenorm] (3 variants) e.g. 1: mhc_post_tilelang_kernel
+   0.371 ms exposed  0.362 span  0.393 kern  41.95/step   83.9 launches [hc_prenorm -> qkv_a] (1 variants) e.g. 2: mhc_pre_big_fuse_with_norm_tilelang_kernel, fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz
+   0.264 ms exposed  0.233 span  0.233 kern  40.00/step   41.0 launches [hc_prenorm -> router_gate] (2 variants) e.g. 1: mhc_pre_big_fuse_with_norm_tilelang_kernel
+   0.232 ms exposed  0.216 span  0.197 kern  35.00/step   65.0 launches [wq_b -> sparse_mla] (2 variants) e.g. 2: vllm::deepseek_v4_fused_ops::fusedDeepseekV4QNor, _compute_global_topk_indices_and_lens_kernel
+   0.206 ms exposed  1.364 span  1.196 kern  39.66/step  242.9 launches [shared_down -> routed_moe_p2b] (14 variants) e.g. 7: aten:vectorized_elementwise_kernel/compare_scalar_kernel, aten:vectorized_elementwise_kernel/BinaryFunctor, aten:vectorized_elementwise_kernel/float16_copy_kernel_cuda, aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda, aten:vectorized_elementwise_kernel/BinaryFunctor, aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda, aten:vectorized_elementwise_kernel/FillFunctor
+   0.150 ms exposed  1.798 span  1.640 kern  29.05/step  371.9 launches [router_gate_splitk_reduce -> shared_down] (89 variants) e.g. 12: _dsv4_topk_kernel, aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda, aten:vectorized_elementwise_kernel/compare_scalar_kernel, aten:vectorized_elementwise_kernel/compare_scalar_kernel, aten:vectorized_elementwise_kernel/BinaryFunctor, aten:vectorized_elementwise_kernel/FillFunctor, aten:vectorized_elementwise_kernel/where_kernel_impl, aten:vectorized_elementwise_kernel/launch_clamp_scalar, vllm::act_and_mul_kernel, aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda ...
+   0.108 ms exposed  0.106 span  0.078 kern   1.00/step   16.7 launches [nccl_allgather -> main_proj] (9 variants) e.g. 17: aten:elementwise_kernel/gpu_kernel_impl_nocast, aten:index_elementwise_kernel/gpu_index_kernel, aten:index_elementwise_kernel/gpu_index_kernel, aten:vectorized_elementwise_kernel/CUDAFunctorOnSelf_add, aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda, _bias_kernel, _temperature_kernel, _compute_local_logits_stats_kernel, _rejection_kernel, _resample_kernel ...
+   0.105 ms exposed  0.093 span  0.093 kern  43.00/step   43.0 launches [wo_a -> wo_b] (1 variants) e.g. 1: fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz
+   0.088 ms exposed  0.087 span  0.072 kern   1.00/step   21.0 launches [nccl_allgather -> bf16_gemm_grid64x1x1] (1 variants) e.g. 21: aten:elementwise_kernel/gpu_kernel_impl_nocast, aten:mbtopk, Memset , Memset , aten:mbtopk, at::native::mbtopk::computeDigitCumSum, aten:mbtopk, aten:mbtopk, at::native::mbtopk::computeDigitCumSum, aten:mbtopk ...
+   0.074 ms exposed  0.072 span  0.069 kern   2.00/step   10.0 launches [bf16_gemm_grid64x1x1 -> bf16_gemm_grid64x1x1] (1 variants) e.g. 5: aten:_scatter_gather_elementwise_kernel/_cuda_scatter_gather_internal_kernel, aten:reduce_kernel/ReduceOp, memcpy32_post, aten:indexSelectSmallIndex, aten:vectorized_gather_kernel
+   0.072 ms exposed  0.086 span  0.086 kern  43.00/step   43.0 launches [sparse_mla -> wo_a] (1 variants) e.g. 1: _fused_inv_rope_fp8_quant_per_head
+   0.069 ms exposed  0.164 span  0.054 kern   1.00/step    6.2 launches [main_proj -> draft_ctx_kv] (4 variants) e.g. 6: vllm::rms_norm_kernel, Memcpy DtoD , _prepare_dflash_inputs_kernel, _prepare_dflash_inputs_kernel, _prepare_dflash_inputs_kernel, fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz
+   0.063 ms exposed  0.062 span  0.055 kern   3.00/step   24.0 launches [shared_down -> draft_moe_gate_up] (1 variants) e.g. 8: vllm::moe::topkGatingSoftplusSqrt, per_token_group_quant_8bit_kernel, aten:vectorized_elementwise_kernel/FillFunctor, aten:vectorized_elementwise_kernel/FillFunctor, _count_expert_num_tokens, _fwd_kernel_ep_scatter_1, _fwd_kernel_ep_scatter_2, deep_gemm::transpose_and_pack_fp32_into_ue8m0
+   0.056 ms exposed  0.091 span  0.091 kern  35.03/step   35.0 launches [qkv_a -> wq_b] (1 variants) e.g. 1: _q_kv_norm_quant_kernel
+   0.054 ms exposed  0.701 span  0.607 kern  13.87/step  149.8 launches [shared_gate_up -> shared_down] (63 variants) e.g. 2: vllm::act_and_mul_kernel, fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz

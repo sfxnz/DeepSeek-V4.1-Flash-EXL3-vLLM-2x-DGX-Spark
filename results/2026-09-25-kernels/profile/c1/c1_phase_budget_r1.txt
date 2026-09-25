@@ -1,0 +1,51 @@
+== target: kernel sum 57.625 ms/step
+   routed_moe_p2b                21.864
+   nccl_allreduce                 5.252
+   wq_b                           4.489
+   wo_b                           4.175
+   wo_a                           3.327
+   torch_eltwise                  2.395
+   shared_gate_up                 2.336
+   qkv_a                          1.988
+   hc_prenorm                     1.672
+   engram_wkv                     1.495
+   shared_down                    1.199
+   sparse_mla                     1.105
+   router_topk                    0.907
+   router_gate                    0.832
+== eager_after_target: kernel sum 2.407 ms/step
+   lm_head                        1.533
+   main_proj                      0.397
+   draft_ctx_kv                   0.140
+   nccl_allgather                 0.122
+   triton                         0.070
+   torch_eltwise                  0.060
+   other                          0.035
+   memcpy                         0.016
+   norm                           0.013
+   act_quant                      0.012
+   sampler_argmax                 0.008
+   rope_kv_cache                  0.002
+== draft: kernel sum 5.070 ms/step
+   lm_head                        1.522
+   draft_moe_gate_up              0.559
+   nccl_allreduce                 0.488
+   wq_b                           0.322
+   draft_router_gate              0.320
+   wo_b                           0.308
+   draft_moe_down                 0.266
+   wo_a                           0.222
+   shared_gate_up                 0.177
+   qkv_a                          0.139
+   hc_prenorm                     0.125
+   shared_down                    0.093
+   nccl_allgather                 0.092
+   torch_eltwise                  0.079
+== eager_before_target: kernel sum 0.475 ms/step
+   torch_eltwise                  0.184
+   nccl_allreduce                 0.099
+   other                          0.071
+   memcpy                         0.067
+   triton                         0.048
+   indexer                        0.004
+   sampler_argmax                 0.002
