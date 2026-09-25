@@ -17,6 +17,9 @@ KERNEL = ROOT / "docker/patch/dense_gemv_kernel.cu"
 DG_PATCHER = ROOT / "docker/patch/dense_mxfp8_deepgemm.py"
 # Verbatim vllm/model_executor/kernels/linear/mxfp8/flashinfer.py (e12 == e13).
 PIN = ROOT / "tests/fixtures/mxfp8_flashinfer_e12.pin.py"
+# Verbatim vllm/models/deepseek_v4/nvidia/ops/o_proj.py from canonical-e13 (probe_wo_a
+# + fix_o_proj_woa_fp8 requant/prepack stages applied at image build).
+OPROJ_PIN = ROOT / "tests/fixtures/o_proj_e13.pin.py"
 
 
 def _load(path=PATCHER, name="dense_gemv"):
@@ -38,7 +41,30 @@ class EnvTests(unittest.TestCase):
         self.assertTrue(self.mod.enabled_from_env({"DSV41_DENSE_GEMV": "1"}))
 
     def test_default_shapes_are_every_tuned_shape(self) -> None:
-        self.assertEqual(self.mod.shapes_from_env({}), frozenset(self.mod.CONFIGS))
+        self.assertEqual(self.mod.shapes_from_env({}), frozenset(self.mod.CONFIGS) | {"wo_a"})
+
+    def test_wo_a_can_be_listed_or_left_out(self) -> None:
+        self.assertEqual(self.mod.shapes_from_env({"DSV41_DENSE_GEMV_SHAPES": "wo_a"}), {"wo_a"})
+        self.assertNotIn("wo_a", self.mod.shapes_from_env({"DSV41_DENSE_GEMV_SHAPES": "5120x1792"}))
+
+    def test_woa_apply_is_inert_when_off(self) -> None:
+        import os
+
+        class WoA:
+            pass
+
+        class X:
+            shape = (4, 4, 4096)
+
+        wo_a = WoA()
+        old = os.environ.pop("DSV41_DENSE_GEMV", None)
+        try:
+            self.assertFalse(self.mod.woa_apply(wo_a, X(), None, None, None, (1, 1, 32)))
+        except ImportError:  # host without torch: the off path must not need it
+            self.fail("woa_apply imported torch with the flag off")
+        finally:
+            if old is not None:
+                os.environ["DSV41_DENSE_GEMV"] = old
 
     def test_indexer_wq_b_is_not_tuned(self) -> None:
         # measured no gain on the 1280x4096 pre-quantized shape: it stays on b12x
@@ -122,6 +148,13 @@ class ConfigTableTests(unittest.TestCase):
             self.assertEqual(maxes, sorted(maxes), name)
             self.assertLessEqual(maxes[-1], self.mod.MAX_M, name)
 
+    def test_woa_config_is_compiled(self) -> None:
+        name, kc, smode, buckets = self.mod.WOA_CONFIG
+        self.assertEqual(self.mod.WOA_K % kc, 0)
+        for max_m, w, s, mr in buckets:
+            self.assertIn((w, s, kc, smode, mr), self.compiled, f"wo_a M<={max_m}")
+        self.assertIn("gemv_grouped", KERNEL.read_text())
+
     def test_lm_head_uses_per_row_scales(self) -> None:
         self.assertEqual(self.mod.CONFIGS[(5120, 64640)][2], 1)
         others = [v[2] for key, v in self.mod.CONFIGS.items() if key != (5120, 64640)]
@@ -182,6 +215,51 @@ class PatchTests(unittest.TestCase):
             dest.write_text(self.pin)
             self.assertTrue(self.mod.apply(Path(td)))
             self.assertIn("_dsv41_gemv_prepare", dest.read_text())
+            self.assertFalse(self.mod.apply(Path(td)))
+
+
+class OprojPatchTests(unittest.TestCase):
+    """The wo_a hook on the image's o_proj.py (fix_o_proj_woa_fp8 stages baked in)."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.mod = _load()
+        cls.pin = OPROJ_PIN.read_text()
+
+    def test_pin_is_the_patched_image_file(self) -> None:
+        self.assertIn("_woa_try_requant", self.pin)
+        self.assertIn("_woa_prepacked_scale", self.pin)
+        self.assertNotIn("_dsv41_gemv_", self.pin)
+        for anchor in (self.mod.OPROJ_IMPORT_OLD, self.mod.OPROJ_CALL_OLD):
+            self.assertEqual(self.pin.count(anchor), 1)
+
+    def test_einsum_runs_only_when_the_hook_declines(self) -> None:
+        out = self.mod.patch_oproj_py(self.pin)
+        compile(out, "o_proj.py", "exec")
+        body = out.split("def deep_gemm_fp8_o_proj(", 1)[1]
+        hook = body.index("if not _dsv41_gemv_woa(wo_a, o_proj_input, o_scale, weight_scale, z, einsum_recipe):")
+        self.assertLess(body.index("_woa_prepacked_scale("), hook)  # the stock scale is still resolved first
+        self.assertLess(hook, body.index("            fp8_einsum(\n"))
+        self.assertIn("_dsv41_gemv_woa = lambda *a, **k: False", out)
+
+    def test_idempotent_and_drift_refuses(self) -> None:
+        once = self.mod.patch_oproj_py(self.pin)
+        self.assertEqual(self.mod.patch_oproj_py(once), once)
+        with self.assertRaises(SystemExit):
+            self.mod.patch_oproj_py(self.pin.replace("            recipe=einsum_recipe,\n        )\n", ")\n", 1))
+
+    def test_apply_patches_both_files_and_survives_a_missing_o_proj(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fi = Path(td) / "model_executor/kernels/linear/mxfp8/flashinfer.py"
+            fi.parent.mkdir(parents=True)
+            fi.write_text(PIN.read_text())
+            self.assertTrue(self.mod.apply(Path(td)))  # o_proj.py absent: wo_a skipped, flashinfer patched
+            self.assertIn("_dsv41_gemv_prepare", fi.read_text())
+            op = Path(td) / "models/deepseek_v4/nvidia/ops/o_proj.py"
+            op.parent.mkdir(parents=True)
+            op.write_text(self.pin)
+            self.assertTrue(self.mod.apply(Path(td)))
+            self.assertIn("_dsv41_gemv_woa(", op.read_text())
             self.assertFalse(self.mod.apply(Path(td)))
 
 

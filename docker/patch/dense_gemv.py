@@ -61,7 +61,7 @@ MARK = "_dsv41_gemv_"
 
 # Boot-log markers for tools/engagement_audit.py.
 LOG_ENGAGED = "dense GEMV armed"
-LOG_DISARMED = ("; b12x stays",)
+LOG_DISARMED = ("; b12x stays", "; fp8_einsum stays")
 
 # (K, N) per rank at TP=2 -> (name, KC, scale mode, ((max_m, W, S, MR), ...)).
 # Scale mode 0 = one scale per 32 rows, 1 = per-row (lm_head pack). Each tuple
@@ -78,6 +78,10 @@ CONFIGS = {
     (5120, 64640): ("lm_head", 512, 1, ((8, 3, 2, 8),)),
 }
 DEFAULT_SHAPES = ",".join(f"{k}x{n}" for k, n in CONFIGS)
+# o_proj wo_a: 4 groups x [1024, 4096] per rank, grouped GEMV on the DeepGEMM-layout
+# activation from fused_inv_rope_fp8_quant (same KC/buckets as wo_b: K = 4096).
+WOA_GROUPS, WOA_D, WOA_K = 4, 1024, 4096
+WOA_CONFIG = ("wo_a", 512, 0, ((4, 4, 2, 4), (8, 4, 2, 8)))
 
 REL = Path("model_executor/kernels/linear/mxfp8/flashinfer.py")
 
@@ -117,21 +121,26 @@ def enabled_from_env(env=None) -> bool:
     return env.get(ENV_FLAG, "0") == "1"
 
 
-def shapes_from_env(env=None) -> frozenset[tuple[int, int]]:
-    """Parse DSV41_DENSE_GEMV_SHAPES ('KxN,KxN') into {(K, N)}; unknown shapes raise."""
+def shapes_from_env(env=None) -> frozenset:
+    """Parse DSV41_DENSE_GEMV_SHAPES ('KxN,...,wo_a') into {(K, N), 'wo_a'}; unknown entries raise.
+
+    Default: every CONFIGS shape plus the grouped o_proj wo_a."""
     env = os.environ if env is None else env
-    raw = env.get(ENV_SHAPES, "").strip() or DEFAULT_SHAPES
+    raw = env.get(ENV_SHAPES, "").strip() or DEFAULT_SHAPES + "," + WOA_CONFIG[0]
     out = set()
     for tok in raw.split(","):
         tok = tok.strip().lower()
         if not tok:
             continue
+        if tok == WOA_CONFIG[0]:
+            out.add(tok)
+            continue
         k, sep, n = tok.partition("x")
         if not sep or not k.isdigit() or not n.isdigit():
-            raise ValueError(f"{ENV_SHAPES}: bad entry {tok!r} (want KxN)")
+            raise ValueError(f"{ENV_SHAPES}: bad entry {tok!r} (want KxN or wo_a)")
         key = (int(k), int(n))
         if key not in CONFIGS:
-            raise ValueError(f"{ENV_SHAPES}: {tok} has no tuned config (known: {DEFAULT_SHAPES})")
+            raise ValueError(f"{ENV_SHAPES}: {tok} has no tuned config (known: {DEFAULT_SHAPES},wo_a)")
         out.add(key)
     return frozenset(out)
 
@@ -161,17 +170,69 @@ def patch_py(src: str) -> str:
     return out
 
 
-def apply(tree: Path) -> bool:
-    path = tree / REL
+def _rewrite(path: Path, fn) -> bool:
     if not path.is_file():
         raise SystemExit(f"dense_gemv: {path} missing")
     src = path.read_text()
-    out = patch_py(src)
+    out = fn(src)
     if out == src:
         return False
     path.write_text(out)
     print(f"dsv41: dense GEMV hooks patched into {path}", flush=True)
     return True
+
+
+def apply(tree: Path) -> bool:
+    """flashinfer.py hooks (required: SystemExit on drift), then the o_proj wo_a hook
+    (independent: a drifted o_proj.py only leaves wo_a on fp8_einsum)."""
+    changed = _rewrite(tree / REL, patch_py)
+    try:
+        changed |= _rewrite(tree / OPROJ_REL, patch_oproj_py)
+    except SystemExit as exc:
+        print(f"dsv41: dense GEMV wo_a hook skipped ({exc}); fp8_einsum stays", flush=True)
+    return changed
+
+
+# o_proj wo_a: the image's o_proj.py (fix_o_proj_woa_fp8 requant + prepack stages
+# already baked in) calls DeepGEMM's fp8_einsum; the hook runs first and returns
+# True when it filled z (bit-identical), else the stock einsum runs.
+OPROJ_REL = Path("models/deepseek_v4/nvidia/ops/o_proj.py")
+OPROJ_IMPORT_OLD = "from vllm.utils.deep_gemm import fp8_einsum\n"
+OPROJ_IMPORT_NEW = OPROJ_IMPORT_OLD + (
+    "\ntry:  # dsv41 dense_gemv (DSV41_DENSE_GEMV): grouped wo_a GEMV\n"
+    "    from dense_gemv import woa_apply as _dsv41_gemv_woa\n"
+    "except ImportError:\n"
+    "    _dsv41_gemv_woa = lambda *a, **k: False\n"
+)
+OPROJ_CALL_OLD = """        fp8_einsum(
+            "bhr,hdr->bhd",
+            (o_proj_input, o_scale),
+            (wo_a.weight, weight_scale),
+            z,
+            recipe=einsum_recipe,
+        )
+"""
+OPROJ_CALL_NEW = """        if not _dsv41_gemv_woa(wo_a, o_proj_input, o_scale, weight_scale, z, einsum_recipe):
+            fp8_einsum(
+                "bhr,hdr->bhd",
+                (o_proj_input, o_scale),
+                (wo_a.weight, weight_scale),
+                z,
+                recipe=einsum_recipe,
+            )
+"""
+
+
+def patch_oproj_py(src: str) -> str:
+    if MARK in src:
+        return src
+    for name, old in (("oproj import", OPROJ_IMPORT_OLD), ("oproj einsum", OPROJ_CALL_OLD)):
+        if src.count(old) != 1:
+            raise SystemExit(f"dense_gemv: {name} anchor count={src.count(old)} (want 1)")
+    out = src.replace(OPROJ_IMPORT_OLD, OPROJ_IMPORT_NEW, 1)
+    out = out.replace(OPROJ_CALL_OLD, OPROJ_CALL_NEW, 1)
+    compile(out, str(OPROJ_REL), "exec")
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -452,6 +513,141 @@ def maybe_apply(layer, x, bias):
     if bias is not None:
         y = y + bias
     return y.view(*shape[:-1], n)
+
+
+# ---------------------------------------------------------------- o_proj wo_a
+
+_woa_full_test_done = False
+
+
+def _woa_run(armed: _Armed, wo_a, x8, xs, z) -> bool:
+    import torch
+
+    m = x8.shape[0]
+    pl = armed.plan(m)
+    if pl is None:
+        return False
+    w, st, mr, grid = pl
+    g, d, k = WOA_GROUPS, WOA_D, WOA_K
+    _ext().gemv_grouped(x8.view(torch.uint8), xs, wo_a.weight.view(g * d, k).view(torch.uint8), armed.scales,
+                        armed.smode, z.view(m, g * d), w, st, armed.kc, mr, grid, PDL, g)
+    return True
+
+
+def _woa_selftest(armed: _Armed, wo_a, weight_scale, recipe) -> str:
+    """M 1..8 x 3 distributions of the serve's own producer vs fp8_einsum, bitwise."""
+    import torch
+    from vllm.models.deepseek_v4.common.ops.fused_inv_rope_fp8_quant import fused_inv_rope_fp8_quant
+    from vllm.utils.deep_gemm import fp8_einsum
+
+    g, d, k = WOA_GROUPS, WOA_D, WOA_K
+    dev = wo_a.weight.device
+    gen = torch.Generator(device=dev).manual_seed(20260925)
+    cos_sin = torch.randn(4096, 64, generator=gen, device=dev, dtype=torch.float32)
+    heads = k // 512  # heads per group (head_dim 512)
+    for dist in ("normal", "lognormal", "outlier"):
+        for m in range(1, MAX_M + 1):
+            o = torch.randn(m, g * heads, 512, generator=gen, device=dev)
+            if dist == "lognormal":
+                o = o * torch.exp(1.5 * torch.randn(m, g * heads, 512, generator=gen, device=dev))
+            elif dist == "outlier":
+                o[:, :, torch.randint(0, 448, (4,), generator=gen, device=dev)] *= 200.0
+            pos = torch.randint(0, 4096, (m,), generator=gen, device=dev)
+            x8, xs = fused_inv_rope_fp8_quant(o.to(torch.bfloat16), pos, cos_sin, n_groups=g, heads_per_group=heads,
+                                              nope_dim=448, rope_dim=64, quant_group_size=recipe[2],
+                                              tma_aligned_scales=True)
+            ref = torch.empty(m, g, d, device=dev, dtype=torch.bfloat16)
+            fp8_einsum("bhr,hdr->bhd", (x8, xs), (wo_a.weight, weight_scale), ref, recipe=recipe)
+            got = torch.empty_like(ref)
+            if not _woa_run(armed, wo_a, x8, xs, got):
+                raise RuntimeError(f"no bucket for M={m}")
+            if not torch.equal(got.view(torch.int16), ref.view(torch.int16)):
+                raise RuntimeError(f"M={m} {dist}: not bitwise equal to fp8_einsum")
+    return "M=1..8 x 3 dist bitwise vs fp8_einsum"
+
+
+def _woa_arm(wo_a, x8, xs, weight_scale, z, recipe):
+    """First eager call per wo_a layer: build scales, (once) the full self-test, then the
+    in-situ check on this call's real inputs. Returns the armed state; raises on any
+    mismatch (the caller then keeps fp8_einsum for this layer)."""
+    import torch
+    from vllm.utils.deep_gemm import fp8_einsum
+
+    global _woa_full_test_done
+    g, d, k = WOA_GROUPS, WOA_D, WOA_K
+    w = wo_a.weight
+    if tuple(recipe) != (1, 1, 32):
+        raise RuntimeError(f"einsum recipe {tuple(recipe)} (want (1, 1, 32))")
+    if w.dtype != torch.float8_e4m3fn or tuple(w.shape) != (g, d, k) or not w.is_contiguous():
+        raise RuntimeError(f"wo_a weight {w.dtype} {tuple(w.shape)} (want e4m3 {(g, d, k)} contiguous)")
+    s = wo_a.weight_scale if hasattr(wo_a, "weight_scale") else wo_a.weight_scale_inv
+    if s.dtype != torch.float32 or tuple(s.shape) != (g, d, k // 32):
+        raise RuntimeError(f"wo_a scale {s.dtype} {tuple(s.shape)} (want fp32 {(g, d, k // 32)})")
+    bits = s.contiguous().view(torch.int32)
+    if bool(((bits.to(torch.int64) & 0x807FFFFF) != 0).any()):
+        raise RuntimeError("wo_a scale is not a positive power of two")
+    ue = ((bits >> 23) & 0xFF).to(torch.uint8).view(g * d, k // 32)
+    name, kc, smode, buckets = WOA_CONFIG
+    ext = _ext()
+    plans = []
+    for max_m, wr, st, mr in buckets:
+        grid = int(ext.plan_grid(wr, st, kc, mr, smode, 1, g * d, k, g))
+        if grid < g:
+            raise RuntimeError(f"config W{wr} S{st} KC{kc} MR{mr} cannot run here")
+        plans.append((max_m, wr, st, mr, grid))
+    armed = _Armed(("wo_a",), name, kc, smode, build_scales(ue, g * d, k, kc, smode), plans)
+    detail = ""
+    if not _woa_full_test_done:
+        detail = _woa_selftest(armed, wo_a, weight_scale, recipe) + "; "
+        _woa_full_test_done = True
+        cfg = ", ".join(f"M<={p[0]} W{p[1]} S{p[2]} MR{p[3]} grid{p[4]}" for p in plans)
+        first = True
+    else:
+        first = False
+    ref = torch.empty_like(z)
+    fp8_einsum("bhr,hdr->bhd", (x8, xs), (w, weight_scale), ref, recipe=recipe)
+    if not _woa_run(armed, wo_a, x8, xs, z):
+        raise RuntimeError(f"no bucket for M={x8.shape[0]}")
+    if not torch.equal(z.view(torch.int16), ref.view(torch.int16)):
+        z.copy_(ref)  # the caller gets the stock result either way
+        raise RuntimeError(f"in-situ M={x8.shape[0]}: not bitwise equal to fp8_einsum")
+    if first:
+        _log(f"wo_a ({g}x{d}x{k}) dense GEMV armed: KC{kc} {cfg}; self-test {detail}in-situ bitwise "
+             f"(M={x8.shape[0]})")
+    return armed
+
+
+def woa_apply(wo_a, x8, xs, weight_scale, z, recipe) -> bool:
+    """Hook before o_proj's fp8_einsum: True when z was filled (bit-identical), else False."""
+    st = getattr(wo_a, "_dsv41_gemv", None)
+    if st is False:
+        return False
+    m = x8.shape[0]
+    if not 0 < m <= MAX_M:
+        return False
+    if st is None:
+        try:
+            if not enabled_from_env() or WOA_CONFIG[0] not in shapes_from_env():
+                wo_a._dsv41_gemv = False
+                return False
+        except ValueError as exc:
+            wo_a._dsv41_gemv = False
+            _log(f"wo_a rejected ({exc!r}); fp8_einsum stays")
+            return False
+        import torch
+
+        if torch.cuda.is_current_stream_capturing():
+            # Arm in an eager pass only. vLLM sets cudagraph_num_of_warmups = 1 when graphs
+            # are on, so each capture size gets one eager run before it is captured.
+            return False
+        try:
+            wo_a._dsv41_gemv = _woa_arm(wo_a, x8, xs, weight_scale, z, recipe)
+            return True
+        except Exception as exc:  # noqa: BLE001 - stock einsum stays on any failure
+            wo_a._dsv41_gemv = False
+            _log(f"wo_a rejected ({exc!r}); fp8_einsum stays")
+            return False
+    return _woa_run(st, wo_a, x8, xs, z)
 
 
 def main(argv: list[str]) -> int:

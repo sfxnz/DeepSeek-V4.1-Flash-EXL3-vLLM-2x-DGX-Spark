@@ -44,15 +44,26 @@ namespace dsv41_gemv {
 enum ScaleMode : int { COMPACT32 = 0, TILE = 1 };
 enum InMode : int { IN_BF16 = 0, IN_QUANT = 1 };
 
+enum XsMode : int { XS_SWZ128X4 = 0, XS_DG_PACKED = 1 };
+
 struct Params {
-  const uint8_t* w;        // e4m3 [N, K] row-major
+  const uint8_t* w;        // e4m3 [N, K] row-major (grouped: G x [N/G, K], group-major)
   const uint8_t* wscale;   // COMPACT32 or TILE layout
   const __nv_bfloat16* x;  // IN_BF16: [M, K], row stride ldx elements
-  const uint8_t* xq;       // IN_QUANT: e4m3 [M, K], row stride ldxq bytes
-  const uint8_t* xs;       // IN_QUANT: 128x4-swizzled scales of [M, K/32]
-  __nv_bfloat16* y;        // [M, N], row stride ldy elements
+  const uint8_t* xq;       // IN_QUANT: e4m3 [M, K] per group, row stride ldxq bytes
+  const uint8_t* xs;       // IN_QUANT: scales, see xs_mode
+  __nv_bfloat16* y;        // [M, N], row stride ldy elements (grouped: group g at column g*N/G)
   int M, N, K;
   int ldx, ldxq, ldy;
+  // Grouped GEMV (wo_a: y[:, g] = x[:, g] @ W[g]^T): CTA b serves group b % G,
+  // group g's activation starts at xq + g*xq_gstride. G = 1 is a plain GEMV.
+  int G;
+  long long xq_gstride;
+  // xs_mode XS_SWZ128X4: FlashInfer/vLLM 128x4-swizzled ue8m0 bytes (b12x inputs).
+  // xs_mode XS_DG_PACKED: DeepGEMM MN-major INT32-packed ue8m0 (fused_inv_rope_fp8_quant
+  // on SM12x): int32 at [g*xs_gstride + m + (kb/4)*xs_tal], byte kb%4.
+  int xs_mode, xs_tal;
+  long long xs_gstride;
 };
 
 __device__ __forceinline__ uint32_t smem_u32(const void* p) {
@@ -181,7 +192,7 @@ struct ActRegs {
 
 // Load this thread's 8-element sub-chunks of one KC-span of the M activation rows.
 template <int IN_MODE, int NBS, int KBS>
-__device__ __forceinline__ void act_load(const Params& p, ActRegs<NBS>& ar, int span, int tid, int nthr) {
+__device__ __forceinline__ void act_load(const Params& p, ActRegs<NBS>& ar, int span, int tid, int nthr, int g) {
   const int subs = p.M * KBS * 4;
   const int KB = p.K >> 5;
 #pragma unroll
@@ -195,10 +206,18 @@ __device__ __forceinline__ void act_load(const Params& p, ActRegs<NBS>& ar, int 
       if constexpr (IN_MODE == IN_BF16) {
         ar.v[j] = *reinterpret_cast<const uint4*>(p.x + (size_t)m * p.ldx + kb * 32 + t * 8);
       } else {
-        const uint2 u = *reinterpret_cast<const uint2*>(p.xq + (size_t)m * p.ldxq + kb * 32 + t * 8);
+        const uint2 u = *reinterpret_cast<const uint2*>(p.xq + g * p.xq_gstride + (size_t)m * p.ldxq + kb * 32 +
+                                                        t * 8);
         ar.v[j].x = u.x;
         ar.v[j].y = u.y;
-        if (t == 0) ar.ue[j] = p.xs[swz_offset(m, kb, (KB + 3) >> 2)];
+        if (t == 0) {
+          if (p.xs_mode == XS_SWZ128X4) {
+            ar.ue[j] = p.xs[swz_offset(m, kb, (KB + 3) >> 2)];
+          } else {
+            const uint32_t w = reinterpret_cast<const uint32_t*>(p.xs)[g * p.xs_gstride + m + (kb >> 2) * p.xs_tal];
+            ar.ue[j] = (w >> (8 * (kb & 3))) & 0xFFu;
+          }
+        }
       }
     }
   }
@@ -256,9 +275,9 @@ constexpr int SW = 2;  // staging warps per CTA (measured: 1-2 us/call better th
 // W MMA warps (warps 0..W-1) own tiles; warps W, W+1 stage the activation.
 template <int W, int S, int KC, int SMODE, int IN_MODE, int MR>
 __global__ void __launch_bounds__((W + SW) * 32) gemv_kernel(const Params p) {
-  using G = Geom<KC, SMODE>;
-  constexpr int KBS = G::KBS, CPR = G::CPR, A_BYTES = G::A_BYTES, SC_BYTES = G::SC_BYTES;
-  constexpr int STAGE_BYTES = G::STAGE_BYTES;
+  using GM = Geom<KC, SMODE>;
+  constexpr int KBS = GM::KBS, CPR = GM::CPR, A_BYTES = GM::A_BYTES, SC_BYTES = GM::SC_BYTES;
+  constexpr int STAGE_BYTES = GM::STAGE_BYTES;
   constexpr int PER_LANE = 16 * CPR / 32;
   constexpr int NBS = (MR * KBS * 4 + SW * 32 - 1) / (SW * 32);
   extern __shared__ __align__(128) uint8_t smem[];
@@ -268,6 +287,7 @@ __global__ void __launch_bounds__((W + SW) * 32) gemv_kernel(const Params p) {
   __shared__ int s_ready[SW];
 
   const int lane = threadIdx.x & 31, warp = threadIdx.x >> 5;
+  const int grp = blockIdx.x % p.G;  // this CTA's group (0 for a plain GEMV)
   if (threadIdx.x < SW) s_ready[threadIdx.x] = 0;
   __syncthreads();
   if (warp >= W) {  // staging warps: every span in k order, next span's loads in flight
@@ -276,9 +296,9 @@ __global__ void __launch_bounds__((W + SW) * 32) gemv_kernel(const Params p) {
     const int tid = threadIdx.x - W * 32, nthr = SW * 32, nspan = p.K / KC;
     pdl_wait();
     ActRegs<NBS> cur, nxt;
-    act_load<IN_MODE, NBS, KBS>(p, cur, 0, tid, nthr);
+    act_load<IN_MODE, NBS, KBS>(p, cur, 0, tid, nthr, grp);
     for (int span = 0; span < nspan; ++span) {
-      if (span + 1 < nspan) act_load<IN_MODE, NBS, KBS>(p, nxt, span + 1, tid, nthr);
+      if (span + 1 < nspan) act_load<IN_MODE, NBS, KBS>(p, nxt, span + 1, tid, nthr, grp);
       act_store<IN_MODE, NBS, KBS, MR>(p, cur, span, s_xf, s_xs, tid, nthr);
       __threadfence_block();  // span data before the counter (release)
       __syncwarp();
@@ -288,10 +308,12 @@ __global__ void __launch_bounds__((W + SW) * 32) gemv_kernel(const Params p) {
     return;
   }
   const int K = p.K, nspan = K / KC;
-  const int T = p.N >> 4;
-  const int gw = blockIdx.x * W + warp, GW = gridDim.x * W;
-  const int ntile = gw < T ? (T - 1 - gw) / GW + 1 : 0;
+  // tiles of this CTA's group: global tile = grp*Tg + (gw + ti*GW), Tg = N/G/16
+  const int Tg = (p.N / p.G) >> 4;
+  const int gw = (blockIdx.x / p.G) * W + warp, GW = (gridDim.x / p.G) * W;
+  const int ntile = gw < Tg ? (Tg - 1 - gw) / GW + 1 : 0;
   const int nsteps = ntile * nspan;
+  const int tile0 = grp * Tg;
 
   uint8_t* ring = smem + warp * S * STAGE_BYTES;
   uint8_t* s_xf = smem + W * S * STAGE_BYTES;
@@ -301,7 +323,7 @@ __global__ void __launch_bounds__((W + SW) * 32) gemv_kernel(const Params p) {
   auto issue = [&](int s) {
     if (s < nsteps) {
       const int ti = s / nspan, span = s - ti * nspan;
-      const int tile = gw + ti * GW, n0 = tile * 16, k0 = span * KC;
+      const int tile = tile0 + gw + ti * GW, n0 = tile * 16, k0 = span * KC;
       const uint32_t st = ring_u32 + (s % S) * STAGE_BYTES;
 #pragma unroll
       for (int i = 0; i < PER_LANE; ++i) {
@@ -370,7 +392,7 @@ __global__ void __launch_bounds__((W + SW) * 32) gemv_kernel(const Params p) {
     __syncwarp();
     issue(s + S);
     if (span == nspan - 1) {
-      const int n0 = (gw + ti * GW) * 16;
+      const int n0 = (tile0 + gw + ti * GW) * 16;
       const int m0 = 2 * q, m1 = 2 * q + 1;
       if (m0 < p.M) {
         p.y[(size_t)m0 * p.ldy + n0 + r] = __float2bfloat16_rn(acc[0]);
@@ -476,24 +498,28 @@ const Entry& must_find(int64_t W, int64_t S, int64_t KC, int64_t MR, int64_t smo
   return *e;
 }
 
-// Persistent grid: min(tiles/W, SMs x resident CTAs per SM); 0 = cannot run.
-int64_t plan_grid(int64_t W, int64_t S, int64_t KC, int64_t MR, int64_t smode, int64_t in_mode, int64_t N, int64_t K) {
+// Persistent grid: G x min(tiles per group / W, SMs x resident CTAs per SM / G);
+// 0 = cannot run. N is the total row count (all groups).
+int64_t plan_grid(int64_t W, int64_t S, int64_t KC, int64_t MR, int64_t smode, int64_t in_mode, int64_t N, int64_t K,
+                  int64_t G) {
   const Entry& e = must_find(W, S, KC, MR, smode, in_mode);
   int dev = 0, sms = 0, optin = 0;
   cudaGetDevice(&dev);
   cudaDeviceGetAttribute(&sms, cudaDevAttrMultiProcessorCount, dev);
   cudaDeviceGetAttribute(&optin, cudaDevAttrMaxSharedMemoryPerBlockOptin, dev);
-  if (K % KC || N % 32 || e.smem(K) > optin) return 0;
+  if (G < 1 || K % KC || N % (32 * G) || e.smem(K) > optin) return 0;
   const int occ = e.occ(K);
-  if (occ < 1) return 0;
-  const int64_t tiles = N / 16;
-  return std::min<int64_t>((tiles + W - 1) / W, (int64_t)sms * occ);
+  if (occ < 1 || (int64_t)sms * occ < G) return 0;
+  const int64_t tiles_g = N / G / 16;
+  return G * std::min<int64_t>((tiles_g + W - 1) / W, (int64_t)sms * occ / G);
 }
 
 void gemv(c10::optional<torch::Tensor> x, c10::optional<torch::Tensor> xq, c10::optional<torch::Tensor> xs,
           torch::Tensor w, torch::Tensor wscale, int64_t smode, torch::Tensor y, int64_t W, int64_t S, int64_t KC,
           int64_t MR, int64_t grid, bool pdl) {
   dsv41_gemv::Params p = {};
+  p.G = 1;
+  p.xs_mode = dsv41_gemv::XS_SWZ128X4;
   TORCH_CHECK(w.dim() == 2 && w.is_contiguous() && w.element_size() == 1, "dense_gemv: w must be [N, K] 1-byte");
   p.w = (const uint8_t*)w.data_ptr();
   p.wscale = (const uint8_t*)wscale.data_ptr();
@@ -531,9 +557,53 @@ void gemv(c10::optional<torch::Tensor> x, c10::optional<torch::Tensor> xq, c10::
   must_find(W, S, KC, MR, smode, in_mode).launch(p, (int)grid, pdl);
 }
 
+// Grouped pre-quantized GEMV for o_proj wo_a (bit-exact with DeepGEMM's
+// fp8_einsum "bhr,hdr->bhd", recipe (1,1,32), split_k=1: same MMA chain).
+// xq: e4m3 [M, G, K] (row stride, group stride, 1) as fused_inv_rope_fp8_quant
+// returns it; xs: int32 [M, G, K/128] MN-major packed ue8m0 (strides (1, gs, tal));
+// w: e4m3 [G*D, K] group-major; y: bf16 [M, G*D] (the caller's [M, G, D] output).
+void gemv_grouped(torch::Tensor xq, torch::Tensor xs, torch::Tensor w, torch::Tensor wscale, int64_t smode,
+                  torch::Tensor y, int64_t W, int64_t S, int64_t KC, int64_t MR, int64_t grid, bool pdl, int64_t G) {
+  dsv41_gemv::Params p = {};
+  TORCH_CHECK(w.dim() == 2 && w.is_contiguous() && w.element_size() == 1, "dense_gemv: w must be [G*D, K] 1-byte");
+  TORCH_CHECK(xq.dim() == 3 && xq.element_size() == 1 && xq.size(1) == G && xq.size(2) == w.size(1) &&
+                  xq.stride(2) == 1,
+              "dense_gemv: xq must be e4m3 [M, G, K]");
+  TORCH_CHECK(xs.dim() == 3 && xs.scalar_type() == at::kInt && xs.size(0) == xq.size(0) && xs.size(1) == G &&
+                  xs.size(2) * 128 == w.size(1) && xs.stride(0) == 1,
+              "dense_gemv: xs must be the MN-major int32-packed ue8m0 scale [M, G, K/128]");
+  TORCH_CHECK(y.scalar_type() == at::kBFloat16 && y.dim() == 2 && y.stride(1) == 1 && y.size(1) == w.size(0),
+              "dense_gemv: y must be bf16 [M, G*D]");
+  p.G = G;
+  p.w = (const uint8_t*)w.data_ptr();
+  p.wscale = (const uint8_t*)wscale.data_ptr();
+  p.N = w.size(0);
+  p.K = w.size(1);
+  p.y = (__nv_bfloat16*)y.data_ptr();
+  p.ldy = y.stride(0);
+  p.xq = (const uint8_t*)xq.data_ptr();
+  p.ldxq = xq.stride(0);
+  p.xq_gstride = xq.stride(1);
+  p.xs = (const uint8_t*)xs.data_ptr();
+  p.xs_mode = dsv41_gemv::XS_DG_PACKED;
+  p.xs_tal = xs.stride(2);
+  p.xs_gstride = xs.stride(1);
+  p.M = xq.size(0);
+  TORCH_CHECK((p.ldxq % 8) == 0 && (p.xq_gstride % 8) == 0 && ((uintptr_t)p.xq % 8) == 0,
+              "dense_gemv: xq rows must be 8-B aligned");
+  TORCH_CHECK(p.M >= 1 && p.M <= MR && y.size(0) == p.M && p.xs_tal >= p.M, "dense_gemv: M must be 1..MR");
+  TORCH_CHECK(p.K % KC == 0 && p.N % (32 * G) == 0, "dense_gemv: shape");
+  TORCH_CHECK(((uintptr_t)p.w % 16) == 0 && ((uintptr_t)p.wscale % 16) == 0, "dense_gemv: alignment");
+  TORCH_CHECK(grid >= G && grid % G == 0, "dense_gemv: grid must be a multiple of G");
+  must_find(W, S, KC, MR, smode, dsv41_gemv::IN_QUANT).launch(p, (int)grid, pdl);
+}
+
 }  // namespace
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("gemv", &gemv, "dense small-M MXFP8 GEMV (bit-exact with b12x)");
-  m.def("plan_grid", &plan_grid, "persistent grid for a config, 0 if it cannot run");
+  m.def("plan_grid", &plan_grid, "persistent grid for a config, 0 if it cannot run", py::arg("W"), py::arg("S"),
+        py::arg("KC"), py::arg("MR"), py::arg("smode"), py::arg("in_mode"), py::arg("N"), py::arg("K"),
+        py::arg("G") = 1);
+  m.def("gemv_grouped", &gemv_grouped, "grouped pre-quantized GEMV (o_proj wo_a, bit-exact with fp8_einsum)");
 }

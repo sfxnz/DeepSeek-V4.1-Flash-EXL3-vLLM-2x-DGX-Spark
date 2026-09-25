@@ -138,6 +138,76 @@ if armed is not None:
 ok_all &= row["armed"] and row["bitwise"] == row["cases"]
 res["shapes"]["lm_head"] = row
 print(f"lm_head: {row}", flush=True)
+# o_proj wo_a through the real (patched) call site: deep_gemm_fp8_o_proj with the serve's
+# producer, the prepacked weight scale (DSV41_WOA_PREPACK=1) and an identity wo_b.
+from vllm.models.deepseek_v4.nvidia.ops import o_proj as oproj_mod  # noqa: E402
+
+res["hooks_in_o_proj"] = "_dsv41_gemv_woa(" in open(oproj_mod.__file__).read()
+ok_all &= res["hooks_in_o_proj"]
+G, D, K = dense_gemv.WOA_GROUPS, dense_gemv.WOA_D, dense_gemv.WOA_K
+row = {"cases": 0, "bitwise": 0, "armed": False, "graph_replay_eq_eager": None}
+w, s2d = weights.load("wo_a", 5)
+wo_a = torch.nn.Module()
+wo_a.weight = Parameter(w.view(G, D, K).contiguous(), requires_grad=False)
+wo_a.weight_scale = Parameter(torch.exp2(s2d.view(G, D, K // 32).float() - 127.0), requires_grad=False)
+
+
+class _Ident(torch.nn.Module):
+    def forward(self, t):
+        return t
+
+
+wo_b = _Ident()
+wo_b.weight = torch.empty(0, dtype=torch.bfloat16)  # o_proj's wo_a probe prints wo_b.weight.dtype
+cos_sin = torch.randn(8192, 64, device="cuda", dtype=torch.float32)
+kw = dict(n_groups=G, heads_per_group=8, nope_dim=448, rope_dim=64, o_lora_rank=D, einsum_recipe=(1, 1, 32),
+          tma_aligned_scales=True)
+woa_calls = {"n": 0}
+_orig_woa_run = dense_gemv._woa_run
+
+
+def _counting_woa_run(*a, **k):
+    out = _orig_woa_run(*a, **k)
+    woa_calls["n"] += bool(out)
+    return out
+
+
+dense_gemv._woa_run = _counting_woa_run
+for M in (4, 1, 3, 6, 8, 9):
+    for rep in range(3):
+        o_att = torch.randn(M, 32, 512, generator=gen, device="cuda").to(torch.bfloat16)
+        pos = torch.randint(0, 8000, (M,), generator=gen, device="cuda")
+        before = woa_calls["n"]
+        out = oproj_mod.deep_gemm_fp8_o_proj(o_att, pos, cos_sin, wo_a, wo_b, **kw)
+        used = woa_calls["n"] > before
+        armed = getattr(wo_a, "_dsv41_gemv", None)
+        wo_a._dsv41_gemv = False  # stock einsum for the reference
+        ref = oproj_mod.deep_gemm_fp8_o_proj(o_att, pos, cos_sin, wo_a, wo_b, **kw)
+        wo_a._dsv41_gemv = armed
+        torch.cuda.synchronize()
+        eq = torch.equal(out.view(torch.int16), ref.view(torch.int16))
+        row["cases"] += 1
+        row["bitwise"] += eq
+        row["armed"] = armed not in (None, False)
+        if not eq or used != (M <= 8):
+            ok_all = False
+            print(f"wo_a M={M}: equal={eq} used={used}", flush=True)
+# graph capture of the hooked call site at M = 4
+o_att = torch.randn(4, 32, 512, generator=gen, device="cuda").to(torch.bfloat16)
+pos = torch.arange(4, device="cuda") + 50
+eager = oproj_mod.deep_gemm_fp8_o_proj(o_att, pos, cos_sin, wo_a, wo_b, **kw)
+torch.cuda.synchronize()
+g = torch.cuda.CUDAGraph()
+with torch.cuda.graph(g):
+    yg = oproj_mod.deep_gemm_fp8_o_proj(o_att, pos, cos_sin, wo_a, wo_b, **kw)
+o_att.copy_(torch.randn(4, 32, 512, generator=gen, device="cuda").to(torch.bfloat16))
+g.replay()
+ye = oproj_mod.deep_gemm_fp8_o_proj(o_att, pos, cos_sin, wo_a, wo_b, **kw)
+torch.cuda.synchronize()
+row["graph_replay_eq_eager"] = bool(torch.equal(yg.view(torch.int16), ye.view(torch.int16)))
+ok_all &= row["armed"] and row["bitwise"] == row["cases"] and row["graph_replay_eq_eager"]
+res["shapes"]["wo_a"] = row
+print(f"wo_a: {row}", flush=True)
 res["all_ok"] = bool(ok_all)
 json.dump(res, open("/repo/results/2026-09-25-kernels/dense-gemv/serve-hook-test.json", "w"), indent=1)
 print("ALL_OK" if ok_all else "FAILURES", flush=True)
