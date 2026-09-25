@@ -142,3 +142,17 @@ the down tile's K-split), output pass ~3 us. Beyond that the stream is at the me
 Not attempted: fusing the input Hadamard into the gate/up tiles (removes the prologue Hadamard and
 its barrier, ~3%; A fragments then come from per-warp Hadamards, +2.5-20% loop instructions by
 chunk length), split-K of the last down tiles (breaks the bit-exact K-range order).
+
+it 12 (after the final commit) down tiles L2-prefetch their whole 9-k-slice K-range at tile start, to
+  shorten the latency chain of the last tiles (exp-dpfall.json, 400 iterations per arm): m=4
+  336.8 vs 338.0 us (-0.35%), m=8 602.7 vs 604.1 (-0.2%), dup0 -0.1..-0.2%, m=1 161.8 vs 157.7
+  (+2.6%); the stamps show the final imbalance 8.8 -> 7.0 us but a longer fill. Inside the noise
+  at m=4/8 and worse at m=1: DROP. The kernel stays as committed.
+
+it 13 the real extension: vllm-exl3 d3cfd394 cloned on the host (its csrc/p2b_moe.cu == the pin
+  fixture), built offline (--network none) with docker/Dockerfile.e15's exact steps in canonical-e13
+  (/home/sfxnz/projects/data/dsv41-coop-moe/e15-build; its patched csrc/p2b_moe.cu is byte-identical
+  to build_r3/chain_r3.cu; the image's assert line passes). real_ext_check.py on spark2
+  (real-ext-check.json): that vllm_exl3_c with DSV41_P2B_COOP unset / 0 gives p2b's bits (one-hot),
+  1 = bench v1 and 2 = bench v2 = real 1 bitwise over 24 cases (m 1/4/8 x 8 census routings), the
+  engaged line only for 2, no disarm line; cold time real 2 = bench v2 (m=4 226.3 = 226.3 us).
