@@ -163,3 +163,23 @@ it 13 the real extension: vllm-exl3 d3cfd394 cloned on the host (its csrc/p2b_mo
   (real-ext-check.json): that vllm_exl3_c with DSV41_P2B_COOP unset / 0 gives p2b's bits (one-hot),
   1 = bench v1 and 2 = bench v2 = real 1 bitwise over 24 cases (m 1/4/8 x 8 census routings), the
   engaged line only for 2, no disarm line; cold time real 2 = bench v2 (m=4 226.3 = 226.3 us).
+
+it 14 per-step projection re-derived from all 40 routed layers (r3 review, blocking finding)
+  The r3 figure (-7.37 ms/step at m=4, -16.22 at m=8) was layer 20's median per-call saving x 40.
+  Layer 20 shares more experts than the average routed layer: s10 census duplicate fraction at m=4
+  0.344 (11th of 40) vs the 40-layer mean 0.2987. bench_r3.py gained census_all (the same census
+  windows from every routed layer, drawn layer-stratified: draw i uses layer i mod 40, applied to the
+  layer-20 weights; the kernel's cost depends on the routing, not the weight values) and paired
+  per-call statistics (per-iteration savings between arms, mean +- 95% CI, mean x 40 = ms/step).
+  fix-tlayers.json: 800 iterations per arm (20 per layer), arms alternated, cold and warm, pmon clean,
+  SM 2171-2190 MHz. Cold, per-step (mean paired saving x 40):
+    m=1 v0-v2 0.97 +- 0.05   m=3 4.66 +- 0.12   m=4 6.77 +- 0.15   m=6 9.55 +- 0.22   m=8 15.27 +- 0.28
+    v1-v2 (vs round-2 coop): m=4 1.88 +- 0.04, m=8 3.03 +- 0.08
+    per call, layer-stratified mean us p2b / =1 / =2: m=4 521.6 / 399.4 / 352.4, m=8 1018.0 / 712.0 / 636.3
+  Same run, layer-20 census only: m=4 7.49, m=8 16.76 ms/step (paired means). Per layer the saving is
+  linear in the layer's duplicate fraction (m=4: 424 us per unit dup, r = 0.992; m=8: r = 0.995;
+  per-layer savings 79..249 us at m=4). The reviewer's independent harness read 6.74 / 15.21.
+  Corrected expectation: c=1 (m=4) -6.8 ms of a ~63 ms step, ~+12% tok/s at matched acceptance;
+  c=2 (m=8) -15.3 ms/step. summary.json: time -> time_layer20 (the per-call table, layer 20),
+  projected_ms_per_step_40_layers (this iteration); README.txt serve-arm "Expected" and flags.md
+  DSV41_P2B_COOP row updated.

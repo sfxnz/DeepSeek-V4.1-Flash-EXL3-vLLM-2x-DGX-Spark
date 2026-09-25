@@ -140,10 +140,12 @@ make_bench_r3.py   CPU. build_r3/chain_r3.cu (= the e15 TU), bench_r3.cu (runtim
                    switch = DSV41_P2B_COOP value, bench-only read-ceiling kernels),
                    bench_r3_ts.cu (%globaltimer phase stamps + per-warp tile accounting).
 bench_r3.py        GPU. Real layer weights from /hf (the pack), TP-sharded like vllm_exl3,
-                   census routing of the same layer. Modes: check (one-hot bitwise vs p2b,
-                   bitwise vs =1, full-weight tolerance, repeat, fp64 reference with --ref),
+                   census routing of the same layer (source census) or of all 40 routed layers,
+                   layer-stratified (census_all: the per-step mix). Modes: check (one-hot bitwise
+                   vs p2b, bitwise vs =1, full-weight tolerance, repeat, fp64 reference with --ref),
                    capture (graph replay == eager), stress (race hunt vs =1, eager + graph),
-                   time (cold flush / warm, alternating arms, median p10 p90, GB/s, % floor),
+                   time (cold flush / warm, alternating arms, median p10 p90, GB/s, % floor,
+                   paired per-call savings mean +- 95% CI and x 40 layers per step),
                    phases, stream (tile-pattern/contiguous read ceiling), bw / ld / gemm
                    (plain read, load flavour and cuBLAS GEMV bandwidth probes).
 prebuild_r3.sh     CPU. JIT-builds both bench modules in the serve image (no GPU in the window).
@@ -163,10 +165,14 @@ Reproduce (spark1, serve down or not: spark2's GPU is used)
   kernel_study/p2b_coop/spark2.sh final-time kernel_study/p2b_coop/bench_r3.py \
       --mode time,phases,stream --variants 0,1,2 --ms 1,3,4,6,8 --sources census,dup0 \
       --iters 300 --phase-calls 40 --out results/2026-09-25-kernels/coop-moe/final-time.json
+  kernel_study/p2b_coop/spark2.sh fix-tlayers kernel_study/p2b_coop/bench_r3.py \
+      --mode time --variants 0,1,2 --ms 1,3,4,6,8 --sources census_all,census --iters 800 \
+      --out results/2026-09-25-kernels/coop-moe/fix-tlayers.json
   kernel_study/p2b_coop/sass_identity_r3.sh
 
 Results: results/2026-09-25-kernels/coop-moe/ (iterations.txt = every iteration with numbers;
-summary.json = the final table).
+summary.json = the final table: time_layer20 = per call on layer 20, projected_ms_per_step_40_layers
+= the per-step projection from all 40 layers).
 
 Serve arm (DSV41_P2B_COOP=2), not run yet
 -----------------------------------------
@@ -197,7 +203,11 @@ identical, no-sharing routing not slower (-7.4% at m=4).
             (numerics differ from p2b only by the fixed fp32 slot-sum order, <= 1 fp16 ulp)
    Engagement proof (one boot): tools/profile_window.sh shows p2b_coop_df_kernel<2, 1> (grid 144)
    in B and p2b_moe_batched_kernel<2, 1, 0> in A.
-3. Expected: p2b 23.2 ms/step (c=1 profile) -> ~15.8 ms (-7.4 ms of ~63: ~+13% tok/s at matched
-   acceptance); c=2 ~-16 ms/step. Accept on ms/step at matched acceptance (L.A.I.L n=10 and
-   bench c=1/c=2) with the ARMS.md noise gate; quality quick+full within baseline bands.
+3. Expected: p2b 23.2 ms/step (c=1 profile) -> ~16.4 ms (-6.8 ms of ~63: ~+12% tok/s at matched
+   acceptance; -1.9 ms/step vs DSV41_P2B_COOP=1); c=2 ~-15.3 ms/step. Basis: census routing of all
+   40 routed layers drawn layer-stratified, mean of the paired per-call savings x 40 (fix-tlayers.json;
+   m=4 6.77 +- 0.15, m=8 15.27 +- 0.28 ms/step). The earlier -7.4 / -16.2 were layer 20's median
+   saving x 40, biased high: layer 20 shares more experts (dup 0.344 at m=4) than the 40-layer mean
+   (0.2987). Accept on ms/step at matched acceptance (L.A.I.L n=10 and bench c=1/c=2) with the
+   ARMS.md noise gate; quality quick+full within baseline bands.
 Rollback: ./stop.sh, canonical-e13 boot with DSV41_P2B_COOP unset.

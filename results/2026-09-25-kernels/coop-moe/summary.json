@@ -6,7 +6,7 @@
  },
  "data": {
   "weights": "pack 2.0bpw-mcg-lmhead-mxfp8 layer 20, TP rank 0 (384 experts, hidden 5120, inter 1152, K=2 MCG)",
-  "routing": "s10 census of layer 20 (m<=4: consecutive tokens; m>4: two independent 4-token windows)",
+  "routing": "time_layer20: s10 census of layer 20 (m<=4: consecutive tokens; m>4: two independent 4-token windows); projected_ms_per_step_40_layers: the same windows from all 40 routed layers, layer-stratified",
   "activations": "RMS-normalized Gaussian x the layer's ffn_norm weight"
  },
  "method": {
@@ -25,7 +25,7 @@
   "1": "round-2 coop SORT=2 (DSV41_P2B_COOP=1)",
   "2": "dataflow p2b_coop_df_kernel (DSV41_P2B_COOP=2)"
  },
- "time": {
+ "time_layer20": {
   "m1/census/cold": {
    "v0": {
     "median_us": 182.3,
@@ -607,36 +607,209 @@
    }
   }
  },
- "projected_ms_per_step_40_layers_cold_census": {
+ "projected_ms_per_step_40_layers": {
+  "method": "census_all: census routings of all 40 routed layers, drawn layer-stratified (20 draws per layer per m), on the layer-20 weights; 800 iterations per arm after 20 warmup, arms alternated in the same process, cold (128 MiB flush) and warm. Per-step saving = mean of the paired per-call savings x 40 routed layers; ci95 = 1.96 x standard error of that mean x 40.",
+  "source": "fix-tlayers.json (runs/fix-tlayers.log, runs/fix-tlayers.clocks.csv)",
+  "replaces": "r3 figure 'layer-20 median saving x 40' (m=4 7.37, m=8 16.22 ms/step vs p2b): biased high, layer 20's census duplicate fraction at m=4 is 0.344 vs the 40-layer mean 0.2987 (11th of 40). Same run, layer-20 census only, paired mean x 40: m=4 7.49, m=8 16.76 ms/step.",
+  "reading": "c=1 verify (m=4): -6.77 ms of a ~63 ms step, ~+12% tok/s at matched acceptance; -1.88 ms/step vs DSV41_P2B_COOP=1. c=2 verify (m=8): -15.27 ms/step. Per layer the saving is linear in the layer's duplicate fraction (r = 0.99 at m=4 and m=8).",
   "m1": {
-   "vs_p2b": 0.98,
-   "vs_coop1": 1.15,
-   "pct_vs_p2b": 13.5,
-   "pct_vs_coop1": 15.4
+   "dup_frac_mean": 0.0,
+   "cold": {
+    "vs_p2b_ms": 0.97,
+    "vs_p2b_ci95_ms": 0.05,
+    "vs_coop1_ms": 1.17,
+    "vs_coop1_ci95_ms": 0.05,
+    "per_call_mean_us": {
+     "v0": 184.5,
+     "v1": 189.4,
+     "v2": 160.2
+    },
+    "per_call_median_us": {
+     "v0": 182.3,
+     "v1": 186.4,
+     "v2": 157.7
+    },
+    "pct_vs_p2b_mean": 13.1
+   },
+   "warm": {
+    "vs_p2b_ms": 1.08,
+    "vs_p2b_ci95_ms": 0.03,
+    "vs_coop1_ms": 1.26,
+    "vs_coop1_ci95_ms": 0.03,
+    "per_call_mean_us": {
+     "v0": 178.4,
+     "v1": 182.8,
+     "v2": 151.4
+    },
+    "per_call_median_us": {
+     "v0": 178.1,
+     "v1": 182.2,
+     "v2": 150.5
+    },
+    "pct_vs_p2b_mean": 15.2
+   }
   },
   "m3": {
-   "vs_p2b": 5.08,
-   "vs_coop1": 1.39,
-   "pct_vs_p2b": 31.0,
-   "pct_vs_coop1": 11.0
+   "dup_frac_mean": 0.2454,
+   "cold": {
+    "vs_p2b_ms": 4.66,
+    "vs_p2b_ci95_ms": 0.12,
+    "vs_coop1_ms": 1.74,
+    "vs_coop1_ci95_ms": 0.04,
+    "per_call_mean_us": {
+     "v0": 407.4,
+     "v1": 334.3,
+     "v2": 290.8
+    },
+    "per_call_median_us": {
+     "v0": 406.5,
+     "v1": 342.0,
+     "v2": 297.0
+    },
+    "pct_vs_p2b_mean": 28.6
+   },
+   "warm": {
+    "vs_p2b_ms": 4.55,
+    "vs_p2b_ci95_ms": 0.12,
+    "vs_coop1_ms": 1.74,
+    "vs_coop1_ci95_ms": 0.04,
+    "per_call_mean_us": {
+     "v0": 400.1,
+     "v1": 329.9,
+     "v2": 286.4
+    },
+    "per_call_median_us": {
+     "v0": 399.4,
+     "v1": 337.9,
+     "v2": 292.3
+    },
+    "pct_vs_p2b_mean": 28.4
+   }
   },
   "m4": {
-   "vs_p2b": 7.37,
-   "vs_coop1": 1.71,
-   "pct_vs_p2b": 35.4,
-   "pct_vs_coop1": 11.3
+   "dup_frac_mean": 0.3001,
+   "cold": {
+    "vs_p2b_ms": 6.77,
+    "vs_p2b_ci95_ms": 0.15,
+    "vs_coop1_ms": 1.88,
+    "vs_coop1_ci95_ms": 0.04,
+    "per_call_mean_us": {
+     "v0": 521.6,
+     "v1": 399.4,
+     "v2": 352.4
+    },
+    "per_call_median_us": {
+     "v0": 521.2,
+     "v1": 397.4,
+     "v2": 354.4
+    },
+    "pct_vs_p2b_mean": 32.4
+   },
+   "warm": {
+    "vs_p2b_ms": 6.64,
+    "vs_p2b_ci95_ms": 0.16,
+    "vs_coop1_ms": 1.93,
+    "vs_coop1_ci95_ms": 0.04,
+    "per_call_mean_us": {
+     "v0": 513.3,
+     "v1": 395.5,
+     "v2": 347.3
+    },
+    "per_call_median_us": {
+     "v0": 511.0,
+     "v1": 394.2,
+     "v2": 350.2
+    },
+    "pct_vs_p2b_mean": 32.3
+   },
+   "cold_per_layer_saving_us": {
+    "min": 78.7,
+    "max": 248.8,
+    "layer20": 187.8,
+    "slope_us_per_dup": 424.2,
+    "r": 0.992
+   }
   },
   "m6": {
-   "vs_p2b": 10.07,
-   "vs_coop1": 2.07,
-   "pct_vs_p2b": 33.2,
-   "pct_vs_coop1": 9.3
+   "dup_frac_mean": 0.2855,
+   "cold": {
+    "vs_p2b_ms": 9.55,
+    "vs_p2b_ci95_ms": 0.22,
+    "vs_coop1_ms": 2.41,
+    "vs_coop1_ci95_ms": 0.08,
+    "per_call_mean_us": {
+     "v0": 764.9,
+     "v1": 586.5,
+     "v2": 526.2
+    },
+    "per_call_median_us": {
+     "v0": 759.8,
+     "v1": 600.1,
+     "v2": 527.4
+    },
+    "pct_vs_p2b_mean": 31.2
+   },
+   "warm": {
+    "vs_p2b_ms": 9.25,
+    "vs_p2b_ci95_ms": 0.2,
+    "vs_coop1_ms": 2.5,
+    "vs_coop1_ci95_ms": 0.04,
+    "per_call_mean_us": {
+     "v0": 748.2,
+     "v1": 579.3,
+     "v2": 516.9
+    },
+    "per_call_median_us": {
+     "v0": 745.5,
+     "v1": 594.4,
+     "v2": 520.4
+    },
+    "pct_vs_p2b_mean": 30.9
+   }
   },
   "m8": {
-   "vs_p2b": 16.22,
-   "vs_coop1": 2.54,
-   "pct_vs_p2b": 40.2,
-   "pct_vs_coop1": 9.5
+   "dup_frac_mean": 0.3437,
+   "cold": {
+    "vs_p2b_ms": 15.27,
+    "vs_p2b_ci95_ms": 0.28,
+    "vs_coop1_ms": 3.03,
+    "vs_coop1_ci95_ms": 0.08,
+    "per_call_mean_us": {
+     "v0": 1018.0,
+     "v1": 712.0,
+     "v2": 636.3
+    },
+    "per_call_median_us": {
+     "v0": 1012.7,
+     "v1": 714.7,
+     "v2": 624.6
+    },
+    "pct_vs_p2b_mean": 37.5
+   },
+   "warm": {
+    "vs_p2b_ms": 14.76,
+    "vs_p2b_ci95_ms": 0.27,
+    "vs_coop1_ms": 3.1,
+    "vs_coop1_ci95_ms": 0.09,
+    "per_call_mean_us": {
+     "v0": 998.3,
+     "v1": 706.8,
+     "v2": 629.2
+    },
+    "per_call_median_us": {
+     "v0": 995.3,
+     "v1": 707.6,
+     "v2": 617.9
+    },
+    "pct_vs_p2b_mean": 37.0
+   },
+   "cold_per_layer_saving_us": {
+    "min": 198.0,
+    "max": 527.4,
+    "layer20": 431.6,
+    "slope_us_per_dup": 858.9,
+    "r": 0.995
+   }
   }
  },
  "numerics": {

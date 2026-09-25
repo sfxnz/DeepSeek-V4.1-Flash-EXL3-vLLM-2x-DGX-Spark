@@ -13,7 +13,10 @@ laid out like the serve's RoutedExperts params (w13 [E, 2, 320, 72, 32], w2 [E, 
 Routing: the s10 census rows of the SAME layer (6 captures x 511 decode tokens). m <= 4 takes m
 consecutive tokens of one capture; m > 4 joins two windows (m//2, m - m//2) from two different
 captures (independent sequences, the c=2 verify batch); census_seq keeps m consecutive tokens (an
-upper bound on overlap). dup0: synth routing with no repeated expert. Activations are synthetic:
+upper bound on overlap). census_all: the same windows from the census of EVERY routed layer, drawn
+layer-stratified (draw i uses layer i mod 40), applied to the loaded layer's weights: the per-step
+mix (a verify step runs all 40 routed layers once; the kernel's cost depends on the routing, not on
+the weight values). dup0: synth routing with no repeated expert. Activations are synthetic:
 RMS-normalized Gaussian rows times the layer's real ffn_norm weight. Routing weights: sqrt-softplus
 of Gaussian logits, normalized, x1.5 (routed_scaling_factor).
 
@@ -35,6 +38,8 @@ time     cold: a >= 2x L2 read-flush before every timed call, a fresh routing pe
          Arms alternate in rotating order within every
          iteration (same routing for all arms). CUDA events per call; median, p10, p90.
          Bandwidth = unique expert bytes of that call / time; floor = unique bytes / 250 GB/s.
+         paired: per-call savings between arms on the same iteration, mean +- 95% CI; mean x 40 is
+         the per-step projection (use census_all: iters a multiple of 40 weights layers equally).
 phases   the stamped build (bench_r3_ts.cu): %globaltimer before/after every grid.sync per block.
 """
 
@@ -163,23 +168,38 @@ class Routings:
     def __init__(self, layer: int, rng: random.Random) -> None:
         self.rng = rng
         self.caps: list[np.ndarray] = []
-        for path in sorted(CENSUS.glob("*.npy")):
-            arr = np.load(path, allow_pickle=False)
-            if layer in routed_layers(arr):
+        arrs = [np.load(path, allow_pickle=False) for path in sorted(CENSUS.glob("*.npy"))]
+        routed = [set(routed_layers(arr)) for arr in arrs]
+        for arr, lay in zip(arrs, routed):
+            if layer in lay:
                 self.caps.append(arr[:, layer, :].astype(np.int64))
         if len(self.caps) < 2:
             raise SystemExit(f"census: layer {layer} routed in {len(self.caps)} captures (< 2)")
+        # census_all: the captures of every layer routed in all of them, drawn layer-stratified
+        self.by_layer = {L: [arr[:, L, :].astype(np.int64) for arr in arrs] for L in sorted(set.intersection(*routed))}
+        self.next_layer = 0
+        self.last_layer = layer
 
     def _window(self, cap: np.ndarray, n: int) -> list[list[int]]:
         t0 = self.rng.randrange(cap.shape[0] - n + 1)
         return cap[t0 : t0 + n].tolist()
 
+    def _census(self, caps: list[np.ndarray], m: int) -> list[list[int]]:
+        if m <= 4:
+            return self._window(self.rng.choice(caps), m)
+        a, b = self.rng.sample(caps, 2)
+        return self._window(a, m // 2) + self._window(b, m - m // 2)
+
     def draw(self, source: str, m: int) -> list[list[int]]:
         if source == "census":
-            if m <= 4:
-                return self._window(self.rng.choice(self.caps), m)
-            a, b = self.rng.sample(self.caps, 2)
-            return self._window(a, m // 2) + self._window(b, m - m // 2)
+            return self._census(self.caps, m)
+        if source == "census_all":
+            # Layer-stratified: successive draws cycle through the routed layers, so n x len(by_layer)
+            # consecutive draws weight every layer equally (a step runs each routed layer once).
+            layers = list(self.by_layer)
+            self.last_layer = layers[self.next_layer % len(layers)]
+            self.next_layer += 1
+            return self._census(self.by_layer[self.last_layer], m)
         if source == "census_seq":
             return self._window(self.rng.choice(self.caps), m)
         if source.startswith("dup"):
@@ -414,6 +434,15 @@ def stats(times_us, bytes_list) -> dict:
     }
 
 
+def paired(a_us, c_us) -> dict:
+    """Per-call savings a - c of two arms timed on the same iterations: mean, 95% CI of the mean
+    (1.96 x standard error), median, and the mean x 40 routed layers in ms/step."""
+    d = [x - y for x, y in zip(a_us, c_us)]
+    sem = statistics.stdev(d) / math.sqrt(len(d)) if len(d) > 1 else 0.0
+    return {"n": len(d), "mean_us": statistics.mean(d), "ci95_us": 1.96 * sem, "median_us": statistics.median(d),
+            "ms_per_step_40": statistics.mean(d) * 40 / 1000.0, "ms_per_step_40_ci95": 1.96 * sem * 40 / 1000.0}
+
+
 def timing(b: Bench, routes: Routings, variants, ms, sources, iters: int, warmup: int, flush: Flusher) -> dict:
     res: dict = {}
     for m in ms:
@@ -422,10 +451,13 @@ def timing(b: Bench, routes: Routings, variants, ms, sources, iters: int, warmup
                 continue
             x, rw = b.x(m), b.rw(m)
             out = torch.empty_like(x)
-            rows = [routes.draw(src, m) for _ in range(iters + warmup)]
+            rows, row_layer = [], []
+            for _ in range(iters + warmup):
+                rows.append(routes.draw(src, m))
+                row_layer.append(routes.last_layer if src == "census_all" else None)
             pool = [b.ids(r) for r in rows]
             nbytes = [n_unique(r) * EXPERT_BYTES for r in rows]
-            entry = {}
+            entry = {"dup_frac_mean": 1.0 - statistics.mean(n_unique(r) for r in rows[warmup:]) / (m * TOPK)}
             for kind in ("cold", "warm"):
                 evs = {v: [] for v in variants}
                 torch.cuda.synchronize()
@@ -454,10 +486,28 @@ def timing(b: Bench, routes: Routings, variants, ms, sources, iters: int, warmup
                     s = entry[kind][f"v{v}"]
                     s["vs_p2b_pct"] = 100.0 * (base - s["median_us"]) / base
                     s["saving_ms_per_step_40"] = (base - s["median_us"]) * 40 / 1000.0
+                # Paired per-call savings (same iteration, same routing): the mean x 40 routed layers is
+                # the per-step projection when the routings weight every layer equally (census_all).
+                t_us = {v: [e0.elapsed_time(e1) * 1000.0 for e0, e1, _ in evs[v]] for v in variants}
+                pairs = [(0, v) for v in variants if v != 0] + [(a, c) for a, c in zip(variants[1:], variants[2:])]
+                entry[kind]["paired"] = {f"v{a}-v{c}": paired(t_us[a], t_us[c]) for a, c in pairs}
+                if src == "census_all":
+                    lay = row_layer[warmup:]
+                    per = {}
+                    for L in sorted(set(lay)):
+                        idx = [i for i, x in enumerate(lay) if x == L]
+                        per[str(L)] = {"n": len(idx),
+                                       "dup_frac_mean": 1.0 - statistics.mean(n_unique(rows[warmup + i]) for i in idx) / (m * TOPK),
+                                       **{f"v{v}_mean_us": statistics.mean(t_us[v][i] for i in idx) for v in variants}}
+                    entry[kind]["per_layer"] = per
                 log(f"[time] m={m} {src} {kind}: " + "  ".join(
                     f"v{v} {entry[kind][f'v{v}']['median_us']:.1f}us [{entry[kind][f'v{v}']['p10_us']:.1f},"
-                    f"{entry[kind][f'v{v}']['p90_us']:.1f}] {entry[kind][f'v{v}']['gbps_median']:.0f}GB/s "
-                    f"{entry[kind][f'v{v}']['pct_of_floor_median']:.0f}%floor" for v in variants))
+                    f"{entry[kind][f'v{v}']['p90_us']:.1f}] mean {entry[kind][f'v{v}']['mean_us']:.1f} "
+                    f"{entry[kind][f'v{v}']['gbps_median']:.0f}GB/s "
+                    f"{entry[kind][f'v{v}']['pct_of_floor_median']:.0f}%floor" for v in variants)
+                    + " | paired mean saving " + "  ".join(
+                        f"{k} {p['mean_us']:.1f}+-{p['ci95_us']:.1f}us = {p['ms_per_step_40']:.2f} ms/step"
+                        for k, p in entry[kind]["paired"].items()))
             res[f"m{m}/{src}"] = entry
     return res
 
