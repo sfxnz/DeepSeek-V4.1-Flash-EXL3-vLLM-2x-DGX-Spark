@@ -31,8 +31,8 @@ def main() -> int:
         g = torch.Generator(device="cuda").manual_seed(9 + t)
         src = [(torch.randn(t, C.HIDDEN, device="cuda", generator=g) * 2).bfloat16() for _ in subs]
         xouts = [s.clone() for s in src]
-        for det in (False, True):
-            path = BP.Path(w, dk, packed, det)
+        for arm in ("stock", "det_stock_norm", "det"):
+            path = BP.Path(w, dk, packed, arm != "stock", det_norm=(arm == "det"))
 
             def with_copies(path=path):
                 state = None
@@ -71,7 +71,7 @@ def main() -> int:
                 if prev_end is not None:
                     gap[name].append(e.time_range.start - prev_end)
                 prev_end = e.time_range.end
-            key = f"T{t}_{'det' if det else 'stock'}"
+            key = f"T{t}_{arm}"
             out[key] = {n: {"calls_per_pass": len(v) / reps, "median_us": round(statistics.median(v), 2),
                             "median_gap_before_us": round(statistics.median(gap[n]), 2) if gap[n] else None,
                             "sum_per_pass_us": round(sum(v) / reps, 1)}

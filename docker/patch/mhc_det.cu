@@ -156,6 +156,9 @@ DEV void gemm_body(const u16* __restrict__ x, const void* __restrict__ fnsrc, fl
     for (int st = PREFETCH_STAGES; st < nstage; ++st) issue_fn(st);
   cp_async_wait_all();
   __syncwarp();
+  // Past griddepcontrol.wait, so the producer of x (the post) is complete: let the dependent
+  // fused norm launch now; it reads only the post output before its own wait (see mhc_det_norm).
+  pdl_trigger();
   PROF(3);
 
   float d[4] = {0.f, 0.f, 0.f, 0.f};
@@ -208,7 +211,6 @@ DEV void gemm_body(const u16* __restrict__ x, const void* __restrict__ fnsrc, fl
     }
   }
   PROF(10);
-  pdl_trigger();
   if (r0) *(float2*)&mixes[((size_t)s * T + g) * 24 + nt * 8 + 2 * t] = make_float2(d[0], d[1]);
   if (r1) *(float2*)&mixes[((size_t)s * T + g + 8) * 24 + nt * 8 + 2 * t] = make_float2(d[2], d[3]);
   if (nt == 0) {
@@ -288,5 +290,162 @@ extern "C" __global__ void __launch_bounds__(64)
       v[e] = acc;
     }
     *(uint2*)(out + ((size_t)t * 4 + o) * H + h) = make_uint2(bf16x2_rn(v[0], v[1]), bf16x2_rn(v[2], v[3]));
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Bitwise replica of the TileLang mhc_pre_big_fuse_with_norm kernel (hc 4, hidden 5120, 16
+// splits, save_pre_mix; carried pre-mix or the one-hot stream-0 pre-mix), one CTA per token:
+//   warp 0     : coefficients after griddepcontrol.wait: serial split sums (rms, 24 mixes),
+//                sigmoids, 20-step sinkhorn with the TileLang AllReduce butterflies (max/sum over
+//                xor 2,1 for rows, xor 8,4 for columns), IEEE divisions, expf/rsqrtf as nvcc 13.0.
+//   warps 1..8 : layer_input = bf16(bf16(sum_j pre_j * resid_j) * rsqrt(sumsq/5120 + eps) * w),
+//                sumsq in TileLang's order: 64 virtual threads l, slot i of l = position
+//                hb*1024 + (i>>3)*512 + l*8 + (i&7), fma chain over hb = 0..4, slots summed as
+//                0,8,1,9,..,7,15, then (p_l + p_{l+32}) and shfl_xor 16,8,4,2,1.
+//                It needs only the post output and the carried pre-mix, so it runs BEFORE the
+//                wait, while the prenorm GEMM (the primary) streams. Safe: the GEMM triggers only
+//                after its own griddepcontrol.wait, so the post is complete when this starts;
+//                its reads use ld.global.cg (L2, no stale L1).
+#define NORM_H 5120
+DEV uint2 ldcg_u2(const void* p) {
+  uint2 v;
+  asm volatile("ld.global.cg.v2.u32 {%0,%1}, [%2];" : "=r"(v.x), "=r"(v.y) : "l"(p));
+  return v;
+}
+DEV float bf16_lo(u32 w) { return __uint_as_float(w << 16); }
+DEV float bf16_hi(u32 w) { return __uint_as_float(w & 0xffff0000u); }
+DEV void bar_named(int id, int n) { asm volatile("bar.sync %0, %1;" ::"r"(id), "r"(n) : "memory"); }
+
+extern "C" __global__ void __launch_bounds__(288, 1)
+    mhc_det_norm(const float* __restrict__ mixes_p, const float* __restrict__ sqr_p,
+                 const float* __restrict__ hc_scale, const float* __restrict__ hc_base,
+                 const u16* __restrict__ residual, const float* __restrict__ pre_mix_in,
+                 const u16* __restrict__ norm_w, float* __restrict__ post_mix, float* __restrict__ comb_mix,
+                 u16* __restrict__ layer_input, float* __restrict__ pre_mix_out, const int T,
+                 const float rms_numel, const float rms_eps, const float hc_pre_eps, const float sk_eps,
+                 const float post_mult, const int sk_repeat, const float norm_eps) {
+  __shared__ float mixes_s[24];
+  __shared__ __align__(16) u16 rounded_s[NORM_H];
+  __shared__ float part_s[64];
+  __shared__ float rsqrt_s;
+  const int tok = blockIdx.x, tid = threadIdx.x, lane = tid & 31;
+  if (tid < 32) {
+    pdl_wait();
+    float rms = 0.f;
+    for (int s = 0; s < MHC_SPLITS; ++s) rms = __fadd_rn(rms, sqr_p[s * T + tok]);
+    rms = rsqrtf(__fadd_rn(__fdiv_rn(rms, rms_numel), rms_eps));
+    const int j = lane % 24;
+    float mix = 0.f;
+    for (int s = 0; s < MHC_SPLITS; ++s) mix = __fadd_rn(mix, mixes_p[((size_t)s * T + tok) * 24 + j]);
+    mix = __fmul_rn(mix, rms);
+    if (lane < 24) mixes_s[lane] = mix;
+    __syncwarp();
+    if (lane < 4) {
+      const float e0 = expf(__fsub_rn(0.f, __fmaf_rn(mixes_s[lane], hc_scale[0], hc_base[lane])));
+      pre_mix_out[tok * 4 + lane] = __fadd_rn(__fdiv_rn(1.f, __fadd_rn(1.f, e0)), hc_pre_eps);
+      const float e1 = expf(__fsub_rn(0.f, __fmaf_rn(mixes_s[lane + 4], hc_scale[1], hc_base[lane + 4])));
+      post_mix[tok * 4 + lane] = __fmul_rn(__fdiv_rn(1.f, __fadd_rn(1.f, e1)), post_mult);
+    }
+    const int c = (lane & 15) + 8;
+    float cm = __fmaf_rn(mixes_s[c], hc_scale[2], hc_base[c]);
+    float rmax = fmaxf(-__int_as_float(0x7f800000), cm);
+    rmax = fmaxf(rmax, __shfl_xor_sync(0xffffffffu, rmax, 2));
+    rmax = fmaxf(rmax, __shfl_xor_sync(0xffffffffu, rmax, 1));
+    cm = expf(__fsub_rn(cm, rmax));
+    float rs = __fadd_rn(0.f, cm);
+    rs = __fadd_rn(rs, __shfl_xor_sync(0xffffffffu, rs, 2));
+    rs = __fadd_rn(rs, __shfl_xor_sync(0xffffffffu, rs, 1));
+    cm = __fadd_rn(__fdiv_rn(cm, rs), sk_eps);
+    float cs = __fadd_rn(0.f, cm);
+    cs = __fadd_rn(cs, __shfl_xor_sync(0xffffffffu, cs, 8));
+    cs = __fadd_rn(cs, __shfl_xor_sync(0xffffffffu, cs, 4));
+    cm = __fdiv_rn(cm, __fadd_rn(cs, sk_eps));
+    for (int it = 0; it < sk_repeat - 1; ++it) {
+      rs = __fadd_rn(0.f, cm);
+      rs = __fadd_rn(rs, __shfl_xor_sync(0xffffffffu, rs, 2));
+      rs = __fadd_rn(rs, __shfl_xor_sync(0xffffffffu, rs, 1));
+      cm = __fdiv_rn(cm, __fadd_rn(rs, sk_eps));
+      cs = __fadd_rn(0.f, cm);
+      cs = __fadd_rn(cs, __shfl_xor_sync(0xffffffffu, cs, 8));
+      cs = __fadd_rn(cs, __shfl_xor_sync(0xffffffffu, cs, 4));
+      cm = __fdiv_rn(cm, __fadd_rn(cs, sk_eps));
+    }
+    if (lane < 16) comb_mix[tok * 16 + lane] = cm;
+  } else {
+    const int lt = tid - 32;  // 0..255
+    float pre[4] = {1.f, 0.f, 0.f, 0.f};
+    if (pre_mix_in != nullptr) {
+      const float4 pm = *(const float4*)(pre_mix_in + tok * 4);
+      pre[0] = pm.x; pre[1] = pm.y; pre[2] = pm.z; pre[3] = pm.w;
+    }
+    const u16* rb = residual + (size_t)tok * 4 * NORM_H;
+    // weighted stream sum, bf16 round: 5 chunks of 4 positions per thread (p = 4*(lt + 256q))
+#pragma unroll
+    for (int q = 0; q < 5; ++q) {
+      const int p = 4 * (lt + 256 * q);
+      uint2 xv[4];
+#pragma unroll
+      for (int hc = 0; hc < 4; ++hc) xv[hc] = ldcg_u2(rb + hc * NORM_H + p);
+      float ol[4];
+#pragma unroll
+      for (int e = 0; e < 4; ++e) {
+        float acc = 0.f;
+#pragma unroll
+        for (int hc = 0; hc < 4; ++hc) {
+          const u32 w = (e < 2) ? xv[hc].x : xv[hc].y;
+          acc = __fmaf_rn(pre[hc], (e & 1) ? bf16_hi(w) : bf16_lo(w), acc);
+        }
+        ol[e] = acc;
+      }
+      *(uint2*)(rounded_s + p) = make_uint2(bf16x2_rn(ol[0], ol[1]), bf16x2_rn(ol[2], ol[3]));
+    }
+    bar_named(1, 256);
+    if (lt < 64) {
+      float acc[16];
+#pragma unroll
+      for (int i = 0; i < 16; ++i) acc[i] = 0.f;
+#pragma unroll
+      for (int hb = 0; hb < 5; ++hb) {
+#pragma unroll
+        for (int half = 0; half < 2; ++half) {
+          const uint4 v = *(const uint4*)(rounded_s + hb * 1024 + half * 512 + lt * 8);
+          const u32 w[4] = {v.x, v.y, v.z, v.w};
+#pragma unroll
+          for (int e = 0; e < 8; ++e) {
+            const float f = (e & 1) ? bf16_hi(w[e >> 1]) : bf16_lo(w[e >> 1]);
+            acc[half * 8 + e] = __fmaf_rn(f, f, acc[half * 8 + e]);
+          }
+        }
+      }
+      float sq = 0.f;
+#pragma unroll
+      for (int rv = 0; rv < 16; ++rv) sq = __fadd_rn(sq, acc[(rv & 1) * 8 + (rv >> 1)]);
+      part_s[lt] = sq;
+    }
+    bar_named(1, 256);
+    if (lt < 32) {
+      float y = __fadd_rn(part_s[lt], part_s[lt + 32]);
+      y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 16));
+      y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 8));
+      y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 4));
+      y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 2));
+      y = __fadd_rn(y, __shfl_xor_sync(0xffffffffu, y, 1));
+      if (lt == 0) rsqrt_s = rsqrtf(__fadd_rn(__fdiv_rn(y, (float)NORM_H), norm_eps));
+    }
+    bar_named(1, 256);
+    const float r = rsqrt_s;
+    u16* lo = layer_input + (size_t)tok * NORM_H;
+#pragma unroll
+    for (int q = 0; q < 5; ++q) {
+      const int p = 4 * (lt + 256 * q);
+      const uint2 rv = *(const uint2*)(rounded_s + p);
+      const uint2 wv = ldcg_u2(norm_w + p);
+      const float o0 = __fmul_rn(__fmul_rn(bf16_lo(rv.x), r), bf16_lo(wv.x));
+      const float o1 = __fmul_rn(__fmul_rn(bf16_hi(rv.x), r), bf16_hi(wv.x));
+      const float o2 = __fmul_rn(__fmul_rn(bf16_lo(rv.y), r), bf16_lo(wv.y));
+      const float o3 = __fmul_rn(__fmul_rn(bf16_hi(rv.y), r), bf16_hi(wv.y));
+      *(uint2*)(lo + p) = make_uint2(bf16x2_rn(o0, o1), bf16x2_rn(o2, o3));
+    }
   }
 }

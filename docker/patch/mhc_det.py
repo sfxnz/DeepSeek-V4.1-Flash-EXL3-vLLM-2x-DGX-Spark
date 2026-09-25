@@ -92,6 +92,7 @@ class DetKernels:
             self.src = fh.read()
         self.mod = Module(self.src, "mhc_det.cu", opts=opts)
         self._post = self.mod.function("mhc_det_post")
+        self._norm = self.mod.function("mhc_det_norm")
         self._gemm = {
             (packed, big): self.mod.function(f"mhc_det_gemm_{'pk' if packed else 'f32'}_t{16 if big else 8}")
             for packed in (False, True) for big in (False, True)
@@ -122,6 +123,27 @@ class DetKernels:
     def gemm_pk(self, x, fnp, mixes, sqr, pdl: bool = True) -> None:
         self.gemm(x, fnp, mixes, sqr, packed=True, pdl=pdl)
 
+    def norm(self, mixes, sqrsum, hc_scale, hc_base, residual, pre_mix, norm_weight, post, comb,
+             layer_input, pre_mix_out, rms_numel, rms_eps, hc_pre_eps, sinkhorn_eps, post_mult,
+             sinkhorn_repeat, norm_eps, pdl: bool = True) -> None:
+        """Bitwise TileLang mhc_pre_big_fuse_with_norm (hidden 5120, 16 splits, save_pre_mix)."""
+        t = residual.shape[0]
+        self._norm.launch(
+            (t,), (288,), 0,
+            [(mixes.data_ptr(), ctypes.c_void_p), (sqrsum.data_ptr(), ctypes.c_void_p),
+             (hc_scale.data_ptr(), ctypes.c_void_p), (hc_base.data_ptr(), ctypes.c_void_p),
+             (residual.data_ptr(), ctypes.c_void_p),
+             (pre_mix.data_ptr() if pre_mix is not None else 0, ctypes.c_void_p),
+             (norm_weight.data_ptr(), ctypes.c_void_p), (post.data_ptr(), ctypes.c_void_p),
+             (comb.data_ptr(), ctypes.c_void_p), (layer_input.data_ptr(), ctypes.c_void_p),
+             (pre_mix_out.data_ptr(), ctypes.c_void_p), (t, ctypes.c_int),
+             (float(rms_numel), ctypes.c_float), (float(rms_eps), ctypes.c_float),
+             (float(hc_pre_eps), ctypes.c_float), (float(sinkhorn_eps), ctypes.c_float),
+             (float(post_mult), ctypes.c_float), (int(sinkhorn_repeat), ctypes.c_int),
+             (float(norm_eps), ctypes.c_float)],
+            pdl=pdl,
+        )
+
     def post(self, x, residual, post_mix, comb_mix, out, pdl: bool = True) -> None:
         """Bitwise TileLang mhc_post: x [T,H], residual/out [T,4,H] bf16, post_mix [T,4](,1),
         comb_mix [T,4,4] fp32, all contiguous."""
@@ -148,7 +170,7 @@ def det_post(dk, x, residual, post_layer_mix, comb_res_mix):
 
 def det_pre_delayed(dk, fnp, residual, fn, hc_scale, hc_base, rms_eps, hc_pre_eps, hc_sinkhorn_eps,
                     hc_post_mult_value, sinkhorn_repeat, pre_mix=None, x=None, norm_weight=None,
-                    norm_eps=1e-6):
+                    norm_eps=1e-6, det_norm=True):
     """vLLM mhc_pre_delayed_tilelang with the prenorm GEMM swapped for the det kernel.
 
     Same buffers, same 16-split partials (bitwise), same TileLang fused-norm kernel, so every
@@ -171,6 +193,11 @@ def det_pre_delayed(dk, fnp, residual, fn, hc_scale, hc_base, rms_eps, hc_pre_ep
     mixes = torch.empty(SPLITS, num_tokens, mix_size, dtype=torch.float32, device=dev)
     sqrsum = torch.empty(SPLITS, num_tokens, dtype=torch.float32, device=dev)
     dk.gemm_pk(x, fnp, mixes, sqrsum)
+    if det_norm:
+        dk.norm(mixes, sqrsum, hc_scale, hc_base, residual, pre_mix, norm_weight, post, comb, layer_input,
+                next_pre_mix, input_size, rms_eps, hc_pre_eps, hc_sinkhorn_eps, hc_post_mult_value,
+                sinkhorn_repeat, norm_eps)
+        return outputs
     MHC_PRE_NORM_KERNEL(
         mixes, sqrsum, hc_scale, hc_base, residual, post, comb, layer_input, norm_weight,
         pre_mix if pre_mix is not None else post, next_pre_mix,
@@ -231,23 +258,24 @@ def _disarm(msg: str) -> None:
     print(f"dsv41: mhc det lever is OFF: {msg}", flush=True)
 
 
-def _fn_attrs(module):
-    """(owner, attribute) of every mHC projection in a model: DeepseekV4DecoderLayer instances."""
-    out = []
-    for mod in module.modules():
-        if type(mod).__name__ != "DeepseekV4DecoderLayer":
-            continue
-        for name in ("hc_attn_fn", "hc_ffn_fn", "hc_attn_fn_broadcast"):
-            fn = getattr(mod, name, None)
-            if fn is not None:
-                out.append((mod, name))
-    return out
+def _layers(module):
+    return [m for m in module.modules() if type(m).__name__ == "DeepseekV4DecoderLayer"]
 
 
 def _pack_one(fn):
     packed = pack_fn(fn)
     _S.packed[fn.data_ptr()] = (tuple(fn.shape), fn._version, packed)
     return packed
+
+
+def _is_packed(fn) -> bool:
+    return _S.packed.get(fn.data_ptr(), (None, None))[:2] == (tuple(fn.shape), fn._version)
+
+
+def _bits(t):
+    import torch
+
+    return t.contiguous().view(torch.int16 if t.element_size() == 2 else torch.int32)
 
 
 def _selftest_gemm(fn, packed) -> str | None:
@@ -263,8 +291,34 @@ def _selftest_gemm(fn, packed) -> str | None:
         tf32_hc_prenorm_gemm(x, fn, ref[0], ref[1], SPLITS)
         _S.dk.gemm_pk(x, packed, got[0], got[1])
         for a, b in zip(ref, got):
-            if not torch.equal(a.view(torch.int32), b.view(torch.int32)):
-                return f"GEMM K={k} T={t}: {int((a.view(torch.int32) != b.view(torch.int32)).sum())} elements differ"
+            if not torch.equal(_bits(a), _bits(b)):
+                return f"GEMM K={k} T={t}: {int((_bits(a) != _bits(b)).sum())} elements differ"
+    return None
+
+
+def _selftest_pre(layer, sub, fn, packed, broadcast: bool, carried: bool, tokens) -> str | None:
+    """Whole det pre (GEMM + fused norm) vs the stock one on this layer's real parameters."""
+    import torch
+
+    norm = getattr(layer, f"{sub}_norm")
+    args = (getattr(layer, f"hc_{sub}_scale"), getattr(layer, f"hc_{sub}_base"), layer.rms_norm_eps,
+            layer.hc_eps, layer.hc_eps, layer.hc_post_alpha, layer.hc_sinkhorn_iters)
+    dev = fn.device
+    for t in tokens:
+        g = torch.Generator(device=dev).manual_seed(31 * t + fn.shape[1])
+        x = None
+        if broadcast:
+            x = (torch.randn(t, 5120, device=dev, generator=g)).to(torch.bfloat16)
+            residual = x.unsqueeze(1).expand(-1, 4, -1).contiguous()
+        else:
+            residual = (torch.randn(t, 4, 5120, device=dev, generator=g) * 4).to(torch.bfloat16)
+        pre_mix = torch.softmax(torch.randn(t, 4, device=dev, generator=g), -1).contiguous() if carried else None
+        kw = dict(pre_mix=pre_mix, x=x, norm_weight=norm.weight, norm_eps=norm.variance_epsilon)
+        ref = _S.stock_pre(residual, fn, *args, **kw)
+        got = det_pre_delayed(_S.dk, packed, residual, fn, *args, **kw)
+        for name, a, b in zip(("post_mix", "comb_mix", "layer_input", "pre_mix"), ref, got):
+            if not torch.equal(_bits(a), _bits(b)):
+                return f"pre {sub} T={t} {name}: {int((_bits(a) != _bits(b)).sum())} elements differ"
     return None
 
 
@@ -279,45 +333,62 @@ def _selftest_post(device) -> str | None:
         comb = torch.softmax(torch.randn(t, 4, 4, device=device, generator=g) * 3, -1).contiguous()
         ref = _S.stock_post(x, residual, post_mix, comb)
         got = det_post(_S.dk, x, residual, post_mix, comb)
-        if not torch.equal(ref.view(torch.int16), got.view(torch.int16)):
-            return f"post T={t}: {int((ref.view(torch.int16) != got.view(torch.int16)).sum())} elements differ"
+        if not torch.equal(_bits(ref), _bits(got)):
+            return f"post T={t}: {int((_bits(ref) != _bits(got)).sum())} elements differ"
     return None
 
 
 def prepare(model, label: str) -> None:
-    """After weight load: compile the kernels, pack every mHC fn, self-test bitwise, engage."""
+    """After weight load: compile the kernels, pack every mHC fn, self-test bitwise, engage.
+
+    Self-tests (all bitwise, on this GPU, with the layers' real weights): the det GEMM vs
+    DeepGEMM at T 1/4/8/16 for every fn; the whole det pre vs the stock pre (T=4 every
+    sublayer, T 1/16 on the first; the layer-0 broadcast input; no carried pre-mix); the det
+    post vs TileLang mhc_post. Any mismatch leaves the stock path for the whole process."""
     if _S.failed:
         return
     try:
         import torch
 
-        attrs = _fn_attrs(model)
-        if not attrs:
+        layers = _layers(model)
+        if not layers:
             print(f"dsv41: mhc det: {label} has no mHC layers", flush=True)
             return
         if _S.dk is None:
             _S.dk = DetKernels()
-        fns = [getattr(m, n) for m, n in attrs]
-        fresh = [fn for fn in fns if _S.packed.get(fn.data_ptr(), (None, None))[:2] != (tuple(fn.shape), fn._version)]
-        if not fresh:
-            return  # load hooks can fire twice (VL wrapper + language model); already done
-        fns = fresh
-        packed = [_pack_one(fn) for fn in fns]
-        for fn, pk in zip(fns, packed):
-            err = _selftest_gemm(fn, pk)
-            if err:
-                _disarm(f"{label}: bitwise self-test failed ({err}); stock kernels stay")
-                return
-        err = _selftest_post(fns[0].device)
+        n_fn = n_pre = 0
+        mib = 0.0
+        for li, layer in enumerate(layers):
+            cases = [("attn", layer.hc_attn_fn, False), ("ffn", layer.hc_ffn_fn, False)]
+            if getattr(layer, "hc_attn_fn_broadcast", None) is not None:
+                cases.append(("attn", layer.hc_attn_fn_broadcast, True))
+            for sub, fn, broadcast in cases:
+                if _is_packed(fn):
+                    continue  # load hooks can fire twice (VL wrapper + language model)
+                packed = _pack_one(fn)
+                mib += packed.numel() / 2**20
+                n_fn += 1
+                err = _selftest_gemm(fn, packed)
+                first = n_pre == 0
+                for carried in ((False, True) if first and not broadcast else (not broadcast,)):
+                    err = err or _selftest_pre(layer, sub, fn, packed, broadcast, carried,
+                                               (1, 4, 16) if first else (4,))
+                    n_pre += 1
+                if err:
+                    _disarm(f"{label}: bitwise self-test failed (layer {li}: {err}); stock kernels stay")
+                    return
+        if n_fn == 0:
+            return
+        err = _selftest_post(layers[0].hc_attn_fn.device)
         if err:
             _disarm(f"{label}: bitwise self-test failed ({err}); stock kernels stay")
             return
         torch.cuda.synchronize()
-        mb = sum(p.numel() for p in packed) / 2**20
         _S.on = True
         print(
-            f"dsv41: mhc det engaged: {label}: {len(fns)} fn packed ({mb:.1f} MiB), det GEMM and post "
-            f"bitwise equal to stock (DeepGEMM {SPLITS}-split, TileLang mhc_post); T <= {MAX_T}",
+            f"dsv41: mhc det engaged: {label}: {n_fn} fn packed ({mib:.1f} MiB); det GEMM, fused norm and "
+            f"post bitwise equal to stock on {n_pre} pre self-tests (DeepGEMM {SPLITS}-split, TileLang); "
+            f"T <= {MAX_T}",
             flush=True,
         )
     except Exception as exc:  # noqa: BLE001 - the lever never breaks the load

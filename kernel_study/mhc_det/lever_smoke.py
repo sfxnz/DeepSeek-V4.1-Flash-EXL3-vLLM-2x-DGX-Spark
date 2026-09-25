@@ -19,12 +19,23 @@ import common as C  # noqa: E402
 import mhc_det  # noqa: E402
 
 
-class DeepseekV4DecoderLayer(torch.nn.Module):  # name matched by mhc_det._fn_attrs
-    def __init__(self, attn, ffn, bc=None):
+class _Norm(torch.nn.Module):
+    def __init__(self, w):
         super().__init__()
-        self.hc_attn_fn = torch.nn.Parameter(attn, requires_grad=False)
-        self.hc_ffn_fn = torch.nn.Parameter(ffn, requires_grad=False)
+        self.weight = torch.nn.Parameter(w, requires_grad=False)
+        self.variance_epsilon = 1e-20
+
+
+class DeepseekV4DecoderLayer(torch.nn.Module):  # name matched by mhc_det._layers
+    def __init__(self, w, prefix, bc=None):
+        super().__init__()
+        for sub in ("attn", "ffn"):
+            setattr(self, f"hc_{sub}_fn", torch.nn.Parameter(w[f"{prefix}.hc_{sub}_fn"].float(), requires_grad=False))
+            setattr(self, f"hc_{sub}_scale", torch.nn.Parameter(w[f"{prefix}.hc_{sub}_scale"].float(), requires_grad=False))
+            setattr(self, f"hc_{sub}_base", torch.nn.Parameter(w[f"{prefix}.hc_{sub}_base"].float(), requires_grad=False))
+            setattr(self, f"{sub}_norm", _Norm(w[f"{prefix}.{sub}_norm.weight"].bfloat16()))
         self.hc_attn_fn_broadcast = bc
+        self.rms_norm_eps, self.hc_eps, self.hc_post_alpha, self.hc_sinkhorn_iters = 1e-20, 1e-6, 2.0, 20
 
 
 def ints(t):
@@ -44,12 +55,13 @@ def main() -> int:
     d = importlib.import_module(mhc_det.DSPARK_MOD)
     res["patched"] = [m.mhc_post_tilelang is mhc_det._post, m.mhc_pre_delayed_tilelang is mhc_det._pre,
                       d.mhc_post_tilelang is mhc_det._post]
-    names = ["layers.0.hc_attn_fn", "layers.0.hc_ffn_fn", "layers.7.hc_attn_fn", "layers.7.hc_ffn_fn",
-             "layers.7.hc_attn_scale", "layers.7.hc_attn_base", "layers.7.attn_norm.weight"]
+    names = []
+    for p in ("layers.0", "layers.7"):
+        for sub in ("attn", "ffn"):
+            names += [f"{p}.hc_{sub}_fn", f"{p}.hc_{sub}_scale", f"{p}.hc_{sub}_base", f"{p}.{sub}_norm.weight"]
     w = C.load(names)
-    bc = w["layers.0.hc_attn_fn"].view(-1, 4, 5120).sum(dim=1).contiguous()
-    tree = torch.nn.Sequential(DeepseekV4DecoderLayer(w["layers.0.hc_attn_fn"], w["layers.0.hc_ffn_fn"], bc),
-                               DeepseekV4DecoderLayer(w["layers.7.hc_attn_fn"], w["layers.7.hc_ffn_fn"]))
+    bc = w["layers.0.hc_attn_fn"].float().view(-1, 4, 5120).sum(dim=1).contiguous()
+    tree = torch.nn.Sequential(DeepseekV4DecoderLayer(w, "layers.0", bc), DeepseekV4DecoderLayer(w, "layers.7"))
     mhc_det.prepare(tree, "smoke")
     res["on"] = mhc_det._S.on
     calls = {"gemm": 0, "post": 0}
@@ -65,7 +77,7 @@ def main() -> int:
 
     mhc_det._S.dk.gemm_pk, mhc_det._S.dk.post = gemm_count, post_count
     fn = tree[1].hc_attn_fn
-    scale, base, nw = w["layers.7.hc_attn_scale"].float(), w["layers.7.hc_attn_base"].float(), w["layers.7.attn_norm.weight"].bfloat16()
+    scale, base, nw = tree[1].hc_attn_scale, tree[1].hc_attn_base, tree[1].attn_norm.weight
     emb = C.embeddings(32)
     rows = []
     for t in (1, 3, 4, 6, 8, 16, 17, 64):

@@ -55,8 +55,8 @@ def sublayers():
 
 
 class Path:
-    def __init__(self, w, dk, packed, det: bool):
-        self.w, self.dk, self.packed, self.det = w, dk, packed, det
+    def __init__(self, w, dk, packed, det: bool, det_norm: bool = True):
+        self.w, self.dk, self.packed, self.det, self.det_norm = w, dk, packed, det, det_norm
         from vllm.model_executor.kernels.mhc import tilelang as tl
 
         self.tl = tl
@@ -72,7 +72,8 @@ class Path:
                 POST_ALPHA, SINKHORN)
         kw = dict(pre_mix=pre_mix, x=x, norm_weight=w[f"{prefix}.{sub}_norm.weight"], norm_eps=RMS_EPS)
         if self.det:
-            return mhc_det.det_pre_delayed(self.dk, self.packed[fn_name], residual, w[fn_name], *args, **kw)
+            return mhc_det.det_pre_delayed(self.dk, self.packed[fn_name], residual, w[fn_name], *args, **kw,
+                                           det_norm=self.det_norm)
         return self.tl.mhc_pre_delayed_tilelang(residual, w[fn_name], *args, **kw)
 
 
@@ -110,6 +111,7 @@ def check(args) -> dict:
     fn_names = [k for k in w if k.endswith("_fn") or k.endswith("_broadcast")]
     packed = {k: mhc_det.pack_fn(w[k]) for k in fn_names}
     stock, det = Path(w, dk, packed, False), Path(w, dk, packed, True)
+    det_tl = Path(w, dk, packed, True, det_norm=False)
 
     # (1) post alone
     fails, n = [], 0
@@ -135,16 +137,19 @@ def check(args) -> dict:
         g = torch.Generator(device="cuda").manual_seed(1234 + t)
         xouts = [(torch.randn(t, C.HIDDEN, device="cuda", generator=g) * (0.5 + (i % 7))).bfloat16()
                  for i in range(len(sublayers()))]
-        rec_s, rec_d = [], []
+        rec_s, rec_d, rec_t = [], [], []
         run_chain(stock, t, emb, xouts, rec_s)
         run_chain(det, t, emb, xouts, rec_d)
-        bad = []
-        for i, (os_, od) in enumerate(zip(rec_s, rec_d)):
-            for nm, a, b in zip(names, os_, od):
-                if not bool((ints(a) == ints(b)).all()):
-                    bad.append({"sublayer": i, "out": nm, "n_diff": int((ints(a) != ints(b)).sum())})
-        res["chain_bitwise"][f"T{t}"] = {"sublayers": len(rec_s), "outputs_compared": 5 * len(rec_s),
-                                         "mismatches": len(bad), "first": bad[:5]}
+        run_chain(det_tl, t, emb, xouts, rec_t)
+        out = {}
+        for arm, rec in (("det", rec_d), ("det_stock_norm", rec_t)):
+            bad = []
+            for i, (os_, od) in enumerate(zip(rec_s, rec)):
+                for nm, a, b in zip(names, os_, od):
+                    if not bool((ints(a) == ints(b)).all()):
+                        bad.append({"sublayer": i, "out": nm, "n_diff": int((ints(a) != ints(b)).sum())})
+            out[arm] = {"outputs_compared": 5 * len(rec_s), "mismatches": len(bad), "first": bad[:5]}
+        res["chain_bitwise"][f"T{t}"] = {"sublayers": len(rec_s), **out}
         print(t, json.dumps(res["chain_bitwise"][f"T{t}"]), flush=True)
 
     # (3) determinism of the whole det recurrence
@@ -225,8 +230,8 @@ def timing(args) -> dict:
                 xouts[i].copy_(src[i])
 
         graphs = {"copies": _graph(copies_only)}
-        for det in (False, True):
-            path = Path(w, dk, packed, det)
+        for arm in ("stock", "det_stock_norm", "det"):
+            path = Path(w, dk, packed, arm != "stock", det_norm=(arm == "det"))
 
             def with_copies(path=path):
                 state = None
@@ -245,7 +250,7 @@ def timing(args) -> dict:
                         pm, cm, li, pr = path.pre(residual, f"{prefix}.hc_{sub}_fn", prefix, sub, prp)
                     state = (residual, pm, cm, pr)
 
-            graphs["det" if det else "stock"] = _graph(with_copies)
+            graphs[arm] = _graph(with_copies)
         for _ in range(3):
             for gr in graphs.values():
                 gr.replay()
@@ -261,7 +266,7 @@ def timing(args) -> dict:
                 b.synchronize()
                 samples[k].append(a.elapsed_time(b) * 1000.0)
         base = C.summarize(samples["copies"])["median_us"]
-        for arm in ("stock", "det"):
+        for arm in ("stock", "det_stock_norm", "det"):
             per = [x - y for x, y in zip(samples[arm], samples["copies"])]
             st = C.summarize(per)
             row = {"T": t, "arm": arm, "sublayers": len(subs), "graph_us_median": C.summarize(samples[arm])["median_us"],
