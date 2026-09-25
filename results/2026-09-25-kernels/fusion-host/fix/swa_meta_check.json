@@ -1,0 +1,199 @@
+{
+ "torch": "2.13.0+cu130",
+ "builds_compared": 48,
+ "state_after_builds": {
+  "armed": true,
+  "verify_left": 0,
+  "engaged": true
+ },
+ "fallback": {
+  "prefill": true,
+  "mixed": true,
+  "noncausal": true,
+  "tensor_causal": true,
+  "short_slots": true
+ },
+ "graph_replays": 20,
+ "cycles_per_us": 2191.5,
+ "timing_15_builds_us": {
+  "warm_c1_m4": {
+   "stock": {
+    "n": 300,
+    "median": 521.0559964179993,
+    "p10": 518.9759731292725,
+    "p90": 529.151976108551,
+    "mean": 530.0767956177393
+   },
+   "fused": {
+    "n": 300,
+    "median": 426.84799432754517,
+    "p10": 426.7840087413788,
+    "p90": 428.8960099220276,
+    "mean": 432.2442637880643
+   },
+   "host_enqueue_us": {
+    "stock": {
+     "n": 300,
+     "median": 1165.2579996734858,
+     "p10": 1140.0340590626001,
+     "p90": 1203.1549122184515,
+     "mean": 1168.1747102799516
+    },
+    "fused": {
+     "n": 300,
+     "median": 855.0414349883795,
+     "p10": 835.3609591722488,
+     "p90": 876.1938661336899,
+     "mean": 871.2881826795638
+    }
+   }
+  },
+  "warm_c2_m8": {
+   "stock": {
+    "n": 300,
+    "median": 521.0559964179993,
+    "p10": 518.9759731292725,
+    "p90": 524.8960256576538,
+    "mean": 524.4345573584238
+   },
+   "fused": {
+    "n": 300,
+    "median": 426.84799432754517,
+    "p10": 426.7840087413788,
+    "p90": 428.8960099220276,
+    "mean": 429.65525209903717
+   },
+   "host_enqueue_us": {
+    "stock": {
+     "n": 300,
+     "median": 1105.937990359962,
+     "p10": 1098.3380489051342,
+     "p90": 1135.858939960599,
+     "mean": 1112.093028301994
+    },
+    "fused": {
+     "n": 300,
+     "median": 809.6335222944617,
+     "p10": 802.1299727261066,
+     "p90": 830.786069855094,
+     "mean": 813.076141445587
+    }
+   }
+  },
+  "cold_c1_m4": {
+   "stock": {
+    "n": 300,
+    "median": 617.1360015869141,
+    "p10": 613.152027130127,
+    "p90": 621.4079856872559,
+    "mean": 622.8080034255981
+   },
+   "fused": {
+    "n": 300,
+    "median": 461.63201332092285,
+    "p10": 459.52001214027405,
+    "p90": 465.7920002937317,
+    "mean": 466.01120044787723
+   },
+   "host_enqueue_us": {
+    "stock": {
+     "n": 300,
+     "median": 1123.0584932491183,
+     "p10": 1116.4979077875614,
+     "p90": 1145.5060448497534,
+     "mean": 1127.7085395219426
+    },
+    "fused": {
+     "n": 300,
+     "median": 823.8180307671428,
+     "p10": 816.5298495441675,
+     "p90": 841.8739307671785,
+     "mean": 826.6331953927875
+    }
+   }
+  },
+  "cold_c2_m8": {
+   "stock": {
+    "n": 300,
+    "median": 617.1519756317139,
+    "p10": 613.215982913971,
+    "p90": 619.4239854812622,
+    "mean": 619.8238960901896
+   },
+   "fused": {
+    "n": 300,
+    "median": 461.66399121284485,
+    "p10": 459.55199003219604,
+    "p90": 465.63199162483215,
+    "mean": 465.158827205499
+   },
+   "host_enqueue_us": {
+    "stock": {
+     "n": 300,
+     "median": 1103.4579947590828,
+     "p10": 1093.618106096983,
+     "p90": 1117.4739338457584,
+     "mean": 1104.9009673297405
+    },
+    "fused": {
+     "n": 300,
+     "median": 806.2734268605709,
+     "p10": 798.1618400663137,
+     "p90": 819.1701490432024,
+     "mean": 807.6686544033388
+    }
+   }
+  }
+ },
+ "host_bound_samples": 0,
+ "gpu_ops_per_build": {
+  "stock": 12,
+  "fused": 9
+ },
+ "gpu_op_names": {
+  "stock": [
+   "Memcpy DtoD (Device -> Device)",
+   "Memcpy DtoD (Device -> Device)",
+   "_compute_swa_indices_and_lens_kernel",
+   "void (anonymous namespace)::elementwise_kernel_with_index<in",
+   "void at::native::(anonymous namespace)::indexSelectSmallInde",
+   "void at::native::unrolled_elementwise_kernel<at::native::CUD",
+   "void at::native::unrolled_elementwise_kernel<at::native::dir",
+   "void at::native::vectorized_elementwise_kernel<4, at::native",
+   "void at::native::vectorized_elementwise_kernel<4, at::native",
+   "void at_cuda_detail::cub::detail::scan::DeviceScanInitKernel",
+   "void at_cuda_detail::cub::detail::scan::DeviceScanKernel<at_",
+   "void compute_cuda_kernel<int>(int const*, long const*, int*,"
+  ],
+  "fused": [
+   "Memcpy DtoD (Device -> Device)",
+   "_swa_decode_fused_kernel",
+   "void (anonymous namespace)::elementwise_kernel_with_index<in",
+   "void at::native::(anonymous namespace)::indexSelectSmallInde",
+   "void at::native::unrolled_elementwise_kernel<at::native::CUD",
+   "void at::native::unrolled_elementwise_kernel<at::native::dir",
+   "void at_cuda_detail::cub::detail::scan::DeviceScanInitKernel",
+   "void at_cuda_detail::cub::detail::scan::DeviceScanKernel<at_",
+   "void compute_cuda_kernel<int>(int const*, long const*, int*,"
+  ]
+ },
+ "sabotage": {
+  "disarmed": true,
+  "stock_values_kept": true,
+  "next_build_stock": true
+ },
+ "install": {
+  "msg": "DeepseekSparseSWAMetadataBuilder.build fused decode path (verify=8)",
+  "patched": true,
+  "qualname": "DeepseekSparseSWAMetadataBuilder.build",
+  "equal": true,
+  "state": {
+   "armed": true,
+   "verify_left": 5,
+   "engaged": true
+  },
+  "again": "already installed"
+ },
+ "mismatches": [],
+ "n_mismatches": 0
+}

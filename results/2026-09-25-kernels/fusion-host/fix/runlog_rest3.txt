@@ -1,0 +1,262 @@
+== 2026-09-25T18:01:30Z rest3 (committed tree 9ab95cb, image dsv41-flash-exl3-sm121:canonical-e13)
+-- containers before: 
+-- pmon immediately before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+2190 MHz, [N/A], 8.59 W, 47
+---- 2026-09-25T18:01:31Z wkv_shard_check: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -- /repo/kernel_study/fusion_host/engram_wkv_shard_check.py --snapshot /hf/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmh
+{"torch": "2.13.0+cu130", "device": "NVIDIA GB10", "bitwise": {"cases": 128, "cases_with_differences": 0, "m": [1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]}, "timing_us": {"m1_cold": {"full": {"n": 300, "median": 813.73, "p10": 806.56, "p90": 843.42, "GBps": 199.3, "pct_of_250": 79.7}, "h0": {"n": 300, "median": 444.06, "p10": 442.02, "p90": 459.42, "GBps": 182.6, "pct_of_250": 
+rc=0
+---- 2026-09-25T18:01:52Z egpu_early_c241_b8: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -- /repo/kernel_study/fusion_host/engram_stage_gpu_bench.py --snapshot /hf/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-
+dsv41: engram gather v2 self-check bit-exact (r=48)
+dsv41: engram fast stage self-check bit-exact (2 tables, n=4)
+dsv41: engram native stage self-check bit-exact (2 tables, n=4, max_tokens=64)
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.401ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.799ms fadv/call=0.0
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=199.1
+[native-census] calls=32 rows/call=96.0 miss/call=1.50 syscalls/call=198.0 us/call=212.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.818ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.809ms fadv/call=0.0
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=192.9
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=193.8
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.622ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.665ms fadv/call=0.0
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=183.7
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=185.6
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.674ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.661ms fadv/call=0.0
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=198.1
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=196.8
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.659ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.617ms fadv/call=0.0
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=193.7
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=192.2
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.611ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.625ms fadv/call=0.0
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=202.6
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=203.6
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.631ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.650ms fadv/call=0.0
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=186.3
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=186.4
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.678ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.633ms fadv/call=0.0
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=171.7
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=176.4
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.671ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.676ms fadv/call=0.0
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=174.9
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=172.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.564ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.565ms fadv/call=0.0
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=169.6
+[native-census] calls=32 rows/call=96.0 miss/call=0.00 syscalls/call=192.0 us/call=171.9
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.607ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=78 runs/call=156.0 preads/call=156.0 read=1.008ms fadv/call=0.0
+[native-census] calls=32 rows/call=153.0 miss/call=0.00 syscalls/call=306.0 us/call=256.0
+[native-census] calls=32 rows/call=153.0 miss/call=0.00 syscalls/call=306.0 us/call=259.6
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.185ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.139ms fadv/call=0.0
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=334.4
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=326.3
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.179ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.179ms fadv/call=0.0
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=327.9
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=320.6
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.170ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.158ms fadv/call=0.0
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=330.8
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=322.5
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.188ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.200ms fadv/call=0.0
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=324.4
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=325.9
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.391ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.690ms fadv/call=0.0
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=330.2
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=322.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.766ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.747ms fadv/call=0.0
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=332.7
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=327.8
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.860ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.834ms fadv/call=0.0
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=372.5
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=363.3
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.866ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.849ms fadv/call=0.0
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=362.8
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=371.5
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.761ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.414ms fadv/call=0.0
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=352.9
+[native-census] calls=32 rows/call=192.0 miss/call=0.00 syscalls/call=384.0 us/call=352.9
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.207ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.200ms fadv/call=0.0
+dsv41: engram native stage DISABLED -> stock stage: RuntimeError('native != stock (layer 0, n=4)')
+{"args": {"snapshot": "/hf/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8", "rank": 0, "tokens": [4, 8], "iters": 300, "warmup": 20, "busy_us": 8000.0, "hot": false, "lead_us": 0.0, "chain_ops": 241, "l2": "warm"}, "torch": "2.13.0+cu130", "cycles_per_us": 2193.6, "results": {"n4": {"gpu_gap_us": {"stock": {"n": 300, "median": 2283.344030380249, "p10": 1929.023981094
+rc=0
+---- 2026-09-25T18:02:24Z dryrun_all: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -e DSV41_ENGRAM_NATIVE_STAGE=1 -e DSV41_ENGRAM_EARLY_HASH=1 -e DSV41_ATTN_T2R_DEDUP=1 -e DSV41_MOE_PREP_FUSED=1 -e DSV41_CANDIDATE_MASK_BOUNDED=1 -e
+{"swa_meta_fused": true, "t2r_dedup": true, "wp_gemv": true, "native_stage": true, "wkv_tp": true, "cpu_hash_defer_text": [], "stage_params": ["self", "input_ids", "positions", "query_start_loc", "lookback_token_ids", "num_tokens"], "stage_accepts_input_batch": "TypeError(\"got an unexpected keyword argument 'input_batch'\")", "modules": ["attn_t2r_dedup", "candidate_mask_bounded", "engram_early_h
+{"first": {"swa_meta_fused": true, "t2r_dedup": true, "wp_gemv": true, "native_stage": true, "wkv_tp": true, "cpu_hash_defer_text": [], "stage_params": ["self", "input_ids", "positions", "query_start_loc", "lookback_token_ids", "num_tokens"], "stage_accepts_input_batch": "TypeError(\"got an unexpected keyword argument 'input_batch'\")", "modules": ["attn_t2r_dedup", "candidate_mask_bounded", "engr
+rc=0
+---- 2026-09-25T18:02:40Z dryrun_all_defer: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -e DSV41_ENGRAM_NATIVE_STAGE=1 -e DSV41_ENGRAM_EARLY_HASH=1 -e DSV41_ATTN_T2R_DEDUP=1 -e DSV41_MOE_PREP_FUSED=1 -e DSV41_CANDIDATE_MASK_BOUNDE
+dsv41: engram native stage DISABLED -> stock stage: RuntimeError('EngramDiskStager._ch_try_stage exists: stage() carries the engram cpu-hash/defer rewrite (DSV41_ENGRAM_CPU_HASH / DSV41_ENGRAM_DEFER), which the native stage would bypass')
+{"swa_meta_fused": true, "t2r_dedup": true, "wp_gemv": true, "native_stage": false, "wkv_tp": true, "cpu_hash_defer_text": ["_ch_try_stage", "_defer_try_stage"], "stage_params": ["self", "input_ids", "positions", "query_start_loc", "lookback_token_ids", "num_tokens", "input_batch"], "stage_accepts_input_batch": true, "modules": ["attn_t2r_dedup", "candidate_mask_bounded", "engram_native_stage", "e
+{"first": {"swa_meta_fused": true, "t2r_dedup": true, "wp_gemv": true, "native_stage": true, "wkv_tp": true, "cpu_hash_defer_text": [], "stage_params": ["self", "input_ids", "positions", "query_start_loc", "lookback_token_ids", "num_tokens"], "stage_accepts_input_batch": "TypeError(\"got an unexpected keyword argument 'input_batch'\")", "modules": ["attn_t2r_dedup", "candidate_mask_bounded", "engr
+rc=0
+---- 2026-09-25T18:02:57Z dryrun_all_cpuhash: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -e DSV41_ENGRAM_NATIVE_STAGE=1 -e DSV41_ENGRAM_EARLY_HASH=1 -e DSV41_ATTN_T2R_DEDUP=1 -e DSV41_MOE_PREP_FUSED=1 -e DSV41_CANDIDATE_MASK_BOUN
+dsv41: engram native stage DISABLED -> stock stage: RuntimeError('EngramDiskStager._ch_try_stage exists: stage() carries the engram cpu-hash/defer rewrite (DSV41_ENGRAM_CPU_HASH / DSV41_ENGRAM_DEFER), which the native stage would bypass')
+{"swa_meta_fused": true, "t2r_dedup": true, "wp_gemv": true, "native_stage": false, "wkv_tp": true, "cpu_hash_defer_text": ["_ch_try_stage", "_defer_try_stage"], "stage_params": ["self", "input_ids", "positions", "query_start_loc", "lookback_token_ids", "num_tokens", "input_batch"], "stage_accepts_input_batch": true, "modules": ["attn_t2r_dedup", "candidate_mask_bounded", "engram_native_stage", "e
+{"first": {"swa_meta_fused": true, "t2r_dedup": true, "wp_gemv": true, "native_stage": true, "wkv_tp": true, "cpu_hash_defer_text": [], "stage_params": ["self", "input_ids", "positions", "query_start_loc", "lookback_token_ids", "num_tokens"], "stage_accepts_input_batch": "TypeError(\"got an unexpected keyword argument 'input_batch'\")", "modules": ["attn_t2r_dedup", "candidate_mask_bounded", "engr
+rc=0
+---- 2026-09-25T18:03:12Z engram_native_check: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -- /repo/kernel_study/fusion_host/engram_native_check.py --snapshot /hf/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lm
+dsv41: engram gather v2 self-check bit-exact (r=12)
+[gv2-census] calls=32 rows/call=115 runs/call=230.2 preads/call=230.2 read=0.383ms fadv/call=143.8
+[gv2-census] calls=32 rows/call=118 runs/call=236.2 preads/call=236.2 read=0.378ms fadv/call=143.6
+[gv2-census] calls=32 rows/call=121 runs/call=242.2 preads/call=242.2 read=0.385ms fadv/call=143.7
+{"exhaustive": {"dequant_one_mismatch": 0, "gather_uniform_scale_flags0": {"rc": 0, "equal": true, "stats": [512, 512, 0, 1024, 0]}, "gather_uniform_scale_flags1": {"rc": 0, "equal": true, "stats": [512, 512, 0, 1025, 0]}, "gather_mixed_scale_flags0": {"rc": 0, "equal": true, "stats": [512, 512, 0, 1024, 0]}, "gather_mixed_scale_flags1": {"rc": 0, "equal": true, "stats": [512, 512, 0, 1025, 0]}}, 
+rc=0
+---- 2026-09-25T18:03:21Z engram_cpu_bench: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -- /repo/kernel_study/fusion_host/engram_stage_bench.py --snapshot /hf/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead
+dsv41: engram gather v2 self-check bit-exact (r=48)
+[gv2-census] calls=32 rows/call=51 runs/call=102.0 preads/call=102.0 read=0.677ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.588ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.706ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.807ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.839ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.847ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.835ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.815ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.633ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.670ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.634ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.676ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.682ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.635ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.670ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.681ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.610ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.694ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.849ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.855ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=60 runs/call=120.0 preads/call=120.0 read=0.799ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=0.785ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.093ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.070ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.072ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=0.995ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.198ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.192ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.315ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.450ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.457ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.452ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.403ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.216ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.188ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.089ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.269ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.195ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.232ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.230ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.228ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=66 runs/call=132.0 preads/call=132.0 read=1.365ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.662ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.665ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.552ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.551ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.672ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.757ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.704ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.690ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.726ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.710ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.771ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.727ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.761ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.741ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.748ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.727ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.695ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.678ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.684ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.706ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.363ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.315ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.249ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.283ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.403ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.378ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.357ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.326ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.516ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.538ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.515ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.399ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.395ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.414ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.425ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.666ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.545ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.342ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.525ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.537ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=78 runs/call=156.0 preads/call=156.0 read=8.671ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=33.567ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=30.429ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=36.221ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=31.429ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=29.779ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=33.088ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=28.916ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=28.132ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=30.765ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=36.711ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=35.157ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=32.779ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=38.574ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=31.859ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=31.369ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=27.979ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=24.534ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=33.609ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=37.793ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=42.564ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=84 runs/call=168.0 preads/call=168.0 read=58.997ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=61.039ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=57.848ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=61.304ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=65.473ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=61.111ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=58.373ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=48.420ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=60.041ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=57.912ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=57.960ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=54.888ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=49.520ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=60.531ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=59.363ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=60.317ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=54.283ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=50.581ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=58.537ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=60.921ms fadv/call=0.0
+{"args": {"snapshot": "/hf/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8", "rank": 0, "tokens": [4, 8], "iters": 300, "warmup": 30, "scenarios": ["hot", "pf", "cold"], "lead_us": 500.0, "noise": false, "pin": false}, "torch": "2.13.0+cu130", "results": {"hot_n4": {"stock": {"n": 300, "median": 1457.77, "p10": 1152.962, "p90": 1894.932, "mean": 1464.0822733333334, "m
+rc=0
+---- 2026-09-25T18:04:15Z engram_cpu_bench_noise: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -- /repo/kernel_study/fusion_host/engram_stage_bench.py --snapshot /hf/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-
+dsv41: engram gather v2 self-check bit-exact (r=48)
+[gv2-census] calls=32 rows/call=51 runs/call=102.0 preads/call=102.0 read=88.293ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=120.787ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=91.297ms fadv/call=0.0
+rc=137
+== end 2026-09-25T18:08:05Z rc=1
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+-- sm clock samples during run (MHz: count): 1664:1 201:3 208:308 214:1 2171:1 2190:38 
+-- busy samples (util>0) sm MHz: 1664:1 2171:1 2190:31 
+-- own GPU process samples: 34; FOREIGN GPU process samples: 0

@@ -1,0 +1,24 @@
+== 2026-09-25T18:21:44Z noise2 (committed tree d2cfabb, image dsv41-flash-exl3-sm121:canonical-e13)
+-- containers before: 
+-- pmon immediately before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+2190 MHz, [N/A], 8.93 W, 50
+---- 2026-09-25T18:21:44Z engram_cpu_bench_noise: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -- /repo/kernel_study/fusion_host/engram_stage_bench.py --snapshot /hf/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-
+dsv41: engram gather v2 self-check bit-exact (r=48)
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=118.996ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=102.299ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=75.347ms fadv/call=0.0
+[gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=99.509ms fadv/call=0.0
+{"args": {"snapshot": "/hf/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8", "rank": 0, "tokens": [4], "iters": 60, "warmup": 5, "scenarios": ["pf"], "lead_us": 500.0, "noise": true, "pin": false}, "torch": "2.13.0+cu130", "results": {"pf_n4": {"stock": {"n": 60, "median": 274858.4545, "p10": 102291.255, "p90": 668411.188, "mean": 332264.6427833334, "min": 34832.196, 
+rc=0
+== end 2026-09-25T18:22:18Z rc=0
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+-- sm clock samples during run (MHz: count): 208:29 2190:1 806:1 
+-- busy samples (util>0) sm MHz: 2190:1 
+-- own GPU process samples: 0; FOREIGN GPU process samples: 0

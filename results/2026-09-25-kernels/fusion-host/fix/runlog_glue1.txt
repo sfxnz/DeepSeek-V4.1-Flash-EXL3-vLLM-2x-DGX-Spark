@@ -1,0 +1,49 @@
+== 2026-09-25T17:30:05Z glue1 (committed tree 9682eab, image dsv41-flash-exl3-sm121:canonical-e13)
+-- containers before: 
+-- pmon immediately before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+2190 MHz, [N/A], 8.43 W, 46
+---- 2026-09-25T17:30:05Z t2r_dedup_bench: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -- /repo/kernel_study/fusion_host/t2r_dedup_bench.py
+dsv41: attention t2r dedup reuse bit-exact (tokens 4; 1 computes, 1 reuses so far)
+[t2r-census] verified computes=2 reuses=8 reuses/compute=4.00
+[t2r-census] steady computes=1024 reuses=9711 reuses/compute=9.48
+[t2r-census] steady computes=2048 reuses=19439 reuses/compute=9.49
+[t2r-census] steady computes=4096 reuses=38895 reuses/compute=9.50
+dsv41: attention t2r dedup DISABLED -> stock map per group: RuntimeError('copied map != stock map (tokens 4)')
+{"args": {"iters": 300, "warmup": 20, "busy_us": 6000.0, "l2": "both"}, "torch": "2.13.0+cu130", "preps": [3, 18], "cycles_per_us": 2194.0, "results": {"warm_c1_m4": {"gpu_us": {"stock": {"n": 300, "median": 510.82, "p10": 508.77, "p90": 512.86, "mean": 517.58, "max": 759.23}, "dedup": {"n": 300, "median": 83.81, "p10": 83.78, "p90": 83.84, "mean": 85.08, "max": 172.96}}, "host_enqueue_us": {"stoc
+rc=0
+---- 2026-09-25T17:30:49Z swa_meta_check: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -- /repo/kernel_study/fusion_host/swa_meta_check.py
+dsv41: swa metadata fused self-check bit-exact (decode tokens 1, width 128)
+dsv41: swa metadata fused DISABLED -> stock ops: RuntimeError('fused != stock (decode tokens 4, slots 4)')
+dsv41: swa metadata fused self-check bit-exact (decode tokens 8, width 128)
+{"torch": "2.13.0+cu130", "builds_compared": 48, "state_after_builds": {"armed": true, "verify_left": 0, "engaged": true}, "fallback": {"prefill": true, "mixed": true, "noncausal": true, "tensor_causal": true, "short_slots": true}, "graph_replays": 20, "cycles_per_us": 2191.5, "timing_15_builds_us": {"warm_c1_m4": {"stock": {"n": 300, "median": 521.0559964179993, "p10": 518.9759731292725, "p90": 5
+rc=0
+---- 2026-09-25T17:31:23Z moe_prep_check: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -- /repo/kernel_study/fusion_host/moe_prep_check.py
+dsv41: moe prep fused self-check bit-exact (synthetic, m=1..8)
+dsv41: moe prep fused DISABLED -> stock ops: RuntimeError('fused != stock (ids (4, 6), x (4, 5120))')
+dsv41: moe prep fused DISABLED -> stock ops: RuntimeError('fused != stock in the self-test (m=1)')
+{"torch": "2.13.0+cu130", "device": "NVIDIA GB10", "sweep_cases": 576, "graph_replays": 100, "cast_patterns": 65536, "timing_us": {"m1_alone": {"stock": {"n": 400, "median": 18.624000251293182, "p10": 17.055999487638474, "p90": 19.168000668287277, "mean": 18.3278398681432}, "fused": {"n": 400, "median": 6.399999838322401, "p10": 6.304000038653612, "p90": 6.688000168651342, "mean": 6.45159996172878
+rc=0
+---- 2026-09-25T17:31:59Z candidate_mask_check: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -- /repo/kernel_study/fusion_host/candidate_mask_check.py
+dsv41: candidate mask bounded self-check bit-exact (rows 1/4/8, width 65536)
+dsv41: candidate mask bounded DISABLED -> stock mask: RuntimeError('bounded != stock below the end (row 0, end 5000)')
+dsv41: candidate mask bounded DISABLED -> stock mask: RuntimeError('bounded != stock below the end (row 0, end 299)')
+{"torch": "2.13.0+cu130", "mask_cases": 54, "topk_cases": 40, "stock_order_nondeterministic": 38, "graph_replays": 20, "lever_state_after_timing": {"armed": true}, "sabotage": {"verify_disarmed": true, "selftest_disarmed": true, "verify_restored_stock": true, "next_call_stock": true, "after_selftest_stock": true}, "timing_us": {"warm_width1048576_rows4": {"stock": {"n": 300, "median": 98.144002258
+rc=0
+---- 2026-09-25T17:32:15Z wp_gemv_bench: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -- /repo/kernel_study/fusion_host/wp_gemv_bench.py
+dsv41: indexer weights_proj GEMV self-check bit-exact (m=2..8, n=32, k=5120)
+dsv41: indexer weights_proj GEMV DISABLED -> stock GEMM: RuntimeError('GEMV != stock (m=4)')
+dsv41: indexer weights_proj GEMV DISABLED -> stock GEMM: RuntimeError('GEMV != stock in the self-test (m=2)')
+{"torch": "2.13.0+cu130", "configs": {"256:4:3": {"bitwise": true}, "512:2:3": {"bitwise": true}, "512:4:4": {"bitwise": true}}, "bad": [], "wrapper_state": {"armed": true, "verify_left": 0, "engaged": true}, "graph_replays": 20, "timing_us": {"m1_cold": {"cublas": {"n": 300, "median": 10.27199998497963, "p10": 10.27199998497963, "p90": 10.27199998497963, "mean": 10.498879986504713}, "256:4:3": {"
+rc=0
+== end 2026-09-25T17:33:03Z rc=0
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+-- sm clock samples during run (MHz: count): 208:21 2151:1 2190:122 2197:1 435:1 669:1 721:2 793:1 812:1 
+-- busy samples (util>0) sm MHz: 2190:111 2197:1 435:1 
+-- own GPU process samples: 118; FOREIGN GPU process samples: 0
