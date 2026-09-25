@@ -95,3 +95,31 @@ checked against repeat_interleave each iteration: 0 mismatches). GPU ops per pre
 Projected in the serve: 2 preps per step (draft 3 groups, target 18) -> 2 computations +
 19 copies instead of 21 computations: -133 kernels, ~-0.52 ms/step (c=1), on the
 critical path. Bit-exact by construction.
+
+3. ITERATION 3: early Engram hash (KEEP, env DSV41_ENGRAM_EARLY_HASH=1, needs the
+   native stage)
+------------------------------------------------------------------------------
+Why: with the native gather, the stage still starts only after the LAST eager launch of
+the step (the hash is queued behind the block tables, slot mappings and ~18 groups of
+attention metadata), so the gather (~0.15-0.3 ms) runs while the GPU has nothing queued.
+Every input of the hash is final when GPUModelRunner.prepare_inputs returns
+(input_ids, positions, query_start_loc; the lookback window reads num_computed_tokens /
+all_token_ids, written only by the previous step's post_update).
+What: docker/patch/engram_early_hash.py wraps GPUModelRunner.prepare_attn to launch the
+model state's lookback kernel + the stage's hash + DtoH + event first; stage() consumes
+them only for the same InputBatch object and token count (marked by a
+DeepseekV41ModelState.prepare_inputs wrapper, consumed once), waits for that DtoH and
+gathers while the GPU runs the queued metadata chain. Prefill sizes never go early. The
+first 8 steps also run the stock late hash and compare int32 for int32 (mismatch ->
+DISABLED line, late hashes kept, stock order after).
+First bench attempt was invalid: 1 matmul of busy work left the host launching the
+120-op chain AFTER the GPU was already idle, so the chain ran at host cadence and hid
+nothing (native_early 499.0 vs native 471.9 us). Fixed with a calibrated 4 ms GPU spin
+(torch.cuda._sleep, 2194 cycles/us) so the host runs ahead as in the serve.
+Result (engram_stage_gpu_bench_early_spark2.json, spark2, 300 iters, 3 arms rotating,
+120 small kernels queued between the early point and stage(), 0 mismatches, native and
+early engaged): GPU span chain + stage, us median (p10/p90):
+  n=4: stock 1933.7 (1536.0/2374.6)  native 496.5 (483.3/522.3)  native+early 322.9 (313.8/334.2)
+  n=8: stock 2559.9 (2216.6/2995.9)  native 631.1 (619.7/642.1)  native+early 347.1 (338.0/358.6)
+The early arm is chain + H2D: the gather is fully hidden. Beyond iteration 1:
+-173.6 us (n=4), -284.0 us (n=8). Together vs stock: -1.61 ms (n=4), -2.21 ms (n=8).

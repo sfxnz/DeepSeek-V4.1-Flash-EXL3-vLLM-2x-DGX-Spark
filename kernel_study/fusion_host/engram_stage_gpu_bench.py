@@ -59,6 +59,13 @@ def summarize(v):
                 mean=statistics.fmean(v), min=min(v), max=max(v))
 
 
+class FakeBatch:
+    """InputBatch stand-in (a plain dataclass in vLLM: weakref-able)."""
+
+    def __init__(self, **kw):
+        self.__dict__.update(kw)
+
+
 class FakeHash:
     """Stand-in for NgramHashState: returns the next precomputed ids."""
 
@@ -80,9 +87,12 @@ def main() -> int:
     ap.add_argument("--tokens", type=int, nargs="+", default=[4, 8])
     ap.add_argument("--iters", type=int, default=300)
     ap.add_argument("--warmup", type=int, default=20)
-    ap.add_argument("--busy-us", type=float, default=1000.0)
+    ap.add_argument("--busy-us", type=float, default=4000.0)
     ap.add_argument("--hot", action="store_true", help="read every row before timing (else prefetch-like WILLNEED)")
     ap.add_argument("--lead-us", type=float, default=0.0, help="extra host spin after WILLNEED (the busy work already leads)")
+    ap.add_argument("--chain-ops", type=int, default=120,
+                    help="small eager kernels queued between the early-hash point and stage() "
+                         "(block tables, slot mappings, attention metadata; ~120 after the t2r dedup)")
     args = ap.parse_args()
 
     from vllm.models.deepseek_v4_1.common import engram as eng
@@ -135,8 +145,15 @@ def main() -> int:
     from vllm.models.deepseek_v4_1.common.mm_preprocess import image_sentinel_mask
 
     native_stage = ens._make_stage(stock_stage, torch, image_sentinel_mask)
-    st_stock, st_nat = make_stager(), make_stager()
+    st_stock, st_nat, st_early = make_stager(), make_stager(), make_stager()
     st_nat._eng_native = ens._NativeStager(st_nat, torch)
+    st_early._eng_native = ens._NativeStager(st_early, torch)
+    import engram_early_hash as eeh
+    from vllm.models.deepseek_v4_1.nvidia import model_state as ms_mod
+    from vllm.triton_utils import triton as _triton
+
+    early_hook = eeh.EarlyHash(torch, image_sentinel_mask, ms_mod._gather_lookback_kernel, _triton)
+    eeh._STATE["verify_left"] = 8
 
     rng = random.Random(99 + args.rank)
 
@@ -163,27 +180,43 @@ def main() -> int:
     pos_dev = torch.arange(max_n, dtype=torch.int64, device=dev)
     qsl_dev = torch.tensor([0, max_n], dtype=torch.int32, device=dev)
     look_dev = torch.full((1, 3), 5, dtype=torch.int32, device=dev)
-    busy_a = torch.randn(2048, 2048, device=dev, dtype=torch.bfloat16)
-    # calibrate one matmul
+    # Busy work: a GPU spin long enough that the host launches everything
+    # (early hash, chain, stage) before the GPU reaches it, as in the serve
+    # where the host runs ~40 ms ahead. Calibrated cycles per us.
+    torch.cuda._sleep(1000)
     torch.cuda.synchronize()
-    t = time.perf_counter()
-    for _ in range(20):
-        busy_a @ busy_a
+    e0, e1 = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+    e0.record()
+    torch.cuda._sleep(20_000_000)
+    e1.record()
     torch.cuda.synchronize()
-    per_mm = (time.perf_counter() - t) / 20 * 1e6
-    n_mm = max(1, int(args.busy_us / per_mm))
+    cycles_per_us = 20_000_000 / (e0.elapsed_time(e1) * 1e3)
+    busy_cycles = int(args.busy_us * cycles_per_us)
+    per_mm, n_mm = cycles_per_us, 0
 
-    ev0 = [torch.cuda.Event(enable_timing=True) for _ in range(2)]
-    ev1 = [torch.cuda.Event(enable_timing=True) for _ in range(2)]
-    arms = [("stock", st_stock, stock_stage), ("native", st_nat, native_stage)]
+    ev0 = [torch.cuda.Event(enable_timing=True) for _ in range(3)]
+    ev1 = [torch.cuda.Event(enable_timing=True) for _ in range(3)]
+    arms = [("stock", st_stock, stock_stage), ("native", st_nat, native_stage),
+            ("native_early", st_early, native_stage)]
+    ms_fake = SimpleNamespace(lookback_token_ids=torch.full((2, 3), -1, dtype=torch.int32, device=dev), rope_state=None)
+    rs_fake = SimpleNamespace(
+        all_token_ids=SimpleNamespace(gpu=torch.randint(0, 1000, (2, 4096), dtype=torch.int32, device=dev)),
+        num_computed_tokens=SimpleNamespace(gpu=torch.full((2,), 100, dtype=torch.int32, device=dev)),
+    )
+    small = torch.zeros(64, device=dev)
+
+    def chain():
+        for _ in range(args.chain_ops):
+            small.add_(1.0)
+
     out = {"args": vars(args), "torch": torch.__version__, "per_mm_us": per_mm, "n_mm": n_mm, "results": {}}
     mismatches = 0
     for n in args.tokens:
         gpu_us = {a: [] for a, _, _ in arms}
         host_us = {a: [] for a, _, _ in arms}
         for it in range(args.warmup + args.iters):
-            order = arms if it % 2 == 0 else arms[::-1]
-            host_t = [0.0, 0.0]
+            order = arms[it % 3:] + arms[: it % 3]
+            host_t = [0.0, 0.0, 0.0]
             verify_ids = make_hashes(n) if it % 25 == 0 else None
             for k, (name, st, fn) in enumerate(order):
                 hashes = verify_ids if verify_ids is not None else make_hashes(n)
@@ -201,11 +234,23 @@ def main() -> int:
                     tl = time.perf_counter() + args.lead_us * 1e-6
                     while time.perf_counter() < tl:
                         pass
-                for _ in range(n_mm):
-                    busy_a @ busy_a
+                torch.cuda._sleep(busy_cycles)
                 ev0[k].record()
                 h0t = time.perf_counter_ns()
-                fn(st, ids_dev[:n], pos_dev[:n], qsl_dev, look_dev, n)
+                if name == "native_early":
+                    ib = FakeBatch(input_ids=ids_dev, positions=pos_dev, query_start_loc=qsl_dev,
+                                   num_reqs=1, num_tokens=n,
+                                   idx_mapping=torch.zeros(1, dtype=torch.int32, device=dev))
+                    early_hook.launch(st, ms_fake, ib, rs_fake)
+                    chain()
+                    st._early_cur = ib
+                    ens._EARLY_HOOK[0] = early_hook
+                    fn(st, ib.input_ids, ib.positions, ib.query_start_loc[:2], ms_fake.lookback_token_ids, n)
+                    ens._EARLY_HOOK[0] = None
+                    st._early_cur = None
+                else:
+                    chain()
+                    fn(st, ids_dev[:n], pos_dev[:n], qsl_dev, look_dev, n)
                 h1t = time.perf_counter_ns()
                 ev1[k].record()
                 host_t[k] = (h1t - h0t) / 1e3
@@ -222,9 +267,10 @@ def main() -> int:
                     fn(st, ids_dev[:n], pos_dev[:n], qsl_dev, look_dev, n)
                     torch.cuda.synchronize()
                     ref.append([e.staged[:n].clone() for e in engrams])
-                for x, y in zip(ref[0], ref[1]):
-                    if not torch.equal(x.view(torch.int16), y.view(torch.int16)):
-                        mismatches += 1
+                for other in ref[1:]:
+                    for x, y in zip(ref[0], other):
+                        if not torch.equal(x.view(torch.int16), y.view(torch.int16)):
+                            mismatches += 1
         out["results"][f"n{n}"] = {
             "gpu_gap_us": {k: summarize(v) for k, v in gpu_us.items()},
             "host_stage_us": {k: summarize(v) for k, v in host_us.items()},
@@ -232,6 +278,8 @@ def main() -> int:
     out["mismatches"] = mismatches
     out["native_armed"] = ens._STATE["armed"]
     out["native_engaged"] = ens._STATE["engaged"]
+    out["early_armed"] = eeh._STATE["armed"]
+    out["early_engaged"] = eeh._STATE["engaged"]
     print(json.dumps(out))
     return 1 if mismatches or not ens._STATE["engaged"] else 0
 

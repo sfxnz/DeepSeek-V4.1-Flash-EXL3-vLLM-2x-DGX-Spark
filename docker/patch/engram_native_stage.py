@@ -23,6 +23,9 @@ takes the stock stage; the step that failed is refilled by the stock gather.
 DSV41_ENGRAM_CENSUS=1 adds a [native-census] line every
 DSV41_ENGRAM_CENSUS_EVERY calls (rows, page-cache misses, syscalls, us).
 
+DSV41_ENGRAM_EARLY_HASH=1 additionally moves the hash + DtoH ahead of the
+attention metadata (engram_early_hash.py), so the gather overlaps GPU work.
+
 Top-level imports are stdlib only. decode_levers.install() (called by the
 baked sitecustomize) calls install() here when the env is on.
 """
@@ -50,6 +53,7 @@ DEFAULT_VERIFY = 8
 
 _LIB = None
 _STATE = {"armed": True, "verify_left": DEFAULT_VERIFY, "engaged": False}
+_EARLY_HOOK = [None]  # engram_early_hash.EarlyHash when DSV41_ENGRAM_EARLY_HASH=1
 
 
 def enabled(env=None) -> bool:
@@ -245,22 +249,27 @@ def _make_stage(orig_stage, torch, image_sentinel_mask):
             )
         if n <= 0 or not self.hash_state.ensure_cache():
             return 0
-        # Stock hash + sync (engram_stage_fast STAGE_FAST, verbatim).
-        ids = input_ids[:n]
-        hashes = self.hash_state(
-            ids,
-            positions[:n],
-            query_start_loc,
-            image_sentinel_mask(ids),
-            lookback_token_ids,
-            image_sentinel_mask(lookback_token_ids),
-            None,
-            None,
-        )
+        early = _EARLY_HOOK[0]
+        if early is None or not early.consume(
+            self, input_ids, positions, query_start_loc, lookback_token_ids, n
+        ):
+            # Stock hash + sync (engram_stage_fast STAGE_FAST, verbatim).
+            ids = input_ids[:n]
+            hashes = self.hash_state(
+                ids,
+                positions[:n],
+                query_start_loc,
+                image_sentinel_mask(ids),
+                lookback_token_ids,
+                image_sentinel_mask(lookback_token_ids),
+                None,
+                None,
+            )
+            host = self.hash_host[:n]
+            host.copy_(hashes[:, :, self.head_start : self.head_end], non_blocking=True)
+            self.hashes_ready.record()
+            self.hashes_ready.synchronize()
         host = self.hash_host[:n]
-        host.copy_(hashes[:, :, self.head_start : self.head_end], non_blocking=True)
-        self.hashes_ready.record()
-        self.hashes_ready.synchronize()
         try:
             nat.gather(self, n)
             if _STATE["verify_left"] > 0:
@@ -317,4 +326,10 @@ def install() -> str:
 
     cls.__init__ = __init__
     cls.stage = _make_stage(orig_stage, torch, image_sentinel_mask)
-    return f"EngramDiskStager wrapped (max_tokens={max_tokens()}, verify={_STATE['verify_left']})"
+    detail = f"EngramDiskStager wrapped (max_tokens={max_tokens()}, verify={_STATE['verify_left']})"
+    import engram_early_hash
+
+    if engram_early_hash.enabled():
+        _EARLY_HOOK[0] = engram_early_hash.install(torch, image_sentinel_mask)
+        detail += f"; early hash armed (verify={engram_early_hash._STATE['verify_left']})"
+    return detail
