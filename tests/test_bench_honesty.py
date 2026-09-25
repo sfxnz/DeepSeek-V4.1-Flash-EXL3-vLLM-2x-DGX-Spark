@@ -291,6 +291,27 @@ class WarmPrefixTests(unittest.TestCase):
         self.assertEqual(self.wp.expected_hits(2048, 128), 1920)
         self.assertEqual(self.wp.expected_hits(100, 128), 0)
 
+    def test_tail_splits_s13_misses_from_hits(self) -> None:
+        # Round 34 s13 (N, hits): the repeat hits all of P or nothing.
+        for n, hit in ((2058, 0), (2062, 0), (2201, 0), (3002, 0), (5943, 0),
+                       (1791, 1664), (2372, 2304), (2017, 1920), (4086, 3968), (8035, 7936)):
+            tail = self.wp.tail_tokens(n, 128)
+            self.assertEqual(n - tail, self.wp.expected_hits(n, 128))
+            if hit:
+                self.assertEqual(hit, self.wp.expected_hits(n, 128))
+            else:
+                self.assertLess(tail, self.wp.MIN_TAIL, (n, tail))  # every s13 miss is below the floor
+
+    def test_pad_prompt_moves_the_tail_past_min_tail(self) -> None:
+        count = lambda text: len(text.split())  # one token per word
+        for words in (2048, 2058, 2100, 2175, 2176, 2180):
+            doc = " ".join(["w"] * (words - 6))
+            prompt, n = self.wp.pad_prompt(doc, " Reference abc. Reply with one word.", count, 128)
+            self.assertEqual(n, count(prompt))
+            self.assertGreaterEqual(self.wp.tail_tokens(n, 128), self.wp.MIN_TAIL, words)
+            self.assertTrue(prompt.endswith("Reference abc. Reply with one word."))
+            self.assertTrue(prompt.startswith(doc))
+
     def test_parse_prefix_counters_ignores_external(self) -> None:
         text = (
             '# HELP x\n'

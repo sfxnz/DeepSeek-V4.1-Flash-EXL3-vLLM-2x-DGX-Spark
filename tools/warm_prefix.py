@@ -3,9 +3,13 @@
 
 The doc is fresh per invocation (time seed) and ends with a nonce, so the
 first request is cold. The second request is identical and should hit
-floor((N-1)/B)*B cached prompt tokens (B = scheduler hit unit, 128 here: lcm
-of the 64/128 KV groups). Hits come from /metrics vllm:prefix_cache_hits
+P = floor((N-1)/B)*B cached prompt tokens (B = scheduler hit unit, 128 here:
+lcm of the 64/128 KV groups). Hits come from /metrics vllm:prefix_cache_hits
 deltas; TTFT cold vs warm shows what a shared long system prompt saves.
+
+On this serve a repeat hits all P tokens or none, by the tail N - P (Round 34
+s13: tails 10-58 missed, 68-127 hit). So the chat prompt is padded until the
+tail, counted with the chat /tokenize endpoint, is at least MIN_TAIL.
 """
 
 from __future__ import annotations
@@ -21,8 +25,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "benches"))
 
-from micro import fresh_doc, stream_once  # noqa: E402
+from micro import CHAT_KWARGS, fresh_doc, stream_once  # noqa: E402
 from corpus import char_ratio, make_tokenizer  # noqa: E402
+
+MIN_TAIL = 80  # tokens past the last whole hit block; s13 misses <= 58, hits >= 68
+TARGET_TAIL = 100
 
 
 def parse_prefix_counters(text: str) -> dict[str, float] | None:
@@ -51,6 +58,37 @@ def prefix_counters(metrics_url: str) -> dict[str, float] | None:
 def expected_hits(prompt_tokens: int, block: int) -> int:
     """Cached tokens a full repeat can reuse: whole blocks, last token recomputed."""
     return max(0, (prompt_tokens - 1) // block * block)
+
+
+def tail_tokens(prompt_tokens: int, block: int) -> int:
+    """Prompt tokens past P = expected_hits: 1..block."""
+    return prompt_tokens - expected_hits(prompt_tokens, block)
+
+
+def pad_prompt(doc: str, suffix: str, count, block: int, tries: int = 6) -> tuple[str, int]:
+    """doc + ' x' * k + suffix with a tail of at least MIN_TAIL (one ' x' ~ 1 token)."""
+    pad = 0
+    for _ in range(tries):
+        prompt = doc + " x" * pad + suffix
+        n = count(prompt)
+        if tail_tokens(n, block) >= MIN_TAIL:
+            return prompt, n
+        pad += (TARGET_TAIL - tail_tokens(n, block)) % block
+    raise RuntimeError(f"could not pad the prompt to a tail >= {MIN_TAIL} (last N={n})")
+
+
+def chat_token_counter(base_url: str, model: str):
+    """f(content) -> prompt tokens of one user message, chat template included."""
+
+    def count(content: str) -> int:
+        body = json.dumps({"model": model, "messages": [{"role": "user", "content": content}],
+                           "chat_template_kwargs": CHAT_KWARGS}).encode()
+        req = urllib.request.Request(f"{base_url}/tokenize", data=body,
+                                     headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            return int(json.loads(resp.read().decode())["count"])
+
+    return count
 
 
 def hits_delta(before: dict | None, after: dict | None) -> float | None:
@@ -83,7 +121,9 @@ def main() -> int:
     else:
         print(f"doc stayed below 1024 tokens ({ntok}); raise --tokens", file=sys.stderr)
         return 1
-    prompt = doc + f"\n\nReference {uuid.uuid4().hex}. Reply with one word."
+    suffix = f"\n\nReference {uuid.uuid4().hex}. Reply with one word."
+    prompt, n_chat = pad_prompt(doc, suffix, chat_token_counter(args.url.rsplit("/v1", 1)[0], args.model),
+                                args.hit_block)
 
     runs = []
     for label in ("cold", "warm"):
@@ -93,12 +133,15 @@ def main() -> int:
         print(f"{label} ttft={res['ttft_s']:.3f}s prompt_tokens={res['prompt_tokens']} "
               f"hits={runs[-1]['hits']}", flush=True)
     n = runs[1]["prompt_tokens"]
+    if n != n_chat:
+        print(f"WARNING: served prompt_tokens {n} != chat /tokenize {n_chat}", file=sys.stderr)
     want = expected_hits(n, args.hit_block)
     got = runs[1]["hits"]
     summary = {
         "cell": "warm_prefix",
         "prompt_tokens": n,
         "hit_block": args.hit_block,
+        "tail_tokens": tail_tokens(n, args.hit_block),
         "ttft_cold_s": runs[0]["ttft_s"],
         "ttft_warm_s": runs[1]["ttft_s"],
         "hits_cold": runs[0]["hits"],
