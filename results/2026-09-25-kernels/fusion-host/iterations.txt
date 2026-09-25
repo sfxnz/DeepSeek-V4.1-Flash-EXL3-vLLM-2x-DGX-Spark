@@ -160,3 +160,38 @@ Projected: the routing path loses >= 22 us per MoE layer (in the serve's content
 spans ~68 us), so it stops trailing the shared expert: ~-0.3 ms/step now (the 7.4 us per
 layer p2b waits, x40), and up to ~50 us per layer of slack for any shared-expert speedup
 (dense-gemv), which today would be capped by this path. 560 fewer launches per step.
+
+5. ITERATION 5: decode candidate mask bounded by the row end (KEEP, env
+   DSV41_CANDIDATE_MASK_BOUNDED=1)
+---------------------------------------------------------------------------
+Trace (c1-rank0.pkl, the 8 indexer layers): _mask_candidates_kernel grid (4, 1024, 1)
+70.4 us median x 4/step (0.305 ms/step) and _candidate_flags_kernel 7.3 us x 4/step, in
+the target graph's critical path. The decode logits are [rows, max_model_len = 1M]
+(paged_mqa_logits(max_model_len=..., clean_logits=False) writes only [0, seq_len)), and
+the stock kernels zero 131073 flag slots per row and write -inf into all 1M columns:
+16 MB of stores per call for ~2-20k live columns.
+Probe first: does top_k_per_row_decode read past seq_len? Garbage (NaN / +inf / 1e30)
+past each row's end vs -inf: the same index SETS every time, but the RAW order differs
+even between two stock runs on identical logits (38 of 40 cases): the stock top-k is not
+order-deterministic, so set equality is the criterion (the first check compared raw
+order and failed on that, not on the lever).
+What: docker/patch/candidate_mask_bounded.py wraps sparse_attn_indexer's
+_apply_candidate_mask. Decode calls (no row starts) run two variants with the stock
+grids: the flags kernel zeroes only the slots the mask reads (blocks below the row end
++ the edge slot), and mask programs whose 1024-column tile starts at or past the row end
+return at once. Columns below each row end get exactly the stock values; prefill keeps
+the stock function. First 4 eager decode calls also run the stock mask on a copy and
+compare below the ends (disarm on mismatch).
+Checks (candidate_mask_check_spark2.json, spark2): 54 mask cases (widths 1M / 64k / 4k,
+rows 1/4/8, ends odd / < one block / = width, candidates valid / -1 / past the width)
+bit-exact below every row end; 40 decode top-k cases (B x next_n in 1x4, 2x4, 1x1, 2x3,
+seq_len below the top-k, garbage past the end) same index sets; verify path ran 4x,
+stayed armed. Timing, CUDA graph replay (flags + mask), 300 replays alternating, us
+median (p10/p90):
+  width 1M,  rows 4: stock 96.9 (95.9/98.1)   bounded 7.1 (6.9/7.8)
+  width 1M,  rows 8: stock 186.9 (185.2/189.0) bounded 12.9 (11.5/13.1)
+  width 64k, rows 4: stock 12.9 (11.5/13.2)   bounded 6.9 (6.8/7.2)
+  width 64k, rows 8: stock 15.1 (14.5/15.4)   bounded 6.8 (6.7/7.0)
+Projected: 4 calls/step -> ~-0.28..-0.36 ms/step at c=1 (trace-based 77.7 us/call in
+the serve), ~-0.70 ms/step at c=2 (rows 8). Numerics: the top-k input below the end is
+bit-identical; the selected sets are identical.

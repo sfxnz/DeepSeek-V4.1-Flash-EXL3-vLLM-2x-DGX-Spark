@@ -32,6 +32,9 @@
   C with the GIL released (engram_native_stage.py, engram_native.c). Hooked
   here rather than in sitecustomize so the mounted patch dir arms it on an
   image whose baked sitecustomize predates it.
+- DSV41_CANDIDATE_MASK_BOUNDED=1: the V4.1 decode candidate mask stops at each
+  row's end instead of rewriting the whole max_model_len-wide logits row
+  (candidate_mask_bounded.py; top_k_per_row_decode never reads past the end).
 - DSV41_MOE_PREP_FUSED=1: the native p2b MoE's input prep (~14 single-block
   torch kernels per MoE layer on the routing path) as one Triton kernel,
   bit-exact (moe_prep_fused.py).
@@ -251,6 +254,14 @@ def _install_t2r_dedup(env) -> None:
     print("dsv41: attention token->request map dedup across KV-cache groups armed", flush=True)
 
 
+def _install_candidate_mask_bounded(env) -> None:
+    if (env.get("DSV41_CANDIDATE_MASK_BOUNDED", "0") or "0") != "1":
+        return
+    import candidate_mask_bounded
+
+    candidate_mask_bounded.install()
+
+
 def _install_moe_prep_fused(env) -> None:
     if (env.get("DSV41_MOE_PREP_FUSED", "0") or "0") != "1":
         return
@@ -279,6 +290,7 @@ def install(env=None) -> None:
         ("engram-native-stage", _install_engram_native_stage),
         ("attn-t2r-dedup", _install_t2r_dedup),
         ("moe-prep-fused", _install_moe_prep_fused),
+        ("candidate-mask-bounded", _install_candidate_mask_bounded),
     ):
         try:
             step(env)
