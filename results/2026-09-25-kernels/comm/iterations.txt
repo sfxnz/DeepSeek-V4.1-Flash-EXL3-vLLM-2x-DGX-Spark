@@ -197,3 +197,21 @@ Two-node NCCL runs need both GPUs: they are prepared here and scheduled for the 
     idle between replays (the eager collectives moved to the twin) and pays its own deep-idle wake-up
     at each replay's first collective unless PM QoS is on; B is to be judged on top of C.
     Plan: serve_arm_plan.txt (phase A two-node check gates B; ABAB C, then B, then E per ARMS.md).
+
+#11 Per-size table, best NCCL config vs KEEP (per-size/decode_collectives.{txt,json})
+    Clean k3 sweep cells (KEEP = phase-1 rep 1; mixing off = the clean smoke rep; the two
+    contaminated phase-1 reps of mixing off agree within 1.3 us at AR m=4) against a wire floor from
+    #1 (AR 2-rank ring LL = 2 hops each carrying the full per-rank size as LL lines; AG = 1 hop).
+    "gapped" = the call after a 2x-L2 memset inside a graph (cold neighbour), "graph" = back to back
+    (warm), "eager" = one launch per call. Median [p10, p90] us, % of wire floor:
+      AR m=1 10 KiB  gapped KEEP 52.5 [32.0, 99.0] 13%  -> mix0 17.7 [16.3, 21.3] 40%
+      AR m=3 30 KiB  gapped KEEP 58.8 [29.3,107.2] 19%  -> mix0 21.5 [19.5, 24.6] 53%
+      AR m=4 40 KiB  gapped KEEP 57.6 [35.0,104.8] 23%  -> mix0 22.5 [20.9, 25.6] 58%   (graph 31.6 -> 21.6)
+      AR m=6 60 KiB  gapped KEEP 59.3 [31.1,105.4] 29%  -> mix0 24.8 [22.7, 28.7] 68%
+      AR m=8 80 KiB  gapped KEEP 63.2 [41.5,105.6] 33%  -> mix0 29.1 [26.6, 33.7] 71%   (graph 35.4 -> 28.9)
+      AG m=4 505 KiB gapped KEEP 100.9 [68.6,146.4] 41% -> mix0 61.4 [44.0, 83.3] 67%
+      eager calls are unchanged by mixing (AR m=4 27.7 vs 25.7; AG m=4 69.8 vs 65.8).
+    With mixing off the p90 tail collapses (AR m=4 104.8 -> 25.6 us); what is left above the wire
+    floor (~9 us at m=4) is NCCL's LL mechanics (two proxy hand-offs, host-memory polling, launch).
+    No other NCCL knob beats KEEP (profile sweep); the best config is KEEP + mixing off, made safe by
+    the twin (#4). Phase-2 cells (mix0 + proxy_big / bare / stream-ordering 0) run in the window (A2).
