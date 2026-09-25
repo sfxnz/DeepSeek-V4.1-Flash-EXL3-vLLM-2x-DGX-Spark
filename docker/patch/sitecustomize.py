@@ -1162,6 +1162,21 @@ except SystemExit as _g8sf_exit:
 except Exception as _g8sf_err:
     print(f"dsv41: g8 stream feed skipped: {_g8sf_err!r}", flush=True)
 
+# L2 warm-up of the next layer's qkv_a during the MoE all-reduce (docker/patch/ar_l2_prefetch.py).
+def _p_ar_l2_prefetch():
+    import ar_l2_prefetch
+
+    state = ar_l2_prefetch.install()
+    if state == "off":
+        raise _PatchSkip("DSV41_AR_L2_PREFETCH is not 1")
+    if state != "armed":
+        raise RuntimeError(f"ar_l2_prefetch {state}")
+    return state
+
+
+_patch("ar_l2_prefetch", _p_ar_l2_prefetch)
+
+
 # PM QoS CPU wake-up latency request for the serve's lifetime (docker/patch/pm_qos.py).
 def _p_pm_qos():
     import pm_qos

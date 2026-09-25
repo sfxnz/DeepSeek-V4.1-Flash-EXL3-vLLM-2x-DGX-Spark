@@ -53,6 +53,7 @@ ARMS = {
     "bulk100_c48": [("bulk", "a", 1.0, 48)],
     "bulk60_c8": [("bulk", "a", 0.6, 8)],
     "bulk100_after": [("bulk", "a", 1.0, 8)],
+    "tri60": [("tri", "a", 0.6, 1)],  # docker/patch/l2pf_kernel.py (the shipped Triton kernel) at bulk60's budget
 }
 CUDA_SRC = r"""
 #include <torch/extension.h>
@@ -174,6 +175,10 @@ def main() -> int:
     from vllm.utils import flashinfer as vfi
 
     ext = build_ext(args.build_dir)
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "docker" / "patch"))
+    import l2pf_kernel
+
+    tri_launch = l2pf_kernel.launcher(torch)
     vdg._lazy_init()
     dev = torch.device("cuda:0")
     torch.manual_seed(0)
@@ -214,6 +219,8 @@ def main() -> int:
                 nbytes = int(t.numel() * t.element_size() * frac) & ~15
                 if method == "bulk":
                     ext.bulk_prefetch(t, nbytes, args.chunk, ctas)
+                elif method == "tri":
+                    tri_launch(t, nbytes)
                 else:
                     ext.read_l2(t, nbytes, ctas, False, sink)
 

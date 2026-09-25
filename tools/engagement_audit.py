@@ -39,6 +39,7 @@ PATCHES = {
     "drop_page_cache.py": {"DSV41_DROP_PAGE_CACHE": "1"},
     "nccl_eager_twin.py": {"DSV41_NCCL_EAGER_TWIN": "1"},
     "pm_qos.py": {"DSV41_PM_QOS_US": "20"},  # any other value: disarm markers only
+    "ar_l2_prefetch.py": {"DSV41_AR_L2_PREFETCH": "1"},
     "sitecustomize.py": None,  # disarm markers only
     "decode_levers.py": None,  # disarm markers only
     "dense_mxfp8_deepgemm.py": None,  # disarm markers only (opt-in lever)

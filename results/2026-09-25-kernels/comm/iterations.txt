@@ -155,3 +155,32 @@ Two-node NCCL runs need both GPUs: they are prepared here and scheduled for the 
     Expected in the serve: the 1.13 ms/step graph startup (both replays' first collective) mostly
     goes; other host wake-ups on the critical path (Engram stage thread pool, 3.2 ms of GPU idle)
     may shrink too. Needs the serve ABAB; power: idle cores in WFI.
+
+#8  Lever: DSV41_AR_L2_PREFETCH=1 (docker/patch/ar_l2_prefetch.py + l2pf_kernel.py), default off
+    Hooks: DeepseekV4Model.forward builds per-layer plans at the first eager forward (next layer's
+    attn.fused_wqa_wkv weight + weight_scale, same fraction of each, <= DSV41_AR_L2_PREFETCH_MIB, default
+    5.5 MiB; no plan when the next layer has an Engram or for the last layer: 37/40 layers) and runs
+    one eager trial launch (compiles the Triton kernel; failure disarms); DeepseekV4DecoderLayer.forward
+    joins a pending prefetch on entry and arms its plan; MoERunner._maybe_reduce_final_output forks a
+    side stream right before the MoE AR and launches the TMA L2 prefetch (m <= 64 only). Draft layers
+    never get a plan (DSparkDeepseekV4Model is a separate class).
+    Kernel: Triton, one program x 128 lanes, inline PTX cp.async.bulk.prefetch.L2.global per 16 KiB
+    chunk (no C++ build at boot). Same measurement as the CUDA kernel: l2-prefetch-tri/ none 211.1,
+    bulk60 (CUDA) 188.4 (-22.8), tri60 (the shipped kernel) 189.3 (-21.8) us.
+    Through its own hooks (kernel_study/comm/ar_l2_prefetch_gpu.py, spark2, 8-layer stand-in stack
+    in one CUDA graph: qkv_a b12x -> 2x-L2 read (p2b stand-in) -> MoE AR spin -> real mhc_post/pre ->
+    next layer; lever on/off as two graphs replayed alternately, 200 replays):
+      capture + replay OK with the fork/join inside the graph; GEMM outputs bitwise equal;
+      qkv_a on prefetched layers 47.1 [46.1, 48.2] -> 23.1 [21.7, 24.6] us;
+      forward 2540.4 [2536.3, 2547.4] -> 2398.8 [2393.7, 2406.0] us = -20.2 us per prefetched layer.
+    Projection: 37 windows x ~20 us = ~-0.75 ms/step at c=1 (same per layer at c=2, m=8), if the real
+    NCCL LL AR (5 CTAs polling host memory) leaves DRAM as idle as the spin does.
+    Tests: tests/test_ar_l2_prefetch.py (13, incl. pinned e13 model.py / moe_runner.py anchors).
+
+#9  Attn-AR window (shared gate_up + router gate prefetch): NOT BUILT, measured why
+    kernel_study/comm/ffn_prologue.py on the r3 c=1 trace (ffn-prologue/): from the router gate start,
+    the routing chain ends at 117.8 us (rank 0) / 117.7 (rank 1) and the shared-expert chain at 113.1 /
+    111.5 us; routing ends last in 79% / 95% of layers, p2b starts ~1 us after it. So a faster shared
+    expert buys ~0; prefetching the 3.93 MB router gate too would buy at most the ~5-6 us slack plus
+    what the gate itself saves before the glue dominates (split-K reduce 15 us + topk + ~15 glue
+    kernels). The lever there is fusing the routing glue, not the AR window.
