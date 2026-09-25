@@ -19,11 +19,13 @@ Why it is faster (kernel_study/dense_gemv, results/2026-09-25-kernels/dense-gemv
 one warp per 16-row tile streams the stock [N, K] e4m3 weight through a
 cp.async ring of >= 384-byte per-row bursts (b12x's 128-B tile rows lose DRAM
 page locality), reads one ue8m0 per 32 rows instead of per row (-3% bytes),
-fuses the activation quant (one launch fewer per GEMM) and starts streaming
-weights before griddepcontrol.wait. Cold isolated (real weights, M=4):
-qkv_a 45.1 vs 47.3 us, wo_b 94.2 vs 102.2, wq_b 95.2 vs 99.4, shared gate_up
-56.4 vs 60.4, shared down 30.7 vs 32.7, engram wkv 670 vs 726, main_proj 341
-vs 374, lm_head 1466 vs 1530.
+fuses the activation quant (one launch fewer per GEMM; two staging warps per
+CTA quantize one k-span ahead of the MMA warps). Cold isolated (real weights,
+M=4, b12x incl. its quant kernel): qkv_a 44.1 vs 48.0 us, wo_b 94.2 vs 102.5,
+wq_b 93.9 vs 99.4 (pre-quantized), shared gate_up 55.3 vs 60.4, shared down
+29.8 vs 32.6, engram wkv 670 vs 726, main_proj 340 vs 375, lm_head 1450 vs
+1515. Serve-like chain (8 layers of qkv_a/wq_b/wo_b/gate_up/down in one CUDA
+graph): 345.7 -> 319.6 us per layer, outputs bit-identical.
 
 - Weights: the stock fp8 [N, K] tensor, shared with b12x (no second copy).
 - Scales: built ONCE at load from the row-major e8m0 scale: [N/32][spans][16]
@@ -52,7 +54,9 @@ ENV_FLAG = "DSV41_DENSE_GEMV"
 ENV_SHAPES = "DSV41_DENSE_GEMV_SHAPES"
 ENV_DG = "DSV41_DENSE_DG_SMALLM"
 MAX_M = 8
-PDL = True  # stream weights before the producer kernel finishes (griddepcontrol)
+# Launch as a PDL dependent? Measured (seqbench.py, 8-layer dense chain in one graph):
+# no gain (M=4: 324.7 us/layer with PDL vs 323.9 without), so off.
+PDL = False
 MARK = "_dsv41_gemv_"
 
 # Boot-log markers for tools/engagement_audit.py.
@@ -67,7 +71,7 @@ CONFIGS = {
     (5120, 1792): ("qkv_a", 512, 0, ((4, 4, 2, 4), (8, 3, 2, 8))),
     (1280, 16384): ("wq_b", 640, 0, ((8, 2, 2, 8),)),
     (4096, 5120): ("wo_b", 512, 0, ((4, 4, 2, 4), (8, 4, 2, 8))),
-    (5120, 2304): ("shared_gate_up", 512, 0, ((4, 4, 2, 4), (8, 3, 2, 8))),
+    (5120, 2304): ("shared_gate_up", 512, 0, ((4, 2, 2, 4), (8, 2, 2, 8))),
     (1152, 5120): ("shared_down", 384, 0, ((8, 4, 2, 8),)),
     (6144, 25600): ("engram_wkv", 512, 0, ((4, 2, 2, 4), (8, 2, 2, 8))),
     (15360, 5120): ("main_proj", 512, 0, ((4, 2, 2, 4),)),

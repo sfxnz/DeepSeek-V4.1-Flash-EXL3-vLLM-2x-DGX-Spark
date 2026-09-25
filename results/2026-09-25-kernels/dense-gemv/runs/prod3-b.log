@@ -1,0 +1,35 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T14:44:00Z
+lock acquired 2026-09-25T14:46:06Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41-indexer-workspace: already applied
+shared_gate_up  correctness: 282/282 bitwise (incl. graph replay)
+shared_gate_up M=1 cold us: b12x_e2e   60.30 b12x_gemm   58.53 read   53.31 | best fused w2s2k512m4g48   54.42 (+10.8%) | best preq w3s2k512m8g48   54.45 ( +7.5%)
+shared_gate_up M=3 cold us: b12x_e2e   60.42 b12x_gemm   58.53 read   53.31 | best fused w2s2k512m4g48   54.45 (+11.0%) | best preq w2s2k512m8g48   54.40 ( +7.6%)
+shared_gate_up M=4 cold us: b12x_e2e   60.38 b12x_gemm   58.50 read   53.28 | best fused w4s2k512m4g36   55.30 ( +9.2%) | best preq w3s2k512m8g48   54.40 ( +7.5%)
+shared_gate_up M=6 cold us: b12x_e2e   60.42 b12x_gemm   58.85 read   53.31 | best fused w2s2k512m8g48   55.33 ( +9.2%) | best preq w2s2k512m8g48   55.38 ( +6.3%)
+shared_gate_up M=8 cold us: b12x_e2e   60.42 b12x_gemm   58.46 read   53.31 | best fused w2s2k512m8g48   55.36 ( +9.1%) | best preq w2s2k512m8g48   57.38 ( +1.9%)
+shared_down     correctness: 70/70 bitwise (incl. graph replay)
+shared_down    M=1 cold us: b12x_e2e   32.77 b12x_gemm   31.68 read   28.67 | best fused w4s2k384m8g48   29.73 (+10.2%) | best preq w4s2k384m8g48   29.70 ( +6.7%)
+shared_down    M=3 cold us: b12x_e2e   32.75 b12x_gemm   31.55 read   28.67 | best fused w4s2k384m8g48   29.73 (+10.2%) | best preq w4s2k384m8g48   29.76 ( +6.0%)
+shared_down    M=4 cold us: b12x_e2e   32.61 b12x_gemm   31.55 read   28.67 | best fused w4s2k384m8g48   29.78 ( +9.5%) | best preq w4s2k384m8g48   29.70 ( +6.3%)
+shared_down    M=6 cold us: b12x_e2e   32.77 b12x_gemm   31.74 read   28.70 | best fused w4s2k384m8g48   30.69 ( +6.8%) | best preq w4s2k384m8g48   30.19 ( +5.1%)
+shared_down    M=8 cold us: b12x_e2e   32.77 b12x_gemm   30.98 read   28.67 | best fused w4s2k384m8g48   29.73 (+10.2%) | best preq w4s2k384m8g48   29.70 ( +4.3%)
+main_proj       correctness: 36/36 bitwise (incl. graph replay)
+main_proj      M=1 cold us: b12x_e2e  370.69 b12x_gemm  363.58 read  331.81 | best fused w2s2k512m4g48  337.92 ( +9.7%) | best preq w2s2k512m4g48  338.94 ( +7.3%)
+main_proj      M=3 cold us: b12x_e2e  373.79 b12x_gemm  364.70 read  331.78 | best fused w2s2k512m4g48  338.94 (+10.3%) | best preq w2s2k512m4g48  345.09 ( +5.7%)
+main_proj      M=4 cold us: b12x_e2e  374.88 b12x_gemm  365.57 read  331.78 | best fused w2s2k512m4g48  339.94 (+10.3%) | best preq w2s2k512m4g48  342.02 ( +6.9%)
+main_proj      M=6 cold us: b12x_e2e  375.81 b12x_gemm  365.60 read  331.78
+main_proj      M=8 cold us: b12x_e2e  373.73 b12x_gemm  366.58 read  331.78
+ALL_OK
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 292 busy 112 sm_median 2190 sm_min_busy 2190 mem ['[N/A]'] power_median 4.6 W
+rc=0

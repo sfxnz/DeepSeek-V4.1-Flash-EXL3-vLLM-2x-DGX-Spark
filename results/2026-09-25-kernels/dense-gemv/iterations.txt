@@ -67,3 +67,28 @@ Iterations (M = 4 unless noted; % = b12x/ours - 1, + is faster)
      wo_b 94.27 vs 101.57 (+7.7%); wq_b preq 95.3 vs b12x_gemm 99.4 (+4.2%); down 30.82 vs
      32.70 (+6.1%); gate_up 56.38 vs 60.38 (+7.1%). M=8: qkv_a 46.08 vs 48.13 (+4.4%),
      wo_b 95.23 vs 102.40 (+7.5%). Within 4-5% of the pure-read time. KEPT.
+ prod v5 kernel consolidated into docker/patch/dense_gemv_kernel.cu (the serve's file; the study
+     harness compiles this same file: bench4.py --impl prod). prod-a: bitwise 282/282 qkv_a, 282/282
+     wo_b, 70/70 wq_b; same speed as the study v5.
+ seq seqbench.py (serve-like: 8 layers x [qkv_a, q-quant, wq_b, wo_b, gate_up, silu*mul, down] in one
+     CUDA graph, real weights, cold by construction, outputs compared): M=4 b12x 345.5 us/layer ->
+     GEMV 323.9 (+6.7%), bitwise-equal outputs through the whole chain. PDL launch: 324.7 (no gain,
+     +0.8 us) -> PDL off in dense_gemv.py.
+ v6  two dedicated staging warps per CTA stage/quantize every span one ahead and publish progress;
+     MMA warps poll only in their first tile, no CTA barrier in the loop (bench6.py): M=4 qkv_a
+     45.09 -> 44.06, wq_b 95.0 -> 93.3/94.0, gate_up 56.35 -> 55.30, down 30.75 -> 29.76, wo_b
+     94.26 -> 94.0 (M=8: 95.14 -> 94.06). One staging warp: slower at M=8 (46.08). KEPT (SW = 2).
+     RACE found on the first full check of the production port: one shared counter summed over both
+     staging warps let a fast warp's span s+1 stand in for the slow warp's span s -> MMA read
+     unwritten smem (14/564 fused cases wrong, garbage up to 1e38; preq never hit it). Fixed with a
+     counter per staging warp (consumer waits for every warp's span). After the fix: prod3 bitwise
+     282/282 (qkv_a, wo_b, gate_up, engram), 70/70 (wq_b, down, lm_head), 36/36 (main_proj);
+     stress.py 0 mismatches in 7800 eager checks + 3900 graph replays (all 8 shapes, every decode M,
+     4 distributions, rotating real layers).
+     Production cold medians M=4 (b12x_e2e -> fused GEMV): qkv_a 48.03 -> 44.06 (+9.0%), wo_b 102.46
+     -> 94.21 (+8.8%), gate_up 60.38 -> 55.30 (+9.2%), down 32.61 -> 29.78 (+9.5%), engram 726.2 ->
+     669.7 (+8.4%), main_proj 374.9 -> 339.9 (+10.3%), lm_head 1514.6 -> 1449.6 (+4.5%); wq_b
+     (pre-quantized, b12x_gemm) 99.36 -> 93.86 (+5.9%). gate_up table moved to W2 (M<=3: 54.42 vs
+     55.26 at W4; M<=8: 55.33-55.36 vs 55.44-56.38 at W3).
+ seq (v6) seqbench2: M=4 345.7 -> 319.6 us/layer (+8.2%, -26.1 us/layer), M=3 +8.2%, M=6 +8.2%,
+     M=8 349.6 -> 322.0 (+8.5%); outputs bitwise equal; PDL still no gain (320.3).

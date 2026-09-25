@@ -21,11 +21,9 @@
 //    short per-row bursts lose 15-30% to DRAM page misses);
 //  - stages are 128-B aligned in shared memory (misaligned cost 20%);
 //  - the whole ring is issued before griddepcontrol.wait (weights are static);
-//  - two extra staging warps per CTA quantize/stage the activation one KC-span
-//    at a time (next span's loads in flight while the current one is
-//    quantized) and publish progress through a shared counter that the MMA
-//    warps poll only in their first tile, so the weight stream never waits for
-//    the whole activation and MMA warps never barrier with each other;
+//  - the activation is quantized/staged one KC-span ahead of use inside the
+//    first tile's loop (CTA-wide, one __syncthreads per span), so the weight
+//    stream never waits for the whole activation;
 //  - persistent grid: a warp's tiles stream back to back through one ring.
 // Weight scales (built once at load by dense_gemv.py):
 //  COMPACT32 [N/32][nspan][SCB]  one scale per 32 rows (checkpoint 32x32
@@ -251,41 +249,43 @@ constexpr int smem_bytes(int K) {
   return W * S * Geom<KC, SMODE>::STAGE_BYTES + MR * K + ((MR * (K >> 5) + 15) & ~15);
 }
 
-constexpr int SW = 2;  // staging warps per CTA (measured: 1-2 us/call better than a CTA-wide staging barrier)
-
-// W MMA warps (warps 0..W-1) own tiles; warps W, W+1 stage the activation.
-template <int W, int S, int KC, int SMODE, int IN_MODE, int MR>
+// SW > 0 (v6): SW extra "staging" warps quantize/stage every activation span in
+// order, one span ahead, and publish progress through a shared counter; the W
+// MMA warps poll the counter only in their first tile and never barrier with
+// each other. SW == 0 is the v5 schedule (CTA-wide __syncthreads per span).
+template <int W, int S, int KC, int SMODE, int IN_MODE, int MR, int SW>
 __global__ void __launch_bounds__((W + SW) * 32) gemv_kernel(const Params p) {
   using G = Geom<KC, SMODE>;
   constexpr int KBS = G::KBS, CPR = G::CPR, A_BYTES = G::A_BYTES, SC_BYTES = G::SC_BYTES;
   constexpr int STAGE_BYTES = G::STAGE_BYTES;
   constexpr int PER_LANE = 16 * CPR / 32;
-  constexpr int NBS = (MR * KBS * 4 + SW * 32 - 1) / (SW * 32);
+  constexpr int NBS = (MR * KBS * 4 + W * 32 - 1) / (W * 32);
+  constexpr int NBS2 = SW > 0 ? (MR * KBS * 4 + SW * 32 - 1) / (SW * 32) : 1;
   extern __shared__ __align__(128) uint8_t smem[];
-  // spans published by each staging warp. One counter per warp: a shared sum
-  // lets a fast warp's span s+1 stand in for a slow warp's span s (measured:
-  // garbage reads in 14 of 564 fused cases before this was per warp).
-  __shared__ int s_ready[SW];
+  __shared__ int s_ready[SW > 0 ? SW : 1];  // per staging warp (a shared sum raced: see iterations.txt)
 
   const int lane = threadIdx.x & 31, warp = threadIdx.x >> 5;
-  if (threadIdx.x < SW) s_ready[threadIdx.x] = 0;
-  __syncthreads();
-  if (warp >= W) {  // staging warps: every span in k order, next span's loads in flight
-    uint8_t* s_xf = smem + W * S * STAGE_BYTES;
-    uint8_t* s_xs = s_xf + MR * p.K;
-    const int tid = threadIdx.x - W * 32, nthr = SW * 32, nspan = p.K / KC;
-    pdl_wait();
-    ActRegs<NBS> cur, nxt;
-    act_load<IN_MODE, NBS, KBS>(p, cur, 0, tid, nthr);
-    for (int span = 0; span < nspan; ++span) {
-      if (span + 1 < nspan) act_load<IN_MODE, NBS, KBS>(p, nxt, span + 1, tid, nthr);
-      act_store<IN_MODE, NBS, KBS, MR>(p, cur, span, s_xf, s_xs, tid, nthr);
-      __threadfence_block();  // span data before the counter (release)
-      __syncwarp();
-      if (lane == 0) atomicAdd(&s_ready[warp - W], 1);
-      cur = nxt;
+  if constexpr (SW > 0) {
+    if (threadIdx.x < SW) s_ready[threadIdx.x] = 0;
+    __syncthreads();
+    if (warp >= W) {  // staging warps
+      const int K = p.K, nspan = K / KC;
+      uint8_t* s_xf = smem + W * S * STAGE_BYTES;
+      uint8_t* s_xs = s_xf + MR * K;
+      const int tid = threadIdx.x - W * 32, nthr = SW * 32;
+      pdl_wait();
+      ActRegs<NBS2> cur, nxt;
+      act_load<IN_MODE, NBS2, KBS>(p, cur, 0, tid, nthr);
+      for (int span = 0; span < nspan; ++span) {
+        if (span + 1 < nspan) act_load<IN_MODE, NBS2, KBS>(p, nxt, span + 1, tid, nthr);
+        act_store<IN_MODE, NBS2, KBS, MR>(p, cur, span, s_xf, s_xs, tid, nthr);
+        __threadfence_block();
+        __syncwarp();
+        if (lane == 0) atomicAdd(&s_ready[warp - W], 1);
+        cur = nxt;
+      }
+      return;
     }
-    return;
   }
   const int K = p.K, nspan = K / KC;
   const int T = p.N >> 4;
@@ -327,7 +327,14 @@ __global__ void __launch_bounds__((W + SW) * 32) gemv_kernel(const Params p) {
 #pragma unroll
   for (int s = 0; s < S; ++s) issue(s);
 
-  pdl_wait();  // no-op unless launched as a PDL dependent (y is written after it)
+  pdl_wait();  // no-op unless launched as a PDL dependent
+  ActRegs<NBS> ar;
+  if constexpr (SW == 0) {
+    act_load<IN_MODE, NBS, KBS>(p, ar, 0, threadIdx.x, W * 32);
+    act_store<IN_MODE, NBS, KBS, MR>(p, ar, 0, s_xf, s_xs, threadIdx.x, W * 32);
+    if (nspan > 1) act_load<IN_MODE, NBS, KBS>(p, ar, 1, threadIdx.x, W * 32);
+    __syncthreads();
+  }
 
   float acc[4] = {0.f, 0.f, 0.f, 0.f};
   const int r = lane >> 2, q = lane & 3;
@@ -338,12 +345,21 @@ __global__ void __launch_bounds__((W + SW) * 32) gemv_kernel(const Params p) {
   const uint8_t* xf = s_xf + (col_live ? lane : 0) * 8;
   const uint8_t* xsr = s_xs + (col_live ? r : 0);
 
-  for (int s = 0; s < nsteps; ++s) {
-    if (s < nspan) {  // first tile: wait until every staging warp published span s (acquire)
-#pragma unroll
-      for (int w = 0; w < SW; ++w)
-        while (*reinterpret_cast<volatile int*>(&s_ready[w]) < s + 1) __nanosleep(20);
-      __threadfence_block();
+  const int nloop = SW > 0 ? nsteps : (nsteps > nspan ? nsteps : nspan);
+  for (int s = 0; s < nloop; ++s) {
+    if constexpr (SW == 0) {
+      if (s >= 1 && s < nspan) {
+        act_store<IN_MODE, NBS, KBS, MR>(p, ar, s, s_xf, s_xs, threadIdx.x, W * 32);
+        if (s + 1 < nspan) act_load<IN_MODE, NBS, KBS>(p, ar, s + 1, threadIdx.x, W * 32);
+        __syncthreads();
+      }
+      if (s >= nsteps) continue;
+    } else {
+      if (s < nspan) {  // first tile: wait until the staging warps published span s
+        for (int w = 0; w < SW; ++w)
+          while (*reinterpret_cast<volatile int*>(&s_ready[w]) < s + 1) __nanosleep(20);
+        __threadfence_block();
+      }
     }
     cp_async_wait<S - 1>();
     __syncwarp();
@@ -388,14 +404,14 @@ __global__ void __launch_bounds__((W + SW) * 32) gemv_kernel(const Params p) {
 }
 
 struct Cfg {
-  int W, S, KC, MR, smode, in_mode;
+  int W, S, KC, MR, smode, in_mode, SW;
 };
 using LaunchFn = void (*)(const Params&, int grid, bool pdl);
 using SmemFn = int (*)(int K);
 
-template <int W, int S, int KC, int SMODE, int IN_MODE, int MR>
+template <int W, int S, int KC, int SMODE, int IN_MODE, int MR, int SW>
 void launch(const Params& p, int grid, bool pdl) {
-  auto kern = gemv_kernel<W, S, KC, SMODE, IN_MODE, MR>;
+  auto kern = gemv_kernel<W, S, KC, SMODE, IN_MODE, MR, SW>;
   const int smem = smem_bytes<W, S, KC, SMODE, MR>(p.K);
   static int configured = 0;
   if (configured < smem) {
@@ -416,9 +432,9 @@ void launch(const Params& p, int grid, bool pdl) {
   TORCH_CHECK(cudaLaunchKernelEx(&cfg, kern, p) == cudaSuccess, "dense_gemv: launch failed");
 }
 
-template <int W, int S, int KC, int SMODE, int IN_MODE, int MR>
+template <int W, int S, int KC, int SMODE, int IN_MODE, int MR, int SW>
 int occupancy(int K) {
-  auto kern = gemv_kernel<W, S, KC, SMODE, IN_MODE, MR>;
+  auto kern = gemv_kernel<W, S, KC, SMODE, IN_MODE, MR, SW>;
   const int smem = smem_bytes<W, S, KC, SMODE, MR>(K);
   if (cudaFuncSetAttribute(kern, cudaFuncAttributeMaxDynamicSharedMemorySize, smem) != cudaSuccess) return 0;
   int n = 0;
@@ -433,32 +449,30 @@ struct Entry {
   int (*smem)(int);
 };
 
-template <int W, int S, int KC, int SMODE, int IN_MODE, int MR>
+template <int W, int S, int KC, int SMODE, int IN_MODE, int MR, int SW>
 constexpr Entry entry() {
-  return Entry{{W, S, KC, MR, SMODE, IN_MODE},
-               launch<W, S, KC, SMODE, IN_MODE, MR>,
-               occupancy<W, S, KC, SMODE, IN_MODE, MR>,
+  return Entry{{W, S, KC, MR, SMODE, IN_MODE, SW},
+               launch<W, S, KC, SMODE, IN_MODE, MR, SW>,
+               occupancy<W, S, KC, SMODE, IN_MODE, MR, SW>,
                smem_bytes<W, S, KC, SMODE, MR>};
 }
 
-// Every (W, S, KC, MR, scale mode, input mode) the serve's shape table uses
-// (dense_gemv.py CONFIGS); anything else is refused, never guessed.
-#define DSV41_GEMV_BOTH_INPUTS(W, S, KC, SM, MR) entry<W, S, KC, SM, IN_BF16, MR>(), entry<W, S, KC, SM, IN_QUANT, MR>()
+// study: the production configs with SW = 0 (v5 schedule), 1 and 2 staging warps
+#define V6(W, S, KC, SM, MR)                                                                       \
+  entry<W, S, KC, SM, IN_BF16, MR, 0>(), entry<W, S, KC, SM, IN_QUANT, MR, 0>(),                    \
+      entry<W, S, KC, SM, IN_BF16, MR, 1>(), entry<W, S, KC, SM, IN_QUANT, MR, 1>(),                \
+      entry<W, S, KC, SM, IN_BF16, MR, 2>(), entry<W, S, KC, SM, IN_QUANT, MR, 2>()
 static const Entry kTable[] = {
-    DSV41_GEMV_BOTH_INPUTS(4, 2, 512, COMPACT32, 4),   // K 5120 / 4096, M <= 4
-    DSV41_GEMV_BOTH_INPUTS(3, 2, 512, COMPACT32, 8),   // K 5120, M <= 8
-    DSV41_GEMV_BOTH_INPUTS(4, 2, 512, COMPACT32, 8),   // K 4096, M <= 8
-    DSV41_GEMV_BOTH_INPUTS(2, 2, 640, COMPACT32, 8),   // K 1280
-    DSV41_GEMV_BOTH_INPUTS(4, 2, 384, COMPACT32, 8),   // K 1152
-    DSV41_GEMV_BOTH_INPUTS(2, 2, 512, COMPACT32, 4),   // K 6144 / 15360, M <= 4
-    DSV41_GEMV_BOTH_INPUTS(2, 2, 512, COMPACT32, 8),   // K 6144, M <= 8
-    DSV41_GEMV_BOTH_INPUTS(3, 2, 512, TILE, 8),        // lm_head (per-row scales)
+    V6(4, 2, 512, COMPACT32, 4), V6(3, 2, 512, COMPACT32, 8), V6(4, 2, 512, COMPACT32, 8),
+    V6(2, 2, 640, COMPACT32, 8), V6(4, 2, 384, COMPACT32, 8), V6(2, 2, 512, COMPACT32, 4),
+    V6(2, 2, 512, COMPACT32, 8), V6(3, 2, 512, TILE, 8),
 };
-#undef DSV41_GEMV_BOTH_INPUTS
+#undef V6
 
-const Entry* find(int W, int S, int KC, int MR, int smode, int in_mode) {
+const Entry* find(int W, int S, int KC, int MR, int smode, int in_mode, int SW) {
   for (const Entry& e : kTable)
-    if (e.c.W == W && e.c.S == S && e.c.KC == KC && e.c.MR == MR && e.c.smode == smode && e.c.in_mode == in_mode)
+    if (e.c.W == W && e.c.S == S && e.c.KC == KC && e.c.MR == MR && e.c.smode == smode && e.c.in_mode == in_mode &&
+        e.c.SW == SW)
       return &e;
   return nullptr;
 }
@@ -469,8 +483,11 @@ namespace {
 
 using dsv41_gemv::Entry;
 
+int g_sw = 0;  // study: staging warps for the next plan_grid/gemv calls
+void set_sw(int64_t sw) { g_sw = (int)sw; }
+
 const Entry& must_find(int64_t W, int64_t S, int64_t KC, int64_t MR, int64_t smode, int64_t in_mode) {
-  const Entry* e = dsv41_gemv::find(W, S, KC, MR, smode, in_mode);
+  const Entry* e = dsv41_gemv::find(W, S, KC, MR, smode, in_mode, g_sw);
   TORCH_CHECK(e != nullptr, "dense_gemv: config W=", W, " S=", S, " KC=", KC, " MR=", MR, " smode=", smode,
               " in=", in_mode, " is not compiled");
   return *e;
@@ -534,6 +551,7 @@ void gemv(c10::optional<torch::Tensor> x, c10::optional<torch::Tensor> xq, c10::
 }  // namespace
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+  m.def("set_sw", &set_sw);
   m.def("gemv", &gemv, "dense small-M MXFP8 GEMV (bit-exact with b12x)");
   m.def("plan_grid", &plan_grid, "persistent grid for a config, 0 if it cannot run");
 }

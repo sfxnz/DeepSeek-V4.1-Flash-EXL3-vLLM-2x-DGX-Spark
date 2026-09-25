@@ -1,0 +1,50 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T14:37:16Z
+lock acquired 2026-09-25T14:37:26Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41-indexer-workspace: already applied
+MISMATCH qkv_a M=3 edge cfg=(4, 2, 512, 4) fused={'bitwise': False, 'n_diff': 23, 'numel': 5376, 'max_abs': 1.0426132091937934e+37, 'max_ulp': 45043} preq={'bitwise': True, 'n_diff': 0, 'numel': 5376, 'max_abs': 0.0, 'max_ulp': 0}
+qkv_a           correctness: 281/282 bitwise (incl. graph replay)
+qkv_a          M=1 cold us: b12x_e2e   48.22 b12x_gemm   47.17 read   43.01 | best fused w4s2k512m4g28   44.03 ( +9.5%) | best preq w4s2k512m4g28   44.03 ( +7.1%)
+qkv_a          M=3 cold us: b12x_e2e   47.97 b12x_gemm   47.17 read   43.01 | best fused w4s2k512m4g28   44.03 ( +8.9%) | best preq w4s2k512m4g28   44.03 ( +7.1%)
+qkv_a          M=4 cold us: b12x_e2e   48.18 b12x_gemm   47.14 read   42.98 | best fused w4s2k512m4g28   44.05 ( +9.4%) | best preq w4s2k512m4g28   44.06 ( +7.0%)
+qkv_a          M=6 cold us: b12x_e2e   48.16 b12x_gemm   46.94 read   42.85 | best fused w3s2k512m8g38   44.10 ( +9.2%) | best preq w3s2k512m8g38   44.06 ( +6.5%)
+qkv_a          M=8 cold us: b12x_e2e   48.16 b12x_gemm   47.17 read   42.94 | best fused w3s2k512m8g38   45.06 ( +6.9%) | best preq w3s2k512m8g38   45.12 ( +4.5%)
+MISMATCH wo_b M=1 normal cfg=(4, 2, 512, 8) fused={'bitwise': False, 'n_diff': 144, 'numel': 5120, 'max_abs': 5.2546044208372456e+36, 'max_ulp': 48625} preq={'bitwise': True, 'n_diff': 0, 'numel': 5120, 'max_abs': 0.0, 'max_ulp': 0}
+MISMATCH wo_b M=3 outlier cfg=(3, 2, 512, 8) fused={'bitwise': False, 'n_diff': 230, 'numel': 15360, 'max_abs': 2.5991905121714527e+26, 'max_ulp': 43945} preq={'bitwise': True, 'n_diff': 0, 'numel': 15360, 'max_abs': 0.0, 'max_ulp': 0}
+MISMATCH wo_b M=3 edge cfg=(4, 2, 512, 4) fused={'bitwise': False, 'n_diff': 64, 'numel': 15360, 'max_abs': 13672448.0, 'max_ulp': 33076} preq={'bitwise': True, 'n_diff': 0, 'numel': 15360, 'max_abs': 0.0, 'max_ulp': 0}
+MISMATCH wo_b M=5 lognormal cfg=(3, 2, 512, 8) fused={'bitwise': False, 'n_diff': 96, 'numel': 25600, 'max_abs': 3.530761863803683e+35, 'max_ulp': 47838} preq={'bitwise': True, 'n_diff': 0, 'numel': 25600, 'max_abs': 0.0, 'max_ulp': 0}
+MISMATCH wo_b M=6 outlier cfg=(4, 2, 512, 8) fused={'bitwise': False, 'n_diff': 18387, 'numel': 30720, 'max_abs': 65.8125, 'max_ulp': 50580} preq={'bitwise': True, 'n_diff': 0, 'numel': 30720, 'max_abs': 0.0, 'max_ulp': 0}
+MISMATCH wo_b M=8 lognormal cfg=(3, 2, 512, 8) fused={'bitwise': False, 'n_diff': 144, 'numel': 40960, 'max_abs': 7.742753075447135e+37, 'max_ulp': 48864} preq={'bitwise': True, 'n_diff': 0, 'numel': 40960, 'max_abs': 0.0, 'max_ulp': 0}
+MISMATCH wo_b M=8 edge cfg=(4, 2, 512, 8) fused={'bitwise': False, 'n_diff': 24553, 'numel': 40960, 'max_abs': 3.349654549377988e+38, 'max_ulp': 47635} preq={'bitwise': True, 'n_diff': 0, 'numel': 40960, 'max_abs': 0.0, 'max_ulp': 0}
+MISMATCH wo_b M=4 outlier cfg=(4, 2, 512, 4) fused={'bitwise': False, 'n_diff': 79, 'numel': 20480, 'max_abs': 6.625, 'max_ulp': 33364} preq={'bitwise': True, 'n_diff': 0, 'numel': 20480, 'max_abs': 0.0, 'max_ulp': 0}
+MISMATCH wo_b M=4 edge cfg=(4, 2, 512, 4) fused={'bitwise': False, 'n_diff': 48, 'numel': 20480, 'max_abs': 12451840.0, 'max_ulp': 32885} preq={'bitwise': True, 'n_diff': 0, 'numel': 20480, 'max_abs': 0.0, 'max_ulp': 0}
+MISMATCH wo_b M=6 edge cfg=(4, 2, 512, 8) fused={'bitwise': False, 'n_diff': 10527, 'numel': 30720, 'max_abs': 7.113446696192714e+35, 'max_ulp': 46629} preq={'bitwise': True, 'n_diff': 0, 'numel': 30720, 'max_abs': 0.0, 'max_ulp': 0}
+MISMATCH wo_b M=7 outlier cfg=(3, 2, 512, 8) fused={'bitwise': False, 'n_diff': 96, 'numel': 35840, 'max_abs': 1.869226869072538e+36, 'max_ulp': 47962} preq={'bitwise': True, 'n_diff': 0, 'numel': 35840, 'max_abs': 0.0, 'max_ulp': 0}
+MISMATCH wo_b M=7 edge cfg=(3, 2, 512, 8) fused={'bitwise': False, 'n_diff': 32, 'numel': 35840, 'max_abs': 1.5909015032864279e+32, 'max_ulp': 43320} preq={'bitwise': True, 'n_diff': 0, 'numel': 35840, 'max_abs': 0.0, 'max_ulp': 0}
+MISMATCH wo_b M=8 edge cfg=(4, 2, 512, 8) fused={'bitwise': False, 'n_diff': 5727, 'numel': 40960, 'max_abs': 3.362946829335837e+38, 'max_ulp': 47082} preq={'bitwise': True, 'n_diff': 0, 'numel': 40960, 'max_abs': 0.0, 'max_ulp': 0}
+GRAPH MISMATCH wo_b M=1 cfg=(4, 2, 512, 4) False True
+wo_b            correctness: 268/282 bitwise (incl. graph replay)
+wo_b           M=1 cold us: b12x_e2e  101.47 b12x_gemm  100.42 read   90.18 | best fused w4s2k512m4g48   93.25 ( +8.8%) | best preq w3s2k512m8g48   93.28 ( +7.7%)
+wo_b           M=3 cold us: b12x_e2e  101.47 b12x_gemm  100.45 read   90.18 | best fused w4s2k512m4g48   93.28 ( +8.8%) | best preq w3s2k512m8g48   93.33 ( +7.6%)
+wo_b           M=4 cold us: b12x_e2e  102.38 b12x_gemm  100.46 read   90.18 | best fused w4s2k512m4g48   93.28 ( +9.8%) | best preq w4s2k512m8g48   93.30 ( +7.7%)
+wo_b           M=6 cold us: b12x_e2e  102.35 b12x_gemm  101.41 read   90.21 | best fused w4s2k512m8g48   93.31 ( +9.7%) | best preq w4s2k512m8g48   93.30 ( +8.7%)
+wo_b           M=8 cold us: b12x_e2e  102.40 b12x_gemm  101.42 read   90.18 | best fused w2s2k512m8g48   93.38 ( +9.7%) | best preq w3s2k512m8g48   94.27 ( +7.6%)
+wq_b            correctness: 70/70 bitwise (incl. graph replay)
+wq_b           M=1 cold us: b12x_e2e  101.47 b12x_gemm   98.50 read   92.16 | best fused w2s2k640m8g48   94.00 ( +7.9%) | best preq w2s2k640m8g48   94.21 ( +4.6%)
+wq_b           M=3 cold us: b12x_e2e   99.46 b12x_gemm   99.30 read   90.14 | best fused w2s2k640m8g48   93.18 ( +6.7%) | best preq w2s2k640m8g48   93.22 ( +6.5%)
+wq_b           M=4 cold us: b12x_e2e  100.19 b12x_gemm   99.39 read   90.14 | best fused w2s2k640m8g48   93.18 ( +7.5%) | best preq w2s2k640m8g48   93.22 ( +6.6%)
+wq_b           M=6 cold us: b12x_e2e  100.35 b12x_gemm   99.36 read   90.14 | best fused w2s2k640m8g48   93.30 ( +7.6%) | best preq w2s2k640m8g48   94.02 ( +5.7%)
+wq_b           M=8 cold us: b12x_e2e  100.54 b12x_gemm   99.54 read   90.14 | best fused w2s2k640m8g48   94.19 ( +6.7%) | best preq w2s2k640m8g48   94.05 ( +5.8%)
+FAILURES
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 354 busy 167 sm_median 2190 sm_min_busy 2190 mem ['[N/A]'] power_median 5.8 W
+rc=1
