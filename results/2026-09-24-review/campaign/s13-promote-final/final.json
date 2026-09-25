@@ -1,0 +1,660 @@
+{
+ "stage": "s13-promote-final",
+ "before": {
+  "stage": "s2-old-fresh",
+  "config": "main checkout 45d3303, results/2026-09-22-endgame2/boot-lm.sh, image canonical-e12 (sha256:984ea608), pack 2.0bpw-mcg-lmhead-mxfp8, R33 defaults",
+  "boot": {
+   "start_to_api_ready_s": 576,
+   "loading_weights_s": {
+    "TP0_spark1": [
+     330.18,
+     27.78
+    ],
+    "TP1_spark2": [
+     180.54,
+     20.83
+    ]
+   }
+  },
+  "lail_fresh_10": {
+   "median_tok_s": 32.44,
+   "runs_tok_s": [
+    32.65,
+    33.28,
+    32.34,
+    28.63,
+    30.51,
+    32.53,
+    31.36,
+    32.29,
+    32.75,
+    32.65
+   ],
+   "median_ms_per_step": 66.38,
+   "ms_per_step_range": [
+    65.3,
+    73.3
+   ],
+   "median_acceptance_len": 2.167,
+   "median_ttft_s": 0.318,
+   "post_eos_fraction": 0.0,
+   "n": 10,
+   "log": "results/2026-09-24-review/campaign/s2-old-fresh/03-lail-prose-fresh.log"
+  },
+  "lail_after_c2_stress_10": {
+   "median_tok_s": 31.91,
+   "runs_tok_s": [
+    33.53,
+    30.61,
+    33.81,
+    32.1,
+    31.51,
+    31.03,
+    32.22,
+    32.7,
+    31.72,
+    30.36
+   ],
+   "median_ms_per_step": 66.99,
+   "ms_per_step_range": [
+    66.5,
+    67.3
+   ],
+   "median_acceptance_len": 2.145,
+   "median_ttft_s": 0.338,
+   "post_eos_fraction": 0.0,
+   "n": 10,
+   "log": "results/2026-09-24-review/campaign/s2-old-fresh/11-lail-prose-after-c2.log"
+  },
+  "bench_decode_9": {
+   "prose_c1": {
+    "per_stream_tok_s": 37.07,
+    "agg_tok_s": 37.07,
+    "ms_per_step": 67.77,
+    "ttft_p50_s": 0.263,
+    "acceptance_pooled": null,
+    "acceptance_median_run": 2.5316,
+    "post_eos_fraction": 0.57
+   },
+   "prose_c2": {
+    "per_stream_tok_s": 27.13,
+    "agg_tok_s": 52.93,
+    "ms_per_step": 93.83,
+    "ttft_p50_s": 0.29,
+    "acceptance_pooled": null,
+    "acceptance_median_run": 2.5641,
+    "post_eos_fraction": 0.57
+   },
+   "structured_c1": {
+    "per_stream_tok_s": 58.57,
+    "agg_tok_s": 58.55,
+    "ms_per_step": 67.63,
+    "ttft_p50_s": 0.189,
+    "acceptance_pooled": null,
+    "acceptance_median_run": 3.9608,
+    "post_eos_fraction": 0.0
+   },
+   "structured_c2": {
+    "per_stream_tok_s": 42.06,
+    "agg_tok_s": 84.04,
+    "ms_per_step": 94.17,
+    "ttft_p50_s": 0.205,
+    "acceptance_pooled": null,
+    "acceptance_median_run": 3.9608,
+    "post_eos_fraction": 0.0
+   }
+  },
+  "micro_pass1_8k_32k_2runs": {
+   "pp_warm_8k": {
+    "tok_s": 211.9,
+    "ttft_s": 39.74
+   },
+   "pp_novel_8k": {
+    "tok_s": 184.2,
+    "ttft_s": 44.06
+   },
+   "tg_8k": {
+    "tok_s": 29.0,
+    "ttft_s": 29.81
+   },
+   "pp_warm_32k": {
+    "tok_s": 430.0,
+    "ttft_s": 76.65
+   },
+   "pp_novel_32k": {
+    "tok_s": 231.1,
+    "ttft_s": 141.14
+   },
+   "tg_32k": {
+    "tok_s": 39.0,
+    "ttft_s": 48.45
+   }
+  },
+  "micro_8k_repeat_2runs": {
+   "pp_warm_8k": {
+    "tok_s": 771.9,
+    "ttft_s": 10.51
+   },
+   "pp_novel_8k": {
+    "tok_s": 247.3,
+    "ttft_s": 32.79
+   },
+   "tg_8k": {
+    "tok_s": 36.9,
+    "ttft_s": 10.14
+   }
+  },
+  "memory": {
+   "ready": {
+    "spark1": {
+     "used": "96Gi",
+     "available": "24Gi",
+     "swap_used": "6.0Gi"
+    },
+    "spark2": {
+     "used": "94Gi",
+     "available": "26Gi",
+     "swap_used": "4.0Gi"
+    }
+   },
+   "after_micro": {
+    "spark1": {
+     "used": "100Gi",
+     "available": "21Gi",
+     "swap_used": "5.9Gi"
+    },
+    "spark2": {
+     "used": "98Gi",
+     "available": "22Gi",
+     "swap_used": "4.0Gi"
+    }
+   },
+   "after_full": {
+    "spark1": {
+     "used": "100Gi",
+     "available": "21Gi",
+     "swap_used": "5.9Gi"
+    },
+    "spark2": {
+     "used": "98Gi",
+     "available": "23Gi",
+     "swap_used": "4.0Gi"
+    }
+   }
+  },
+  "quality_quick": {
+   "pass": true,
+   "mode": "quick",
+   "nll": 0.244203,
+   "decode_median_abs_dlogprob": 0.01838,
+   "tools_exact_args": 0.9545,
+   "needle_found": "6/6",
+   "selfcons_aa_hazard": 0.01636,
+   "failed_gates": [],
+   "selfcons_golden_hazard": 0.01543
+  },
+  "quality_full": "not run in s2; baseline full.json (quality-baseline/, e12 R33-era flags) is the reference",
+  "four_numbers": "not run in s2"
+ },
+ "after": {
+  "stage": "s13-promote-final",
+  "config": "perf-review-0924 worktree (af90bbb+a261909), `env AUDIT=strict ./run.sh` with no overrides: image canonical-e13 (sha256:c81762335a12), pack 2.0bpw-mcg-lmhead-mxfp8, R33 keep set + DSV41_ENGRAM_WILLNEED=1 DSV41_STREAM_FEED=1 DSV41_WOA_PREPACK=1 DSV41_DSPARK_SPARSE_MARKOV=1; DSV41/NCCL/VLLM env and engine argv identical to s8",
+  "boot": {
+   "start": "2026-09-25T01:24:43Z",
+   "api_ready": "2026-09-25T01:34:15Z",
+   "start_to_api_ready_s": 572,
+   "start_to_run_sh_exit0_s": 598,
+   "run_sh_exit_includes": "strict audit ok on head+worker, warmup greedy '323' 2.0 s, t=0.7 1.6 s, 3k nonce prefill 7.0 s",
+   "loading_weights_s": {
+    "TP0_spark1": [
+     311.53,
+     27.54
+    ],
+    "TP1_spark2": [
+     148.03,
+     22.79
+    ]
+   },
+   "min_memavail_during_load_MB": {
+    "spark1": 24200,
+    "spark2": 25071,
+    "log": "mem-during-load.log"
+   }
+  },
+  "lail_fresh_10": {
+   "median_tok_s": 32.44,
+   "runs_tok_s": [
+    32.83,
+    29.99,
+    31.75,
+    33.0,
+    31.61,
+    32.0,
+    34.92,
+    33.57,
+    32.06,
+    36.74
+   ],
+   "median_ms_per_step": 62.57,
+   "ms_per_step_range": [
+    62.1,
+    69.7
+   ],
+   "median_acceptance_len": 2.071,
+   "median_ttft_s": 0.355,
+   "post_eos_fraction": 0.0,
+   "n": 10,
+   "log": "results/2026-09-24-review/campaign/s13-promote-final/03-lail-prose-fresh.log"
+  },
+  "lail_after_c2_stress_10": {
+   "median_tok_s": 33.63,
+   "runs_tok_s": [
+    34.53,
+    33.84,
+    34.47,
+    33.6,
+    31.98,
+    33.54,
+    33.65,
+    34.2,
+    33.51,
+    32.25
+   ],
+   "median_ms_per_step": 62.76,
+   "ms_per_step_range": [
+    62.5,
+    63.1
+   ],
+   "median_acceptance_len": 2.118,
+   "median_ttft_s": 0.312,
+   "post_eos_fraction": 0.0,
+   "n": 10,
+   "log": "results/2026-09-24-review/campaign/s13-promote-final/11-lail-prose-after-c2.log"
+  },
+  "bench_decode_9": {
+   "prose_c1": {
+    "per_stream_tok_s": 39.18,
+    "agg_tok_s": 39.18,
+    "ms_per_step": 63.28,
+    "ttft_p50_s": 0.251,
+    "acceptance_pooled": 2.488,
+    "acceptance_median_run": 2.525,
+    "post_eos_fraction": 0.57
+   },
+   "prose_c2": {
+    "per_stream_tok_s": 28.7,
+    "agg_tok_s": 56.36,
+    "ms_per_step": 87.86,
+    "ttft_p50_s": 0.277,
+    "acceptance_pooled": 2.529,
+    "acceptance_median_run": 2.5125,
+    "post_eos_fraction": 0.57
+   },
+   "structured_c1": {
+    "per_stream_tok_s": 62.68,
+    "agg_tok_s": 62.66,
+    "ms_per_step": 63.19,
+    "ttft_p50_s": 0.181,
+    "acceptance_pooled": 3.961,
+    "acceptance_median_run": 3.9608,
+    "post_eos_fraction": 0.0
+   },
+   "structured_c2": {
+    "per_stream_tok_s": 45.18,
+    "agg_tok_s": 89.45,
+    "ms_per_step": 87.67,
+    "ttft_p50_s": 0.281,
+    "acceptance_pooled": 3.961,
+    "acceptance_median_run": 3.9608,
+    "post_eos_fraction": 0.0
+   }
+  },
+  "micro_pass1_8k_32k_2runs": {
+   "pp_warm_8k": {
+    "tok_s": 716.3,
+    "ttft_s": 11.28
+   },
+   "pp_novel_8k": {
+    "tok_s": 838.0,
+    "ttft_s": 9.71
+   },
+   "tg_8k": {
+    "tok_s": 32.3,
+    "ttft_s": 10.47
+   },
+   "pp_warm_32k": {
+    "tok_s": 761.1,
+    "ttft_s": 42.59
+   },
+   "pp_novel_32k": {
+    "tok_s": 811.5,
+    "ttft_s": 40.2
+   },
+   "tg_32k": {
+    "tok_s": 32.1,
+    "ttft_s": 41.27
+   }
+  },
+  "micro_8k_repeat_2runs": {
+   "pp_warm_8k": {
+    "tok_s": 789.9,
+    "ttft_s": 10.29
+   },
+   "pp_novel_8k": {
+    "tok_s": 814.6,
+    "ttft_s": 10.02
+   },
+   "tg_8k": {
+    "tok_s": 33.0,
+    "ttft_s": 10.53
+   }
+  },
+  "memory": {
+   "ready": {
+    "spark1": {
+     "used": "97Gi",
+     "available": "23Gi",
+     "swap_used": "6.7Gi"
+    },
+    "spark2": {
+     "used": "97Gi",
+     "available": "24Gi",
+     "swap_used": "4.4Gi"
+    }
+   },
+   "after_micro": {
+    "spark1": {
+     "used": "100Gi",
+     "available": "21Gi",
+     "swap_used": "6.6Gi"
+    },
+    "spark2": {
+     "used": "98Gi",
+     "available": "22Gi",
+     "swap_used": "4.4Gi"
+    }
+   },
+   "after_full": {
+    "spark1": {
+     "used": "99Gi",
+     "available": "21Gi",
+     "swap_used": "6.5Gi"
+    },
+    "spark2": {
+     "used": "98Gi",
+     "available": "22Gi",
+     "swap_used": "4.4Gi"
+    }
+   }
+  },
+  "quality_quick": {
+   "pass": true,
+   "mode": "quick",
+   "nll": 0.243823,
+   "decode_median_abs_dlogprob": 0.00703,
+   "tools_exact_args": 0.9545,
+   "needle_found": "6/6",
+   "selfcons_aa_hazard": 0.02005,
+   "failed_gates": [],
+   "selfcons_golden_hazard": 0.02305
+  },
+  "quality_full": {
+   "pass": true,
+   "mode": "full",
+   "nll": 0.243755,
+   "decode_median_abs_dlogprob": 0.01621,
+   "tools_exact_args": 0.9545,
+   "needle_found": "9/9",
+   "selfcons_aa_hazard": 0.02088,
+   "failed_gates": [],
+   "gsm8k": "92/100 (baseline 94/100; discordant 2 vs 0: idx 611, 689; s12 stock-head boot also missed 689)",
+   "gsm8k_think": "38/40 (baseline 38/40, same misses 403, 494)",
+   "mmlu": "199/228 (baseline 197/228; discordant 2 s13-only vs 4 baseline-only)",
+   "elapsed_s": 1554.8,
+   "baseline": "results/2026-09-24-review/quality-baseline/full.json",
+   "nll_run_means": [
+    0.243755,
+    0.242506
+   ],
+   "nll_repeat_abs_delta": 0.001249,
+   "needle": "9/9 incl. 131072 at 0.1/0.5/0.9",
+   "selfcons_golden_hazard": 0.02033,
+   "log": "14-quality-full.log"
+  },
+  "four_numbers": {
+   "json": "four_numbers/four_numbers.json",
+   "prose_median_tok_s": 40.37,
+   "prose_median_ms_per_step": 63.03,
+   "prose_acceptance": 2.566,
+   "prose_post_eos_fraction": 0.61,
+   "pp_warm_8k_32k": [
+    759.6,
+    766.8
+   ],
+   "pp_novel_8k_32k": [
+    808.8,
+    800.2
+   ],
+   "memavail_after_32k_gib": [
+    21.3,
+    22.37
+   ],
+   "lail_3_runs_median": 33.98,
+   "prose_long": [
+    {
+     "concurrency": 1,
+     "median_decode_tok_s": 33.13,
+     "median_agg_tok_s": 33.128,
+     "acceptance_len": 2.09,
+     "median_ms_per_step": 62.883,
+     "natural_finish_reason": "length",
+     "post_eos_fraction": 0.0
+    },
+    {
+     "concurrency": 2,
+     "median_decode_tok_s": 23.521,
+     "median_agg_tok_s": 45.935,
+     "acceptance_len": 2.068,
+     "median_ms_per_step": 86.891,
+     "natural_finish_reason": "length",
+     "post_eos_fraction": 0.0
+    }
+   ],
+   "warm_prefix": {
+    "cell": "warm_prefix",
+    "prompt_tokens": 2058,
+    "hit_block": 128,
+    "ttft_cold_s": 2.7556323200115003,
+    "ttft_warm_s": 2.666620748990681,
+    "hits_cold": 0.0,
+    "hits_warm": 0.0,
+    "expected_hits": 2048,
+    "hit_fraction_of_expected": 0.0
+   },
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "partial": false
+  }
+ },
+ "delta": {
+  "lail_fresh_tok_s": [
+   32.44,
+   32.44,
+   0.0
+  ],
+  "lail_fresh_ms_per_step": [
+   66.38,
+   62.57
+  ],
+  "lail_fresh_acceptance": [
+   2.167,
+   2.071
+  ],
+  "lail_after_c2_tok_s": [
+   31.91,
+   33.63,
+   5.4
+  ],
+  "prose_c1_tok_s": [
+   37.07,
+   39.18,
+   5.7
+  ],
+  "prose_c1_ms_per_step": [
+   67.77,
+   63.28
+  ],
+  "prose_c2_agg_tok_s": [
+   52.93,
+   56.36,
+   6.5
+  ],
+  "structured_c1_tok_s": [
+   58.57,
+   62.68,
+   7.0
+  ],
+  "structured_c2_agg_tok_s": [
+   84.04,
+   89.45,
+   6.4
+  ],
+  "prose_c1_ttft_p50_s": [
+   0.263,
+   0.251
+  ],
+  "lail_ttft_median_s": [
+   0.318,
+   0.355
+  ],
+  "micro_pass1_pp_warm_8k": {
+   "tok_s": [
+    211.9,
+    716.3,
+    3.38
+   ],
+   "ttft_s": [
+    39.74,
+    11.28
+   ]
+  },
+  "micro_pass1_pp_novel_8k": {
+   "tok_s": [
+    184.2,
+    838.0,
+    4.55
+   ],
+   "ttft_s": [
+    44.06,
+    9.71
+   ]
+  },
+  "micro_pass1_pp_warm_32k": {
+   "tok_s": [
+    430.0,
+    761.1,
+    1.77
+   ],
+   "ttft_s": [
+    76.65,
+    42.59
+   ]
+  },
+  "micro_pass1_pp_novel_32k": {
+   "tok_s": [
+    231.1,
+    811.5,
+    3.51
+   ],
+   "ttft_s": [
+    141.14,
+    40.2
+   ]
+  },
+  "micro_8k_repeat_pp_warm_8k": {
+   "tok_s": [
+    771.9,
+    789.9,
+    1.02
+   ]
+  },
+  "micro_8k_repeat_pp_novel_8k": {
+   "tok_s": [
+    247.3,
+    814.6,
+    3.29
+   ]
+  },
+  "api_ready_s": [
+   576,
+   572
+  ],
+  "loading_weights_sum_s": {
+   "TP0": [
+    357.96,
+    339.07
+   ],
+   "TP1": [
+    201.37,
+    170.82
+   ]
+  }
+ },
+ "pooled_lail_by_arm": {
+  "note": "all 10-run L.A.I.L batches (fresh + post-C2-STRESS) per arm",
+  "old_s2": {
+   "batches": 2,
+   "median_tok_s": 32.25,
+   "median_ms_per_step": 66.95,
+   "mean_acceptance": 2.149
+  },
+  "B_s3_s6": {
+   "batches": 4,
+   "median_tok_s": 33.95,
+   "median_ms_per_step": 63.5,
+   "mean_acceptance": 2.159
+  },
+  "C_s5_s7": {
+   "batches": 4,
+   "median_tok_s": 33.74,
+   "median_ms_per_step": 62.91,
+   "mean_acceptance": 2.131
+  },
+  "S_s8_s13_new_defaults": {
+   "batches": 4,
+   "median_tok_s": 33.72,
+   "median_ms_per_step": 62.67,
+   "mean_acceptance": 2.129
+  }
+ },
+ "gates_leave_up": {
+  "smoke_323": true,
+  "vision_red": true,
+  "strict_audit_clean": "ok at ready, after FULL, after C2-STRESS, final; disarm_scan rc 0 each time",
+  "quality_quick_vs_quick_json": "PASS",
+  "quality_full_vs_full_json": "PASS",
+  "no_regression_vs_s2": "L.A.I.L fresh equal (32.44 = 32.44, ms/step -3.81); every other decode, prefill, boot and memory metric better or equal",
+  "verdict": "leave UP"
+ },
+ "warm_prefix_finding": {
+  "four_numbers_cell": "0 of 2048 expected hits at 2058 tokens",
+  "rechecks": "13-warm-prefix-recheck*.log, 13-warm-prefix-length-probe.log, 13-prefix-resend-8k.log",
+  "miss_N_minus_P": [
+   10,
+   14,
+   25,
+   55,
+   58
+  ],
+  "hit_N_minus_P": [
+   68,
+   97,
+   99,
+   116,
+   117,
+   118,
+   127
+  ],
+  "note": "P=floor((N-1)/128)*128; a repeat hits fully or not at all; 8k resend hit 7936. Not tested on the R33 config."
+ }
+}
