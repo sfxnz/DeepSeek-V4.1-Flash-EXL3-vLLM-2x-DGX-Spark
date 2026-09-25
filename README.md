@@ -160,7 +160,7 @@ Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-
 | Vision | on (`LANGUAGE_MODEL_ONLY=0`) |
 | `--mm-encoder-tp-mode` | data |
 | Default thinking | `thinking=false`, `reasoning_effort=low` |
-| Post-ready | engagement audit of both ranks' logs (`AUDIT=warn`; `strict` fails the boot, `off` skips), then greedy, t=0.7 and ~3k-token nonce warmup requests (`WARMUP=1`) |
+| Post-ready | engagement audit of both ranks' logs (`AUDIT=warn`; `strict` fails the boot, `off` skips), then greedy, t=0.7, ~3k/~1k/~300-token nonce prefill and small-image warmup requests (`WARMUP=1`) |
 | API | `http://<head>:8000/v1` |
 | Container | `dsv41-flash-exl3` |
 | Master port | 29524 |
