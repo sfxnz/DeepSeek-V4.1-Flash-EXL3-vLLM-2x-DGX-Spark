@@ -120,7 +120,8 @@ nodes with the round-34 defaults (`DSV41_ENGRAM_WILLNEED=1`,
 the perf-review-0924 worktree. Until that branch merges, the main checkout
 keeps the R33 defaults and boot-lm.sh below restores the R33 config. After
 the merge, boot-lm.sh exports only its own names, so it would inherit the
-round-34 lever defaults on e12. Use the "levers off" line further down instead.
+round-34 lever defaults on e12, and WOA would log `lever is OFF`. Use the
+"R33 reproduction" command further down instead.
 
 ```bash
 cd /home/sfxnz/projects/ai-lab/recipes/DeepSeek-V4.1-Flash-EXL3-vLLM-2x-DGX-Spark
@@ -140,5 +141,21 @@ bash results/2026-09-22-endgame2/boot-lm.sh   # R33 config (canonical-e12, lmhea
 - Round-34 levers off on the new code (the s3 B1 config):
   `IMAGE=dsv41-flash-exl3-sm121:canonical-e12 DSV41_ENGRAM_WILLNEED=0 DSV41_STREAM_FEED=0 DSV41_WOA_PREPACK=0 DSV41_DSPARK_SPARSE_MARKOV=0 ./run.sh`.
   An empty value keeps the default, so use `0`.
+- R33 reproduction after the merge. boot-lm.sh stays as recorded evidence and
+  is not edited. Run it with the four round-34 levers off, plus `WARMUP=0`
+  because the R33 run.sh sent no post-ready warmup:
+  ```bash
+  DSV41_ENGRAM_WILLNEED=0 DSV41_STREAM_FEED=0 DSV41_WOA_PREPACK=0 \
+    DSV41_DSPARK_SPARSE_MARKOV=0 WARMUP=0 bash results/2026-09-22-endgame2/boot-lm.sh
+  ```
+  In a run.sh dry run (tests/run_sh_harness.py), this gives the same container
+  env and vllm argv as the levers-off `./run.sh` line above, apart from the
+  port. The argv matches the s3 B1 capture. The env matches the R33 env
+  captured in s2 (`campaign/s2-old-fresh/serve_env_spark1.txt`) except for
+  three new names that do nothing on a clean boot:
+  `DSV41_PATCH_STRICT=1`, `DSV41_DENSE_DG_SMALLM=0` and
+  `DSV41_ENGRAM_WILLNEED_MIN_ROWS=512`. The patch code is the merged code. For
+  the R33 code as well, boot from a worktree at `45d3303`. `AUDIT` only reads
+  logs, so it does not change the config.
 - Patch-script changes (`docker/patch/engram_*`) take effect on restart
   without an image rebuild (patch dir is volume-mounted read-only).
