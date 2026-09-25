@@ -6,12 +6,15 @@ The pack is [sfxnz/DeepSeek-V4.1-Flash-EXL3](https://huggingface.co/sfxnz/DeepSe
 
 **Decode campaign 2026-09-20/22 (+44% vs published)**: real-use prose 23 → **33.2 tok/s** (L.A.I.L cell, c=1 t=0.2, pooled n=10), greedy single-stream **39.6 tok/s** (9-run median, acc 2.61), 21.6/23.2 GiB free per Spark after a 32k prefill, zero OOMs in ~30 boots. Won levers: spec k=5→k=3 + matched cudagraph captures, Engram prefetch v3 (pf_hit 100%) + gather v2, NCCL AR-tail set, mem-hygiene bundle, lm_head mxfp8. Full evidence: `results/RESULTS.md` rounds 15–33.
 
-**Review campaign 2026-09-24 (round 34)**: compared with a fresh boot of the round-33 config under the same protocol, the new defaults give:
-- prose c=1: 37.07 → **39.18 tok/s** (67.77 → 63.28 ms/step)
-- L.A.I.L fresh: 32.44 → 32.44 tok/s. ms/step fell from 66.38 to 62.57, but this sample drew acceptance 2.071 against 2.167.
-- L.A.I.L after c=2 traffic: 31.91 → 33.63 tok/s
-- novel-text prefill: 8k 184 → **838 tok/s**, 32k 231 → **812 tok/s** (Engram WILLNEED read-ahead)
+**Review campaign 2026-09-24 (round 34)**: before is s2, a fresh boot of the round-33 config. After is pooled over s8 and s13, the two boots that ran the identical new defaults under the same protocol (medians of the pooled per-run values):
+- L.A.I.L fresh: 32.44 → **33.68 tok/s** (+3.8%, n=20; 66.38 → 62.63 ms/step). Per boot 34.51 / 32.44.
+- prose c=1: 37.07 → **39.52 tok/s** (+6.6%, n=18; 67.77 → 63.5 ms/step). Per boot 39.87 / 39.18.
+- structured c=1: 58.57 → **62.52 tok/s** (+6.7%)
+- c=2 aggregate: prose 52.93 → 56.77 (+7.3%), structured 84.04 → 89.44 (+6.4%)
+- L.A.I.L after c=2 traffic: 31.91 → 33.75 tok/s (+5.8%, n=20)
+- novel-text prefill (s13 only): 8k 184.2 → **838.0 tok/s**, 32k 231.1 → **811.5 tok/s** (Engram WILLNEED read-ahead)
 - quick quality eval: pass
+- SPARSE_MARKOV's effect on acceptance is open (round-2 ABAB pending).
 
 New default levers: `DSV41_ENGRAM_WILLNEED`, `DSV41_STREAM_FEED`, `DSV41_WOA_PREPACK` and `DSV41_DSPARK_SPARSE_MARKOV`, on image `canonical-e13`. Evidence: `results/RESULTS.md` round 34.
 
@@ -165,7 +168,7 @@ Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-
 
 ## Measured on 2× DGX Spark
 
-`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median; the promoted recipe reports a 9-run median (39.87 tok/s in the table below; the prompt stops naturally at ~78 tokens, so the cell forces `ignore_eos` and 59% of it is post-EOS text). `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2) — this is the real-world-use cell: 34.51 tok/s, +50% vs the pre-campaign published recipe (23 tok/s). The table is the round-34 boot `s8-S-sparse-markov`, which ran exactly the current defaults. Default is DSpark-3 with matched cudagraph captures, vision on. These cells are the MCG pack with the lm_head-mxfp8 head (`2.0bpw-mcg-lmhead-mxfp8`) on native p2b `cb=1`. A MUL1 pack measured and lost prose decode at every bit-width tested (see below). The KV pool is 8 GiB. Every accepted/rejected experiment lives in `results/RESULTS.md` (34 rounds); run `benches/micro.sh` and `benches/e2e.sh` to reproduce cells, and `tests/correctness.sh --full` for the quality gate.
+`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median; the round-34 table below pools 9 runs from each of two identical-config boots (39.52 tok/s prose c=1, n=18; the prompt stops naturally at ~78 tokens, so the cell forces `ignore_eos` and 59% of it is post-EOS text). `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2) — this is the real-world-use cell: 33.68 tok/s (n=20), +46% vs the pre-campaign published recipe (23 tok/s). The table pools the round-34 boots `s8-S-sparse-markov` and `s13-promote-final`, which both ran exactly the current defaults (`results/2026-09-24-review/campaign/pooled-s8-s13.json`). Default is DSpark-3 with matched cudagraph captures, vision on. These cells are the MCG pack with the lm_head-mxfp8 head (`2.0bpw-mcg-lmhead-mxfp8`) on native p2b `cb=1`. A MUL1 pack measured and lost prose decode at every bit-width tested (see below). The KV pool is 8 GiB. Every accepted/rejected experiment lives in `results/RESULTS.md` (34 rounds); run `benches/micro.sh` and `benches/e2e.sh` to reproduce cells, and `tests/correctness.sh --full` for the quality gate.
 
 `MAX_NUM_BATCHED_TOKENS` history: at 12.7k-token prompts 8192 measured −5% vs 2048 (`evidence/pr6-batched-8192/`), but on the campaign's prose/prefill cells 8192 was re-measured across rounds 15–33 as part of the promoted config — every kept lever was A/B'd on top of it. It ships as the default now; 2048 remains available for long-prompt-heavy workloads.
 
@@ -174,11 +177,11 @@ MUL1 + p2b `cb=2` (`2.0bpw-mul1` K=2 on `dsv41-flash-exl3-sm121:cb2`) lost prose
 <!-- BEGIN generated measured from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
 |---|---|---:|---:|---:|
-| prose | 1 | 39.87 | 39.86 | 0.25 s |
-| prose | 2 | 29.41 | 57.55 | 0.28 s |
-| structured | 1 | 62.51 | 62.50 | 0.19 s |
-| structured | 2 | 45.45 | 89.39 | 0.31 s |
-| lail_prose | 1 | 34.51 | 34.51 | 0.32 s |
+| prose | 1 | 39.52 | 39.52 | 0.25 s |
+| prose | 2 | 29.03 | 56.77 | 0.28 s |
+| structured | 1 | 62.52 | 62.50 | 0.18 s |
+| structured | 2 | 45.28 | 89.44 | 0.28 s |
+| lail_prose | 1 | 33.68 | 33.68 | 0.34 s |
 <!-- END generated measured -->
 
 ## Rebuild the pack

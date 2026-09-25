@@ -776,7 +776,23 @@ The image is `dsv41-flash-exl3-sm121:canonical-e13`. It is review-e13 (`sha256:c
 - `DSV41_DENSE_DG_SMALLM` (slower on every shape)
 - dual-rail NCCL (small-message latency)
 
-**Before and after.** Before is s2: a fresh boot of the R33 config from the main checkout (45d3303, `results/2026-09-22-endgame2/boot-lm.sh`, canonical-e12). After is s13: a fresh `AUDIT=strict ./run.sh` from the branch with no overrides. Both boots ran the same protocol in the same order. s13's DSV41/NCCL/VLLM env and engine argv are identical to s8's, which set the four levers by hand.
+**Headline (pooled s8+s13, 2 boots).** s8 and s13 ran the identical default config, so the headline pools both boots' per-run values and reports the pooled median (`campaign/pool_s8_s13.py` → `campaign/pooled-s8-s13.json`; the recipe.yaml measured rows use the same numbers). Before is the s2 fresh boot of the R33 config.
+
+| Metric | s2 before | pooled s8+s13 after | Δ | per boot s8 / s13 |
+|---|---:|---:|---:|---:|
+| L.A.I.L fresh (tok/s; n=10 → 20) | 32.44 | 33.68 | +3.8% | 34.51 / 32.44 |
+| L.A.I.L fresh ms/step | 66.38 | 62.63 | −3.75 | |
+| L.A.I.L after C2-STRESS (tok/s; n=10 → 20) | 31.91 | 33.75 | +5.8% | 34.00 / 33.63 |
+| prose c=1 (tok/s; n=9 → 18) | 37.07 | 39.52 | +6.6% | 39.87 / 39.18 |
+| prose c=1 ms/step | 67.77 | 63.5 | −4.3 | |
+| structured c=1 (tok/s) | 58.57 | 62.52 | +6.7% | 62.51 / 62.68 |
+| prose c=2 aggregate (tok/s) | 52.93 | 56.77 | +7.3% | 57.55 / 56.36 |
+| structured c=2 aggregate (tok/s) | 84.04 | 89.44 | +6.4% | 89.39 / 89.45 |
+| novel prefill 8k / 32k (tok/s, s13 only) | 184.2 / 231.1 | 838.0 / 811.5 | 4.5x / 3.5x | |
+
+Pooled bench_decode medians use the per-run values as logged (2 decimals); ms/step pooled from the logged per-run values (1 decimal). SPARSE_MARKOV's effect on acceptance is open (round-2 ABAB pending; see below).
+
+**Before and after, s13 alone.** Before is s2: a fresh boot of the R33 config from the main checkout (45d3303, `results/2026-09-22-endgame2/boot-lm.sh`, canonical-e12). After is s13: a fresh `AUDIT=strict ./run.sh` from the branch with no overrides. Both boots ran the same protocol in the same order. s13's DSV41/NCCL/VLLM env and engine argv are identical to s8's, which set the four levers by hand.
 
 | Metric | s2 before | s13 after | Δ |
 |---|---:|---:|---:|
@@ -886,7 +902,7 @@ Cause: no record_stream on the side-stream copies, an intermittent allocator rac
 
 ### Not done / open
 
-- The SPARSE_MARKOV acceptance question above.
+- The SPARSE_MARKOV acceptance question above (round-2 ABAB pending).
 - An MHC-only ABAB with a larger selfcons sample, if MHC is re-opened.
 - The coop MoE kernel microbench.
 - The Viterbi requant pack build (12.61 h).

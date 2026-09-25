@@ -114,14 +114,14 @@ readme:
 
 measured:
   decode:
-    conditions: "Round 34 (2026-09-24 review campaign, results/2026-09-24-review/campaign/): boot s8-S-sparse-markov, the exact round-34 default config (image canonical-e13 = review-e13 sha256:c81762335a12, pack 2.0bpw-mcg-lmhead-mxfp8, DSpark-3 greedy + captures [1,3,4,6,8], Engram prefetch v3 + census + gather v2 + WILLNEED, NCCL AR-tail set, mem-hygiene bundle, lm_head mxfp8, STREAM_FEED, WOA_PREPACK, SPARSE_MARKOV k=256, vision on, Engram on disk, AUDIT=strict clean). bench_decode.py = streamed greedy 200 tokens thinking off, 9-run median, ignore_eos (prose post-EOS fraction 0.59); L.A.I.L prose = tools/measure_lail_prose.py 512 tokens temperature 0.2, median of 10. Same-protocol fresh boot of the pre-round-34 config (s2-old-fresh): prose 37.07, L.A.I.L 32.44. History: results/RESULTS.md rounds 1-34."
+    conditions: "Round 34 (2026-09-24 review campaign, results/2026-09-24-review/campaign/): pooled s8+s13, 2 boots. s8-S-sparse-markov and s13-promote-final ran the identical round-34 default config (image canonical-e13 = review-e13 sha256:c81762335a12, pack 2.0bpw-mcg-lmhead-mxfp8, DSpark-3 greedy + captures [1,3,4,6,8], Engram prefetch v3 + census + gather v2 + WILLNEED, NCCL AR-tail set, mem-hygiene bundle, lm_head mxfp8, STREAM_FEED, WOA_PREPACK, SPARSE_MARKOV k=256, vision on, Engram on disk, AUDIT=strict clean). Each row is the median of the per-run values pooled over both boots' logs (pool_s8_s13.py -> pooled-s8-s13.json). bench_decode.py = streamed greedy 200 tokens thinking off, 9 runs per boot (pooled n=18 runs; c=2 per-stream n=36), ignore_eos (prose post-EOS fraction 0.59); L.A.I.L prose = tools/measure_lail_prose.py 512 tokens temperature 0.2, 10 runs per boot (pooled n=20). Per boot: L.A.I.L 34.51 / 32.44, prose c=1 39.87 / 39.18, structured c=1 62.51 / 62.68. Same-protocol fresh boot of the pre-round-34 config (s2-old-fresh): L.A.I.L 32.44, prose c=1 37.07, structured c=1 58.57, prose c=2 agg 52.93, structured c=2 agg 84.04. SPARSE_MARKOV's acceptance effect is open (round-2 ABAB pending). History: results/RESULTS.md rounds 1-34."
     units: {decode: tok/s per stream (median), aggregate: tok/s, ttft_p50: s}
     rows:
-      - {phase: prose, concurrency: 1, decode: "39.87", aggregate: "39.86", ttft_p50: "0.25", evidence: results/2026-09-24-review/campaign/s8-S-sparse-markov/04-bench-decode.summary.json}
-      - {phase: prose, concurrency: 2, decode: "29.41", aggregate: "57.55", ttft_p50: "0.28", evidence: results/2026-09-24-review/campaign/s8-S-sparse-markov/04-bench-decode.summary.json}
-      - {phase: structured, concurrency: 1, decode: "62.51", aggregate: "62.50", ttft_p50: "0.19", evidence: results/2026-09-24-review/campaign/s8-S-sparse-markov/04-bench-decode.summary.json}
-      - {phase: structured, concurrency: 2, decode: "45.45", aggregate: "89.39", ttft_p50: "0.31", evidence: results/2026-09-24-review/campaign/s8-S-sparse-markov/04-bench-decode.summary.json}
-      - {phase: lail_prose, concurrency: 1, decode: "34.51", aggregate: "34.51", ttft_p50: "0.32", evidence: results/2026-09-24-review/campaign/s8-S-sparse-markov/03-lail-prose-fresh.log}
+      - {phase: prose, concurrency: 1, decode: "39.52", aggregate: "39.52", ttft_p50: "0.25", evidence: results/2026-09-24-review/campaign/pooled-s8-s13.json}
+      - {phase: prose, concurrency: 2, decode: "29.03", aggregate: "56.77", ttft_p50: "0.28", evidence: results/2026-09-24-review/campaign/pooled-s8-s13.json}
+      - {phase: structured, concurrency: 1, decode: "62.52", aggregate: "62.50", ttft_p50: "0.18", evidence: results/2026-09-24-review/campaign/pooled-s8-s13.json}
+      - {phase: structured, concurrency: 2, decode: "45.28", aggregate: "89.44", ttft_p50: "0.28", evidence: results/2026-09-24-review/campaign/pooled-s8-s13.json}
+      - {phase: lail_prose, concurrency: 1, decode: "33.68", aggregate: "33.68", ttft_p50: "0.34", evidence: results/2026-09-24-review/campaign/pooled-s8-s13.json}
 
 links:
   model: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash
