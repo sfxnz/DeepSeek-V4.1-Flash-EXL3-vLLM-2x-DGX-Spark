@@ -126,3 +126,8 @@ Iterations (M = 4 unless noted; % = b12x/ours - 1, + is faster)
      but that is one 1.024-us event step and the means disagree (M=1 77.54 vs 77.17; M=8 76.79 vs 76.79).
      Not resolvable, so the table stays at W4. STOP: every shape is now within 1-4% of the pure-read time of its bytes
      (lm_head 1449.6 us vs 1440 for 341 MB incl. per-row scales at 237 GB/s). The kernel has no loss left to recover.
+ main_proj M=6/8 (prod4-mainproj-m68): no compiled config fits. The kernel stages the whole-K activation in
+     shared memory, and 8 x 15360 B e4m3 plus scales is 126.7 KB, over the 99 KB opt-in. b12x stays above M=4:
+     cold b12x_e2e 373.76 us at M=6 and M=8, against a read floor of 331.8. The draft runs main_proj once per step,
+     and M > 4 happens only at c=2, so at most ~35 us/step is on the table. That does not pay for a K-split
+     activation ring.
