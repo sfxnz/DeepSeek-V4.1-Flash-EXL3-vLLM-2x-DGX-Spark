@@ -1,0 +1,481 @@
+{
+ "stage": "s8-S-sparse-markov",
+ "what": "Arm S: promoted state so far (new defaults + s4 WILLNEED/STREAM_FEED + s7 WOA_PREPACK on review-e13; MHC_DECODE_SPLITS stays 0) plus DSV41_DSPARK_SPARSE_MARKOV=1 (TOPK default 256). One boot, DECODE protocol in s3/s5/s6/s7 order (L.A.I.L before any c=2 traffic), then C2-STRESS and post-stress L.A.I.L for parity. Serve stopped at the end. No profiler boot.",
+ "boot": {
+  "cmd": "nohup env AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e13 DSV41_WOA_PREPACK=1 DSV41_ENGRAM_WILLNEED=1 DSV41_STREAM_FEED=1 DSV41_DSPARK_SPARSE_MARKOV=1 ./run.sh > boot.log",
+  "git_head": "46201153fa0903939119b9450d214f7c5031e51f",
+  "image": "sha256:c81762335a12ddc809e84794be0fac0dd8cb263ebd3fef09c4aa00be052cbde2 on both ranks",
+  "pack": "2.0bpw-mcg-lmhead-mxfp8",
+  "start": "2026-09-24T23:31:08Z",
+  "api_ready": "2026-09-24T23:40:27Z (last timestamped APIServer line before 'Application startup complete')",
+  "run_sh_exit0": "2026-09-24T23:40:53Z",
+  "start_to_run_sh_exit_s": 585,
+  "ref_exit_s": {
+   "s6_B2": 568,
+   "s7_C2": 610,
+   "s5_C1": 606
+  },
+  "loading_weights_s": {
+   "TP0_spark1": [
+    310.4,
+    28.26
+   ],
+   "TP1_spark2": [
+    149.0,
+    29.01
+   ]
+  },
+  "graph_capture": "'Graph capturing finished in 13 secs' on TP0 (1.85 GiB) and TP1 (0.90 GiB); captures [1,3,4,6,8] FULL_AND_PIECEWISE with the top-k draft path",
+  "audit_strict": "==> audit ok: every expected patch engaged on head, worker",
+  "warmup": {
+   "greedy": "2.1s '323'",
+   "t07": "1.6s",
+   "prefill_3k_nonce_s": 6.9
+  },
+  "min_memavail_during_load_MB": {
+   "spark1": 26284,
+   "spark2": 27033,
+   "log": "mem-during-load.log"
+  },
+  "env": "DSV41_/NCCL_/VLLM_ env vs s7-C2: +DSV41_DSPARK_SPARSE_MARKOV=1, DSV41_MHC_DECODE_SPLITS 40->0, nothing else. vs s6-B2: +DSV41_DSPARK_SPARSE_MARKOV=1, +DSV41_WOA_PREPACK=1, nothing else. Head/worker identical except VLLM_HOST_IP. No HF token in container env. Engine argv identical to s7 (and s6).",
+  "start_to_api_ready_s": 559,
+  "ref_api_ready_s": {
+   "s6_B2": 541,
+   "s7_C2": 585,
+   "s5_C1": 580
+  }
+ },
+ "lever_engagement": {
+  "DSV41_DSPARK_SPARSE_MARKOV": "'dsv41: DSpark sparse Markov (gathered top-k) k=256' x4 procs head, x3 procs worker; 0 'decode lever sparse-markov FAILED' lines; graph capture ok",
+  "DSV41_WOA_PREPACK": "43 '[woa-prepack] packed ... engaged' per rank, 0 REJECTED",
+  "DSV41_MHC_DECODE_SPLITS": "0 (no split-K forced line)",
+  "lever_is_OFF_or_FAILED": {
+   "head": 0,
+   "worker": 0
+  },
+  "trace_markov_gemm_gone": "not verified: no profiler boot in this stage"
+ },
+ "smoke": {
+  "chat": "323 (1.35 s)",
+  "vision": "Red (1.78 s)"
+ },
+ "lail_fresh_10": {
+  "cmd": "python3 tools/measure_lail_prose.py --runs 10",
+  "log": "03-lail-prose-fresh.log",
+  "ms_step_median": 62.73,
+  "ms_step_range": [
+   62.1,
+   63.6
+  ],
+  "acceptance_median": 2.172,
+  "tok_s_median": 34.51,
+  "runs_tok_s": [
+   36.29,
+   33.13,
+   33.28,
+   34.34,
+   36.95,
+   34.52,
+   34.5,
+   36.43,
+   35.86,
+   33.78
+  ],
+  "run_acceptance": [
+   2.265,
+   2.069,
+   2.12,
+   2.147,
+   2.312,
+   2.179,
+   2.165,
+   2.302,
+   2.265,
+   2.142
+  ],
+  "ttft_median_s": 0.32,
+  "post_eos": 0.0
+ },
+ "bench_decode_9": {
+  "cmd": "python3 bench_decode.py --runs 9",
+  "log": "04-bench-decode.log",
+  "prose_c1": {
+   "tok_s": 39.87,
+   "agg_tok_s": 39.86,
+   "ms_step": 63.57,
+   "acc_pooled": 2.504,
+   "acc_median_run": 2.532,
+   "post_eos": 0.59
+  },
+  "prose_c2": {
+   "tok_s": 29.41,
+   "agg_tok_s": 57.55,
+   "ms_step": 87.97,
+   "acc_pooled": 2.557,
+   "acc_median_run": 2.538,
+   "post_eos": 0.59
+  },
+  "structured_c1": {
+   "tok_s": 62.51,
+   "agg_tok_s": 62.5,
+   "ms_step": 63.37,
+   "acc_pooled": 3.961,
+   "acc_median_run": 3.961,
+   "post_eos": 0.0
+  },
+  "structured_c2": {
+   "tok_s": 45.45,
+   "agg_tok_s": 89.39,
+   "ms_step": 87.16,
+   "acc_pooled": 3.961,
+   "acc_median_run": 3.961,
+   "post_eos": 0.0
+  },
+  "prose_c1_run_ms_step": [
+   63.3,
+   63.3,
+   63.5,
+   63.5,
+   63.6,
+   63.7,
+   63.9,
+   64.0,
+   73.1
+  ]
+ },
+ "micro_novel_8k_1run": {
+  "cmd": "python3 benches/micro.py --contexts 8192 --runs 1",
+  "pp_novel": 808.8,
+  "pp_warm": 679.4,
+  "tg": 33.8,
+  "tg_acceptance": 2.36,
+  "ref": {
+   "s7_C2_novel": 808.1,
+   "s6_B2_novel": 826.3
+  }
+ },
+ "quality_quick": {
+  "cmd": "python3 tests/quality_eval.py --quick --baseline results/2026-09-24-review/quality-baseline/quick.json --out <stage>/quality.json",
+  "pass": true,
+  "nll": 0.243337,
+  "decode_median_dlp": 0.01707,
+  "gen_nll_prefill": 0.33793,
+  "tools_exact": "20/22 (0.9091; gate passes with the one-item slack; misses t09 {} and t17 {})",
+  "tools_json": 1.0,
+  "no_call": 1.0,
+  "needle": "6/6",
+  "selfcons_aa_hazard": 0.02064,
+  "selfcons_golden_hazard": 0.01794,
+  "c2": true,
+  "vision": true,
+  "tools_reruns": {
+   "cmd": "python3 tests/quality_eval.py --quick --only tools --baseline ... --out quality-tools-rerunN.json",
+   "exact": [
+    "20/22 (t01 {}, t09 {})",
+    "22/22",
+    "21/22 (t09 {})"
+   ],
+   "note": "Every miss is an empty-args {} call. B/C single runs were 21/22 each (t09 {} every time); the baseline had t17 {} instead. temperature 0, so flips are verify-batch-shape numerics, the same class as selfcons A/A."
+  },
+  "aa_hazard_ref": {
+   "B1": 0.0174,
+   "B2": 0.01458,
+   "C": [
+    0.0341,
+    0.0194,
+    0.0216,
+    0.022
+   ]
+  }
+ },
+ "memory": {
+  "ready": {
+   "spark1": "used 97Gi avail 23Gi swap 6.6Gi",
+   "spark2": "used 96Gi avail 25Gi swap 4.4Gi"
+  },
+  "after_micro": {
+   "spark1": "avail 21Gi",
+   "spark2": "avail 22Gi"
+  },
+  "after_decode": {
+   "spark1": "avail 21Gi",
+   "spark2": "avail 22Gi"
+  },
+  "end": {
+   "spark1": "used 100Gi avail 21Gi swap 6.5Gi",
+   "spark2": "used 98Gi avail 22Gi swap 4.4Gi"
+  },
+  "after_stop": "MemAvailable 116Gi / 117Gi"
+ },
+ "engagement": {
+  "audit_after_decode": "env <serve DSV41_/VLLM_ env> python3 tools/engagement_audit.py --mode strict 0=head-docker-after-full.log 1=worker-docker-after-full.log: audit ok rc 0",
+  "audit_final": "audit ok rc 0",
+  "disarm_scan_after_decode_rc": 0,
+  "disarm_scan_final_rc": 0,
+  "grep": "no bad snapshot / IndexError / _prefetch_worker / 'disabled after' on either rank; prefetch v3 armed once per rank; only Traceback is the harmless usage_lib cpuinfo one on TP0",
+  "tilelang": "6 TileLang compiles per rank, all before ready (23:39:04-23:39:54). 0 post-ready 'mhc_pre_big_fuse_with_norm_tilelang' JIT warnings (s6 B2 and s7 C2 each had 1 on e13). The Triton/CuTeDSL post-ready JIT warning set is the same 14 kernels as s6/s7."
+ },
+ "c2_stress": {
+  "script": "c2_stress.py (copy of s7)",
+  "log": "10-c2-stress.log",
+  "ok": "12/12"
+ },
+ "lail_after_c2_10": {
+  "log": "11-lail-prose-after-c2.log",
+  "ms_step_median": 62.67,
+  "ms_step_range": [
+   62.4,
+   63.0
+  ],
+  "acceptance_median": 2.131,
+  "tok_s_median": 34.0,
+  "runs_tok_s": [
+   34.44,
+   34.27,
+   33.37,
+   34.14,
+   33.33,
+   34.0,
+   33.33,
+   32.57,
+   34.68,
+   34.0
+  ],
+  "run_acceptance": [
+   2.165,
+   2.155,
+   2.086,
+   2.156,
+   2.103,
+   2.133,
+   2.098,
+   2.044,
+   2.184,
+   2.129
+  ],
+  "delta_vs_fresh_tok_s": -0.51
+ },
+ "compare": {
+  "file": "compare.json",
+  "table": [
+   {
+    "metric": "prose_c1_ms_step",
+    "B1": 64.26,
+    "C1": 63.82,
+    "B2": 64.53,
+    "C2": 63.77,
+    "S": 63.57,
+    "B_mean": 64.395,
+    "B_spread": 0.27,
+    "C_mean": 63.795,
+    "C_spread": 0.05,
+    "S_minus_B_mean": -0.825,
+    "S_minus_C_mean": -0.225
+   },
+   {
+    "metric": "structured_c1_ms_step",
+    "B1": 63.8,
+    "C1": 63.49,
+    "B2": 63.84,
+    "C2": 64.41,
+    "S": 63.37,
+    "B_mean": 63.82,
+    "B_spread": 0.04,
+    "C_mean": 63.95,
+    "C_spread": 0.92,
+    "S_minus_B_mean": -0.45,
+    "S_minus_C_mean": -0.58
+   },
+   {
+    "metric": "lail_fresh_ms_step",
+    "B1": 62.94,
+    "C1": 63.36,
+    "B2": 63.01,
+    "C2": 62.5,
+    "S": 62.73,
+    "B_mean": 62.975,
+    "B_spread": 0.07,
+    "C_mean": 62.93,
+    "C_spread": 0.86,
+    "S_minus_B_mean": -0.245,
+    "S_minus_C_mean": -0.2
+   },
+   {
+    "metric": "lail_post_c2_ms_step",
+    "B1": 63.87,
+    "C1": 63.44,
+    "B2": 64.17,
+    "C2": 62.91,
+    "S": 62.67,
+    "B_mean": 64.02,
+    "B_spread": 0.3,
+    "C_mean": 63.175,
+    "C_spread": 0.53,
+    "S_minus_B_mean": -1.35,
+    "S_minus_C_mean": -0.505
+   },
+   {
+    "metric": "lail_fresh_acceptance",
+    "B1": 2.16,
+    "C1": 2.147,
+    "B2": 2.183,
+    "C2": 2.136,
+    "S": 2.172,
+    "B_mean": 2.171,
+    "B_spread": 0.023,
+    "C_mean": 2.141,
+    "C_spread": 0.011,
+    "S_minus_B_mean": 0.001,
+    "S_minus_C_mean": 0.031
+   },
+   {
+    "metric": "lail_post_c2_acceptance",
+    "B1": 2.152,
+    "C1": 2.114,
+    "B2": 2.118,
+    "C2": 2.131,
+    "S": 2.131,
+    "B_mean": 2.135,
+    "B_spread": 0.034,
+    "C_mean": 2.122,
+    "C_spread": 0.017,
+    "S_minus_B_mean": -0.004,
+    "S_minus_C_mean": 0.009
+   },
+   {
+    "metric": "prose_c1_acc_pooled",
+    "B1": 2.566,
+    "C1": 2.573,
+    "B2": 2.621,
+    "C2": 2.487,
+    "S": 2.504,
+    "B_mean": 2.593,
+    "B_spread": 0.055,
+    "C_mean": 2.53,
+    "C_spread": 0.086,
+    "S_minus_B_mean": -0.089,
+    "S_minus_C_mean": -0.026
+   },
+   {
+    "metric": "prose_c1_acc_median_run",
+    "B1": 2.513,
+    "C1": 2.551,
+    "B2": 2.597,
+    "C2": 2.519,
+    "S": 2.532,
+    "B_mean": 2.555,
+    "B_spread": 0.084,
+    "C_mean": 2.535,
+    "C_spread": 0.032,
+    "S_minus_B_mean": -0.023,
+    "S_minus_C_mean": -0.003
+   },
+   {
+    "metric": "structured_c1_acc_pooled",
+    "B1": 3.961,
+    "C1": 3.961,
+    "B2": 3.961,
+    "C2": 3.961,
+    "S": 3.961,
+    "B_mean": 3.961,
+    "B_spread": 0.0,
+    "C_mean": 3.961,
+    "C_spread": 0.0,
+    "S_minus_B_mean": 0.0,
+    "S_minus_C_mean": 0.0
+   },
+   {
+    "metric": "lail_fresh_tok_s",
+    "B1": 34.11,
+    "C1": 34.01,
+    "B2": 34.48,
+    "C2": 34.03,
+    "S": 34.51,
+    "B_mean": 34.295,
+    "B_spread": 0.37,
+    "C_mean": 34.02,
+    "C_spread": 0.02,
+    "S_minus_B_mean": 0.215,
+    "S_minus_C_mean": 0.49
+   },
+   {
+    "metric": "lail_post_c2_tok_s",
+    "B1": 33.47,
+    "C1": 33.44,
+    "B2": 33.03,
+    "C2": 33.76,
+    "S": 34.0,
+    "B_mean": 33.25,
+    "B_spread": 0.44,
+    "C_mean": 33.6,
+    "C_spread": 0.32,
+    "S_minus_B_mean": 0.75,
+    "S_minus_C_mean": 0.4
+   },
+   {
+    "metric": "prose_c1_tok_s",
+    "B1": 39.1,
+    "C1": 39.59,
+    "B2": 40.12,
+    "C2": 39.38,
+    "S": 39.87,
+    "B_mean": 39.61,
+    "B_spread": 1.02,
+    "C_mean": 39.485,
+    "C_spread": 0.21,
+    "S_minus_B_mean": 0.26,
+    "S_minus_C_mean": 0.385
+   },
+   {
+    "metric": "structured_c1_tok_s",
+    "B1": 62.08,
+    "C1": 62.39,
+    "B2": 62.04,
+    "C2": 61.49,
+    "S": 62.51,
+    "B_mean": 62.06,
+    "B_spread": 0.04,
+    "C_mean": 61.94,
+    "C_spread": 0.9,
+    "S_minus_B_mean": 0.45,
+    "S_minus_C_mean": 0.57
+   },
+   {
+    "metric": "prose_c2_agg_tok_s",
+    "B1": 56.99,
+    "C1": 55.31,
+    "B2": 57.43,
+    "C2": 58.27,
+    "S": 57.55,
+    "B_mean": 57.21,
+    "B_spread": 0.44,
+    "C_mean": 56.79,
+    "C_spread": 2.96,
+    "S_minus_B_mean": 0.34,
+    "S_minus_C_mean": 0.76
+   },
+   {
+    "metric": "structured_c2_agg_tok_s",
+    "B1": 87.66,
+    "C1": 89.34,
+    "B2": 87.88,
+    "C2": 88.75,
+    "S": 89.39,
+    "B_mean": 87.77,
+    "B_spread": 0.22,
+    "C_mean": 89.045,
+    "C_spread": 0.59,
+    "S_minus_B_mean": 1.62,
+    "S_minus_C_mean": 0.345
+   }
+  ]
+ },
+ "commands_note": "All tools run from /home/sfxnz/projects/ai-lab/recipes/.worktrees/perf-review-0924. Stop: ./stop.sh (14-stop.log, rc 0).",
+ "decisions": [
+  {
+   "key": "DSV41_DSPARK_SPARSE_MARKOV",
+   "value": "promote",
+   "reason": "ms/step gate vs B (S minus B mean; B1-B2 spread): prose c1 -0.825 (0.27), structured c1 -0.45 (0.04), fresh L.A.I.L -0.245 (0.07), post-stress L.A.I.L -1.35 (0.30). S is also below the C mean (WOA+MHC40) on all four: -0.225 / -0.58 / -0.20 / -0.505. Acceptance: fresh L.A.I.L 2.172 is inside the B band (2.160/2.183), post-stress 2.131 is inside (2.152/2.118), prose median-run 2.532 is inside (2.513/2.597), and structured is 3.961 in every boot. Prose pooled 2.504 is below the B band (2.566/2.621) but inside the C band (2.573/2.487). Quality quick PASS. Caveats: one boot only; S vs B also carries WOA_PREPACK and no WOA-only boot exists; markov_gemm removal is not trace-verified."
+  }
+ ]
+}

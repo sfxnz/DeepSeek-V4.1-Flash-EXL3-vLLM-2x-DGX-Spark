@@ -1,0 +1,50 @@
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=200 runs=9 concurrency=[1] phases=['prose']
+phase=prose c=1 run=1 wall=6.12s agg=33.70 tok/s per_stream=[33.70] ttft=[0.211] acc=2.314 ms_step=[68.7]
+phase=prose c=1 run=2 wall=5.71s agg=36.24 tok/s per_stream=[36.24] ttft=[0.217] acc=2.584 ms_step=[71.3]
+phase=prose c=1 run=3 wall=4.50s agg=46.41 tok/s per_stream=[46.42] ttft=[0.210] acc=2.985 ms_step=[64.3]
+phase=prose c=1 run=4 wall=5.15s agg=40.61 tok/s per_stream=[40.62] ttft=[0.254] acc=2.632 ms_step=[64.8]
+phase=prose c=1 run=5 wall=5.60s agg=37.27 tok/s per_stream=[37.28] ttft=[0.265] acc=2.680 ms_step=[71.9]
+phase=prose c=1 run=6 wall=5.25s agg=39.91 tok/s per_stream=[39.92] ttft=[0.268] acc=2.584 ms_step=[64.7]
+phase=prose c=1 run=7 wall=5.78s agg=36.04 tok/s per_stream=[36.04] ttft=[0.259] acc=2.398 ms_step=[66.5]
+phase=prose c=1 run=8 wall=5.27s agg=39.35 tok/s per_stream=[39.35] ttft=[0.215] acc=2.597 ms_step=[66.0]
+phase=prose c=1 run=9 wall=5.26s agg=39.80 tok/s per_stream=[39.81] ttft=[0.259] acc=2.597 ms_step=[65.2]
+natural phase=prose completion_tokens=87 finish_reason=stop
+SUMMARY [
+  {
+    "phase": "prose",
+    "concurrency": 1,
+    "median_decode_tok_s": 39.351844136152266,
+    "median_ttft_s": 0.253773262957111,
+    "median_agg_tok_s": 39.34665742937152,
+    "median_completion_tokens": 200,
+    "n": 9,
+    "acceptance_len": 2.5856115107913666,
+    "draft_acceptance_rate": 0.528537170263789,
+    "run_acceptance_len": [
+      2.314,
+      2.5844,
+      2.9851,
+      2.6316,
+      2.68,
+      2.5844,
+      2.3976,
+      2.5974,
+      2.5974
+    ],
+    "median_run_acceptance_len": 2.5974025974025974,
+    "median_ms_per_step": 66.00459659313353,
+    "ttft_s_p50": 0.253773262957111,
+    "ttft_s_p90": 0.26535685438429935,
+    "ttft_s_p99": 0.26790037462720645,
+    "inter_chunk_ms_p50": 63.81031300406903,
+    "inter_chunk_ms_p90": 79.17404060135596,
+    "inter_chunk_ms_p99": 87.94872514961754,
+    "finish_reasons": {
+      "length": 9
+    },
+    "natural_completion_tokens": 87,
+    "natural_finish_reason": "stop",
+    "natural_covers_max": false,
+    "post_eos_fraction": 0.565
+  }
+]

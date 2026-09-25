@@ -1,0 +1,24 @@
+--- /tmp/orig/vllm/v1/worker/gpu/model_runner.py	2026-09-10 06:38:20.000000000 +0000
++++ /usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py	2026-09-24 15:13:19.586745760 +0000
+@@ -1985,6 +1985,21 @@
+                 input_batch,
+                 self.req_states.draft_tokens[input_batch.idx_mapping],
+             )
++# --- engram-prefetch-v3 ---
++        if self.speculator is not None:
++            _stager = getattr(self.model_state, "engram_stager", None)
++            if _stager is not None:
++                _stager.enqueue_prefetch(
++                    input_batch.input_ids,
++                    input_batch.positions,
++                    input_batch.query_start_loc,
++                    self.model_state.lookback_token_ids,
++                    sampler_output.sampled_token_ids,
++                    num_sampled,
++                    draft_tokens,
++                    input_batch.num_reqs,
++                    input_batch.num_tokens,
++                )
+ 
+         # Post-step KV connector related operations.
+         kv_connector_output = self.kv_connector.post_forward(finished_req_ids)

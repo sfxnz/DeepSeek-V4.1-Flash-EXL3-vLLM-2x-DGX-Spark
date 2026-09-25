@@ -1,0 +1,48 @@
+{
+  "stage": "s1-microbench",
+  "date": "2026-09-24",
+  "worktree": "/home/sfxnz/projects/ai-lab/recipes/.worktrees/perf-review-0924",
+  "part_a_aged_serve": {
+    "serve": "original config from main checkout, image canonical-e12, container started 2026-09-22T11:55:54Z (~2.3 days up), snapshot 2.0bpw-mcg-lmhead-mxfp8",
+    "prefetch_v3_bug": {
+      "verdict": "confirmed",
+      "armed": {"head": "2026-09-22T12:02:54Z", "worker": "2026-09-22T12:00:34Z"},
+      "worker_TP1_errors": ["2026-09-24T13:38:55.900Z", "2026-09-24T13:38:57.409Z", "2026-09-24T13:42:58.751Z"],
+      "head_TP0_errors": ["2026-09-24T13:42:58.800Z", "2026-09-24T13:43:07.905Z", "2026-09-24T13:43:44.500Z"],
+      "disabled_line": "dsv41: engram prefetch disabled after 3 errors: IndexError('list index out of range') (worker 13:42:58.751Z, head 13:43:44.500Z)",
+      "site": "vllm/models/deepseek_v4_1/common/engram.py line 1598 in _prefetch_worker",
+      "other_tracebacks": "head boot 2026-09-22T11:56:48Z: usage-stats cpuinfo JSONDecodeError (benign)",
+      "bad_snapshot_lines": 0,
+      "files": ["aged/head_grep.txt", "aged/worker_grep.txt", "aged/head_tracebacks.txt", "aged/worker_tracebacks.txt"]
+    },
+    "memory": {
+      "spark1": {"used_gib": 98, "avail_gib": 22, "swap_used_gib": 6.7, "VmSwap_kB": {"vllm_api": 976252, "EngineCore": 846132, "Worker_TP0": 2263072}, "psi_memory_avg10_60_300": "0.00/0.00/0.00", "psi_memory_full_total_us": 3775785427},
+      "spark2": {"used_gib": 98, "avail_gib": 22, "swap_used_gib": 3.8, "VmSwap_kB": {"vllm_api": 967148, "Worker_TP1": 962148}, "psi_memory_avg10_60_300": "0.00/0.00/0.00", "psi_memory_full_total_us": 4965087462},
+      "after_stop": {"spark1": "used 6.0Gi avail 115Gi swap 1.8Gi", "spark2": "used 4.7Gi avail 117Gi swap 725Mi"}
+    },
+    "lail_prose_3runs": {"cmd": "python3 tools/measure_lail_prose.py --runs 3", "lail_tok_s": [28.82, 30.83, 26.17], "median_lail_tok_s": 28.82, "median_acceptance_len": 2.197, "median_ttft_s": 0.321, "post_eos_fraction": 0.0, "note": "prefetch v3 already self-disabled on both ranks"},
+    "during_lail_30s": {
+      "spark1": {"vmstat_si_sum_pages": 200, "vmstat_so_sum": 0, "bi_median_KBps": 2008, "wa_max": 1, "sm_clock_MHz": "2177-2184", "power_W_median": 29.7, "power_W_max": 33.33, "temp_C": "48-56", "util_pct_median": 86},
+      "spark2": {"vmstat_si_sum_pages": 0, "vmstat_so_sum": 0, "bi_median_KBps": 3524, "wa_max": 1, "sm_clock_MHz": "2190", "power_W_median": 27.43, "power_W_max": 31.3, "temp_C": "48-53", "util_pct_median": 80}
+    }
+  },
+  "part_b_stop": {"cmd": "cd main checkout && ./stop.sh", "result": "stopped local and remote dsv41-flash-exl3; docker ps clean on both (conduit only on spark1)"},
+  "part_c": {
+    "E-torch-unit": {"result": "PASS", "tests": 23, "failures": 0, "test_v2_matches_stock_with_census_pf_hit": "ok (ran, not skipped)", "note": "plan's 'tests.X' module names fail (no tests/__init__.py); ran with -w /w/tests"},
+    "mb-woa-prepack": {"result": "PASS", "bitwise": "BITWISE PASS", "packed_sf": "int32 (4,1024,32) stride (32768,1,1024)", "us": {"m3": [31.75, 25.0, 6.76], "m4": [32.73, 24.91, 7.82], "m8": [32.94, 24.25, 8.68]}, "us_fields": "[fp32_sf_us, packed_sf_us, saving_us]", "decision": "on (eligible for serve arm W)"},
+    "mb-mhc-prenorm": {"pdl": {"T4": {"16": 18.08, "40": 11.17, "48": 11.11}, "T6": {"16": 18.2, "40": 11.33, "48": 11.74}, "T8": {"16": 18.19, "40": 11.32, "48": 11.55}}, "nopdl_best": "40 at T=4/6/8 (12.28/12.28/12.38 vs 18.74/19.08/19.1)", "maxabs_vs_16_max": 6.02e-06, "units": "pre_us per call", "choice": 40, "why": "48 wins T=4 by 0.06 us but is worse at T=6/8; 40 saves 6.9 us/call (~38%) >= 5 us gate, maxabs <= 1e-2"},
+    "p2b-srcsort-microbench": {"sass_identity": "6x IDENTICAL, rc=0", "onehot_bitexact": {"0": true, "0.25": true, "0.5": true}, "outputs_finite": true, "cold_reduction_pct": {"0": -0.37, "0.25": 1.41, "0.5": 0.83}, "warm_reduction_pct": {"0": 0.18, "0.25": -0.22, "0.5": 1.75}, "cold_off_us": {"0": 525.6, "0.25": 512.3, "0.5": 505.1}, "gate": "bitexact PASS, dup-0 not worse; serve arm NOT eligible (cold < 3% at every dup, and 0.83% at dup 0.5 is far below 1/3 of the ~39% ceiling: in-flight L2 reuse not landing)", "decision": "off"},
+    "dense-gemm-microbench": {"gain_dg_vs_b12x_pct": {"qkv_a": -3.8, "wq_b": -7.1, "wo_b": -12.0, "shared_gate_up": -3.1, "shared_down": -9.4, "main_proj_M3": -9.2}, "split_k": {"qkv_a_sk2": -7.7, "qkv_a_sk4": -3.9, "shared_gate_up_sk2": -13.4, "shared_gate_up_sk4": -10.3}, "capture_ok": "all true", "err_ok": "all true", "DSV41_DENSE_DG_SHAPES": "", "decision": "rejected; no serve arm"},
+    "dual-rail-nccl-step1": {"tool": "tools/nccl_dualrail.sh (torch.distributed sweep in the serve image; no nccl-tests build needed)", "reps": 3, "nccl_net_devices_dual": "[0]rocep1s0f1 [1]roceP2p1s0f1", "busbw_GBps_median3": {"single": {"32MiB": 13.17, "64MiB": 13.06, "128MiB": 12.75}, "dual_keep": "+63.9/+70.8/+77.0%", "dual_keep_nomerge": "+65.5/+69.9/+76.7%"}, "small_msg_latency_us_single": "~13-14 us at 8B-1KiB", "worst_small_latency_change_median3": {"dual_keep": "+30.0% at 32KiB", "dual_keep_nomerge": "+9.5% at 64B"}, "per_rep_gate": {"dual_keep": ["FAIL", "FAIL", "FAIL"], "dual_keep_nomerge": ["FAIL", "FAIL", "PASS"]}, "gate": "FAIL (small-message latency > +5% in median-of-3 for both dual arms)", "decision": "off"},
+    "requant-probe-149": {"image": "canonical-e12 (exllamav3 1.4.9)", "relerr_mean": {"stock": 0.3773, "stock+refit": 0.3770, "greedy16": 0.3776, "viterbi": 0.2619, "viterbi+refit": 0.2617}, "mse_ratio_vs_stock": {"stock+refit": 0.9984, "viterbi": 0.4817, "viterbi+refit": 0.4812}, "sec_per_tensor": {"greedy16": 1.06, "viterbi": 4.539, "viterbi+refit": 4.27}, "full_pack_h_2nodes": {"viterbi": 29.05, "viterbi+refit": 27.33}},
+    "requant-probe-151": {"image": "dsv41-quant151 (exllamav3 1.5.1 @958ec93, built after fixing the Dockerfile version check)", "relerr_mean": {"stock": 0.3773, "stock+refit": 0.3770, "greedy16": 0.3775, "viterbi": 0.2617, "viterbi+refit": 0.2616}, "mse_ratio_vs_stock": {"viterbi": 0.4810, "viterbi+refit": 0.4805}, "sec_per_tensor": {"greedy16": 1.027, "viterbi": 2.241, "viterbi+refit": 1.971}, "full_pack_h_2nodes": {"viterbi": 14.34, "viterbi+refit": 12.61}, "upstream_vs_closed_form_refit_max_abs_relerr_diff": "<1e-8"}
+  },
+  "part_d_e13": {
+    "dockerfile": "docker/Dockerfile.e13 (FROM canonical-e12; vllm-exl3 d3cfd39 rebuilt with shapes,mrow,cfg1,codebook,fshift,srcsort; o_proj woa-prepack stage; branch patch dir + sitecustomize; label)",
+    "image_id": "sha256:c81762335a12ddc809e84794be0fac0dd8cb263ebd3fef09c4aa00be052cbde2",
+    "spark1": "built (docker build ~90 s)", "spark2": "docker save | ssh spark2 docker load (2m30s); same image ID",
+    "verify_both_nodes": {"vllm_exl3_c_so_size": 14632824, "so_sha256_16": "3cde6ef35b2ce5c3", "strings_DSV41_P2B_SRC_SORT": 1, "canonical_e12_so_marker": 0, "o_proj_prepack_def": 1, "o_proj_prepack_call": 1, "label": "shapes,mrow,cfg1,codebook,fshift,srcsort,b12x_smalls,fix_o_proj_woa_fp8,woa_prepack"},
+    "cpu_dryrun": {"cmd": "docker run --network none --memory 10g --env-file image-dryrun/scripts/head.env -e DSV41_ENGRAM_WILLNEED=0 [-v docker/patch:/opt/dsv41-patch:ro -v sitecustomize] review-e13 /driver.sh", "defaults": "rc 0/0, 16 'dsv41-patch ok', 0 FAIL, py_compile failures 0, import failures 0", "levers_on": "DSV41_WOA_PREPACK=1 DSV41_P2B_SRC_SORT=1 DSV41_MHC_DECODE_SPLITS=40: rc 0, 0 FAIL, decode_levers ok, 'MHC prenorm split-K forced to 40', no pre-srcsort warning"}
+  },
+  "end_state": "serve DOWN on both nodes; no GPU containers (spark1: conduit up, magical_blackwell Created and dsv41-exl3-nfs Exited pre-existing)"
+}

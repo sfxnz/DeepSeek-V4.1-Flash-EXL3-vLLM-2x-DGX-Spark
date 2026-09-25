@@ -118,11 +118,12 @@ class StreamFeedTests(unittest.TestCase):
 
 
 class StreamFeedWiringTests(unittest.TestCase):
-    def test_forwarded_to_both_ranks_default_off(self) -> None:
+    def test_forwarded_to_both_ranks_default_on(self) -> None:
         run = (ROOT / "run.sh").read_text()
         block = re.search(r"^FORWARD_ENVS=\((.*?)^\)", run, re.M | re.S)
         self.assertIsNotNone(block)
-        self.assertIn("DSV41_STREAM_FEED=0", block.group(1).split())
+        self.assertIn("DSV41_STREAM_FEED=", block.group(1).split())
+        self.assertIn('DSV41_STREAM_FEED="${DSV41_STREAM_FEED:-1}"', run.splitlines())  # round 34 (s4)
 
     def test_sitecustomize_installs_on_stream_feed_only_when_set(self) -> None:
         self.assertNotIn("STUB g8_stream_feed", run_site(["g8_stream_feed"]))

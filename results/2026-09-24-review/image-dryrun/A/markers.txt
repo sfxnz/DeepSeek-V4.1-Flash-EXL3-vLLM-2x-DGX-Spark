@@ -1,0 +1,39 @@
+== vllm/models/deepseek_v4_1/common/engram.py (+478 lines)
++# --- engram-fast-stage ---
++    _eng_os.environ.get("DSV41_ENGRAM_FAST_STAGE", "1") == "1"
++# --- engram-prefetch-v3 ---
++# --- engram-fast-stage ---
++                max_workers=int(_os.environ.get("DSV41_ENGRAM_STAGE_THREADS", "16"))
++# --- engram-prefetch-v3 ---
++        self.prefetch_on = _os.environ.get("DSV41_ENGRAM_PREFETCH", "0") == "1"
++            _os.environ.get("DSV41_ENGRAM_PREFETCH_DEBUG", "0") == "1"
++            f"dsv41: engram prefetch v3 armed (ngram={self._pf_ngram} "
++            print(f"dsv41: engram prefetch disabled: {exc!r}", flush=True)
++                        if _os.environ.get("DSV41_ENGRAM_PF_DUMP", "0") == "1":
++                    "dsv41: engram prefetch worker error "
++                    f"dsv41: engram prefetch disabled after "
++        if _pf_os.environ.get("DSV41_ENGRAM_PF_DUMP", "0") == "1":
++                    "dsv41: engram fast stage disabled after worker error: "
++                    "dsv41: engram fast stage self-check bit-exact "
++                    "dsv41: engram fast stage REVERTED to serial: "
+== vllm/models/deepseek_v4_1/common/engram_disk.py (+311 lines)
++# --- engram-stage-census ---
++_ENG_CENSUS = _os.environ.get("DSV41_ENGRAM_CENSUS", "0") == "1"
++_ENG_CENSUS_N = int(_os.environ.get("DSV41_ENGRAM_CENSUS_EVERY", "32"))
++# --- engram-gather-v2 ---
++_ENG_GATHER_V2 = [_gv2_os.environ.get("DSV41_ENGRAM_GATHER_V2", "0") == "1"]
++    _gv2_os.environ.get("DSV41_ENGRAM_GATHER_V2_MAX_ROWS", "0") or 0
++_ENG_GV2_WILLNEED = _gv2_os.environ.get("DSV41_ENGRAM_WILLNEED", "1") == "1"
++    _gv2_os.environ.get("DSV41_ENGRAM_WILLNEED_MIN_ROWS", "512") or 512
++_ENG_GV2_CENSUS = _gv2_os.environ.get("DSV41_ENGRAM_CENSUS", "0") == "1"
++_ENG_GV2_EVERY = int(_gv2_os.environ.get("DSV41_ENGRAM_CENSUS_EVERY", "32"))
++# --- engram-gather-v2 ---
++                "dsv41: engram gather v2 self-check bit-exact (r=%d)"
++# --- engram-gather-v2 ---
++                    "dsv41: engram gather v2 DISABLED -> stock path: %r"
++# --- engram-prefetch-v3 ---
++                        "DSV41_ENGRAM_PREFETCH_DEBUG", "0"
+== vllm/v1/attention/backends/mla/indexer.py (+3 lines)
++    _factor = __import__("os").environ.get("DSV41_INDEXER_PREFILL_FACTOR", "")  # dsv41-indexer-workspace
+== vllm/v1/worker/gpu/model_runner.py (+15 lines)
++# --- engram-prefetch-v3 ---

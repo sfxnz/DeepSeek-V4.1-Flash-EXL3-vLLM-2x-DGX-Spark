@@ -1,0 +1,501 @@
+{
+ "stage": "s12-lmhead-quality-ab",
+ "what": "lm_head numerics A/B (gpu_plan lmhead-numerics-ab). Arm = promoted state (s8 S arm: review-e13, WOA_PREPACK, WILLNEED, STREAM_FEED, SPARSE_MARKOV) with the STOCK bf16 lm_head: SNAPSHOT_SHA=2.0bpw-mcg, DSV41_LMHEAD_MXFP8=0. Compared against the mxfp8-head numbers (s8 same config, s3, quality-baseline quick/full, and all campaign mxfp8 boots as controls). One boot; serve stopped at end.",
+ "boot": {
+  "cmd": "nohup env AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e13 SNAPSHOT_SHA=2.0bpw-mcg DSV41_LMHEAD_MXFP8=0 DSV41_WOA_PREPACK=1 DSV41_ENGRAM_WILLNEED=1 DSV41_STREAM_FEED=1 DSV41_DSPARK_SPARSE_MARKOV=1 ./run.sh > boot.log",
+  "git_head": "704fed21bc7564bae4e502ba8f4e3c98790882f8",
+  "image": "sha256:c81762335a12ddc809e84794be0fac0dd8cb263ebd3fef09c4aa00be052cbde2 on both ranks",
+  "pack": "2.0bpw-mcg (stock bf16 head.weight; no lm_head.* keys in index)",
+  "snapshot_check": "snapshots/2.0bpw-mcg present on spark1 and spark2: 88 files, identical path+size list (md5 3471b19c... after LC_ALL=C sort), index md5 328f78ee..., config md5 d4eb6368... on both; 334G",
+  "start": "2026-09-25T00:33:05Z",
+  "api_ready": "2026-09-25T00:42:50Z",
+  "run_sh_exit0": "2026-09-25T00:43:11Z (boot.log mtime)",
+  "start_to_api_ready_s": 585,
+  "start_to_run_sh_exit_s": 606,
+  "loading_weights_s": {
+   "TP0_spark1": [
+    318.1,
+    30.16
+   ],
+   "TP1_spark2": [
+    151.15,
+    27.63
+   ]
+  },
+  "min_memavail_during_load_MB": {
+   "spark1": 24163,
+   "spark2": 25128
+  },
+  "audit_strict": "==> audit ok: every expected patch engaged on head, worker (lmhead_mxfp8 not expected with DSV41_LMHEAD_MXFP8=0)",
+  "warmup": "greedy 2.0s '323'; t=0.7 1.5s; prefill 3k 6.7s",
+  "env_vs_s8": "DSV41_/NCCL_/VLLM_ env identical to s8 except DSV41_LMHEAD_MXFP8 1->0; engine argv identical except snapshot path (2.0bpw-mcg-lmhead-mxfp8 -> 2.0bpw-mcg). Head/worker env identical except VLLM_HOST_IP. No HF token in container env.",
+  "lm_head_path": "0 'lm_head mxfp8' lines on either rank (stock bf16 UnquantizedEmbeddingMethod path); no self-disarm line",
+  "levers": "woa-prepack 43/43 engaged per rank, 0 REJECTED; 'DSpark sparse Markov (gathered top-k) k=256' on both ranks; stream feed installed and prefetch v3 armed on both ranks; 0 dsv41-patch FAIL"
+ },
+ "smoke": {
+  "chat": "323",
+  "vision": "Red"
+ },
+ "lail_fresh_10": {
+  "cmd": "python3 tools/measure_lail_prose.py --runs 10",
+  "log": "03-lail-prose-fresh.log",
+  "tok_s_median": 32.38,
+  "runs_tok_s": [
+   31.73,
+   32.28,
+   32.47,
+   31.16,
+   33.81,
+   34.74,
+   31.52,
+   33.1,
+   34.71,
+   31.26
+  ],
+  "ms_step_median": 65.03,
+  "ms_step_range": [
+   64.2,
+   66.1
+  ],
+  "acceptance_median": 2.103,
+  "ttft_s": 0.336,
+  "post_eos": 0.0,
+  "vs_s8_mxfp8_same_config": {
+   "tok_s": 34.51,
+   "ms_step": 62.73,
+   "acceptance": 2.172,
+   "delta_tok_s_pct_stock_vs_mxfp8": -6.2,
+   "delta_ms_step": 2.3
+  }
+ },
+ "bench_decode_9": {
+  "cmd": "python3 bench_decode.py --runs 9",
+  "log": "08-bench-decode.log",
+  "note": "run after quality (not in s8 order: s8 ran it right after L.A.I.L)",
+  "prose_c1": {
+   "tok_s": 37.88,
+   "ms_step": 65.83,
+   "acc_pooled": 2.49,
+   "acc_median_run": 2.5125,
+   "post_eos": 0.57
+  },
+  "prose_c2": {
+   "tok_s": 27.87,
+   "agg_tok_s": 55.23,
+   "ms_step": 90.68
+  },
+  "structured_c1": {
+   "tok_s": 60.16,
+   "ms_step": 65.84,
+   "acc_pooled": 3.961
+  },
+  "structured_c2": {
+   "agg_tok_s": 86.26,
+   "ms_step": 90.68
+  },
+  "vs_s8_mxfp8": {
+   "prose_c1": "39.87 @63.57 ms/step (stock -5.0%, +2.26 ms)",
+   "structured_c1": "62.51 @63.37 (stock -3.8%, +2.47 ms)",
+   "prose_c2_agg": "57.55 (stock -4.0%)",
+   "structured_c2_agg": "89.39 (stock -3.5%)"
+  }
+ },
+ "quality_quick": {
+  "cmd": "python3 tests/quality_eval.py --quick --baseline results/2026-09-24-review/quality-baseline/quick.json --out quality_quick.json",
+  "log": "04-quality-quick.log",
+  "pass": true,
+  "nll": 0.24236,
+  "decode_median_dlp": 0.01292,
+  "decode_gen_nll": 0.31762,
+  "tools_exact": "21/22 (t09 miss, same as every mxfp8 boot)",
+  "needle": "6/6",
+  "selfcons_identical": 3,
+  "aa_hazard": 0.02273,
+  "golden_hazard_vs_baseline_mxfp8": 0.01906,
+  "c2": true,
+  "vision": true
+ },
+ "quality_full_subset": {
+  "cmd": "python3 tests/quality_eval.py --full --only nll,decode,tools,selfcons,c2,vision,gsm8k,gsm8k_think,mmlu --baseline results/2026-09-24-review/quality-baseline/full.json --out stock_full.json",
+  "log": "05-quality-full-subset.log",
+  "pass": true,
+  "elapsed_s": 906.5,
+  "skipped": "needle (128k cell; 8k/32k needle covered by quick, 6/6)",
+  "nll": 0.242708,
+  "nll_run_means": [
+   0.242708,
+   0.243759
+  ],
+  "nll_repeat_delta": 0.001051,
+  "decode_median_dlp": 0.01047,
+  "decode_gen_nll": 0.28394,
+  "tools_exact": "21/22",
+  "selfcons_identical": 3,
+  "aa_hazard": 0.02586,
+  "golden_hazard_vs_baseline_full": 0.02239,
+  "gsm8k": "94/100 (Wilson 0.875-0.972)",
+  "gsm8k_think": "38/40",
+  "mmlu": "197/228",
+  "c2": true,
+  "vision": true
+ },
+ "gates_offline": {
+  "06a lm(full.json) --result vs stock_full baseline (KEEP gate: is mxfp8 worse than stock?)": "rc 0, all PASS: nll 0.243098 <= 0.25271, gsm8k 0.94 vs 0.94, gsm8k_think 0.95 vs 0.95, mmlu 0.864 vs 0.864, tools 0.9545 vs 0.9545, golden 0.0212 <= 0.05172",
+  "06b stock_full --result vs lm full.json (symmetric)": "rc 0, all PASS",
+  "06c s8 lm quick --result vs stock quick (same config)": "rc 0, all PASS (s8 tools 20/22 within 1-item slack; nll 0.243337 <= 0.25236; golden 0.02378 <= 0.04546)",
+  "06d stock quick --result vs s8 lm quick": "rc 0, all PASS"
+ },
+ "ab": {
+  "nll": {
+   "stock_runs": [
+    0.24236,
+    0.242708,
+    0.243759
+   ],
+   "stock_mean": 0.242942,
+   "mxfp8_runs_9": "baseline quick 0.24316, baseline full 0.243098/0.243175, s2 0.244203, s3 0.242797, s5 0.243318, s6 0.243748, s7 0.243646, s8 0.243337",
+   "mxfp8_mean": 0.243387,
+   "mxfp8_range": [
+    0.242797,
+    0.244203
+   ],
+   "delta_stock_minus_mxfp8": -0.000445,
+   "delta_same_config_s12quick_minus_s8": -0.000977,
+   "paired_per_passage_s12quick_minus_s8": {
+    "mean_passage_delta": -0.000978,
+    "stock_lower": 20,
+    "stock_higher": 20,
+    "max_abs": 0.02047
+   },
+   "control_per_passage_s3_minus_s8": {
+    "mean_passage_delta": -0.00054,
+    "max_abs": 0.02165
+   },
+   "noise": "stock in-boot repeat delta 0.001051; mxfp8 cross-boot range 0.0014; gate floor 0.01"
+  },
+  "gsm8k_thinking_off": {
+   "n": 100,
+   "cur_only_wrong": 1,
+   "base_only_wrong": 1,
+   "delta_acc": 0.0,
+   "delta_ci95_wald": [
+    -0.0277,
+    0.0277
+   ],
+   "mcnemar_exact_p": 1.0,
+   "stock": {
+    "k": 94,
+    "n": 100,
+    "rate": 0.94,
+    "ci95": [
+     0.8752,
+     0.9722
+    ]
+   },
+   "mxfp8": {
+    "k": 94,
+    "n": 100,
+    "rate": 0.94,
+    "ci95": [
+     0.8752,
+     0.9722
+    ]
+   },
+   "stock_misses": [
+    234,
+    403,
+    689,
+    754,
+    962,
+    1001
+   ],
+   "mxfp8_misses": [
+    234,
+    403,
+    754,
+    962,
+    1001,
+    1105
+   ]
+  },
+  "gsm8k_think": {
+   "n": 40,
+   "cur_only_wrong": 0,
+   "base_only_wrong": 0,
+   "delta_acc": 0.0,
+   "delta_ci95_wald": [
+    0.0,
+    0.0
+   ],
+   "mcnemar_exact_p": 1.0,
+   "stock": {
+    "k": 38,
+    "n": 40,
+    "rate": 0.95,
+    "ci95": [
+     0.835,
+     0.9862
+    ]
+   },
+   "mxfp8": {
+    "k": 38,
+    "n": 40,
+    "rate": 0.95,
+    "ci95": [
+     0.835,
+     0.9862
+    ]
+   },
+   "stock_misses": [
+    403,
+    494
+   ],
+   "mxfp8_misses": [
+    403,
+    494
+   ]
+  },
+  "mmlu": {
+   "n": 228,
+   "cur_only_wrong": 3,
+   "base_only_wrong": 3,
+   "delta_acc": 0.0,
+   "delta_ci95_wald": [
+    -0.0211,
+    0.0211
+   ],
+   "mcnemar_exact_p": 1.0,
+   "stock": {
+    "k": 197,
+    "n": 228,
+    "rate": 0.864,
+    "ci95": [
+     0.8135,
+     0.9025
+    ]
+   },
+   "mxfp8": {
+    "k": 197,
+    "n": 228,
+    "rate": 0.864,
+    "ci95": [
+     0.8135,
+     0.9025
+    ]
+   }
+  },
+  "rates_note": "paired vs quality-baseline/full.json (mxfp8 head, canonical-e12, old flags) - config differs besides the head; no same-config mxfp8 --full exists",
+  "greedy_flip": {
+   "within_boot_aa": [
+    {
+     "arm": "baseline-quick",
+     "hazard": 0.01603,
+     "diverged": 8,
+     "events_at_risk": 499
+    },
+    {
+     "arm": "baseline-full",
+     "hazard": 0.02174,
+     "diverged": 8,
+     "events_at_risk": 368
+    },
+    {
+     "arm": "s2",
+     "hazard": 0.01636,
+     "diverged": 8,
+     "events_at_risk": 489
+    },
+    {
+     "arm": "s3",
+     "hazard": 0.01743,
+     "diverged": 8,
+     "events_at_risk": 459
+    },
+    {
+     "arm": "s5",
+     "hazard": 0.03409,
+     "diverged": 9,
+     "events_at_risk": 264
+    },
+    {
+     "arm": "s6",
+     "hazard": 0.01458,
+     "diverged": 7,
+     "events_at_risk": 480
+    },
+    {
+     "arm": "s7",
+     "hazard": 0.02204,
+     "diverged": 8,
+     "events_at_risk": 363
+    },
+    {
+     "arm": "s8",
+     "hazard": 0.02064,
+     "diverged": 9,
+     "events_at_risk": 436
+    },
+    {
+     "arm": "s12-quick",
+     "hazard": 0.02273,
+     "diverged": 9,
+     "events_at_risk": 396
+    },
+    {
+     "arm": "s12-full",
+     "hazard": 0.02586,
+     "diverged": 9,
+     "events_at_risk": 348
+    }
+   ],
+   "pooled_aa_mxfp8_9boots": {
+    "diverged": 65,
+    "at_risk_tokens": 3358,
+    "hazard": 0.01936
+   },
+   "pooled_aa_stock_2runs": {
+    "diverged": 18,
+    "at_risk_tokens": 744,
+    "hazard": 0.02419
+   },
+   "pooled_cross_boot_control_mxfp8_vs_mxfp8": {
+    "diverged": 929,
+    "at_risk_tokens": 50081,
+    "hazard": 0.01855
+   },
+   "pooled_cross_boot_control_excl_mhc40": {
+    "diverged": 495,
+    "at_risk_tokens": 28472,
+    "hazard": 0.01739
+   },
+   "pooled_cross_ab_stock_vs_mxfp8": {
+    "diverged": 532,
+    "at_risk_tokens": 26960,
+    "hazard": 0.01973
+   },
+   "ab_vs_s8_same_config": [
+    {
+     "pair": "s8|s12-quick",
+     "hazard": 0.01831,
+     "diverged": 33,
+     "pairs": 48,
+     "events_at_risk": 1802,
+     "kind": "A/B stock-vs-mxfp8"
+    },
+    {
+     "pair": "s8|s12-full",
+     "hazard": 0.02074,
+     "diverged": 34,
+     "pairs": 48,
+     "events_at_risk": 1639,
+     "kind": "A/B stock-vs-mxfp8"
+    }
+   ],
+   "stock_vs_stock_cross_run": {
+    "pair": "s12-quick|s12-full",
+    "hazard": 0.01782,
+    "diverged": 32,
+    "pairs": 48,
+    "events_at_risk": 1796,
+    "kind": "stock-vs-stock"
+   }
+  },
+  "tools_exact_by_arm": {
+   "baseline-quick": {
+    "exact_k": 21,
+    "n": 22,
+    "misses": [
+     "t17"
+    ]
+   },
+   "baseline-full": {
+    "exact_k": 21,
+    "n": 22,
+    "misses": [
+     "t09"
+    ]
+   },
+   "s2": {
+    "exact_k": 21,
+    "n": 22,
+    "misses": [
+     "t09"
+    ]
+   },
+   "s3": {
+    "exact_k": 21,
+    "n": 22,
+    "misses": [
+     "t09"
+    ]
+   },
+   "s5": {
+    "exact_k": 21,
+    "n": 22,
+    "misses": [
+     "t09"
+    ]
+   },
+   "s6": {
+    "exact_k": 21,
+    "n": 22,
+    "misses": [
+     "t09"
+    ]
+   },
+   "s7": {
+    "exact_k": 21,
+    "n": 22,
+    "misses": [
+     "t09"
+    ]
+   },
+   "s8": {
+    "exact_k": 20,
+    "n": 22,
+    "misses": [
+     "t09",
+     "t17"
+    ]
+   },
+   "s12-quick": {
+    "exact_k": 21,
+    "n": 22,
+    "misses": [
+     "t09"
+    ]
+   },
+   "s12-full": {
+    "exact_k": 21,
+    "n": 22,
+    "misses": [
+     "t09"
+    ]
+   }
+  }
+ },
+ "memory": {
+  "ready": {
+   "spark1": "used 97Gi avail 24Gi swap 6.6Gi",
+   "spark2": "used 96Gi avail 25Gi swap 4.2Gi"
+  },
+  "end": {
+   "spark1": "used 99Gi avail 22Gi swap 6.5Gi",
+   "spark2": "used 98Gi avail 23Gi swap 4.2Gi"
+  },
+  "after_stop": "117/117 GiB avail"
+ },
+ "logs": {
+  "engagement_audit_final": "audit ok rc 0 (10-engagement-audit-final.log)",
+  "disarm_scan_final": "rc 0",
+  "grep": "0 bad snapshot / IndexError / _prefetch_worker / 'disabled after' on both ranks; prefetch v3 armed once per rank; only Traceback = harmless usage_lib cpuinfo JSONDecodeError on TP0; 'disabled' hits are vLLM info lines only",
+  "tilelang_post_ready_jit": 0
+ },
+ "not_run": [
+  "needle 128k (not lm_head-specific; quick 8k/32k 6/6)",
+  "a same-config mxfp8 --full (GSM8K/MMLU comparison uses the e12 baseline full.json)",
+  "C2-STRESS (not asked)",
+  "micro prefill (not asked)"
+ ],
+ "stop": "./stop.sh rc 0; docker ps: conduit only on spark1, nothing on spark2"
+}

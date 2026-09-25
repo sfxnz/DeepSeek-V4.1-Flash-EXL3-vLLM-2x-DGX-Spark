@@ -1,0 +1,1183 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch skip cudagraph_worker_stub: DSV41_ALLOW_CUDA_GRAPHS=1
+[dsv41-drop-page-cache] armed (fadvise DONTNEED on shards after weight load)
+[dsv41-prefill-empty-cache] armed (threshold 8192 tokens, release when MemAvailable < 2.5 GiB)
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=40: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41: g8 stream feed installed
+dsv41: MHC prenorm split-K forced to 40 for num_tokens <= 64
+dsv41-patch ok decode_levers
+(APIServer pid=1) INFO 09-24 22:04:43 [api_utils.py:347] 
+(APIServer pid=1) INFO 09-24 22:04:43 [api_utils.py:347]        █     █     █▄   ▄█
+(APIServer pid=1) INFO 09-24 22:04:43 [api_utils.py:347]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.1.dev20904+g179dd0fa9
+(APIServer pid=1) INFO 09-24 22:04:43 [api_utils.py:347]   █▄█▀ █     █     █     █  model   /cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8
+(APIServer pid=1) INFO 09-24 22:04:43 [api_utils.py:347]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=1) INFO 09-24 22:04:43 [api_utils.py:347] 
+(APIServer pid=1) INFO 09-24 22:04:43 [api_utils.py:286] non-default args: {'model_tag': '/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8', 'default_chat_template_kwargs': {'thinking': False, 'reasoning_effort': 'low'}, 'enable_auto_tool_choice': True, 'tool_call_parser': 'deepseek_v41', 'host': '0.0.0.0', 'model': '/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8', 'tokenizer_mode': 'deepseek_v41', 'trust_remote_code': True, 'max_model_len': 1048576, 'quantization': 'exl3', 'served_model_name': ['deepseek-ai/DeepSeek-V4.1-Flash'], 'reasoning_parser': 'deepseek_v41', 'distributed_executor_backend': 'mp', 'master_addr': '10.100.8.1', 'master_port': 29524, 'nnodes': 2, 'tensor_parallel_size': 2, 'block_size': 64, 'gpu_memory_utilization': 0.75, 'kv_cache_memory_bytes': 8589934592, 'kv_cache_dtype': 'fp8', 'mm_encoder_tp_mode': 'data', 'max_num_batched_tokens': 8192, 'max_num_seqs': 2, 'speculative_config': {'method': 'dspark', 'num_speculative_tokens': 3, 'draft_sample_method': 'greedy'}, 'compilation_config': {'mode': None, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'ir_enable_torch_wrap': None, 'splitting_ops': None, 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': None, 'compile_ranges_endpoints': None, 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [1, 3, 4, 6, 8], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': None, 'pass_config': {}, 'max_cudagraph_capture_size': None, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': None, 'static_all_moe_layers': []}, 'kernel_config': KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=[], fused_add_rms_norm=[]), enable_flashinfer_autotune=False, enable_cutedsl_warmup=True, enable_jit_warmup=False, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto'), 'profiler_config': ProfilerConfig(profiler='torch', torch_profiler_dir='/tmp/dsv41-traces', proton_profiler_dir='', proton_context='shadow', proton_data='tree', proton_backend=None, proton_mode=None, proton_hook=None, proton_output_format=None, torch_profiler_with_stack=True, torch_profiler_with_flops=False, torch_profiler_use_gzip=True, torch_profiler_dump_cuda_time_total=True, torch_profiler_record_shapes=False, torch_profiler_with_memory=False, capture_torch_profiler=False, detailed_trace_annotation=False, ignore_frontend=False, delay_iterations=0, max_iterations=0, warmup_iterations=0, active_iterations=5, wait_iterations=0)}
+(APIServer pid=1) WARNING 09-24 22:04:43 [envs.py:2282] Unknown vLLM environment variable detected: VLLM_EXL3_MOE_KERNEL
+(APIServer pid=1) INFO 09-24 22:04:50 [model.py:692] Resolved architecture: DeepseekV41ForCausalLM
+(APIServer pid=1) INFO 09-24 22:04:50 [model.py:2034] Using max model len 1048576
+(APIServer pid=1) INFO 09-24 22:04:51 [cache.py:348] Using fp8 data type to store kv cache. It reduces the GPU memory footprint and boosts the performance. Meanwhile, it may cause accuracy drop without a proper scaling factor
+(APIServer pid=1) INFO 09-24 22:04:51 [arg_utils.py:2232] Inferred data_parallel_rank 0 from node_rank 0
+(APIServer pid=1) INFO 09-24 22:04:51 [model.py:692] Resolved architecture: DeepseekV41ForCausalLM
+(APIServer pid=1) INFO 09-24 22:04:51 [model.py:2034] Using max model len 1048576
+(APIServer pid=1) INFO 09-24 22:04:58 [scheduler.py:277] Chunked prefill is enabled with max_num_batched_tokens=8192.
+(APIServer pid=1) INFO 09-24 22:04:58 [kernel.py:373] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+(APIServer pid=1) WARNING 09-24 22:04:58 [cuda.py:336] Forcing --disable_chunked_mm_input for models with multimodal-bidirectional attention.
+(APIServer pid=1) INFO 09-24 22:04:58 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+(APIServer pid=1) INFO 09-24 22:04:59 [base.py:264] Multi-modal warmup completed in 0.062s
+(APIServer pid=1) INFO 09-24 22:04:59 [base.py:264] Readonly multi-modal warmup completed in 0.020s
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch skip cudagraph_worker_stub: DSV41_ALLOW_CUDA_GRAPHS=1
+[dsv41-drop-page-cache] armed (fadvise DONTNEED on shards after weight load)
+[dsv41-prefill-empty-cache] armed (threshold 8192 tokens, release when MemAvailable < 2.5 GiB)
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok warmup_stubs
+dsv41-patch skip cudagraph_worker_stub: DSV41_ALLOW_CUDA_GRAPHS=1
+[dsv41-drop-page-cache] armed (fadvise DONTNEED on shards after weight load)
+[dsv41-prefill-empty-cache] armed (threshold 8192 tokens, release when MemAvailable < 2.5 GiB)
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=40: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41: g8 stream feed already present
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=40: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41: g8 stream feed already present
+dsv41: MHC prenorm split-K forced to 40 for num_tokens <= 64
+dsv41-patch ok decode_levers
+dsv41: MHC prenorm split-K forced to 40 for num_tokens <= 64
+dsv41-patch ok decode_levers
+(EngineCore pid=448) INFO 09-24 22:05:04 [core.py:123] Initializing a V1 LLM engine (v0.1.dev20904+g179dd0fa9) with config: model='/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8', speculative_config=SpeculativeConfig(method='dspark', model='/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8', num_spec_tokens=3), tokenizer='/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8', skip_tokenizer_init=False, tokenizer_mode=deepseek_v41, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=1048576, download_dir=None, load_format=auto, tensor_parallel_size=2, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=exl3, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=fp8, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='deepseek_v41', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, per_request_spec_decode_metrics='none', kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=deepseek-ai/DeepSeek-V4.1-Flash, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all', '+quant_fp8', '+quant_fp8'], 'ir_enable_torch_wrap': False, 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 3, 4, 6, 8], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 8, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native']), enable_flashinfer_autotune=False, enable_cutedsl_warmup=True, enable_jit_warmup=False, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=448) INFO 09-24 22:05:04 [multiproc_executor.py:153] DP group leader: node_rank=0, node_rank_within_dp=0, master_addr=10.100.8.1, mq_connect_ip=10.100.8.1 (local), world_size=2, local_world_size=1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch skip cudagraph_worker_stub: DSV41_ALLOW_CUDA_GRAPHS=1
+[dsv41-drop-page-cache] armed (fadvise DONTNEED on shards after weight load)
+[dsv41-prefill-empty-cache] armed (threshold 8192 tokens, release when MemAvailable < 2.5 GiB)
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=40: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41: g8 stream feed already present
+dsv41: MHC prenorm split-K forced to 40 for num_tokens <= 64
+dsv41-patch ok decode_levers
+(Worker pid=694) INFO 09-24 22:05:10 [parallel_state.py:1817] world_size=2 rank=0 local_rank=0 distributed_init_method=tcp://10.100.8.1:29524 backend=nccl
+(Worker pid=694) INFO 09-24 22:05:20 [pynccl.py:120] vLLM is using nccl==2.30.7
+(Worker pid=694) WARNING 09-24 22:05:21 [symm_mem.py:67] SymmMemCommunicator: Device capability 12.1 not supported, communicator is not available.
+(Worker pid=694) WARNING 09-24 22:05:21 [flashinfer_all_reduce.py:383] FlashInfer All Reduce is disabled because it is not supported for world_size=2.
+(Worker pid=694) WARNING 09-24 22:05:21 [custom_all_reduce.py:201] Custom collectives are disabled because this multi-node group does not have MNNVL-capable GPUs on every rank.
+(Worker pid=694) INFO 09-24 22:05:21 [cuda_communicator.py:296] Using ['PYNCCL'] all-reduce backends (in dispatch order) for group 'tp:0' out of potential backends: ['FLASHINFER_PCIE_IPC', 'FLASHINFER', 'NCCL_SYMM_MEM', 'QUICK_REDUCE', 'AITER_CUSTOM', 'CUSTOM', 'SYMM_MEM', 'PYNCCL'].
+(Worker pid=694) INFO 09-24 22:05:21 [cuda_communicator.py:296] Using ['PYNCCL'] all-reduce backends (in dispatch order) for group 'ep:0' out of potential backends: ['FLASHINFER_PCIE_IPC', 'FLASHINFER', 'NCCL_SYMM_MEM', 'QUICK_REDUCE', 'AITER_CUSTOM', 'CUSTOM', 'SYMM_MEM', 'PYNCCL'].
+(Worker pid=694) INFO 09-24 22:05:21 [parallel_state.py:2234] rank 0 in world size 2 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank 0, EPLB rank N/A
+(Worker pid=694) INFO 09-24 22:05:21 [gpu_worker.py:436] Using V2 Model Runner
+(Worker_TP0 pid=694) INFO 09-24 22:05:22 [model_runner.py:383] Loading model from scratch...
+(Worker_TP0 pid=694) INFO 09-24 22:05:22 [cuda.py:581] Using backend AttentionBackendEnum.FLASH_ATTN for vit attention
+(Worker_TP0 pid=694) INFO 09-24 22:05:22 [mm_encoder_attention.py:372] Using AttentionBackendEnum.FLASH_ATTN for MMEncoderAttention.
+(Worker_TP0 pid=694) INFO 09-24 22:05:22 [quant_config.py:79] DeepSeek V4 expert_dtype resolved to 'fp4'
+(Worker_TP0 pid=694) INFO 09-24 22:05:22 [__init__.py:889] Using FlashInferCutlassMxfp8LinearKernel for MXFP8 GEMM
+(Worker_TP0 pid=694) INFO 09-24 22:05:22 [attention.py:140] Using DeepSeek's fp8_ds_mla KV cache format.
+(Worker_TP0 pid=694) INFO 09-24 22:05:22 [attention.py:1062] Using FP8 indexer cache for Lightning Indexer.
+(Worker_TP0 pid=694) INFO 09-24 22:05:26 [engram.py:442] Built engram token map (129280 -> 99092 ids) for layers (1, 14)
+(Worker_TP0 pid=694) dsv41: lm_head mxfp8 enabled (b12x, (64640, 5120))
+(Worker_TP0 pid=694) WARNING 09-24 22:05:26 [compilation.py:1354] Op 'quant_fp8' not present in model, enabling with '+quant_fp8' has no effect
+(Worker_TP0 pid=694) INFO 09-24 22:05:27 [weight_utils.py:863] Filesystem type for checkpoints: EXT4. Checkpoint size: 332.92 GiB. Available RAM: 37.58 GiB.
+(Worker_TP0 pid=694) INFO 09-24 22:05:27 [weight_utils.py:893] Auto-prefetch is disabled because the filesystem (EXT4) is not a recognized network FS (NFS/Lustre) and the checkpoint size (332.92 GiB) exceeds 90% of available RAM (37.58 GiB).
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:   0% Completed | 0/48 [00:00<?, ?it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:   6% Completed | 3/48 [00:00<00:10,  4.35it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:   8% Completed | 4/48 [00:01<00:16,  2.68it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  10% Completed | 5/48 [00:02<00:21,  2.00it/s]
+(Worker_TP0 pid=694) Exception in thread Thread-1 (_report_usage_worker):
+(Worker_TP0 pid=694) Traceback (most recent call last):
+(Worker_TP0 pid=694)   File "/usr/lib/python3.12/threading.py", line 1073, in _bootstrap_inner
+NCCL version 2.30.7+cuda13.3
+(Worker_TP0 pid=694)     self.run()
+(Worker_TP0 pid=694)   File "/usr/lib/python3.12/threading.py", line 1010, in run
+(Worker_TP0 pid=694)     self._target(*self._args, **self._kwargs)
+(Worker_TP0 pid=694)   File "/usr/local/lib/python3.12/dist-packages/vllm/usage/usage_lib.py", line 172, in _report_usage_worker
+(Worker_TP0 pid=694)     self._report_usage_once(model_architecture, usage_context, extra_kvs)
+(Worker_TP0 pid=694)   File "/usr/local/lib/python3.12/dist-packages/vllm/usage/usage_lib.py", line 216, in _report_usage_once
+(Worker_TP0 pid=694)     info = cpuinfo.get_cpu_info()
+(Worker_TP0 pid=694)            ^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=694)   File "/usr/local/lib/python3.12/dist-packages/cpuinfo/cpuinfo.py", line 2762, in get_cpu_info
+(Worker_TP0 pid=694)     output = json.loads(output, object_hook = _utf_to_str)
+(Worker_TP0 pid=694)              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=694)   File "/usr/lib/python3.12/json/__init__.py", line 359, in loads
+(Worker_TP0 pid=694)     return cls(**kw).decode(s)
+(Worker_TP0 pid=694)            ^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=694)   File "/usr/lib/python3.12/json/decoder.py", line 337, in decode
+(Worker_TP0 pid=694)     obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+(Worker_TP0 pid=694)                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_TP0 pid=694)   File "/usr/lib/python3.12/json/decoder.py", line 355, in raw_decode
+(Worker_TP0 pid=694)     raise JSONDecodeError("Expecting value", s, err.value) from None
+(Worker_TP0 pid=694) json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  12% Completed | 6/48 [00:02<00:23,  1.77it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  15% Completed | 7/48 [00:03<00:24,  1.65it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  17% Completed | 8/48 [00:04<00:24,  1.60it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  19% Completed | 9/48 [00:04<00:24,  1.56it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  21% Completed | 10/48 [00:05<00:24,  1.52it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  23% Completed | 11/48 [00:06<00:25,  1.44it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  25% Completed | 12/48 [00:07<00:26,  1.33it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  27% Completed | 13/48 [00:07<00:25,  1.37it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  29% Completed | 14/48 [00:08<00:21,  1.57it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  31% Completed | 15/48 [00:08<00:18,  1.75it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  33% Completed | 16/48 [00:09<00:17,  1.78it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  35% Completed | 17/48 [00:09<00:16,  1.85it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  38% Completed | 18/48 [00:10<00:16,  1.87it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  40% Completed | 19/48 [00:10<00:16,  1.75it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  42% Completed | 20/48 [00:11<00:17,  1.60it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  44% Completed | 21/48 [00:12<00:16,  1.64it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  46% Completed | 22/48 [00:12<00:15,  1.72it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  48% Completed | 23/48 [00:13<00:13,  1.83it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  50% Completed | 24/48 [00:13<00:12,  1.97it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  52% Completed | 25/48 [00:14<00:11,  1.94it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  54% Completed | 26/48 [00:14<00:11,  1.91it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  56% Completed | 27/48 [00:15<00:11,  1.87it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  58% Completed | 28/48 [00:15<00:10,  1.84it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  60% Completed | 29/48 [00:16<00:11,  1.62it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  62% Completed | 30/48 [00:17<00:09,  1.81it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  65% Completed | 31/48 [00:17<00:08,  1.97it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  67% Completed | 32/48 [00:17<00:07,  2.05it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  69% Completed | 33/48 [00:18<00:07,  2.01it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  71% Completed | 34/48 [00:19<00:07,  1.82it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  73% Completed | 35/48 [00:19<00:07,  1.75it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  75% Completed | 36/48 [00:20<00:07,  1.67it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  77% Completed | 37/48 [00:21<00:06,  1.64it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  79% Completed | 38/48 [00:21<00:06,  1.60it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  81% Completed | 39/48 [00:22<00:05,  1.58it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  83% Completed | 40/48 [00:23<00:05,  1.57it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  85% Completed | 41/48 [00:23<00:04,  1.57it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  88% Completed | 42/48 [00:24<00:03,  1.55it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  92% Completed | 44/48 [00:24<00:01,  2.34it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  94% Completed | 45/48 [00:24<00:01,  2.46it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  96% Completed | 46/48 [00:25<00:00,  2.57it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards: 100% Completed | 48/48 [00:25<00:00,  1.89it/s]
+(Worker_TP0 pid=694) 
+(Worker_TP0 pid=694) INFO 09-24 22:10:40 [default_loader.py:430] Loading weights took 313.83 seconds
+(Worker_TP0 pid=694) INFO 09-24 22:10:41 [__init__.py:889] Using EmulationMxfp8LinearKernel for MXFP8 GEMM
+(Worker_TP0 pid=694) INFO 09-24 22:10:45 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:45 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:45 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:45 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:45 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:46 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:46 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:46 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:46 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:46 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:46 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:46 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:46 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:46 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:56 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:56 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:56 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:56 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:56 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:56 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:56 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:56 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:56 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:56 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:56 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:56 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:57 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:57 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:57 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:57 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:57 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:57 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:57 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:57 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:58 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:58 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:58 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:58 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:58 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:58 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP0 pid=694) INFO 09-24 22:10:58 [eagle3_utils.py:28] Using Eagle3 auxiliary layers from config: (37, 38, 39)
+(Worker_TP0 pid=694) INFO 09-24 22:10:58 [kernel.py:373] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+(Worker_TP0 pid=694) INFO 09-24 22:10:58 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant
+(Worker_TP0 pid=694) INFO 09-24 22:10:58 [mxfp4.py:715] Using 'DEEPGEMM_MXFP4' Mxfp4 MoE backend.
+(Worker_TP0 pid=694) INFO 09-24 22:10:59 [weight_utils.py:863] Filesystem type for checkpoints: EXT4. Checkpoint size: 332.92 GiB. Available RAM: 30.81 GiB.
+(Worker_TP0 pid=694) INFO 09-24 22:10:59 [weight_utils.py:893] Auto-prefetch is disabled because the filesystem (EXT4) is not a recognized network FS (NFS/Lustre) and the checkpoint size (332.92 GiB) exceeds 90% of available RAM (30.81 GiB).
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:   0% Completed | 0/48 [00:00<?, ?it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:   6% Completed | 3/48 [00:00<00:07,  5.68it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:   8% Completed | 4/48 [00:01<00:12,  3.51it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  10% Completed | 5/48 [00:01<00:14,  3.02it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  12% Completed | 6/48 [00:02<00:16,  2.54it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  17% Completed | 8/48 [00:02<00:09,  4.31it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  23% Completed | 11/48 [00:02<00:05,  7.13it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  27% Completed | 13/48 [00:02<00:05,  5.90it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  29% Completed | 14/48 [00:03<00:07,  4.62it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  31% Completed | 15/48 [00:03<00:08,  3.97it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  33% Completed | 16/48 [00:03<00:09,  3.40it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  35% Completed | 17/48 [00:04<00:11,  2.70it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  38% Completed | 18/48 [00:05<00:12,  2.35it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  40% Completed | 19/48 [00:05<00:12,  2.39it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  42% Completed | 20/48 [00:05<00:12,  2.32it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  44% Completed | 21/48 [00:06<00:11,  2.34it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  46% Completed | 22/48 [00:06<00:10,  2.37it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  48% Completed | 23/48 [00:07<00:10,  2.36it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  50% Completed | 24/48 [00:07<00:10,  2.37it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  52% Completed | 25/48 [00:08<00:09,  2.37it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  54% Completed | 26/48 [00:08<00:09,  2.41it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  56% Completed | 27/48 [00:08<00:08,  2.37it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  58% Completed | 28/48 [00:09<00:08,  2.36it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  60% Completed | 29/48 [00:09<00:07,  2.39it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  62% Completed | 30/48 [00:10<00:07,  2.37it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  65% Completed | 31/48 [00:10<00:07,  2.36it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  67% Completed | 32/48 [00:11<00:06,  2.34it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  69% Completed | 33/48 [00:11<00:06,  2.22it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  71% Completed | 34/48 [00:12<00:06,  2.15it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  73% Completed | 35/48 [00:12<00:05,  2.21it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  75% Completed | 36/48 [00:12<00:05,  2.26it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  77% Completed | 37/48 [00:13<00:04,  2.32it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  79% Completed | 38/48 [00:13<00:04,  2.33it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  81% Completed | 39/48 [00:14<00:03,  2.31it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  83% Completed | 40/48 [00:14<00:03,  2.37it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  85% Completed | 41/48 [00:14<00:02,  2.55it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  92% Completed | 44/48 [00:17<00:02,  1.67it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  94% Completed | 45/48 [00:19<00:02,  1.11it/s]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards:  96% Completed | 46/48 [00:21<00:02,  1.20s/it]
+(Worker_TP0 pid=694) Loading safetensors checkpoint shards: 100% Completed | 48/48 [00:21<00:00,  2.24it/s]
+(Worker_TP0 pid=694) 
+(Worker_TP0 pid=694) INFO 09-24 22:11:21 [dspark.py:515] DSpark draft model loaded: 97 params
+(Worker_TP0 pid=694) INFO 09-24 22:11:21 [default_loader.py:430] Loading weights took 21.57 seconds
+(Worker_TP0 pid=694) INFO 09-24 22:11:21 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+(Worker_TP0 pid=694) INFO 09-24 22:11:22 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+(Worker_TP0 pid=694) INFO 09-24 22:11:22 [deep_gemm.py:136] DeepGEMM E8M0 enabled on current platform.
+(Worker_TP0 pid=694) INFO 09-24 22:11:23 [mxfp4.py:1973] Using MoEPrepareAndFinalizeNoDPEPModular
+(Worker_TP0 pid=694) INFO 09-24 22:11:23 [mxfp4.py:1974] Using DeepGemmFP4Experts
+(Worker_TP0 pid=694) WARNING 09-24 22:11:23 [speculator.py:203] Draft model DSparkDeepseekV4ForCausalLM does not support external multimodal embeddings. Embeddings from the target model will not be passed to the drafter; using text-only draft inputs instead.
+(Worker_TP0 pid=694) INFO 09-24 22:11:36 [model_runner.py:408] Model loading took 75.43 GiB memory and 374.364144 seconds
+(Worker_TP0 pid=694) dsv41: engram prefetch v3 armed (ngram=4 heads=8 depth=3 layers=[0, 1] mult=(2, 4) primes=(2, 3, 8) offsets=(2, 24))
+(Worker_TP0 pid=694) INFO 09-24 22:11:36 [topk_topp_sampler.py:62] Using FlashInfer for top-p & top-k sampling.
+(Worker_TP0 pid=694) [dsv41-drop-page-cache] dropped page cache of 48 shard files: MemFree 8.83GiB -> 37.90GiB
+(EngineCore pid=448) INFO 09-24 22:11:40 [torch_utils.py:280] Reducing Torch threads from 20 to 1 for serving. Set OMP_NUM_THREADS in the external environment to override.
+(EngineCore pid=448) INFO 09-24 22:11:40 [utils.py:306] Using BLHNC KV cache layout.
+(Worker_TP0 pid=694) INFO 09-24 22:11:40 [encoder_runner.py:131] Encoder cache will be initialized with a budget of 8192 tokens, and profiled with 7 image items of the maximum feature size.
+(Worker_TP0 pid=694) 2026-09-24 22:11:53  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+(Worker_TP0 pid=694) 2026-09-24 22:11:58  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+(Worker_TP0 pid=694) [wo_a-probe] wo_a.dtype=torch.bfloat16 wo_a.shape=(4096, 4096) use_fp8=False wo_b.dtype=torch.float8_e4m3fn n_groups=4
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+[22:12:03] : Warning: T.vectorized loop over `i_hci` with extent 4 is lowered as a serial loop because TileLang could not find a valid vectorization plan. Scalar accumulator updates inside the loop are a common cause; move reductions to T.unroll or T.serial if this is intended.
+(Worker_TP0 pid=694) 2026-09-24 22:12:03  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_post_tilelang` with `out_idx=None`
+(Worker_TP0 pid=694) 2026-09-24 22:12:04  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_post_tilelang`
+(Worker_TP0 pid=694) 2026-09-24 22:12:05  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+(Worker_TP0 pid=694) 2026-09-24 22:12:10  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+(Worker_TP0 pid=694) INFO 09-24 22:12:11 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8192)
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) 2026-09-24 22:12:20  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+(Worker_TP0 pid=694) 2026-09-24 22:12:25  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) 2026-09-24 22:12:27  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+(Worker_TP0 pid=694) 2026-09-24 22:12:32  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=694) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP0 pid=694) INFO 09-24 22:12:36 [gpu_worker.py:551] Initial free memory 112.35 GiB, reserved 8.0 GiB memory for KV Cache as specified by kv_cache_memory_bytes config and skipped memory profiling. This does not respect the gpu_memory_utilization config. Only use kv_cache_memory_bytes config when you want manual control of KV cache memory size. If OOM'ed, check the difference of initial free memory between the current run and the previous run where kv_cache_memory_bytes is suggested and update it correspondingly.
+(EngineCore pid=448) INFO 09-24 22:12:36 [kv_cache_utils.py:2321] GPU KV cache size: 2,289,205 tokens, Maximum concurrency for 1,048,576 tokens per request: 2.18x
+(Worker_TP0 pid=694) INFO 09-24 22:12:36 [indexer.py:741] DSA indexer decode path: use_flattening=False supports_varlen=False (next_n=4, use_fp4_cache=False)
+(Worker_TP0 pid=694) [dsv41-drop-page-cache] dropped page cache of 48 shard files: MemFree 25.93GiB -> 25.93GiB
+(Worker_TP0 pid=694) INFO 09-24 22:12:37 [breakable_cudagraph.py:290] Breakable CUDA graph enabled
+(Worker_TP0 pid=694) 2026-09-24 22:12:39  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+(Worker_TP0 pid=694) 2026-09-24 22:12:44  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+(Worker_TP0 pid=694) Capturing CUDA graphs (PIECEWISE):   0%|          | 0/5 [00:00<?, ?it/s]                                                                        Capturing CUDA graphs (PIECEWISE):   0%|          | 0/5 [00:01<?, ?it/s]                                                                        Capturing CUDA graphs (PIECEWISE):   0%|          | 0/5 [00:06<?, ?it/s]Capturing CUDA graphs (PIECEWISE):  20%|██        | 1/5 [00:09<00:37,  9.31s/it]Capturing CUDA graphs (PIECEWISE):  40%|████      | 2/5 [00:09<00:11,  3.93s/it]Capturing CUDA graphs (PIECEWISE):  60%|██████    | 3/5 [00:09<00:04,  2.21s/it]Capturing CUDA graphs (PIECEWISE):  80%|████████  | 4/5 [00:10<00:01,  1.78s/it]Capturing CUDA graphs (PIECEWISE): 100%|██████████| 5/5 [00:10<00:00,  1.22s/it]Capturing CUDA graphs (PIECEWISE): 100%|██████████| 5/5 [00:10<00:00,  2.19s/it]
+(Worker_TP0 pid=694) Capturing CUDA graphs (FULL):   0%|          | 0/2 [00:00<?, ?it/s]Capturing CUDA graphs (FULL):  50%|█████     | 1/2 [00:01<00:01,  1.29s/it]Capturing CUDA graphs (FULL): 100%|██████████| 2/2 [00:01<00:00,  1.62it/s]Capturing CUDA graphs (FULL): 100%|██████████| 2/2 [00:01<00:00,  1.40it/s]
+(Worker_TP0 pid=694) INFO 09-24 22:12:50 [speculator.py:141] Capturing model for DSpark speculator...
+(Worker_TP0 pid=694) Capturing dspark CUDA graphs (FULL):   0%|          | 0/2 [00:00<?, ?it/s]Capturing dspark CUDA graphs (FULL): 100%|██████████| 2/2 [00:00<00:00, 14.13it/s]Capturing dspark CUDA graphs (FULL): 100%|██████████| 2/2 [00:00<00:00, 14.12it/s]
+(Worker_TP0 pid=694) INFO 09-24 22:12:50 [model_runner.py:974] Graph capturing finished in 13 secs, took 1.14 GiB
+(Worker_TP0 pid=694) dsv41: engram gather v2 self-check bit-exact (r=120)
+(Worker_TP0 pid=694) dsv41: engram fast stage self-check bit-exact (2 tables, n=10)
+(Worker_TP0 pid=694) INFO 09-24 22:12:59 [jit_monitor.py:85] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+(Worker_TP0 pid=694) INFO 09-24 22:12:59 [torch_utils.py:280] Reducing Torch threads from 20 to 1 for serving. Set OMP_NUM_THREADS in the external environment to override.
+(EngineCore pid=448) INFO 09-24 22:12:59 [core.py:379] init engine (profile, create kv cache, warmup model) took 78.80 s
+(EngineCore pid=448) INFO 09-24 22:13:11 [kernel.py:373] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+(EngineCore pid=448) INFO 09-24 22:13:11 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant
+(APIServer pid=1) INFO 09-24 22:13:12 [async_llm.py:198] Torch profiler enabled. AsyncLLM CPU traces will be collected under /tmp/dsv41-traces
+(APIServer pid=1) INFO 09-24 22:13:12 [wrapper.py:191] Torch profiling enabled. Traces will be saved to: /tmp/dsv41-traces
+(APIServer pid=1) INFO 09-24 22:13:12 [entry.py:135] Supported tasks: ['generate']
+(APIServer pid=1) WARNING 09-24 22:13:14 [api_router.py:41] Profiler with mode 'torch' is enabled in the API server. This should ONLY be used for local development!
+(APIServer pid=1) INFO 09-24 22:13:17 [factories.py:82] Scale-out endpoints are disabled. Set VLLM_ENABLE_SCALE_OUT_ENDPOINTS=1 to enable them.
+(APIServer pid=1) INFO 09-24 22:13:17 [parser_manager.py:36] "auto" tool choice has been enabled.
+(APIServer pid=1) INFO 09-24 22:13:18 [entry.py:139] Starting vLLM server on http://0.0.0.0:8000
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:61] Available routes are:
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /openapi.json, Methods: GET, HEAD
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /docs, Methods: GET, HEAD
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /docs/oauth2-redirect, Methods: GET, HEAD
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /redoc, Methods: GET, HEAD
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /load, Methods: GET
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /version, Methods: GET
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /health, Methods: GET
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /metrics, Methods: GET
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /start_profile, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /stop_profile, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /tokenize, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /detokenize, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /v1/models, Methods: GET
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /ping, Methods: GET
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /ping, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /invocations, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /v1/chat/completions, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /v1/chat/completions/batch, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /v1/responses, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /v1/responses/{response_id}, Methods: GET
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /v1/responses/{response_id}/cancel, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /v1/completions, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /v1/messages, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /v1/messages/count_tokens, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /generative_scoring, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /scale_elastic_ep, Methods: POST
+(APIServer pid=1) INFO 09-24 22:13:18 [launcher.py:70] Route: /is_scaling_elastic_ep, Methods: POST
+(APIServer pid=1) INFO:     Started server process [1]
+(APIServer pid=1) INFO:     Waiting for application startup.
+(APIServer pid=1) INFO:     Application startup complete.
+(APIServer pid=1) INFO:     127.0.0.1:56460 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:56472 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:56480 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:56484 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50746 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50762 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50772 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50778 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50780 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50794 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50810 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50824 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50836 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50848 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) WARNING 09-24 22:13:33 [jit_monitor.py:141] Triton kernel JIT compilation during inference: ComputePrefillMetadataKernel.kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP0 pid=694) WARNING 09-24 22:13:35 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _prepare_dflash_inputs_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP0 pid=694) WARNING 09-24 22:13:35 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _compute_local_logits_stats_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP0 pid=694) WARNING 09-24 22:13:35 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _rejection_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP0 pid=694) WARNING 09-24 22:13:35 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _resample_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(APIServer pid=1) INFO:     127.0.0.1:50798 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50858 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50872 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50880 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50882 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) WARNING 09-24 22:13:37 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _gumbel_sample_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(APIServer pid=1) INFO:     127.0.0.1:50850 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50904 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50918 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50924 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50940 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50956 - "GET /v1/models HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) WARNING 09-24 22:13:38 [jit_monitor.py:141] CuTeDSL JIT compilation during inference: MXFP8QuantizeSwizzledKernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(APIServer pid=1) INFO 09-24 22:13:38 [loggers.py:310] Engine 000: Avg prompt throughput: 2.0 tokens/s, Avg generation throughput: 0.2 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+(APIServer pid=1) INFO 09-24 22:13:38 [metrics.py:120] SpecDecoding metrics: Mean acceptance length: 2.00, Accepted throughput: 0.08 tokens/s, Drafted throughput: 0.23 tokens/s, Accepted: 2 tokens, Drafted: 6 tokens, Per-position acceptance rate: 1.000, 0.000, 0.000, Avg Draft acceptance rate: 33.3%
+(Worker_TP0 pid=694) INFO 09-24 22:13:39 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=4137)
+(APIServer pid=1) INFO:     127.0.0.1:42914 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42922 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42932 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42948 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) WARNING 09-24 22:13:41 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _block_scores_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(APIServer pid=1) INFO:     127.0.0.1:42960 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42974 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42976 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42990 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) WARNING 09-24 22:13:41 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _candidate_flags_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP0 pid=694) WARNING 09-24 22:13:42 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _mask_candidates_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=3191 runs/call=4629.7 preads/call=4629.7 read=55.412ms fadv/call=4161.1 pf_hit=54%(26)
+(APIServer pid=1) INFO:     127.0.0.1:43004 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43006 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43012 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43024 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:50892 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43040 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43044 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43054 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43056 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43058 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43070 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43076 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43080 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO 09-24 22:13:48 [loggers.py:310] Engine 000: Avg prompt throughput: 413.6 tokens/s, Avg generation throughput: 0.8 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+(APIServer pid=1) INFO 09-24 22:13:48 [metrics.py:120] SpecDecoding metrics: Mean acceptance length: 1.40, Accepted throughput: 0.20 tokens/s, Drafted throughput: 1.50 tokens/s, Accepted: 2 tokens, Drafted: 15 tokens, Per-position acceptance rate: 0.400, 0.000, 0.000, Avg Draft acceptance rate: 13.3%
+(APIServer pid=1) INFO:     127.0.0.1:43094 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41032 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41048 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41052 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41068 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41084 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41094 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41096 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41104 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41112 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41118 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41130 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41134 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41138 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41150 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41152 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41164 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41168 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41170 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41184 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41194 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO 09-24 22:13:58 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+(APIServer pid=1) INFO:     127.0.0.1:43594 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43608 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43614 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43628 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43642 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43658 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43660 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43664 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43678 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43684 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43696 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43700 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43716 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) WARNING 09-24 22:14:05 [jit_monitor.py:141] Triton kernel JIT compilation during inference: BuildPrefillChunkMetadataKernel.kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP0 pid=694) WARNING 09-24 22:14:05 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _ring_slot_mapping_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(APIServer pid=1) INFO:     127.0.0.1:43728 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43744 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43752 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43760 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43766 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) WARNING 09-24 22:14:07 [jit_monitor.py:141] TileLang JIT compilation during inference: mhc_pre_big_fuse_with_norm_tilelang. This causes a latency spike; consider extending warmup to cover this shape/config.
+(APIServer pid=1) INFO 09-24 22:14:08 [loggers.py:310] Engine 000: Avg prompt throughput: 1.6 tokens/s, Avg generation throughput: 0.2 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+(APIServer pid=1) INFO 09-24 22:14:08 [metrics.py:120] SpecDecoding metrics: Mean acceptance length: 2.00, Accepted throughput: 0.05 tokens/s, Drafted throughput: 0.15 tokens/s, Accepted: 1 tokens, Drafted: 3 tokens, Per-position acceptance rate: 1.000, 0.000, 0.000, Avg Draft acceptance rate: 33.3%
+(APIServer pid=1) INFO:     127.0.0.1:43776 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43784 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43790 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43792 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:40990 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41006 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41020 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41024 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41038 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41040 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41052 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41064 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41070 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41086 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41098 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41114 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41130 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41144 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41146 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41154 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41168 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO 09-24 22:14:18 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+(APIServer pid=1) INFO:     127.0.0.1:41176 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41192 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41194 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41202 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43738 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48814 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48816 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48828 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48830 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48852 - "GET /v1/models HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) 2026-09-24 22:14:07  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+(Worker_TP0 pid=694) 2026-09-24 22:14:12  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+(Worker_TP0 pid=694) 2026-09-24 22:14:14  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+(Worker_TP0 pid=694) 2026-09-24 22:14:19  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=247 runs/call=219.0 preads/call=219.0 read=5.170ms fadv/call=116.9 pf_hit=76%(30)
+(APIServer pid=1) INFO:     127.0.0.1:48858 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48870 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48878 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48880 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.902ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.733ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:48896 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48906 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48908 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48922 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.585ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.559ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:48928 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48932 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48944 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48954 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.600ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO 09-24 22:14:28 [loggers.py:310] Engine 000: Avg prompt throughput: 26.2 tokens/s, Avg generation throughput: 21.1 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.1%, Prefix cache hit rate: 0.0%, MM cache hit rate: 0.0%
+(APIServer pid=1) INFO 09-24 22:14:28 [metrics.py:120] SpecDecoding metrics: Mean acceptance length: 2.14, Accepted throughput: 5.60 tokens/s, Drafted throughput: 14.70 tokens/s, Accepted: 112 tokens, Drafted: 294 tokens, Per-position acceptance rate: 0.653, 0.357, 0.133, Avg Draft acceptance rate: 38.1%
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.498ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:48968 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48970 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48972 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48988 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.518ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.445ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:53328 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53330 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53342 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53346 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.554ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.697ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:53356 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53362 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53376 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53384 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53400 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.711ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.603ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:53412 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53414 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53426 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53432 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.758ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.800ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:53440 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53450 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53452 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53456 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.754ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:48844 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=1) INFO 09-24 22:14:38 [api_router.py:23] Starting profiler...
+ERROR: External init callback must run in same thread as registerClient (-1073745536 != -1651337440)
+USDT:2026-09-24 22:14:38 1:1872 SyncActivityProfilerHandler.cpp:52] profiler_start
+(Worker_TP0 pid=694) INFO 09-24 22:14:38 [wrapper.py:191] Torch profiling enabled. Traces will be saved to: /tmp/dsv41-traces
+USDT:2026-09-24 22:14:38 694:694 SyncActivityProfilerHandler.cpp:52] profiler_start
+(APIServer pid=1) INFO 09-24 22:14:38 [api_router.py:25] Profiler started.
+(APIServer pid=1) INFO:     127.0.0.1:53468 - "POST /start_profile HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53482 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+(APIServer pid=1) INFO 09-24 22:14:38 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 30.3 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%, MM cache hit rate: 0.0%
+(APIServer pid=1) INFO 09-24 22:14:38 [metrics.py:120] SpecDecoding metrics: Mean acceptance length: 2.01, Accepted throughput: 15.20 tokens/s, Drafted throughput: 45.30 tokens/s, Accepted: 152 tokens, Drafted: 453 tokens, Per-position acceptance rate: 0.616, 0.265, 0.126, Avg Draft acceptance rate: 33.6%
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=2.911ms fadv/call=91.4 pf_hit=92%(32)
+(APIServer pid=1) INFO:     127.0.0.1:53498 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53504 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53516 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:53520 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.899ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.149ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:35954 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35960 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35964 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35974 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.976ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.868ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:35978 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35986 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35994 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:36000 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:36002 - "GET /v1/models HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.895ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.978ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:36004 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:36008 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:36014 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:36016 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.096ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.148ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:36018 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:36024 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:36032 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:36046 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.191ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO 09-24 22:14:48 [loggers.py:310] Engine 000: Avg prompt throughput: 6.1 tokens/s, Avg generation throughput: 34.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.1%, Prefix cache hit rate: 0.0%, MM cache hit rate: 0.0%
+(APIServer pid=1) INFO 09-24 22:14:48 [metrics.py:120] SpecDecoding metrics: Mean acceptance length: 2.19, Accepted throughput: 18.39 tokens/s, Drafted throughput: 46.48 tokens/s, Accepted: 184 tokens, Drafted: 465 tokens, Per-position acceptance rate: 0.703, 0.329, 0.155, Avg Draft acceptance rate: 39.6%
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.130ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:42260 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42270 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42282 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42296 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.107ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.060ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO:     127.0.0.1:42302 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42306 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42312 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42322 - "GET /metrics HTTP/1.1" 200 OK
+(Worker_TP0 pid=694) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.174ms fadv/call=0.0 pf_hit=100%(32)
+(APIServer pid=1) INFO 09-24 22:14:53 [api_router.py:31] Stopping profiler...
+USDT:2026-09-24 22:14:54 1:1872 SyncActivityProfilerHandler.cpp:59] profiler_stop
+(APIServer pid=1) INFO:     127.0.0.1:42340 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42348 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42364 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42368 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42366 - "GET /metrics HTTP/1.1" 200 OK
+USDT:2026-09-24 22:14:55 694:694 SyncActivityProfilerHandler.cpp:59] profiler_stop
+(APIServer pid=1) INFO:     127.0.0.1:42370 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42384 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42390 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:42396 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO 09-24 22:14:58 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 17.2 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%, MM cache hit rate: 0.0%
+(APIServer pid=1) INFO 09-24 22:14:58 [metrics.py:120] SpecDecoding metrics: Mean acceptance length: 2.26, Accepted throughput: 9.60 tokens/s, Drafted throughput: 22.80 tokens/s, Accepted: 96 tokens, Drafted: 228 tokens, Per-position acceptance rate: 0.684, 0.382, 0.197, Avg Draft acceptance rate: 42.1%
+(APIServer pid=1) INFO:     127.0.0.1:58106 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58118 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58122 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58124 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58138 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58148 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58162 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58176 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58184 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58192 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58200 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58206 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58216 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58218 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58226 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58242 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58234 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO 09-24 22:15:08 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%, MM cache hit rate: 0.0%
+(APIServer pid=1) INFO:     127.0.0.1:58250 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58264 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58278 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:58292 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35166 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35182 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35184 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35196 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35210 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35224 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35234 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35244 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35252 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35258 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35260 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35270 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+(APIServer pid=1)                                                    Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg    # of Calls  
+(APIServer pid=1) -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+(APIServer pid=1)                          threading.py(1030): _bootstrap         0.00%       5.024us       116.67%      107.526s       15.361s             7  
+(APIServer pid=1)                    threading.py(1073): _bootstrap_inner         0.00%       8.672us       116.67%      107.526s       15.361s             7  
+(APIServer pid=1)                                 threading.py(1010): run         0.00%       6.960us        83.33%       76.804s       15.361s             5  
+(APIServer pid=1)               concurrent/futures/thread.py(92): _worker         0.00%      48.817us        16.67%       15.361s       15.361s             1  
+(APIServer pid=1)                   concurrent/futures/thread.py(58): run         0.00%       8.320us         0.00%       1.061ms       1.061ms             1  
+(APIServer pid=1)                     vllm/profiler/wrapper.py(95): start         0.00%       2.032us         0.00%     986.628us     986.628us             1  
+(APIServer pid=1)               vllm/profiler/wrapper.py(71): _call_start         0.00%       2.512us         0.00%     984.596us     984.596us             1  
+(APIServer pid=1)                   vllm/profiler/wrapper.py(305): _start         0.00%      12.992us         0.00%     982.084us     982.084us             1  
+(APIServer pid=1)                 torch/profiler/profiler.py(1128): start         0.00%       2.448us         0.00%     875.812us     875.812us             1  
+(APIServer pid=1)       torch/profiler/profiler.py(1262): _transit_action         0.00%       2.272us         0.00%     873.364us     873.364us             1  
+(APIServer pid=1)            torch/profiler/profiler.py(342): start_trace         0.00%      56.528us         0.00%     871.092us     871.092us             1  
+(APIServer pid=1)           torch/autograd/profiler.py(414): _start_trace         0.00%     767.859us         0.00%     773.443us     773.443us             1  
+(APIServer pid=1)                           zmq/utils/garbage.py(56): run         0.00%       3.600us        16.67%       15.361s       15.361s             1  
+(APIServer pid=1)               concurrent/futures/thread.py(89): _worker        17.10%       15.763s        50.00%       46.083s       15.361s             3  
+(APIServer pid=1)                  anyio/_backends/_asyncio.py(1089): run         0.00%     276.929us        16.67%       15.361s       15.361s             1  
+(APIServer pid=1)                                      queue.py(171): get         0.00%      21.936us         1.83%        1.685s        1.685s             1  
+(APIServer pid=1)                                 threading.py(355): wait         1.83%        1.685s         1.83%        1.685s        1.685s             1  
+(APIServer pid=1) vllm/v1/engine/core_client.py(786): monitor_engine_c...         0.00%       2.289us        16.67%       15.361s       15.361s             1  
+(APIServer pid=1) vllm/v1/engine/utils.py(263): monitor_engine_livenes...         0.00%     214.194us        16.67%       15.361s       15.361s             1  
+(APIServer pid=1)               multiprocessing/connection.py(1136): wait         0.00%      52.464us         0.72%     661.738ms     661.738ms             1  
+(APIServer pid=1)                               selectors.py(415): select         0.72%     661.675ms         0.72%     661.675ms     661.675ms             1  
+(APIServer pid=1)                                      vllm(10): <module>         0.00%       2.608us        16.67%       15.361s       15.361s             1  
+(APIServer pid=1)                  vllm/entrypoints/cli/main.py(97): main         0.00%       4.720us        16.67%       15.361s       15.361s             1  
+(APIServer pid=1)                 vllm/entrypoints/cli/serve.py(153): cmd         0.00%       3.104us        16.67%       15.361s       15.361s             1  
+(APIServer pid=1)                             uvloop/__init__.py(96): run         0.00%       3.424us        16.67%       15.361s       15.361s             1  
+(APIServer pid=1)                            asyncio/runners.py(194): run         0.00%       1.632us        16.67%       15.361s       15.361s             1  
+(APIServer pid=1)                            asyncio/runners.py(118): run        15.74%       14.505s        16.67%       15.361s       15.361s             1  
+(APIServer pid=1)                     <built-in function perf_counter_ns>         0.00%       6.272us         0.00%       6.272us       3.136us             2  
+(APIServer pid=1)      torch/profiler/profiler.py(538): add_metadata_json         0.00%      10.752us         0.00%      18.048us       6.016us             3  
+(APIServer pid=1) <built-in method _add_metadata_json of pybind11_buil...         0.00%       7.296us         0.00%       7.296us       2.432us             3  
+(APIServer pid=1) <built-in method kineto_available of pybind11_builti...         0.00%       0.816us         0.00%       0.816us       0.816us             1  
+(APIServer pid=1) torch/profiler/profiler.py(554): _get_distributed_in...         0.00%       8.993us         0.00%      23.201us      23.201us             1  
+(APIServer pid=1)         torch/distributed/__init__.py(17): is_available         0.00%       2.704us         0.00%       4.608us       4.608us             1  
+(APIServer pid=1)                             <built-in function hasattr>         0.00%     585.587us         0.00%     631.059us       0.704us           897  
+(APIServer pid=1) torch/distributed/distributed_c10d.py(1394): is_init...         0.00%       6.960us         0.00%       9.600us       9.600us             1  
+(APIServer pid=1)       torch/distributed/distributed_c10d.py(817): WORLD         0.00%       2.384us         0.00%       2.640us       2.640us             1  
+(APIServer pid=1) torch/distributed/distributed_c10d.py(688): default_...         0.00%       0.256us         0.00%       0.256us       0.256us             1  
+(APIServer pid=1)                             <built-in function getattr>         0.00%       1.256ms         0.00%       1.312ms       0.928us          1413  
+(APIServer pid=1) <built-in method items of dict object at 0xe240fd363...         0.00%       0.880us         0.00%       0.880us       0.880us             1  
+(APIServer pid=1) vllm/profiler/wrapper.py(279): _maybe_add_version_me...         0.00%      41.072us         0.00%      93.280us      93.280us             1  
+(APIServer pid=1)                            json/__init__.py(183): dumps         0.00%      96.705us         0.00%     457.762us      26.927us            17  
+(APIServer pid=1)                            json/encoder.py(183): encode         0.00%      78.576us         0.00%     328.881us      19.346us            17  
+(APIServer pid=1)                          <built-in function isinstance>         0.01%      13.339ms         0.02%      14.736ms       0.183us         80743  
+(APIServer pid=1)             <built-in function encode_basestring_ascii>         0.00%       1.344us         0.00%       1.344us       1.344us             1  
+(APIServer pid=1)                        json/encoder.py(205): iterencode         0.00%     233.873us         0.00%     233.873us      14.617us            16  
+(APIServer pid=1)        <built-in method join of str object at 0xb204e0>         0.00%     352.208us         0.00%     368.576us       0.308us          1198  
+(APIServer pid=1)            concurrent/futures/_base.py(537): set_result         0.00%      30.736us         0.00%     139.744us      46.581us             3  
+(APIServer pid=1)                            threading.py(299): __enter__         0.00%      60.048us         0.00%      92.624us       1.930us            48  
+(APIServer pid=1) <built-in method __enter__ of _thread.RLock object a...         0.00%       7.104us         0.00%       7.104us       0.418us            17  
+(APIServer pid=1)                           threading.py(424): notify_all         0.00%      23.584us         0.00%      61.904us       6.190us            10  
+(APIServer pid=1)                                 <built-in function len>         0.02%      18.480ms         0.02%      18.480ms       0.176us        104740  
+(APIServer pid=1)                               threading.py(394): notify         0.00%      99.104us         0.00%     223.489us       8.277us            27  
+(APIServer pid=1) <built-in method _is_owned of _thread.RLock object a...         0.00%       0.208us         0.00%       0.208us       0.208us             1  
+(APIServer pid=1)                             threading.py(302): __exit__         0.00%      42.432us         0.00%      52.304us       1.090us            48  
+(APIServer pid=1) <built-in method __exit__ of _thread.RLock object at...         0.00%       2.128us         0.00%       2.128us       0.125us            17  
+(APIServer pid=1)     concurrent/futures/_base.py(337): _invoke_callbacks         0.00%       9.440us         0.00%      78.624us      26.208us             3  
+(APIServer pid=1)                asyncio/futures.py(394): _call_set_state         0.00%      67.584us         0.00%      69.184us      23.061us             3  
+(APIServer pid=1) <built-in method cancelled of _asyncio.Future object...         0.00%     346.642us         0.00%     346.642us       2.063us           168  
+(APIServer pid=1) <built-in method get_nowait of _queue.SimpleQueue ob...         0.00%       2.976us         0.00%       2.976us       2.976us             1  
+(APIServer pid=1)                              threading.py(515): release         0.00%      11.184us         0.00%      39.248us      13.083us             3  
+(APIServer pid=1) <built-in method __enter__ of _thread.lock object at...         0.00%       1.040us         0.00%       1.040us       1.040us             1  
+(APIServer pid=1)                            threading.py(314): _is_owned         0.00%      31.216us         0.00%      53.536us       1.727us            31  
+(APIServer pid=1) <built-in method acquire of _thread.lock object at 0...         0.00%       0.528us         0.00%       0.528us       0.528us             1  
+(APIServer pid=1) <built-in method __exit__ of _thread.lock object at ...         0.00%       0.256us         0.00%       0.256us       0.256us             1  
+(APIServer pid=1) <built-in method get of _queue.SimpleQueue object at...        16.67%       15.360s        16.67%       15.360s       15.360s             1  
+(APIServer pid=1)                     asyncio/futures.py(381): _set_state         0.00%     374.129us         0.00%     476.177us     158.726us             3  
+(APIServer pid=1)                   asyncio/base_futures.py(13): isfuture         0.00%      20.304us         0.00%      25.248us       1.052us            24  
+(APIServer pid=1)             asyncio/futures.py(345): _copy_future_state         0.00%      28.752us         0.00%      87.808us      29.269us             3  
+(APIServer pid=1)                  concurrent/futures/_base.py(393): done         0.00%       7.248us         0.00%      21.776us       7.259us             3  
+(APIServer pid=1) <built-in method done of _asyncio.Future object at 0...         0.00%     314.144us         0.00%     314.144us       0.441us           713  
+(APIServer pid=1)             concurrent/futures/_base.py(383): cancelled         0.00%       2.480us         0.00%       3.984us       1.328us             3  
+(APIServer pid=1)             concurrent/futures/_base.py(463): exception         0.00%      17.168us         0.00%      19.312us       6.437us             3  
+(APIServer pid=1)                concurrent/futures/_base.py(428): result         0.00%       5.408us         0.00%       7.120us       2.373us             3  
+(APIServer pid=1)          concurrent/futures/_base.py(398): __get_result         0.00%       0.304us         0.00%       0.304us       0.101us             3  
+(APIServer pid=1) <built-in method set_result of _asyncio.Future objec...         0.00%       3.573ms         0.00%       3.573ms       4.038us           885  
+(APIServer pid=1)             asyncio/futures.py(387): _call_check_cancel         0.00%       0.816us         0.00%       1.728us       0.576us             3  
+(APIServer pid=1)                       asyncio/threads.py(25): to_thread         0.00%       3.360us         0.00%       3.360us       3.360us             1  
+(APIServer pid=1)                   asyncio/tasks.py(767): _done_callback         0.00%      52.032us         0.00%      57.536us      11.507us             5  
+(APIServer pid=1) <built-in method cancelled of _asyncio.Task object a...         0.00%       1.440us         0.00%       1.440us       0.144us            10  
+(APIServer pid=1) <built-in method exception of _asyncio.Task object a...         0.00%       1.360us         0.00%       1.360us       0.124us            11  
+(APIServer pid=1)                           zmq/asyncio.py(151): <lambda>         0.00%       1.588ms         0.04%      35.797ms     152.978us           234  
+(APIServer pid=1)                     zmq/_future.py(670): _handle_events         0.01%       8.875ms         0.04%      34.209ms     146.190us           234  
+(APIServer pid=1)                                  enum.py(726): __call__         0.00%       3.336ms         0.01%       4.984ms       1.305us          3818  
+(APIServer pid=1)                                  enum.py(1129): __new__         0.00%       1.648ms         0.00%       1.648ms       0.432us          3818  
+(APIServer pid=1)                                  enum.py(1562): __and__         0.00%       4.522ms         0.01%      11.070ms       5.814us          1904  
+(APIServer pid=1)                               enum.py(1544): _get_value         0.00%       4.164ms         0.01%       5.975ms       0.811us          7371  
+(APIServer pid=1)                       zmq/_future.py(586): _handle_recv         0.00%       4.588ms         0.02%      18.459ms      78.550us           235  
+(APIServer pid=1) <built-in method popleft of collections.deque object...         0.00%     345.537us         0.00%     345.537us       0.492us           703  
+(APIServer pid=1)                     zmq/_future.py(704): _drop_io_state         0.00%       2.109ms         0.01%       5.488ms      23.355us           235  
+(APIServer pid=1)                               enum.py(1584): __invert__         0.00%     307.216us         0.00%     423.441us       1.810us           234  
+(APIServer pid=1)                   zmq/sugar/socket.py(378): __setattr__         0.00%     989.236us         0.00%     989.236us       2.114us           468  
+(APIServer pid=1)                    zmq/_future.py(710): _update_handler         0.00%     953.156us         0.00%       4.024ms       8.579us           469  
+(APIServer pid=1)         zmq/_future.py(682): _schedule_remaining_events         0.00%     996.755us         0.00%       2.014ms       2.865us           703  
+(APIServer pid=1)                             zmq/_future.py(193): cancel         0.00%      55.616us         0.00%      55.616us       0.237us           235  
+(APIServer pid=1)                                   enum.py(1551): __or__         0.00%       1.088ms         0.00%       2.564ms       5.398us           475  
+(APIServer pid=1)                zmq/sugar/socket.py(785): recv_multipart         0.00%       3.096ms         0.00%       3.281ms      13.961us           235  
+(APIServer pid=1)            zmq/_future.py(452): _remove_finished_future         0.00%      86.752us         0.00%      86.752us       0.371us           234  
+(APIServer pid=1) vllm/v1/engine/core_client.py(1114): process_outputs...         0.00%       3.670ms         0.03%      32.140ms     137.350us           234  
+(APIServer pid=1)      vllm/v1/engine/core_client.py(532): validate_alive         0.00%       1.271ms         0.00%       1.440ms       6.127us           235  
+(APIServer pid=1)                    vllm/v1/serial_utils.py(340): decode         0.00%     478.945us         0.01%       6.153ms      26.181us           235  
+(APIServer pid=1) -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+(APIServer pid=1) Self CPU time total: 92.165s
+(APIServer pid=1) 
+(APIServer pid=1) INFO:     127.0.0.1:35284 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35298 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35302 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35310 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35318 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+(APIServer pid=1)                                                    Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg    # of Calls  
+(APIServer pid=1) -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+(APIServer pid=1)               concurrent/futures/thread.py(89): _worker        17.10%       15.763s        50.00%       46.083s       15.361s             3  
+(APIServer pid=1) <built-in method get of _queue.SimpleQueue object at...        16.67%       15.360s        16.67%       15.360s       15.360s             1  
+(APIServer pid=1) <built-in method get of _queue.SimpleQueue object at...        16.23%       14.957s        16.23%       14.957s        7.479s             2  
+(APIServer pid=1) <built-in method poll of select.poll object at 0xe24...        15.95%       14.698s        15.95%       14.698s     979.838ms            15  
+(APIServer pid=1)                            asyncio/runners.py(118): run        15.74%       14.505s        16.67%       15.361s       15.361s             1  
+(APIServer pid=1) <built-in method acquire of _thread.lock object at 0...        14.70%       13.547s        14.70%       13.547s     276.469ms            49  
+(APIServer pid=1)                                 threading.py(355): wait         1.83%        1.685s         1.83%        1.685s        1.685s             1  
+(APIServer pid=1)                               selectors.py(415): select         0.72%     661.675ms         0.72%     661.675ms     661.675ms             1  
+(APIServer pid=1) <built-in method decode of tokenizers.Tokenizer obje...         0.12%     111.151ms         0.12%     111.151ms     214.578us           518  
+(APIServer pid=1) vllm/parser/engine/incremental_lexer.py(150): _char_...         0.09%      85.240ms         0.13%     115.449ms     589.027us           196  
+(APIServer pid=1) vllm/parser/engine/incremental_lexer.py(178): _pop_t...         0.03%      30.680ms         0.03%      31.628ms     158.936us           199  
+(APIServer pid=1) vllm/entrypoints/openai/chat_completion/serving.py(5...         0.03%      29.154ms         0.63%     581.504ms       2.506ms           232  
+(APIServer pid=1) <built-in method extend of list object at 0xe240f80e...         0.03%      29.071ms         0.03%      29.071ms      28.279us          1028  
+(APIServer pid=1) <built-in method step of tokenizers.decoders.DecodeS...         0.03%      28.542ms         0.03%      28.542ms      55.745us           512  
+(APIServer pid=1) vllm/parser/engine/token_id_scanner.py(76): <genexpr...         0.03%      25.419ms         0.05%      45.518ms       0.791us         57545  
+(APIServer pid=1) vllm/parser/engine/token_id_scanner.py(73): _decode_...         0.03%      23.371ms         0.07%      68.889ms     351.473us           196  
+(APIServer pid=1)       prometheus_client/exposition.py(276): sample_line         0.02%      21.872ms         0.08%      69.209ms      18.941us          3654  
+(APIServer pid=1)                                 <built-in function len>         0.02%      18.480ms         0.02%      18.480ms       0.176us        104740  
+(APIServer pid=1) <built-in method find of str object at 0xe243b13b3de...         0.02%      17.887ms         0.02%      17.887ms       0.311us         57426  
+(APIServer pid=1) vllm/parser/engine/incremental_lexer.py(272): _find_...         0.02%      17.663ms         0.02%      22.368ms     112.401us           199  
+(APIServer pid=1)           transformers/utils/generic.py(356): <genexpr>         0.02%      17.644ms         0.03%      24.179ms       0.399us         60586  
+(APIServer pid=1)                                 <built-in function all>         0.02%      16.346ms         0.04%      40.528ms      77.049us           526  
+(APIServer pid=1) vllm/entrypoints/serve/engine/protocol.py(29): __log...         0.02%      15.326ms         0.02%      20.032ms      13.844us          1447  
+(APIServer pid=1) vllm/parser/engine/token_id_scanner.py(65): _decode_...         0.01%      13.461ms         0.02%      20.098ms       0.350us         57349  
+(APIServer pid=1)                          <built-in function isinstance>         0.01%      13.339ms         0.02%      14.736ms       0.183us         80743  
+(APIServer pid=1) prometheus_client/exposition.py(265): generate_lates...         0.01%      13.088ms         0.14%     127.260ms      18.180ms             7  
+(APIServer pid=1)                vllm/v1/metrics/loggers.py(1110): record         0.01%      13.042ms         0.04%      38.057ms     162.637us           234  
+(APIServer pid=1)     uvicorn/protocols/http/httptools_impl.py(463): send         0.01%       9.908ms         0.02%      17.863ms      60.144us           297  
+(APIServer pid=1)                     zmq/_future.py(670): _handle_events         0.01%       8.875ms         0.04%      34.209ms     146.190us           234  
+(APIServer pid=1) <built-in method to_json of pydantic_core._pydantic_...         0.01%       8.650ms         0.01%      11.404ms      48.734us           234  
+(APIServer pid=1) <built-in method match of re.Pattern object at 0xe24...         0.01%       6.877ms         0.01%       6.877ms       0.278us         24696  
+(APIServer pid=1)          vllm/v1/metrics/stats.py(629): request_waiting         0.01%       6.764ms         0.01%       6.772ms       6.772ms             1  
+(APIServer pid=1) <built-in method validate_python of pydantic_core._p...         0.01%       6.583ms         0.03%      25.886ms      21.680us          1194  
+(APIServer pid=1) prometheus_client/openmetrics/exposition.py(219): _e...         0.01%       6.576ms         0.01%      10.434ms       1.061us          9835  
+(APIServer pid=1)        vllm/v1/engine/async_llm.py(774): output_handler         0.01%       6.430ms         0.14%     129.334ms     552.708us           234  
+(APIServer pid=1) prometheus_client/validation.py(94): _is_valid_legac...         0.01%       6.270ms         0.01%      12.083ms       1.229us          9835  
+(APIServer pid=1) vllm/parser/engine/incremental_lexer.py(183): _drain...         0.01%       6.106ms         0.07%      60.603ms     304.536us           199  
+(APIServer pid=1) vllm/parser/engine/parser_engine.py(713): _events_to...         0.01%       6.000ms         0.02%      20.791ms      44.808us           464  
+(APIServer pid=1)       prometheus_client/metrics.py(692): _child_samples         0.01%       5.856ms         0.02%      14.339ms     102.422us           140  
+(APIServer pid=1)          prometheus_client/utils.py(9): floatToGoString         0.01%       5.482ms         0.01%       8.578ms       1.429us          6003  
+(APIServer pid=1) prometheus_client/openmetrics/exposition.py(196): es...         0.01%       5.480ms         0.02%      18.392ms       1.870us          9835  
+(APIServer pid=1)       prometheus_client/metrics.py(276): _multi_samples         0.01%       5.303ms         0.01%       8.791ms       2.611us          3367  
+(APIServer pid=1) <built-in method format of str object at 0xe24356504...         0.01%       5.274ms         0.01%       5.274ms       0.298us         17703  
+(APIServer pid=1)                    prometheus_client/values.py(18): inc         0.01%       5.238ms         0.01%       6.551ms       1.254us          5223  
+(APIServer pid=1) vllm/v1/engine/output_processor.py(622): process_out...         0.01%       5.211ms         0.07%      65.212ms     281.085us           232  
+(APIServer pid=1)                    zmq/_future.py(470): _add_recv_event         0.01%       4.998ms         0.02%      17.739ms      75.485us           235  
+(APIServer pid=1) vllm/parser/engine/streaming_parser_engine.py(217): ...         0.01%       4.995ms         0.32%     297.134ms     640.374us           464  
+(APIServer pid=1) <built-in method decode of msgspec.msgpack.Decoder o...         0.01%       4.944ms         0.01%       5.384ms      22.912us           235  
+(APIServer pid=1) vllm/parser/metrics.py(65): record_tool_parser_invoc...         0.01%       4.685ms         0.01%      10.192ms      43.932us           232  
+(APIServer pid=1)      vllm/parser/engine/incremental_lexer.py(121): feed         0.01%       4.674ms         0.23%     209.426ms       1.068ms           196  
+(APIServer pid=1) -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  
+(APIServer pid=1) Self CPU time total: 92.165s
+(APIServer pid=1) 
+(APIServer pid=1) INFO 09-24 22:15:20 [wrapper.py:80] Profiler stopped successfully.
+(APIServer pid=1) INFO:     127.0.0.1:32852 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32868 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32872 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32876 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32882 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32892 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32894 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32906 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32918 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32930 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32936 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32946 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32952 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32968 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32970 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32974 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32984 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:33000 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:33008 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:33010 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:33026 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45308 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45324 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45334 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45336 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45348 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45354 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45360 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45368 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45380 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45382 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45390 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45404 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45420 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45434 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45442 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45448 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45460 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45476 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45484 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45492 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:45498 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:55872 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:55886 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:55896 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:55904 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:55910 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:55922 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:55926 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:55936 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:55952 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:55958 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:55972 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:55988 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:55996 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:56006 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:56020 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:56024 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:56038 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:56048 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:56056 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:56066 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44072 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44088 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44092 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44106 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44114 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44120 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44122 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44134 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44146 - "GET /metrics HTTP/1.1" 200 OK
+(EngineCore pid=448) INFO 09-24 22:15:54 [shm_broadcast.py:801] No available shared memory broadcast block found in 60 seconds. This typically happens when some processes are hanging or doing some time-consuming work (e.g. compilation, weight/kv cache quantization).
+(APIServer pid=1) INFO:     127.0.0.1:44156 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44166 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44174 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44190 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44194 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44210 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44222 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44234 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44250 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44264 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44270 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:44272 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35516 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35530 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35540 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35548 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35562 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35576 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35578 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35588 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35604 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35612 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35616 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35628 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35640 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35652 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35668 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35670 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:35682 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47038 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47046 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47048 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47052 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47064 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47070 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47086 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47090 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47104 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47114 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47116 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47128 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47138 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47148 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47164 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47180 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47188 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47196 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47202 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47216 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:47224 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41490 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41500 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41506 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41512 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41516 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41528 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41538 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41542 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41548 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41554 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41562 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41564 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41572 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41588 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41596 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41604 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41614 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41618 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41632 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41636 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:41642 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48214 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48222 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48228 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48234 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48246 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48258 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48274 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48290 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48292 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48294 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48302 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48312 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48316 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48320 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48332 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48348 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48354 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48364 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48378 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48392 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:48404 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51774 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51778 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51780 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51786 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51794 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51798 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51800 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51816 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51828 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51838 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51844 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51860 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51864 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51870 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51878 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51890 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51894 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51902 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51918 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51934 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:51940 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43782 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43788 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43796 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43800 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43806 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43816 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43832 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43836 - "GET /metrics HTTP/1.1" 200 OK
+(EngineCore pid=448) INFO 09-24 22:16:54 [shm_broadcast.py:801] No available shared memory broadcast block found in 60 seconds. This typically happens when some processes are hanging or doing some time-consuming work (e.g. compilation, weight/kv cache quantization).
+(APIServer pid=1) INFO:     127.0.0.1:43846 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43856 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43858 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43870 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43872 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43878 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43884 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43888 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43890 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43906 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43908 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43920 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:43924 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:60974 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:60978 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:60994 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:60996 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32780 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32786 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32800 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32808 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32824 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32830 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32838 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32840 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32846 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32858 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32870 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32880 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32896 - "GET /metrics HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32902 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32904 - "GET /v1/models HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32920 - "GET /version HTTP/1.1" 200 OK
+(APIServer pid=1) INFO:     127.0.0.1:32936 - "GET /metrics HTTP/1.1" 200 OK

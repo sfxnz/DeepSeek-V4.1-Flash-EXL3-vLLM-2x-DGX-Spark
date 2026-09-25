@@ -1,0 +1,52 @@
+build   apply_engram_disk                changed
+build   apply_engram_prestage            error:apply_engram_prestage: missing marker staged_rows
+build   widen_b12x_smalls                changed
+build   probe_wo_a                       changed
+build   fix_o_proj_woa_fp8               changed
+runtime prefer_b12x_mxfp8                changed
+runtime indexer_workspace                changed
+runtime widen_mla_io2 (off by default)   changed
+runtime widen_mla_tile32                 changed
+runtime persistent_topk                  error:ValueError: persistent_topk dispatch not found
+runtime kpool_persistent_topk            changed
+runtime swa_prefill_image_width          changed
+runtime attention_image_width            changed
+runtime native_indexer_decode            changed
+runtime indexer_adaptive                 changed
+runtime indexer_short_context            changed
+runtime engram_stage_census              changed
+runtime engram_stage_fast                error:SystemExit: engram_stage_fast: stage() anchor missing
+runtime engram_prefetch_v3               error:SystemExit: engram_prefetch_v3: stager init anchor missing
+runtime engram_cpu_hash                  error:SystemExit: engram_cpu_hash: fast-stage stage() anchor missing (apply engram_stage_fast first)
+runtime engram_gather_v2                 changed
+runtime engram_defer                     error:SystemExit: engram_defer: stager init anchor missing
+anchors: 67 scanned, 23 not found in the pristine tree
+  miss apply_engram_disk        SIG_OLD
+  miss apply_engram_disk        ALLOC_OLD
+  miss apply_engram_disk        CTOR_OLD
+  miss apply_engram_prestage    PREPARE_OLD
+  miss apply_engram_prestage    STAGED_OLD
+  miss apply_engram_prestage    DISK_OLD
+  miss engram_cpu_hash          OLD_STAGE
+  miss engram_cpu_hash          STAGE_DEF_ANCHOR
+  miss engram_defer             STAGER_INIT_TAIL
+  miss engram_defer             STAGE_DEF_ANCHOR
+  miss engram_defer             CH_STAGE_OLD
+  miss engram_defer             EPI_OLD
+  miss engram_defer             SIG_OLD
+  miss engram_defer             RUNNER_V3_HOOK_TAIL
+  miss engram_gather_v2         GD_DEF
+  miss engram_gather_v2         DISPATCH_OLD
+  miss engram_prefetch_v3       STAGER_INIT_TAIL
+  miss engram_prefetch_v3       STAGE_DEF_ANCHOR
+  miss engram_prefetch_v3       CENSUS_OLD
+  miss engram_stage_fast        STAGE_ANCHOR
+  miss engram_stage_fast        INIT_ANCHOR
+  miss fix_o_proj_woa_fp8       ANCHOR_NEW
+  miss sm120_page               PERSISTENT_TOPK_OLD
+unresolved vllm/flashinfer refs: 5
+  missing-attr   drop_page_cache.py       vllm.v1.worker.gpu_worker.Worker ._dsv41_drop_page_cache
+  missing-module sitecustomize.py         vllm.models.deepseek_v41.common.engram_disk DiskEngramTable
+  missing-attr   sitecustomize.py         vllm.models.deepseek_v41.common.engram_disk.DiskEngramTable .gather_dequant
+  missing-name   sm120_page.py            vllm.models.deepseek_v41.common.engram EngramDiskStager
+  missing-attr   sm120_page.py            vllm.models.deepseek_v41.common.engram.EngramDiskStager .stage

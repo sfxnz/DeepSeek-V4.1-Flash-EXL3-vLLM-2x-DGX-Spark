@@ -1,0 +1,26 @@
+[nll] 72.6s {"passages": 40, "tokens_scored": 19828, "bos_id": 0, "mean_nll": 0.243755, "ppl": 1.276, "run_means": [0.243755, 0.242506], "repeat_abs_delta": 0.001249, "repeat_max_passage_delta": 0.018229, "prefix_cache_hits_delta": 0.0}
+[decode] 46.0s {"prompts": 8, "tokens": 1001, "median_abs_dlogprob": 0.01621, "p99_abs_dlogprob": 0.87936, "mean_abs_dlogprob": 0.08226, "gen_nll_prefill": 0.32562, "gen_nll_decode": 0.30651}
+[tools] 41.7s {"json_valid": {"k": 22, "n": 22, "rate": 1.0, "ci95": [0.8513, 1.0]}, "exact_args": {"k": 21, "n": 22, "rate": 0.9545, "ci95": [0.782, 0.9919]}, "no_call": {"k": 8, "n": 8, "rate": 1.0, "ci95": [0.6756, 1.0]}}
+[needle] 660.8s {"found": 9, "total": 9}
+[selfcons] 59.3s {"prompts": 12, "max_tokens": 128, "identical": 3}
+[c2] 0.3s {"pass": true, "answers": ["323", "252"]}
+[vision] 0.4s {"pass": true, "content": "Red"}
+[gsm8k] 317.7s {"acc": {"k": 92, "n": 100, "rate": 0.92, "ci95": [0.85, 0.9589]}, "mean_completion_tokens": 200.7}
+[gsm8k_think] 251.5s {"acc": {"k": 38, "n": 40, "rate": 0.95, "ci95": [0.835, 0.9862]}, "mean_completion_tokens": 350.2}
+[mmlu] 104.5s {"acc": {"k": 199, "n": 228, "rate": 0.8728, "ci95": [0.8233, 0.91]}}
+PASS vision value=Red limit=red
+PASS c2 value=['323', '252'] limit=None
+PASS nll.mean_nll value=0.243755 limit=0.2531
+PASS decode.median_abs_dlogprob value=0.01621 limit=0.07242
+PASS decode.gen_nll_prefill value=0.32562 limit=0.51987
+PASS selfcons.golden_hazard value=0.02033 limit=0.04348
+PASS selfcons.aa_hazard value=0.02088 limit=0.04348
+PASS tools.json_valid value=1.0 limit=1.0
+PASS tools.exact_args value=0.9545 limit=0.9545
+PASS tools.no_call value=1.0 limit=1.0
+PASS gsm8k.acc value=0.92 limit=0.94
+PASS gsm8k_think.acc value=0.95 limit=0.95
+PASS mmlu.acc value=0.8728 limit=0.864
+PASS needle.found value=9 limit=9
+QUALITY {"mode": "full", "pass": true, "elapsed_s": 1554.8, "nll": 0.243755, "nll_repeat_delta": 0.001249, "decode_median_dlp": 0.01621, "decode_gen_nll": 0.32562, "tools_exact": 0.9545, "tools_json": 1.0, "tools_nocall": 1.0, "needle": 9, "selfcons_identical": 3, "selfcons_aa_hazard": 0.02088, "selfcons_golden_hazard": 0.02033, "gsm8k": 0.92, "gsm8k_think": 0.95, "mmlu": 0.8728, "c2": true, "vision": true}
+rc=0

@@ -1,0 +1,17 @@
+# Quant-only image for the requant-exl3-1.5 probe (tools/requant_probe.py).
+# Swaps ExLlamaV3 1.4.9 for v1.5.1 (Viterbi quantize_tiles rewrite incl. the
+# 03aed709c K=2 initial-state fix, refit_scales). Trellis format and codebook
+# are unchanged, so packs it writes still load on the serving image.
+# Never serve from this tag; the serving pin stays in docker/Dockerfile.
+#   docker build -f docker/Dockerfile.quant151 -t dsv41-quant151 docker/
+FROM dsv41-flash-exl3-sm121:canonical-e12
+
+ARG EXLLAMAV3_REF=958ec933361b24eb8426ec7222e5b0062a679dcd
+ARG MAX_JOBS=4
+COPY patch/patch_exllamav3_aarch64.py /opt/dsv41-patch/patch_exllamav3_aarch64.py
+RUN git clone https://github.com/turboderp-org/exllamav3.git /opt/exllamav3 \
+ && git -C /opt/exllamav3 checkout "$EXLLAMAV3_REF" \
+ && python3 /opt/dsv41-patch/patch_exllamav3_aarch64.py /opt/exllamav3/exllamav3/exllamav3_ext \
+ && MAX_JOBS="$MAX_JOBS" TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps --force-reinstall /opt/exllamav3 \
+ && python3 -S -c "import sys; sys.path.append('/usr/local/lib/python3.12/dist-packages'); import importlib.metadata as md, exllamav3; from exllamav3.modules.quant.exl3_lib.quantize import refit_scales; print('exllamav3', md.version('exllamav3'))" \
+ && rm -rf /opt/exllamav3

@@ -1,0 +1,212 @@
+2026-09-22T11:56:47.245712288Z (Worker_TP0 pid=618) Loading safetensors checkpoint shards:   0% Completed | 0/48 [00:00<?, ?it/s]
+2026-09-22T11:56:47.842289583Z (Worker_TP0 pid=618) Loading safetensors checkpoint shards:   6% Completed | 3/48 [00:00<00:08,  5.03it/s]
+2026-09-22T11:56:48.404507744Z (Worker_TP0 pid=618) Loading safetensors checkpoint shards:   8% Completed | 4/48 [00:01<00:13,  3.16it/s]
+2026-09-22T11:56:48.757075789Z (Worker_TP0 pid=618) Exception in thread Thread-1 (_report_usage_worker):
+2026-09-22T11:56:48.757107629Z (Worker_TP0 pid=618) Traceback (most recent call last):
+2026-09-22T11:56:48.757110685Z (Worker_TP0 pid=618)   File "/usr/lib/python3.12/threading.py", line 1073, in _bootstrap_inner
+2026-09-22T11:56:48.757075805Z NCCL version 2.30.7+cuda13.3
+2026-09-22T11:56:48.757941725Z (Worker_TP0 pid=618)     self.run()
+2026-09-22T11:56:48.757958589Z (Worker_TP0 pid=618)   File "/usr/lib/python3.12/threading.py", line 1010, in run
+2026-09-22T11:56:48.758116621Z (Worker_TP0 pid=618)     self._target(*self._args, **self._kwargs)
+2026-09-22T11:56:48.758118141Z (Worker_TP0 pid=618)   File "/usr/local/lib/python3.12/dist-packages/vllm/usage/usage_lib.py", line 172, in _report_usage_worker
+2026-09-22T11:56:48.758365181Z (Worker_TP0 pid=618)     self._report_usage_once(model_architecture, usage_context, extra_kvs)
+2026-09-22T11:56:48.758366909Z (Worker_TP0 pid=618)   File "/usr/local/lib/python3.12/dist-packages/vllm/usage/usage_lib.py", line 216, in _report_usage_once
+2026-09-22T11:56:48.758368014Z (Worker_TP0 pid=618)     info = cpuinfo.get_cpu_info()
+2026-09-22T11:56:48.758388910Z (Worker_TP0 pid=618)            ^^^^^^^^^^^^^^^^^^^^^^
+2026-09-22T11:56:48.758389950Z (Worker_TP0 pid=618)   File "/usr/local/lib/python3.12/dist-packages/cpuinfo/cpuinfo.py", line 2762, in get_cpu_info
+2026-09-22T11:56:48.758737822Z (Worker_TP0 pid=618)     output = json.loads(output, object_hook = _utf_to_str)
+2026-09-22T11:56:48.758738910Z (Worker_TP0 pid=618)              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-22T11:56:48.758739854Z (Worker_TP0 pid=618)   File "/usr/lib/python3.12/json/__init__.py", line 359, in loads
+2026-09-22T11:56:48.759200686Z (Worker_TP0 pid=618)     return cls(**kw).decode(s)
+2026-09-22T11:56:48.759201710Z (Worker_TP0 pid=618)            ^^^^^^^^^^^^^^^^^^^
+2026-09-22T11:56:48.759202862Z (Worker_TP0 pid=618)   File "/usr/lib/python3.12/json/decoder.py", line 337, in decode
+2026-09-22T11:56:48.759468734Z (Worker_TP0 pid=618)     obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+2026-09-22T11:56:48.759470174Z (Worker_TP0 pid=618)                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-22T11:56:48.759471294Z (Worker_TP0 pid=618)   File "/usr/lib/python3.12/json/decoder.py", line 355, in raw_decode
+2026-09-22T11:56:48.759491886Z (Worker_TP0 pid=618)     raise JSONDecodeError("Expecting value", s, err.value) from None
+2026-09-24T13:42:58.194389472Z (APIServer pid=1) INFO:     127.0.0.1:38212 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:42:58.289405679Z (APIServer pid=1) INFO:     127.0.0.1:38158 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:42:58.644445042Z (APIServer pid=1) INFO:     127.0.0.1:38222 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:42:58.644568914Z (APIServer pid=1) INFO:     127.0.0.1:38236 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:42:58.800767803Z (Worker_TP0 pid=618) dsv41: engram prefetch worker error 1
+2026-09-24T13:42:58.800789996Z (Worker_TP0 pid=618) Traceback (most recent call last):
+2026-09-24T13:42:58.800791484Z (Worker_TP0 pid=618)   File "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/common/engram.py", line 1598, in _prefetch_worker
+2026-09-24T13:42:58.800792940Z (Worker_TP0 pid=618)     chunk, cpos, hist = self._pf_next_chunk(
+2026-09-24T13:42:58.800794140Z (Worker_TP0 pid=618)                         ^^^^^^^^^^^^^^^^^^^^
+2026-09-24T13:42:58.800795228Z (Worker_TP0 pid=618)   File "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/common/engram.py", line 1529, in _pf_next_chunk
+2026-09-24T13:42:58.800796396Z (Worker_TP0 pid=618)     chunk = [int(outs_r[A - 1])] + [int(d) for d in drafts_r]
+2026-09-24T13:42:58.800797500Z (Worker_TP0 pid=618)                  ~~~~~~^^^^^^^
+2026-09-24T13:42:58.800798620Z (Worker_TP0 pid=618) IndexError: list index out of range
+2026-09-24T13:42:58.800799724Z (Worker_TP0 pid=618) 
+2026-09-24T13:42:59.720856812Z (APIServer pid=1) INFO:     127.0.0.1:38250 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:00.240978095Z (APIServer pid=1) INFO:     127.0.0.1:40770 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:00.241115504Z (APIServer pid=1) INFO:     127.0.0.1:40782 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:00.241127200Z (APIServer pid=1) INFO:     127.0.0.1:40798 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:00.242015780Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=444 runs/call=464.0 preads/call=464.0 read=24.322ms
+2026-09-24T13:43:00.247286334Z (APIServer pid=1) INFO:     127.0.0.1:40810 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:01.716498244Z (APIServer pid=1) INFO:     127.0.0.1:38238 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:01.807679135Z (APIServer pid=1) INFO:     127.0.0.1:38248 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:01.810749294Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=93 runs/call=178.5 preads/call=178.5 read=5.291ms
+2026-09-24T13:43:02.311862655Z (APIServer pid=1) INFO:     127.0.0.1:40830 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:02.312556883Z (APIServer pid=1) INFO:     127.0.0.1:40846 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:02.312589539Z (APIServer pid=1) INFO:     127.0.0.1:40850 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:02.318303903Z (APIServer pid=1) INFO:     127.0.0.1:40860 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:04.369015384Z (APIServer pid=1) INFO:     127.0.0.1:40872 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:04.369336474Z (APIServer pid=1) INFO:     127.0.0.1:40886 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:04.369577803Z (APIServer pid=1) INFO:     127.0.0.1:40902 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:04.375884538Z (APIServer pid=1) INFO:     127.0.0.1:40906 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:05.570182688Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=594 runs/call=827.5 preads/call=827.5 read=61.178ms
+2026-09-24T13:43:06.445167992Z (APIServer pid=1) INFO:     127.0.0.1:40910 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:06.445819372Z (APIServer pid=1) INFO:     127.0.0.1:40924 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:06.446028429Z (APIServer pid=1) INFO:     127.0.0.1:40940 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:06.453940803Z (APIServer pid=1) INFO:     127.0.0.1:40954 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:07.188572385Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=96 runs/call=185.5 preads/call=185.5 read=5.190ms
+2026-09-24T13:43:07.429816207Z (APIServer pid=1) INFO 09-24 13:43:07 [loggers.py:310] Engine 000: Avg prompt throughput: 119.4 tokens/s, Avg generation throughput: 38.3 tokens/s, Running: 2 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.2%, Prefix cache hit rate: 0.7%, MM cache hit rate: 60.0%
+2026-09-24T13:43:07.429854623Z (APIServer pid=1) INFO 09-24 13:43:07 [metrics.py:120] SpecDecoding metrics: Mean acceptance length: 3.70, Accepted throughput: 2.14 tokens/s, Drafted throughput: 2.38 tokens/s, Accepted: 278 tokens, Drafted: 309 tokens, Per-position acceptance rate: 0.971, 0.883, 0.845, Avg Draft acceptance rate: 90.0%
+2026-09-24T13:43:07.797771056Z (APIServer pid=1) INFO:     127.0.0.1:40814 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:07.797841248Z (APIServer pid=1) INFO:     127.0.0.1:40818 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:07.905040934Z (Worker_TP0 pid=618) dsv41: engram prefetch worker error 2
+2026-09-24T13:43:07.905065718Z (Worker_TP0 pid=618) Traceback (most recent call last):
+2026-09-24T13:43:07.905068566Z (Worker_TP0 pid=618)   File "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/common/engram.py", line 1598, in _prefetch_worker
+2026-09-24T13:43:07.905070902Z (Worker_TP0 pid=618)     chunk, cpos, hist = self._pf_next_chunk(
+2026-09-24T13:43:07.905072822Z (Worker_TP0 pid=618)                         ^^^^^^^^^^^^^^^^^^^^
+2026-09-24T13:43:07.905074614Z (Worker_TP0 pid=618)   File "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/common/engram.py", line 1529, in _pf_next_chunk
+2026-09-24T13:43:07.905076614Z (Worker_TP0 pid=618)     chunk = [int(outs_r[A - 1])] + [int(d) for d in drafts_r]
+2026-09-24T13:43:07.905078486Z (Worker_TP0 pid=618)                  ~~~~~~^^^^^^^
+2026-09-24T13:43:07.905080230Z (Worker_TP0 pid=618) IndexError: list index out of range
+2026-09-24T13:43:07.905081926Z (Worker_TP0 pid=618) 
+2026-09-24T13:43:08.511697189Z (APIServer pid=1) INFO:     127.0.0.1:40992 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:08.512133079Z (APIServer pid=1) INFO:     127.0.0.1:41008 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:08.512384745Z (APIServer pid=1) INFO:     127.0.0.1:41010 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:08.519286282Z (APIServer pid=1) INFO:     127.0.0.1:41026 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:09.901018896Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=425 runs/call=494.0 preads/call=494.0 read=28.305ms
+2026-09-24T13:43:10.568360942Z (APIServer pid=1) INFO:     127.0.0.1:51268 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:10.569186594Z (APIServer pid=1) INFO:     127.0.0.1:51284 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:10.569431731Z (APIServer pid=1) INFO:     127.0.0.1:51290 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:10.575696177Z (APIServer pid=1) INFO:     127.0.0.1:51298 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:10.633386327Z (APIServer pid=1) INFO:     127.0.0.1:40970 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:10.765291362Z (APIServer pid=1) INFO:     127.0.0.1:51316 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:12.165964165Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=237 runs/call=412.5 preads/call=412.5 read=12.927ms
+2026-09-24T13:43:12.459084837Z (APIServer pid=1) INFO:     127.0.0.1:40980 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:12.646867644Z (APIServer pid=1) INFO:     127.0.0.1:51332 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:12.647328638Z (APIServer pid=1) INFO:     127.0.0.1:51336 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:12.647682575Z (APIServer pid=1) INFO:     127.0.0.1:51344 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:12.653981774Z (APIServer pid=1) INFO:     127.0.0.1:51348 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:14.310787872Z (APIServer pid=1) INFO:     127.0.0.1:51310 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:14.417659729Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=327 runs/call=483.5 preads/call=483.5 read=10.395ms
+2026-09-24T13:43:14.699244423Z (APIServer pid=1) INFO:     127.0.0.1:51372 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:14.699716745Z (APIServer pid=1) INFO:     127.0.0.1:51380 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:14.700326188Z (APIServer pid=1) INFO:     127.0.0.1:51394 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:14.706799019Z (APIServer pid=1) INFO:     127.0.0.1:51408 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:15.644425913Z (APIServer pid=1) INFO:     127.0.0.1:51326 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:16.758499824Z (APIServer pid=1) INFO:     127.0.0.1:51414 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:16.758985106Z (APIServer pid=1) INFO:     127.0.0.1:51426 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:16.759206803Z (APIServer pid=1) INFO:     127.0.0.1:51436 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:16.767428554Z (APIServer pid=1) INFO:     127.0.0.1:51438 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:17.353846944Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=387 runs/call=656.0 preads/call=656.0 read=33.644ms
+2026-09-24T13:43:17.431055649Z (APIServer pid=1) INFO 09-24 13:43:17 [loggers.py:310] Engine 000: Avg prompt throughput: 136.5 tokens/s, Avg generation throughput: 39.0 tokens/s, Running: 2 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.2%, Prefix cache hit rate: 0.8%, MM cache hit rate: 60.0%
+2026-09-24T13:43:17.431817029Z (APIServer pid=1) INFO 09-24 13:43:17 [metrics.py:120] SpecDecoding metrics: Mean acceptance length: 3.59, Accepted throughput: 28.00 tokens/s, Drafted throughput: 32.39 tokens/s, Accepted: 280 tokens, Drafted: 324 tokens, Per-position acceptance rate: 0.944, 0.843, 0.806, Avg Draft acceptance rate: 86.4%
+2026-09-24T13:43:18.272113173Z (APIServer pid=1) INFO:     127.0.0.1:51360 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:18.440141992Z (APIServer pid=1) INFO:     127.0.0.1:51412 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:18.833999362Z (APIServer pid=1) INFO:     127.0.0.1:51468 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:18.834457668Z (APIServer pid=1) INFO:     127.0.0.1:51484 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:18.834736581Z (APIServer pid=1) INFO:     127.0.0.1:51494 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:18.850564865Z (APIServer pid=1) INFO:     127.0.0.1:51504 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:20.193350713Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=472 runs/call=704.0 preads/call=704.0 read=23.668ms
+2026-09-24T13:43:20.903217713Z (APIServer pid=1) INFO:     127.0.0.1:57816 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:20.903926565Z (APIServer pid=1) INFO:     127.0.0.1:57824 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:20.904086981Z (APIServer pid=1) INFO:     127.0.0.1:57826 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:20.921328552Z (APIServer pid=1) INFO:     127.0.0.1:57838 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:21.670451896Z (APIServer pid=1) INFO:     127.0.0.1:51452 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:21.770349012Z (APIServer pid=1) INFO:     127.0.0.1:57862 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:22.047999806Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=285 runs/call=453.5 preads/call=453.5 read=18.405ms
+2026-09-24T13:43:22.971795386Z (APIServer pid=1) INFO:     127.0.0.1:57874 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:22.972472333Z (APIServer pid=1) INFO:     127.0.0.1:57876 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:22.973697475Z (APIServer pid=1) INFO:     127.0.0.1:57888 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:22.980532355Z (APIServer pid=1) INFO:     127.0.0.1:57900 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:23.688111287Z (APIServer pid=1) INFO:     127.0.0.1:51464 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:24.620874022Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=207 runs/call=387.5 preads/call=387.5 read=12.411ms
+2026-09-24T13:43:25.041712100Z (APIServer pid=1) INFO:     127.0.0.1:57918 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:25.042098886Z (APIServer pid=1) INFO:     127.0.0.1:57920 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:25.042324055Z (APIServer pid=1) INFO:     127.0.0.1:57926 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:25.055109236Z (APIServer pid=1) INFO:     127.0.0.1:57928 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:25.566791168Z (APIServer pid=1) INFO:     127.0.0.1:57848 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:26.915980012Z (APIServer pid=1) INFO:     127.0.0.1:57902 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:27.102494352Z (APIServer pid=1) INFO:     127.0.0.1:57964 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:27.103003234Z (APIServer pid=1) INFO:     127.0.0.1:57980 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:27.103267827Z (APIServer pid=1) INFO:     127.0.0.1:57990 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:27.109822162Z (APIServer pid=1) INFO:     127.0.0.1:57992 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:27.267529053Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=428 runs/call=693.0 preads/call=693.0 read=37.993ms
+2026-09-24T13:43:27.432183657Z (APIServer pid=1) INFO 09-24 13:43:27 [loggers.py:310] Engine 000: Avg prompt throughput: 120.1 tokens/s, Avg generation throughput: 39.8 tokens/s, Running: 2 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.2%, Prefix cache hit rate: 0.9%, MM cache hit rate: 60.0%
+2026-09-24T13:43:27.432220745Z (APIServer pid=1) INFO 09-24 13:43:27 [metrics.py:120] SpecDecoding metrics: Mean acceptance length: 3.59, Accepted throughput: 28.80 tokens/s, Drafted throughput: 33.30 tokens/s, Accepted: 288 tokens, Drafted: 333 tokens, Per-position acceptance rate: 0.946, 0.847, 0.802, Avg Draft acceptance rate: 86.5%
+2026-09-24T13:43:29.160799244Z (APIServer pid=1) INFO:     127.0.0.1:57998 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:29.161390958Z (APIServer pid=1) INFO:     127.0.0.1:58006 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:29.161696816Z (APIServer pid=1) INFO:     127.0.0.1:58014 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:29.168697105Z (APIServer pid=1) INFO:     127.0.0.1:58024 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:29.537998450Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=96 runs/call=179.5 preads/call=179.5 read=7.762ms
+2026-09-24T13:43:30.357677746Z (APIServer pid=1) INFO:     127.0.0.1:57958 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:31.237860492Z (APIServer pid=1) INFO:     127.0.0.1:60848 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:31.238693952Z (APIServer pid=1) INFO:     127.0.0.1:60852 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:31.238932481Z (APIServer pid=1) INFO:     127.0.0.1:60858 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:31.246106755Z (APIServer pid=1) INFO:     127.0.0.1:60860 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:31.261415819Z (APIServer pid=1) INFO:     127.0.0.1:57942 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:32.259887536Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=453 runs/call=700.9 preads/call=700.9 read=14.108ms
+2026-09-24T13:43:32.733124725Z (APIServer pid=1) INFO:     127.0.0.1:60880 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:33.315610269Z (APIServer pid=1) INFO:     127.0.0.1:60896 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:33.316277712Z (APIServer pid=1) INFO:     127.0.0.1:60902 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:33.316543313Z (APIServer pid=1) INFO:     127.0.0.1:60908 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:33.323279617Z (APIServer pid=1) INFO:     127.0.0.1:60918 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:33.457395240Z (APIServer pid=1) INFO:     127.0.0.1:60832 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:34.263834875Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=231 runs/call=410.0 preads/call=410.0 read=8.422ms
+2026-09-24T13:43:35.252872213Z (APIServer pid=1) INFO:     127.0.0.1:60870 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:35.390050505Z (APIServer pid=1) INFO:     127.0.0.1:60932 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:35.390856013Z (APIServer pid=1) INFO:     127.0.0.1:60934 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:35.391109054Z (APIServer pid=1) INFO:     127.0.0.1:60948 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:35.399120324Z (APIServer pid=1) INFO:     127.0.0.1:60964 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:36.210827928Z (APIServer pid=1) INFO:     127.0.0.1:60922 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:36.299220279Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=258 runs/call=419.5 preads/call=419.5 read=7.879ms
+2026-09-24T13:43:37.432292283Z (APIServer pid=1) INFO 09-24 13:43:37 [loggers.py:310] Engine 000: Avg prompt throughput: 135.9 tokens/s, Avg generation throughput: 45.3 tokens/s, Running: 2 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.2%, Prefix cache hit rate: 1.0%, MM cache hit rate: 60.0%
+2026-09-24T13:43:37.432358908Z (APIServer pid=1) INFO 09-24 13:43:37 [metrics.py:120] SpecDecoding metrics: Mean acceptance length: 3.70, Accepted throughput: 32.90 tokens/s, Drafted throughput: 36.60 tokens/s, Accepted: 329 tokens, Drafted: 366 tokens, Per-position acceptance rate: 0.975, 0.885, 0.836, Avg Draft acceptance rate: 89.9%
+2026-09-24T13:43:37.471968966Z (APIServer pid=1) INFO:     127.0.0.1:60992 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:37.472475320Z (APIServer pid=1) INFO:     127.0.0.1:32768 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:37.473369324Z (APIServer pid=1) INFO:     127.0.0.1:32772 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:37.479163543Z (APIServer pid=1) INFO:     127.0.0.1:32774 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:38.167438018Z (APIServer pid=1) INFO:     127.0.0.1:60930 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:39.006858030Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=453 runs/call=733.5 preads/call=733.5 read=15.269ms
+2026-09-24T13:43:39.549385529Z (APIServer pid=1) INFO:     127.0.0.1:32800 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:39.551221138Z (APIServer pid=1) INFO:     127.0.0.1:32804 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:39.551599123Z (APIServer pid=1) INFO:     127.0.0.1:32810 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:39.559378024Z (APIServer pid=1) INFO:     127.0.0.1:32822 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:40.570536801Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=96 runs/call=190.0 preads/call=190.0 read=5.688ms
+2026-09-24T13:43:40.932527310Z (APIServer pid=1) INFO:     127.0.0.1:60978 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:41.625459283Z (APIServer pid=1) INFO:     127.0.0.1:36646 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:41.625635732Z (APIServer pid=1) INFO:     127.0.0.1:36654 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:41.626063878Z (APIServer pid=1) INFO:     127.0.0.1:36664 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:41.632163490Z (APIServer pid=1) INFO:     127.0.0.1:36676 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:41.924544712Z (APIServer pid=1) INFO:     127.0.0.1:36634 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:43.110238420Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=398 runs/call=641.5 preads/call=641.5 read=14.980ms
+2026-09-24T13:43:43.300690364Z (APIServer pid=1) INFO:     127.0.0.1:32784 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:43.694707433Z (APIServer pid=1) INFO:     127.0.0.1:36718 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:43.694984746Z (APIServer pid=1) INFO:     127.0.0.1:36728 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:43.695326284Z (APIServer pid=1) INFO:     127.0.0.1:36730 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:43.701092887Z (APIServer pid=1) INFO:     127.0.0.1:36734 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:43.795383742Z (APIServer pid=1) INFO:     127.0.0.1:36736 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:44.396289854Z (APIServer pid=1) INFO:     127.0.0.1:36688 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:44.396354030Z (APIServer pid=1) INFO:     127.0.0.1:36704 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:44.500339859Z (Worker_TP0 pid=618) dsv41: engram prefetch worker error 3
+2026-09-24T13:43:44.500371843Z (Worker_TP0 pid=618) Traceback (most recent call last):
+2026-09-24T13:43:44.500374531Z (Worker_TP0 pid=618)   File "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/common/engram.py", line 1598, in _prefetch_worker
+2026-09-24T13:43:44.500376995Z (Worker_TP0 pid=618)     chunk, cpos, hist = self._pf_next_chunk(
+2026-09-24T13:43:44.500378851Z (Worker_TP0 pid=618)                         ^^^^^^^^^^^^^^^^^^^^
+2026-09-24T13:43:44.500380627Z (Worker_TP0 pid=618)   File "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/common/engram.py", line 1529, in _pf_next_chunk
+2026-09-24T13:43:44.500382659Z (Worker_TP0 pid=618)     chunk = [int(outs_r[A - 1])] + [int(d) for d in drafts_r]
+2026-09-24T13:43:44.500402579Z (Worker_TP0 pid=618)                  ~~~~~~^^^^^^^
+2026-09-24T13:43:44.500404579Z (Worker_TP0 pid=618) IndexError: list index out of range
+2026-09-24T13:43:44.500406163Z (Worker_TP0 pid=618) 
+2026-09-24T13:43:44.500407763Z (Worker_TP0 pid=618) dsv41: engram prefetch disabled after 3 errors: IndexError('list index out of range')
+2026-09-24T13:43:45.754814466Z (APIServer pid=1) INFO:     127.0.0.1:36762 - "GET /health HTTP/1.1" 200 OK
+2026-09-24T13:43:45.755079507Z (APIServer pid=1) INFO:     127.0.0.1:36770 - "GET /v1/models HTTP/1.1" 200 OK
+2026-09-24T13:43:45.756747115Z (APIServer pid=1) INFO:     127.0.0.1:36774 - "GET /version HTTP/1.1" 200 OK
+2026-09-24T13:43:45.764974145Z (APIServer pid=1) INFO:     127.0.0.1:36778 - "GET /metrics HTTP/1.1" 200 OK
+2026-09-24T13:43:45.787536570Z (APIServer pid=1) INFO:     127.0.0.1:36748 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-09-24T13:43:46.090783372Z (Worker_TP0 pid=618) [gv2-census] calls=32 rows/call=678 runs/call=939.0 preads/call=939.0 read=30.074ms

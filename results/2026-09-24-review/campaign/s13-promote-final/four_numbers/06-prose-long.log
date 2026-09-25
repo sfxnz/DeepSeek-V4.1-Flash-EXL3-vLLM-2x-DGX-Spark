@@ -1,0 +1,80 @@
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=200 runs=5 concurrency=[1, 2] phases=['prose_long']
+phase=prose_long c=1 run=1 wall=6.70s agg=30.95 tok/s per_stream=[30.96] ttft=[0.270] acc=1.942 ms_step=[62.7]
+phase=prose_long c=1 run=2 wall=6.04s agg=34.67 tok/s per_stream=[34.67] ttft=[0.295] acc=2.185 ms_step=[63.0]
+phase=prose_long c=1 run=3 wall=5.89s agg=35.26 tok/s per_stream=[35.26] ttft=[0.246] acc=2.211 ms_step=[62.7]
+phase=prose_long c=1 run=4 wall=6.43s agg=32.39 tok/s per_stream=[32.40] ttft=[0.290] acc=2.052 ms_step=[63.3]
+phase=prose_long c=1 run=5 wall=6.30s agg=33.13 tok/s per_stream=[33.13] ttft=[0.288] acc=2.083 ms_step=[62.9]
+phase=prose_long c=2 run=1 wall=8.38s agg=49.37 tok/s per_stream=[24.96,24.69] ttft=[0.313,0.314] acc=2.157 ms_step=[86.4,87.4]
+phase=prose_long c=2 run=2 wall=9.08s agg=45.93 tok/s per_stream=[23.59,22.54] ttft=[0.578,0.250] acc=2.030 ms_step=[86.1,90.1]
+phase=prose_long c=2 run=3 wall=9.05s agg=45.55 tok/s per_stream=[25.19,22.78] ttft=[0.316,0.316] acc=2.056 ms_step=[81.6,90.3]
+phase=prose_long c=2 run=4 wall=9.09s agg=45.86 tok/s per_stream=[22.51,23.36] ttft=[0.253,0.575] acc=2.015 ms_step=[89.5,86.3]
+phase=prose_long c=2 run=5 wall=8.83s agg=46.90 tok/s per_stream=[25.51,23.45] ttft=[0.342,0.343] acc=2.089 ms_step=[81.9,89.1]
+natural phase=prose_long completion_tokens=200 finish_reason=length
+SUMMARY [
+  {
+    "phase": "prose_long",
+    "concurrency": 1,
+    "median_decode_tok_s": 33.13025830186597,
+    "median_ttft_s": 0.288011769996956,
+    "median_agg_tok_s": 33.127744674993416,
+    "median_completion_tokens": 200,
+    "n": 5,
+    "acceptance_len": 2.089958158995816,
+    "draft_acceptance_rate": 0.3633193863319386,
+    "run_acceptance_len": [
+      1.9417,
+      2.1848,
+      2.2111,
+      2.0515,
+      2.0833
+    ],
+    "median_run_acceptance_len": 2.083333333333333,
+    "median_ms_per_step": 62.883099623041424,
+    "ttft_s_p50": 0.288011769996956,
+    "ttft_s_p90": 0.2927894809865393,
+    "ttft_s_p99": 0.2945463025989011,
+    "inter_chunk_ms_p50": 62.252763513242826,
+    "inter_chunk_ms_p90": 64.01738582062535,
+    "inter_chunk_ms_p99": 72.29815913829952,
+    "finish_reasons": {
+      "length": 5
+    },
+    "natural_completion_tokens": 200,
+    "natural_finish_reason": "length",
+    "natural_covers_max": true,
+    "post_eos_fraction": 0.0
+  },
+  {
+    "phase": "prose_long",
+    "concurrency": 2,
+    "median_decode_tok_s": 23.52135537725232,
+    "median_ttft_s": 0.3160994390200358,
+    "median_agg_tok_s": 45.93466389416938,
+    "median_completion_tokens": 200.0,
+    "n": 10,
+    "acceptance_len": 2.0683229813664594,
+    "draft_acceptance_rate": 0.35610766045548653,
+    "run_acceptance_len": [
+      2.1568,
+      2.0305,
+      2.0564,
+      2.0152,
+      2.089
+    ],
+    "median_run_acceptance_len": 2.056410256410256,
+    "median_ms_per_step": 86.89116471602297,
+    "ttft_s_p50": 0.3160994390200358,
+    "ttft_s_p90": 0.5748561034910381,
+    "ttft_s_p99": 0.5774488689238205,
+    "inter_chunk_ms_p50": 86.30276148323901,
+    "inter_chunk_ms_p90": 89.38240751740523,
+    "inter_chunk_ms_p99": 95.24041858385317,
+    "finish_reasons": {
+      "length": 10
+    },
+    "natural_completion_tokens": 200,
+    "natural_finish_reason": "length",
+    "natural_covers_max": true,
+    "post_eos_fraction": 0.0
+  }
+]

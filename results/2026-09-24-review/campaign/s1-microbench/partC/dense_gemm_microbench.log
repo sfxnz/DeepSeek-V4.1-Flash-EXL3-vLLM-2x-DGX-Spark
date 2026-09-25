@@ -1,0 +1,113 @@
+{"shape": "qkv_a", "K": 5120, "N": 1792, "M": 4, "backend": "b12x", "nrot": 29, "max_abs": 0.14308175444602966, "max_rel": 0.026191346347332, "rel_fro": 0.026328209787607193, "us_e2e": 45.59795774262527, "us_e2e_min": 45.05555711943528, "us_gemm": 43.70256621262123, "us_gemm_min": 43.61269062963025, "gbps_e2e": 207.50403018938468, "gbps_gemm": 216.50353331579552, "capture_ok": true}
+INFO 09-24 19:02:20 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-24 19:02:20 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+INFO 09-24 19:02:20 [deep_gemm.py:136] DeepGEMM E8M0 enabled on current platform.
+GemmDesc(gemm_type=0, kernel_type=0, m=1792, n=4, k=5120, num_groups=1, major_a=0, major_b=0, mma_kind=1, a_dtype=Float8_e4m3fn, b_dtype=Float8_e4m3fn, cd_dtype=BFloat16, with_accumulation=0, num_sms=48, tc_util=100, compiled_dims=nk, ensure_zero_padding=1, expected_m=0, expected_n=0, expected_k=0, expected_num_groups=0): GemmConfig(layout=Layout(swap_ab=0, block_m=128, block_n=16, block_k=128, cluster_m=1, cluster_n=1), storage_config=StorageConfig(load_block_m=128, load_block_n=16, store_block_m=128, store_block_n=0, swizzle_a_mode=128, swizzle_b_mode=128, swizzle_cd_mode=0), pipeline_config=PipelineConfig(smem_size=95616, num_stages=5), launch_config=LaunchConfig(num_sms=48, num_sms_per_cluster=1, num_threads=384, num_tma_threads=128, num_math_threads=256, num_non_epilogue_threads=0, num_epilogue_threads=0), split_k=1), LayoutInfo(num_waves=1, last_wave_util=14, num_cycles=34845)
+{"shape": "qkv_a", "K": 5120, "N": 1792, "M": 4, "backend": "dg", "nrot": 29, "max_abs": 0.14308175444602966, "max_rel": 0.026191346347332, "rel_fro": 0.02632822096347809, "us_e2e": 47.38013826567551, "us_e2e_min": 46.82626066536739, "us_gemm": 45.750068796092066, "us_gemm_min": 45.105822332974135, "gbps_e2e": 199.69886847828306, "gbps_gemm": 206.81411523490902, "capture_ok": true}
+GemmDesc(gemm_type=4, kernel_type=0, m=1792, n=4, k=2560, num_groups=2, major_a=0, major_b=0, mma_kind=1, a_dtype=Float8_e4m3fn, b_dtype=Float8_e4m3fn, cd_dtype=Float, with_accumulation=0, num_sms=48, tc_util=100, compiled_dims=nk, ensure_zero_padding=1, expected_m=0, expected_n=0, expected_k=0, expected_num_groups=0): GemmConfig(layout=Layout(swap_ab=0, block_m=128, block_n=16, block_k=128, cluster_m=1, cluster_n=1), storage_config=StorageConfig(load_block_m=128, load_block_n=16, store_block_m=128, store_block_n=0, swizzle_a_mode=128, swizzle_b_mode=128, swizzle_cd_mode=0), pipeline_config=PipelineConfig(smem_size=95616, num_stages=5), launch_config=LaunchConfig(num_sms=48, num_sms_per_cluster=1, num_threads=384, num_tma_threads=128, num_math_threads=256, num_non_epilogue_threads=0, num_epilogue_threads=0), split_k=1), LayoutInfo(num_waves=1, last_wave_util=28, num_cycles=29774)
+{"shape": "qkv_a", "K": 5120, "N": 1792, "M": 4, "backend": "sk2", "nrot": 29, "max_abs": 0.14308175444602966, "max_rel": 0.026191346347332, "rel_fro": 0.02632822096347809, "us_e2e": 49.42543424409011, "us_e2e_min": 49.186098164525525, "us_gemm": 47.33257951407597, "us_gemm_min": 47.24507496274751, "gbps_e2e": 191.43504037359793, "gbps_gemm": 199.8995215797656, "capture_ok": true, "wireable": false}
+GemmDesc(gemm_type=4, kernel_type=0, m=1792, n=4, k=1280, num_groups=4, major_a=0, major_b=0, mma_kind=1, a_dtype=Float8_e4m3fn, b_dtype=Float8_e4m3fn, cd_dtype=Float, with_accumulation=0, num_sms=48, tc_util=100, compiled_dims=nk, ensure_zero_padding=1, expected_m=0, expected_n=0, expected_k=0, expected_num_groups=0): GemmConfig(layout=Layout(swap_ab=0, block_m=64, block_n=16, block_k=128, cluster_m=1, cluster_n=1), storage_config=StorageConfig(load_block_m=64, load_block_n=16, store_block_m=64, store_block_n=0, swizzle_a_mode=128, swizzle_b_mode=128, swizzle_cd_mode=0), pipeline_config=PipelineConfig(smem_size=95872, num_stages=9), launch_config=LaunchConfig(num_sms=48, num_sms_per_cluster=1, num_threads=384, num_tma_threads=128, num_math_threads=256, num_non_epilogue_threads=0, num_epilogue_threads=0), split_k=1), LayoutInfo(num_waves=3, last_wave_util=16, num_cycles=29510)
+{"shape": "qkv_a", "K": 5120, "N": 1792, "M": 4, "backend": "sk4", "nrot": 29, "max_abs": 0.14308175444602966, "max_rel": 0.026191346347332, "rel_fro": 0.02632822096347809, "us_e2e": 47.44744794122104, "us_e2e_min": 47.398563911174904, "us_gemm": 47.03271800074084, "us_gemm_min": 45.224219355089915, "gbps_e2e": 199.41557260827682, "gbps_gemm": 201.17399976439725, "capture_ok": true, "wireable": false}
+{"shape": "wq_b", "K": 1280, "N": 16384, "M": 4, "backend": "b12x", "nrot": 13, "max_abs": 0.08215731382369995, "max_rel": 0.026106109842658043, "rel_fro": 0.026874179020524025, "us_e2e": 96.75298103919395, "us_e2e_min": 96.6780295738807, "us_gemm": 95.60923209557167, "us_gemm_min": 95.57071098914513, "gbps_e2e": 223.52675615482175, "gbps_gemm": 226.20074992738796, "capture_ok": true}
+GemmDesc(gemm_type=0, kernel_type=0, m=16384, n=4, k=1280, num_groups=1, major_a=0, major_b=0, mma_kind=1, a_dtype=Float8_e4m3fn, b_dtype=Float8_e4m3fn, cd_dtype=BFloat16, with_accumulation=0, num_sms=48, tc_util=100, compiled_dims=nk, ensure_zero_padding=1, expected_m=0, expected_n=0, expected_k=0, expected_num_groups=0): GemmConfig(layout=Layout(swap_ab=0, block_m=128, block_n=16, block_k=64, cluster_m=1, cluster_n=1), storage_config=StorageConfig(load_block_m=128, load_block_n=16, store_block_m=128, store_block_n=0, swizzle_a_mode=64, swizzle_b_mode=64, swizzle_cd_mode=0), pipeline_config=PipelineConfig(smem_size=98816, num_stages=10), launch_config=LaunchConfig(num_sms=48, num_sms_per_cluster=1, num_threads=384, num_tma_threads=128, num_math_threads=256, num_non_epilogue_threads=0, num_epilogue_threads=0), split_k=1), LayoutInfo(num_waves=3, last_wave_util=32, num_cycles=49672)
+{"shape": "wq_b", "K": 1280, "N": 16384, "M": 4, "backend": "dg", "nrot": 13, "max_abs": 0.08215731382369995, "max_rel": 0.026106109842658043, "rel_fro": 0.026874179020524025, "us_e2e": 104.11151005671574, "us_e2e_min": 104.00676727294922, "us_gemm": 101.80603174062875, "us_gemm_min": 101.67753513042743, "gbps_e2e": 207.72804071536902, "gbps_gemm": 212.4322069157828, "capture_ok": true}
+{"shape": "wo_b", "K": 4096, "N": 5120, "M": 4, "backend": "b12x", "nrot": 13, "max_abs": 0.13164687156677246, "max_rel": 0.025668108835816383, "rel_fro": 0.026756277307868004, "us_e2e": 98.64135155310997, "us_e2e_min": 98.56565915621243, "us_gemm": 96.05957177969125, "us_gemm_min": 96.03384458101712, "gbps_e2e": 219.24760416888412, "gbps_gemm": 225.14029158489666, "capture_ok": true}
+GemmDesc(gemm_type=0, kernel_type=0, m=5120, n=4, k=4096, num_groups=1, major_a=0, major_b=0, mma_kind=1, a_dtype=Float8_e4m3fn, b_dtype=Float8_e4m3fn, cd_dtype=BFloat16, with_accumulation=0, num_sms=48, tc_util=100, compiled_dims=nk, ensure_zero_padding=1, expected_m=0, expected_n=0, expected_k=0, expected_num_groups=0): GemmConfig(layout=Layout(swap_ab=0, block_m=128, block_n=16, block_k=64, cluster_m=1, cluster_n=1), storage_config=StorageConfig(load_block_m=128, load_block_n=16, store_block_m=128, store_block_n=0, swizzle_a_mode=64, swizzle_b_mode=64, swizzle_cd_mode=0), pipeline_config=PipelineConfig(smem_size=98816, num_stages=10), launch_config=LaunchConfig(num_sms=48, num_sms_per_cluster=1, num_threads=384, num_tma_threads=128, num_math_threads=256, num_non_epilogue_threads=0, num_epilogue_threads=0), split_k=1), LayoutInfo(num_waves=1, last_wave_util=40, num_cycles=48583)
+{"shape": "wo_b", "K": 4096, "N": 5120, "M": 4, "backend": "dg", "nrot": 13, "max_abs": 0.13164687156677246, "max_rel": 0.025668108835816383, "rel_fro": 0.026756277307868004, "us_e2e": 112.03692509577824, "us_e2e_min": 110.44480250431941, "us_gemm": 108.3867073059082, "us_gemm_min": 108.29612291776218, "gbps_e2e": 193.03350195939052, "gbps_gemm": 199.53443127449918, "capture_ok": true}
+{"shape": "shared_gate_up", "K": 5120, "N": 2304, "M": 4, "backend": "b12x", "nrot": 23, "max_abs": 0.1394425630569458, "max_rel": 0.024787673726677895, "rel_fro": 0.027035854756832123, "us_e2e": 55.016347636347234, "us_e2e_min": 54.9921408943508, "us_gemm": 53.537737804910414, "us_gemm_min": 53.50038279657779, "gbps_e2e": 221.11827706939533, "gbps_gemm": 227.22514059763338, "capture_ok": true}
+GemmDesc(gemm_type=0, kernel_type=0, m=2304, n=4, k=5120, num_groups=1, major_a=0, major_b=0, mma_kind=1, a_dtype=Float8_e4m3fn, b_dtype=Float8_e4m3fn, cd_dtype=BFloat16, with_accumulation=0, num_sms=48, tc_util=100, compiled_dims=nk, ensure_zero_padding=1, expected_m=0, expected_n=0, expected_k=0, expected_num_groups=0): GemmConfig(layout=Layout(swap_ab=0, block_m=128, block_n=16, block_k=128, cluster_m=1, cluster_n=1), storage_config=StorageConfig(load_block_m=128, load_block_n=16, store_block_m=128, store_block_n=0, swizzle_a_mode=128, swizzle_b_mode=128, swizzle_cd_mode=0), pipeline_config=PipelineConfig(smem_size=95616, num_stages=5), launch_config=LaunchConfig(num_sms=48, num_sms_per_cluster=1, num_threads=384, num_tma_threads=128, num_math_threads=256, num_non_epilogue_threads=0, num_epilogue_threads=0), split_k=1), LayoutInfo(num_waves=1, last_wave_util=18, num_cycles=34866)
+{"shape": "shared_gate_up", "K": 5120, "N": 2304, "M": 4, "backend": "dg", "nrot": 23, "max_abs": 0.1394425630569458, "max_rel": 0.024787673726677895, "rel_fro": 0.02703585848212242, "us_e2e": 56.78274735160496, "us_e2e_min": 56.757288393766984, "us_gemm": 54.62191208549168, "us_gemm_min": 54.58629442297894, "gbps_e2e": 214.23972187665123, "gbps_gemm": 222.71501555931837, "capture_ok": true}
+GemmDesc(gemm_type=4, kernel_type=0, m=2304, n=4, k=2560, num_groups=2, major_a=0, major_b=0, mma_kind=1, a_dtype=Float8_e4m3fn, b_dtype=Float8_e4m3fn, cd_dtype=Float, with_accumulation=0, num_sms=48, tc_util=100, compiled_dims=nk, ensure_zero_padding=1, expected_m=0, expected_n=0, expected_k=0, expected_num_groups=0): GemmConfig(layout=Layout(swap_ab=0, block_m=128, block_n=16, block_k=64, cluster_m=1, cluster_n=1), storage_config=StorageConfig(load_block_m=128, load_block_n=16, store_block_m=128, store_block_n=0, swizzle_a_mode=64, swizzle_b_mode=64, swizzle_cd_mode=0), pipeline_config=PipelineConfig(smem_size=98816, num_stages=10), launch_config=LaunchConfig(num_sms=48, num_sms_per_cluster=1, num_threads=384, num_tma_threads=128, num_math_threads=256, num_non_epilogue_threads=0, num_epilogue_threads=0), split_k=1), LayoutInfo(num_waves=1, last_wave_util=36, num_cycles=31114)
+{"shape": "shared_gate_up", "K": 5120, "N": 2304, "M": 4, "backend": "sk2", "nrot": 23, "max_abs": 0.1394425630569458, "max_rel": 0.024787673726677895, "rel_fro": 0.02703585848212242, "us_e2e": 63.50455491439156, "us_e2e_min": 63.37905966717264, "us_gemm": 61.28264302792756, "us_gemm_min": 61.25210471775221, "gbps_e2e": 191.56295192367548, "gbps_gemm": 198.50840954193416, "capture_ok": true, "wireable": false}
+GemmDesc(gemm_type=4, kernel_type=0, m=2304, n=4, k=1280, num_groups=4, major_a=0, major_b=0, mma_kind=1, a_dtype=Float8_e4m3fn, b_dtype=Float8_e4m3fn, cd_dtype=Float, with_accumulation=0, num_sms=48, tc_util=100, compiled_dims=nk, ensure_zero_padding=1, expected_m=0, expected_n=0, expected_k=0, expected_num_groups=0): GemmConfig(layout=Layout(swap_ab=0, block_m=64, block_n=16, block_k=64, cluster_m=1, cluster_n=1), storage_config=StorageConfig(load_block_m=64, load_block_n=16, store_block_m=64, store_block_n=0, swizzle_a_mode=64, swizzle_b_mode=64, swizzle_cd_mode=0), pipeline_config=PipelineConfig(smem_size=88320, num_stages=16), launch_config=LaunchConfig(num_sms=48, num_sms_per_cluster=1, num_threads=384, num_tma_threads=128, num_math_threads=256, num_non_epilogue_threads=0, num_epilogue_threads=0), split_k=1), LayoutInfo(num_waves=3, last_wave_util=48, num_cycles=30916)
+{"shape": "shared_gate_up", "K": 5120, "N": 2304, "M": 4, "backend": "sk4", "nrot": 23, "max_abs": 0.1394425630569458, "max_rel": 0.024787673726677895, "rel_fro": 0.02703586034476757, "us_e2e": 61.359442835268766, "us_e2e_min": 61.34059325508449, "us_gemm": 59.30330442345661, "us_gemm_min": 59.2586434405783, "gbps_e2e": 198.25994888284114, "gbps_gemm": 205.13393171373184, "capture_ok": true, "wireable": false}
+{"shape": "shared_down", "K": 1152, "N": 5120, "M": 4, "backend": "b12x", "nrot": 45, "max_abs": 0.06971979141235352, "max_rel": 0.02490292489528656, "rel_fro": 0.0266360342502594, "us_e2e": 29.143680996365017, "us_e2e_min": 28.91111161973741, "us_gemm": 27.689136928982204, "us_gemm_min": 27.672924465603298, "gbps_e2e": 208.70939401095748, "gbps_gemm": 219.6731525291201, "capture_ok": true}
+GemmDesc(gemm_type=0, kernel_type=0, m=5120, n=4, k=1152, num_groups=1, major_a=0, major_b=0, mma_kind=1, a_dtype=Float8_e4m3fn, b_dtype=Float8_e4m3fn, cd_dtype=BFloat16, with_accumulation=0, num_sms=48, tc_util=100, compiled_dims=nk, ensure_zero_padding=1, expected_m=0, expected_n=0, expected_k=0, expected_num_groups=0): GemmConfig(layout=Layout(swap_ab=0, block_m=128, block_n=16, block_k=64, cluster_m=1, cluster_n=1), storage_config=StorageConfig(load_block_m=128, load_block_n=16, store_block_m=128, store_block_n=0, swizzle_a_mode=64, swizzle_b_mode=64, swizzle_cd_mode=0), pipeline_config=PipelineConfig(smem_size=98816, num_stages=10), launch_config=LaunchConfig(num_sms=48, num_sms_per_cluster=1, num_threads=384, num_tma_threads=128, num_math_threads=256, num_non_epilogue_threads=0, num_epilogue_threads=0), split_k=1), LayoutInfo(num_waves=1, last_wave_util=40, num_cycles=15101)
+{"shape": "shared_down", "K": 1152, "N": 5120, "M": 4, "backend": "dg", "nrot": 45, "max_abs": 0.06971979141235352, "max_rel": 0.02490292489528656, "rel_fro": 0.0266360342502594, "us_e2e": 32.15039994981554, "us_e2e_min": 31.82887183295356, "us_gemm": 33.67352803548177, "us_gemm_min": 30.181795756022137, "gbps_e2e": 189.19080352015646, "gbps_gemm": 180.63328539827518, "capture_ok": true}
+{"shape": "main_proj", "K": 15360, "N": 5120, "M": 3, "backend": "b12x", "nrot": 4, "max_abs": 0.28470563888549805, "max_rel": 0.030138224363327026, "rel_fro": 0.026586882770061493, "us_e2e": 373.1332063674927, "us_e2e_min": 369.2447900772095, "us_gemm": 360.59319972991943, "us_gemm_min": 360.43999195098877, "gbps_e2e": 217.35079755974647, "gbps_gemm": 224.9093994582917, "capture_ok": true}
+GemmDesc(gemm_type=0, kernel_type=0, m=5120, n=3, k=15360, num_groups=1, major_a=0, major_b=0, mma_kind=1, a_dtype=Float8_e4m3fn, b_dtype=Float8_e4m3fn, cd_dtype=BFloat16, with_accumulation=0, num_sms=48, tc_util=100, compiled_dims=nk, ensure_zero_padding=1, expected_m=0, expected_n=0, expected_k=0, expected_num_groups=0): GemmConfig(layout=Layout(swap_ab=0, block_m=128, block_n=16, block_k=64, cluster_m=1, cluster_n=1), storage_config=StorageConfig(load_block_m=128, load_block_n=16, store_block_m=128, store_block_n=0, swizzle_a_mode=64, swizzle_b_mode=64, swizzle_cd_mode=0), pipeline_config=PipelineConfig(smem_size=98816, num_stages=10), launch_config=LaunchConfig(num_sms=48, num_sms_per_cluster=1, num_threads=384, num_tma_threads=128, num_math_threads=256, num_non_epilogue_threads=0, num_epilogue_threads=0), split_k=1), LayoutInfo(num_waves=1, last_wave_util=40, num_cycles=176688)
+{"shape": "main_proj", "K": 15360, "N": 5120, "M": 3, "backend": "dg", "nrot": 4, "max_abs": 0.28470563888549805, "max_rel": 0.030138224363327026, "rel_fro": 0.026586882770061493, "us_e2e": 410.889196395874, "us_e2e_min": 401.79920196533203, "us_gemm": 398.5840082168579, "us_gemm_min": 398.28639030456543, "gbps_e2e": 197.37875980039854, "gbps_gemm": 203.47228771876723, "capture_ok": true}
+{
+ "win_gate": 0.1,
+ "per_shape": {
+  "qkv_a": {
+   "M": 4,
+   "b12x_us": 45.59795774262527,
+   "dg": {
+    "us": 47.38013826567551,
+    "gain": -0.037614506590440744,
+    "err_ok": true
+   },
+   "sk2": {
+    "us": 49.42543424409011,
+    "gain": -0.07743941070022065,
+    "err_ok": true
+   },
+   "sk4": {
+    "us": 47.44744794122104,
+    "gain": -0.038979761374878685,
+    "err_ok": true
+   }
+  },
+  "wq_b": {
+   "M": 4,
+   "b12x_us": 96.75298103919395,
+   "dg": {
+    "us": 104.11151005671574,
+    "gain": -0.0706793035036487,
+    "err_ok": true
+   },
+   "not_wireable": "fused_q_kv_rmsnorm_quant feeds a QuantizedActivation"
+  },
+  "wo_b": {
+   "M": 4,
+   "b12x_us": 98.64135155310997,
+   "dg": {
+    "us": 112.03692509577824,
+    "gain": -0.1195639163714699,
+    "err_ok": true
+   }
+  },
+  "shared_gate_up": {
+   "M": 4,
+   "b12x_us": 55.016347636347234,
+   "dg": {
+    "us": 56.78274735160496,
+    "gain": -0.03110803540941731,
+    "err_ok": true
+   },
+   "sk2": {
+    "us": 63.50455491439156,
+    "gain": -0.1336629677900586,
+    "err_ok": true
+   },
+   "sk4": {
+    "us": 61.359442835268766,
+    "gain": -0.10337602340931928,
+    "err_ok": true
+   }
+  },
+  "shared_down": {
+   "M": 4,
+   "b12x_us": 29.143680996365017,
+   "dg": {
+    "us": 32.15039994981554,
+    "gain": -0.09352042146112616,
+    "err_ok": true
+   }
+  },
+  "main_proj": {
+   "M": 3,
+   "b12x_us": 373.1332063674927,
+   "dg": {
+    "us": 410.889196395874,
+    "gain": -0.09188849538892496,
+    "err_ok": true
+   }
+  }
+ },
+ "DSV41_DENSE_DG_SHAPES": "",
+ "est_ms_per_step_serial": -0.0,
+ "est_ms_per_step_shared_maybe_hidden": -0.0
+}
+DSV41_DENSE_DG_SHAPES=
