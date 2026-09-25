@@ -32,6 +32,14 @@
   C with the GIL released (engram_native_stage.py, engram_native.c). Hooked
   here rather than in sitecustomize so the mounted patch dir arms it on an
   image whose baked sitecustomize predates it.
+- DSV41_ATTN_T2R_DEDUP=1: build_attn_metadata makes one CommonAttentionMetadata
+  per KV-cache group, so the token -> request map (arange + repeat_interleave +
+  copy, ~8 small kernels) is rebuilt for every group: ~21 times a decode step
+  at ~4 us of GPU time per queued kernel. With the lever, a group whose
+  metadata shares the previous group's query_start_loc tensors (same objects,
+  same token counts) copies the previous result into its own buffer (one
+  kernel). Every builder keeps its own buffer, so captured graph addresses and
+  values are the stock ones.
 
 Top-level imports are stdlib only, so importing this module cannot fail.
 """
@@ -187,6 +195,59 @@ def _install_mhc_det(env) -> None:
     mhc_det.install(env)
 
 
+def t2r_reuse(prev, qsl, qsl_cpu, num_tokens: int, num_mapped: int, buffer) -> bool:
+    """Whether the previous group's token -> request map can be copied."""
+    if prev is None:
+        return False
+    qref, cref, nt, nm, view = prev
+    return (
+        qref() is qsl
+        and cref() is qsl_cpu
+        and nt == num_tokens
+        and nm == num_mapped
+        and view.dtype == buffer.dtype
+        and view.device == buffer.device
+        and buffer.shape[0] >= max(num_mapped, num_tokens)
+    )
+
+
+def _install_t2r_dedup(env) -> None:
+    if (env.get("DSV41_ATTN_T2R_DEDUP", "0") or "0") != "1":
+        return
+    import weakref
+
+    from vllm.v1.attention.backend import CommonAttentionMetadata
+
+    stock = CommonAttentionMetadata.token_to_req_indices
+    last = [None]
+
+    def token_to_req_indices(self, buffer):
+        if self._token_to_req_indices_cache is not None:
+            return stock(self, buffer)
+        num_tokens = self.num_actual_tokens
+        num_mapped = int(self.query_start_loc_cpu[-1])
+        if t2r_reuse(last[0], self.query_start_loc, self.query_start_loc_cpu, num_tokens, num_mapped, buffer):
+            n = max(num_mapped, num_tokens)
+            view = last[0][4]
+            if buffer.data_ptr() != view.data_ptr():
+                buffer[:n].copy_(view[:n])
+            self._token_to_req_indices_cache = buffer[:n]
+            return self._token_to_req_indices_cache[:num_tokens]
+        out = stock(self, buffer)
+        last[0] = (
+            weakref.ref(self.query_start_loc),
+            weakref.ref(self.query_start_loc_cpu),
+            num_tokens,
+            num_mapped,
+            self._token_to_req_indices_cache,
+        )
+        return out
+
+    token_to_req_indices._dsv41_t2r_dedup = True
+    CommonAttentionMetadata.token_to_req_indices = token_to_req_indices
+    print("dsv41: attention token->request map dedup across KV-cache groups armed", flush=True)
+
+
 def _install_engram_native_stage(env) -> None:
     if (env.get("DSV41_ENGRAM_NATIVE_STAGE", "0") or "0") != "1":
         return
@@ -205,6 +266,7 @@ def install(env=None) -> None:
         ("p2b_src_sort", _check_p2b_src_sort),
         ("p2b_coop", _check_p2b_coop),
         ("engram-native-stage", _install_engram_native_stage),
+        ("attn-t2r-dedup", _install_t2r_dedup),
     ):
         try:
             step(env)

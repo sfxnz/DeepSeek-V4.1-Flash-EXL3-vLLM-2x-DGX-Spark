@@ -67,3 +67,31 @@ Projected: -1.17..-1.29 ms/step at c=1 (n=4), -1.8..-2.05 ms/step at c=2 (n=8),
 unprofiled (the bench has no profiler). ~1.9% of the 62.8 ms c=1 step.
 Remaining native gap ~200 us = hash + DtoH + sync wakeup + ~130 us of page-cache
 lookups (192 random-page syscalls; 1.2-1.8 us each measured on spark1) + H2D.
+
+2. ITERATION 2: token -> request map dedup across KV-cache groups (KEEP, env
+   DSV41_ATTN_T2R_DEDUP=1)
+--------------------------------------------------------------------------
+Trace (c1-rank0.pkl, eager ops per step): DeviceScanInit/DeviceScan/compute_cuda_kernel
+(repeat_interleave) 21.08/step each, arange 21.41, indexSelectSmallIndex 21.01, plus the
+sub/copy/DtoD around them: build_attn_metadata makes one CommonAttentionMetadata per
+KV-cache group and every group's builder (SWA, compressor, sparse MLA) rebuilds
+token_to_req_indices (8 kernels) into its own buffer. 21 builds/step, all on the
+critical path (3 before the draft graph, 18 before the target graph), each small kernel
+~4.1 us of back-to-back GPU time.
+What: decode_levers wraps CommonAttentionMetadata.token_to_req_indices. When a group's
+metadata carries the same query_start_loc (GPU) and query_start_loc_cpu tensor OBJECTS
+(weakref identity; every build_attn_metadata call slices fresh ones) and the same token
+counts as the previous build, it copies the previous result (the [:max(mapped, tokens)]
+view, tail zeros included) into its own buffer: 1 kernel instead of 8. Buffers,
+addresses and values are the stock ones (graph-safe by construction).
+Microbench (t2r_dedup_bench_spark2.json, spark2, image's real CommonAttentionMetadata,
+21 groups per prep, GPU work queued first, 300 iters, arms alternating, every buffer
+checked against repeat_interleave each iteration: 0 mismatches). GPU ops per prep
+168 -> 28. GPU time per prep, us median (p10/p90):
+  c=1 m=4            stock 684.4 (670.2/701.0)  dedup 141.0 (137.4/146.9)  -543.4
+  c=2 m=8            stock 785.5 (681.2/836.8)  dedup 167.1 (144.5/284.5)  -618.4
+  c=2 padded + tail  stock 881.9 (772.4/928.9)  dedup 255.3 (154.7/291.4)  -626.6
+  c=1 m=1            stock 669.9 (663.9/686.4)  dedup 138.8 (135.8/142.9)  -531.1
+Projected in the serve: 2 preps per step (draft 3 groups, target 18) -> 2 computations +
+19 copies instead of 21 computations: -133 kernels, ~-0.52 ms/step (c=1), on the
+critical path. Bit-exact by construction.
