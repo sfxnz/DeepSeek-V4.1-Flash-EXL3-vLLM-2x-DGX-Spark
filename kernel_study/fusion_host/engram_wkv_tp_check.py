@@ -89,8 +89,11 @@ def main() -> int:
     from vllm_exl3.exl3 import Exl3Config
 
     # a default config context, as vLLM's own unit tests use (no model config: the
-    # linear method takes the default dtype, bf16 here, as the serve's bf16 model)
-    set_current_vllm_config(VllmConfig()).__enter__()
+    # linear method takes the default dtype, bf16 here, as the serve's bf16 model).
+    # Keep the context object alive: it is a generator context manager, and a
+    # collected one closes its generator, which restores the old (None) config.
+    cfg_ctx = set_current_vllm_config(VllmConfig())
+    cfg_ctx.__enter__()
     init_distributed_environment(world_size=1, rank=0, local_rank=0,
                                  distributed_init_method="tcp://127.0.0.1:29571", backend="nccl")
     initialize_model_parallel(tensor_model_parallel_size=1)
@@ -251,6 +254,7 @@ def main() -> int:
     out["state"] = dict(wtp._STATE)
     out["mismatches"] = bad
     print(json.dumps(out))
+    cfg_ctx.__exit__(None, None, None)
     return 1 if bad else 0
 
 
