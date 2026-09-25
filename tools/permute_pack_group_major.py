@@ -31,11 +31,6 @@ import sys
 import time
 from pathlib import Path
 
-DEFAULT_PACK = Path(
-    "/home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/"
-    "snapshots/2.0bpw-mcg"
-)
-
 G8_GROUP_TILES = 8  # n-tiles per group; must be a multiple of the p2b group (4)
 MANIFEST_NAME = "permute_g8_manifest.json"
 
@@ -54,13 +49,6 @@ def read_st_header(shard: Path) -> dict:
     with open(shard, "rb") as fh:
         n = struct.unpack("<Q", fh.read(8))[0]
         return json.loads(fh.read(n))
-
-
-def perm_axis(kt: int, nt: int) -> tuple[int, int, int]:
-    """[kt][nt][w] -> [nt/8][kt][8*w]. Returns (G, KT, GW)."""
-    if nt % G8_GROUP_TILES:
-        raise ValueError(f"n-tiles {nt} not divisible by {G8_GROUP_TILES}")
-    return nt // G8_GROUP_TILES, kt, G8_GROUP_TILES * 16 * 2  # K=2 words
 
 
 def plan(pack: Path) -> dict:
@@ -103,7 +91,7 @@ def fmt_gb(b: float) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("pack", nargs="?", type=Path, default=DEFAULT_PACK)
+    ap.add_argument("pack", type=Path, help="EXL3 pack snapshot dir")
     ap.add_argument("--out", type=Path, default=None,
                     help="output dir (required for --apply)")
     ap.add_argument("--apply", action="store_true",

@@ -372,7 +372,7 @@ committing to any rewrite.
 - Full-LUT decode of the 64K-entry codebook is **closed on GB10**: 128 KiB
   table vs 99 KiB smem/block opt-in (48 SMs, sm_121).
 
-### GEMV harness (`kernel_study/gemv_bench/`, untracked study tree)
+### GEMV harness (`kernel_study/gemv_bench/`, study tree; sources tracked, builds not)
 
 - `bench.cu`/`bench2.cu`: byte-faithful clone of the deployed tile (image
   patch chain reproduced on the pinned plugin ref), plus PFMUL (prefetch

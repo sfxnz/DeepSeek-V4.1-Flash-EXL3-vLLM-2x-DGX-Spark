@@ -1,0 +1,60 @@
+== e2e ==
+coding_agent run=1 pass=True cond=True flag=True block=True words=265 ttft=14.41s decode=37.63
+doc_recall run=1 doc=62677 pass=True needle=hit ttft=90.70s decode=44.92
+tool_json run=1 pass=True get_weather({"city": "Paris", "unit": "c"})
+SUMMARY {
+ "phases": [
+  {
+   "phase": "coding_agent",
+   "run": 1,
+   "pass": true,
+   "detail": "cond=True flag=True block=True words=265",
+   "ttft_s": 14.41,
+   "decode_s": 11.88,
+   "decode_tok_s": 37.63,
+   "prompt_tokens": 761,
+   "completion_tokens": 448
+  },
+  {
+   "phase": "doc_recall",
+   "run": 1,
+   "pass": true,
+   "detail": "needle=hit",
+   "ttft_s": 90.7,
+   "decode_s": 1.4,
+   "decode_tok_s": 44.92,
+   "prompt_tokens": 62698,
+   "completion_tokens": 64
+  },
+  {
+   "phase": "tool_json",
+   "run": 1,
+   "pass": true,
+   "detail": "get_weather({\"city\": \"Paris\", \"unit\": \"c\"})",
+   "ttft_s": 0.71,
+   "decode_s": 2.71,
+   "decode_tok_s": 46.83,
+   "prompt_tokens": 296,
+   "completion_tokens": 128
+  }
+ ],
+ "useful_tok_s": 5.25,
+ "pass_rate": "3/3"
+}
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=512 temperature=0.2 runs=3 phase=lail_prose c=1
+run=1 {"ttft_s": 0.3406553830000121, "decode_s": 20.20603181899969, "prompt_tokens": 61, "completion_tokens": 512, "chunks": 219, "lail_tok_s": 25.338968313341336, "recipe_tok_s": 25.289478140854342, "tokens_per_chunk": 2.3378995433789953, "repeat_ratio": 0.002386634844868735, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. That inversion matters because it changes what you optimize. In a conventional serving stack, you treat cache occupancy as a tax on the memory budget you would otherwise spend on weigh", "acceptance_len": 2.3577981651376145, "draft_acceptance_rate": 0.27155963302752295}
+run=2 {"ttft_s": 0.40266743400025007, "decode_s": 19.403996842000197, "prompt_tokens": 61, "completion_tokens": 512, "chunks": 220, "lail_tok_s": 26.38631639496918, "recipe_tok_s": 26.334780620760256, "tokens_per_chunk": 2.327272727272727, "repeat_ratio": 0.0024390243902439024, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. That inversion matters because it changes what you are optimizing for. In a conventional serving stack, you provision memory for weights first, then treat whatever remains as a cache b", "acceptance_len": 2.3424657534246576, "draft_acceptance_rate": 0.2684931506849315}
+run=3 {"ttft_s": 0.33106449600018095, "decode_s": 20.166526988999976, "prompt_tokens": 61, "completion_tokens": 512, "chunks": 228, "lail_tok_s": 25.38860559774498, "recipe_tok_s": 25.339018477436884, "tokens_per_chunk": 2.245614035087719, "repeat_ratio": 0.002421307506053269, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On a DGX Spark with unified memory, every tab that shares the same long system prompt is effectively renting the same prefill artifact \u2014 the prompt's KV states are computed once and th", "acceptance_len": 2.251101321585903, "draft_acceptance_rate": 0.25022026431718064}
+SUMMARY {
+  "phase": "lail_prose",
+  "concurrency": 1,
+  "max_tokens": 512,
+  "temperature": 0.2,
+  "n": 3,
+  "median_lail_tok_s": 25.38860559774498,
+  "median_recipe_tok_s": 25.339018477436884,
+  "median_ttft_s": 0.3406553830000121,
+  "median_completion_tokens": 512,
+  "median_acceptance_len": 2.3424657534246576,
+  "median_draft_acceptance_rate": 0.2684931506849315
+}

@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PATCHER = ROOT / "docker/patch/widen_mla_kv_buf.py"
+PATCHER = ROOT / "docker/patch/attic/widen_mla_kv_buf.py"
 PIN = ROOT / "tests/fixtures/decode_dsv4_kernel.pin.cuh"
 
 

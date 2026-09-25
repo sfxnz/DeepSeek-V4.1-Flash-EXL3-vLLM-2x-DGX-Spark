@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PATCHER = ROOT / "docker/patch/prefer_b12x_bmm.py"
+PATCHER = ROOT / "docker/patch/attic/prefer_b12x_bmm.py"
 PIN = ROOT / "tests/fixtures/mxfp8_bmm_init.pin.py"
 
 

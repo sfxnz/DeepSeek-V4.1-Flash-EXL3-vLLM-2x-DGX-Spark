@@ -33,7 +33,7 @@ CODEBOOKS = {
     "mul1": Codebook("mul1", 2, "mul1", "mul1"),
 }
 DEFAULT_CODEBOOK = "mul1"
-SERVE_REVISION = "2.0bpw-mcg"
+SERVE_REVISION = "2.0bpw-mcg-lmhead-mxfp8"
 
 
 def get_codebook(name: str) -> Codebook:

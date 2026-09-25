@@ -46,6 +46,10 @@ from pathlib import Path
 
 MARKER = "# --- engram-gather-v2 ---"
 
+# Boot-log markers for tools/engagement_audit.py (run.sh post-ready audit).
+LOG_ENGAGED = "dsv41: engram gather v2 self-check bit-exact"
+LOG_DISARMED = "dsv41: engram gather v2 DISABLED ->"
+
 GD_DEF = "    def gather_dequant(self, rel, owned):"
 
 DISPATCH_OLD = (

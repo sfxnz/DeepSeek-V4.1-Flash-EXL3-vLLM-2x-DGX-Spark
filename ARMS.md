@@ -49,7 +49,7 @@ restore after any arm:
 ```bash
 cd /home/sfxnz/projects/ai-lab/recipes/DeepSeek-V4.1-Flash-EXL3-vLLM-2x-DGX-Spark
 ./stop.sh                                  # both nodes (stops spark2 via ssh)
-./serve.sh                                 # defaults = canonical-e12 + stock flags
+./serve.sh                                 # defaults = boot-lm.sh config (canonical-e12, lmhead pack)
 # readiness: python3 smoke_chat.py && python3 smoke_vision.py
 # then: tools/four_numbers.sh --arm <label> to re-confirm baseline cells
 ```

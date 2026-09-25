@@ -69,7 +69,10 @@ def _load_tool(rel: str, name: str):
 
 
 HUB_MODEL = "sfxnz/DeepSeek-V4.1-Flash-EXL3"
-HUB_REV = "2.0bpw-mcg"
+HUB_REV = "2.0bpw-mcg-lmhead-mxfp8"
+STOCK_REV = "2.0bpw-mcg"
+IMAGE_TAG = "dsv41-flash-exl3-sm121:canonical-e12"
+PROMOTED_BOOT = "results/2026-09-22-endgame2/boot-lm.sh"
 HUB_DIRNAME = "models--sfxnz--DeepSeek-V4.1-Flash-EXL3"
 HUB_PACK_URL = "https://huggingface.co/sfxnz/DeepSeek-V4.1-Flash-EXL3"
 DEFAULTS_BEGIN = (
@@ -120,6 +123,337 @@ def _resolve(hf_cache: str, **extra: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _bash_array(name: str) -> list[str]:
+    run = _read("run.sh")
+    m = re.search(rf"^\s*{name}=\((.*?)^\s*\)", run, re.M | re.S)
+    if m is None:
+        raise AssertionError(f"run.sh has no {name}=( ... ) array")
+    return m.group(1).split()
+
+
+def _forward_envs() -> dict[str, str]:
+    """FORWARD_ENVS in run.sh as {NAME: default}."""
+    return dict(item.split("=", 1) for item in _bash_array("FORWARD_ENVS"))
+
+
+def _worker_config() -> list[str]:
+    return _bash_array("worker_config")
+
+
+# Env names read under docker/patch/ that are deliberately NOT forwarded.
+PATCH_ENV_NOT_FORWARDED = {
+    "DSV41_VL_MODEL_PATH": "g8_stream_feed install-time path override (offline tests), not a serve knob",
+}
+# Forwarded names nothing under docker/patch/ reads: vLLM, vllm_exl3 or NCCL read them.
+FORWARDED_ENGINE_ENVS = {
+    "VLLM_EXL3_MOE_KERNEL",
+    "VLLM_SPARSE_INDEXER_MAX_LOGITS_MB",
+    "VLLM_USE_BREAKABLE_CUDAGRAPH",
+    "VLLM_ADAPTIVE_VERIFICATION_PROFILE_CONTEXT_LEN",
+    "MM_ENCODER_TP_MODE",
+    "NCCL_MIN_NCHANNELS",
+    "NCCL_MAX_NCHANNELS",
+    "NCCL_NTHREADS",
+    "NCCL_BUFFSIZE",
+    "NCCL_LL128_BUFFSIZE",
+    "NCCL_PROTO",
+    "NCCL_LAUNCH_CACHE",
+}
+_ENV_READ = re.compile(
+    r"""(?:environ\.get|getenv|env\.get)\(\s*\\?["']([A-Z][A-Z0-9_]*)\\?["']"""
+    r"""|environ\[\s*\\?["']([A-Z][A-Z0-9_]*)"""
+    r"""|\\?["']([A-Z][A-Z0-9_]*)\\?["']\s+(?:not\s+)?in\s+[\w.]*environ"""
+    r"""|^\w*ENV\w*\s*=\s*["']([A-Z][A-Z0-9_]*)["']""",
+    re.M,
+)
+
+
+def _patch_env_reads() -> set[str]:
+    names = set()
+    for path in (ROOT / "docker/patch").glob("*.py"):
+        for m in _ENV_READ.finditer(path.read_text()):
+            names.add(next(g for g in m.groups() if g))
+    return names
+
+
+def _harness():
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import run_sh_harness as h
+
+    return h.container_env, h.dry_run, h.image_and_args
+
+
+class EnvForwardingTests(unittest.TestCase):
+    """Other packages extend FORWARD_ENVS in run.sh; these keep it honest."""
+
+    def test_every_patch_env_read_is_forwarded(self) -> None:
+        reads = _patch_env_reads()
+        self.assertIn("DSV41_ENGRAM_FADVISE_CAP", reads)
+        self.assertIn("LANGUAGE_MODEL_ONLY", reads)
+        self.assertIn("DSV41_LMHEAD_MXFP8", reads)
+        missing = sorted(reads - set(_forward_envs()) - set(PATCH_ENV_NOT_FORWARDED))
+        self.assertEqual(missing, [], "add these to FORWARD_ENVS in run.sh")
+
+    def test_forwarded_names_are_read_by_something(self) -> None:
+        dead = sorted(set(_forward_envs()) - _patch_env_reads() - FORWARDED_ENGINE_ENVS)
+        self.assertEqual(dead, [], "nothing reads these; drop them or name the reader")
+
+    def test_forward_envs_are_unique(self) -> None:
+        names = [item.split("=", 1)[0] for item in _bash_array("FORWARD_ENVS")]
+        self.assertEqual(len(names), len(set(names)))
+
+    def test_every_recipe_knob_reaches_the_worker(self) -> None:
+        head_only = {"WORKER_HOST", "ORCHESTRATE", "AUDIT", "WARMUP"}
+        reach = set(_worker_config()) | set(_forward_envs())
+        missing = sorted(set(_recipe()["serve"]["env"]) - reach - head_only)
+        self.assertEqual(missing, [])
+
+    def test_dry_run_head_and_worker_get_the_same_env(self) -> None:
+        container_env, dry_run, image_and_args = _harness()
+
+        res = dry_run()
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        head, worker = container_env(res["head"]), container_env(res["worker"])
+        self.assertNotEqual(head.pop("VLLM_HOST_IP"), worker.pop("VLLM_HOST_IP"))
+        self.assertEqual(head, worker)
+        for name, default in _forward_envs().items():
+            if default:
+                self.assertEqual(head.get(name), default, name)
+        self.assertNotIn("HF_TOKEN", head)
+        (_, head_args), (_, worker_args) = image_and_args(res["head"]), image_and_args(res["worker"])
+        self.assertIn("--headless", worker_args)
+        self.assertEqual(head_args[head_args.index("--max-model-len") :], worker_args[worker_args.index("--max-model-len") :])
+
+    def test_patch_strict_is_forwarded_to_both_ranks(self) -> None:
+        container_env, dry_run, _ = _harness()
+        self.assertEqual(_forward_envs()["DSV41_PATCH_STRICT"], "1")
+        res = dry_run()
+        for role in ("head", "worker"):
+            self.assertEqual(container_env(res[role])["DSV41_PATCH_STRICT"], "1", role)
+        res = dry_run(DSV41_PATCH_STRICT="0")
+        for role in ("head", "worker"):
+            self.assertEqual(container_env(res[role])["DSV41_PATCH_STRICT"], "0", role)
+
+    def test_dry_run_forwards_overrides_and_quoted_values(self) -> None:
+        container_env, dry_run, image_and_args = _harness()
+
+        extra = '--override-generation-config {"note":"it\'s"} --enable-prompt-tokens-details'
+        with tempfile.TemporaryDirectory() as patch_dir:
+            res = dry_run(
+                DSV41_PATCH_DIR=patch_dir,
+                DSV41_ENGRAM_FADVISE_CAP="24",
+                NCCL_NTHREADS="128",
+                EXTRA_ARGS=extra,
+            )
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        self.assertIn(["-q", "-r", patch_dir, "dryrun-no-such-host:.cache/dsv41-patch"], res["scp"])
+        for role in ("head", "worker"):
+            env = container_env(res[role])
+            self.assertEqual(env["DSV41_ENGRAM_FADVISE_CAP"], "24", role)
+            self.assertEqual(env["NCCL_NTHREADS"], "128", role)
+            _, args = image_and_args(res[role])
+            self.assertEqual(
+                args[-3:],
+                ["--override-generation-config", '{"note":"it\'s"}', "--enable-prompt-tokens-details"],
+                role,
+            )
+
+
+def _docker(res: dict, role: str, verb: str) -> list[list[str]]:
+    return [c["argv"] for c in res["calls"] if c["tool"] == "docker" and c["role"] == role and c["argv"][:1] == [verb]]
+
+
+def _call_index(res: dict, pred) -> int:
+    for i, c in enumerate(res["calls"]):
+        if pred(c):
+            return i
+    return -1
+
+
+def _is_run(role: str):
+    return lambda c: c["tool"] == "docker" and c["role"] == role and c["argv"][:1] == ["run"]
+
+
+def _worker_log(res: dict) -> str:
+    logs = [text for name, text in res["run_state"].items() if name.startswith("worker-")]
+    return logs[0] if len(logs) == 1 else f"expected one worker-*.log, got {sorted(res['run_state'])}"
+
+
+ENGAGED_LOG = "\n".join(
+    [
+        "(Worker_TP0 pid=1) dsv41: lm_head mxfp8 enabled (b12x, (64640, 5120))",
+        "(Worker_TP0 pid=1) dsv41: engram prefetch v3 armed (ngram=4)",
+        "(Worker_TP0 pid=1) [dsv41-drop-page-cache] dropped page cache of 48 shard files",
+        "(Worker_TP0 pid=1) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)",
+        "(Worker_TP0 pid=1) INFO [breakable_cudagraph.py:290] Breakable CUDA graph enabled",
+        "(Worker_TP0 pid=1) dsv41: engram gather v2 self-check bit-exact (r=120)",
+    ]
+)
+
+
+class OrchestrationTests(unittest.TestCase):
+    """run.sh two-node flow with docker/ssh stubbed (tests/run_sh_harness.py)."""
+
+    def test_preflight_both_nodes_before_any_container(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run()
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        preflight = _call_index(res, lambda c: c["tool"] == "ssh" and "PREFLIGHT_ONLY=1" in " ".join(c["argv"]))
+        head_image = _call_index(res, lambda c: c["tool"] == "docker" and c["role"] == "head" and c["argv"][:2] == ["image", "inspect"])
+        worker_run, head_run = _call_index(res, _is_run("worker")), _call_index(res, _is_run("head"))
+        self.assertTrue(0 <= head_image < preflight < worker_run < head_run, (head_image, preflight, worker_run, head_run))
+        self.assertEqual(_docker(res, "worker", "rm"), [], "a good boot must not remove the worker")
+        self.assertEqual(res["run_state"].get("worker_host", "").strip(), "dryrun-no-such-host")
+        self.assertNotIn("sleep 25", _read("run.sh"))
+        self.assertIn("connecting to", res["stdout"])
+
+    def test_worker_preflight_failure_starts_nothing(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(STUB_WORKER_NO_IMAGE="1")
+        self.assertEqual(res["returncode"], 1, res["stdout"] + res["stderr"])
+        self.assertIn("Preflight failed on dryrun-no-such-host", res["stderr"])
+        self.assertIsNone(res["head"])
+        self.assertIsNone(res["worker"])
+
+    def test_head_preflight_failure_starts_nothing(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(make_snapshot=False, SKIP_DOWNLOAD="1")
+        self.assertEqual(res["returncode"], 1, res["stdout"] + res["stderr"])
+        self.assertIn("Pinned snapshot missing", res["stderr"])
+        self.assertIsNone(res["head"])
+        self.assertIsNone(res["worker"])
+        self.assertEqual(res["scp"], [])
+
+    def test_worker_exit_before_launch_saves_logs_and_removes_it(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(STUB_WORKER_PS_OK="0", STUB_LOGS_WORKER="CUDA out of memory on rank 1")
+        self.assertEqual(res["returncode"], 1, res["stdout"] + res["stderr"])
+        self.assertIsNotNone(res["worker"])
+        self.assertIsNone(res["head"], "head must not start after the worker died")
+        self.assertIn("CUDA out of memory on rank 1", _worker_log(res))
+        self.assertIn("CUDA out of memory on rank 1", res["stderr"])
+        self.assertTrue(any("rm" == a[0] and "-f" in a for a in _docker(res, "worker", "rm")))
+        self.assertEqual(_docker(res, "head", "rm"), [], "no head was started, none is removed")
+
+    def test_worker_death_during_wait_ready_fails_fast(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(
+            STUB_WORKER_PS_OK="1",
+            STUB_CURL_FAIL="1",
+            STUB_LOGS_WORKER="Launching vLLM headless multiproc executor\nworker died: NCCL error",
+            STUB_LOGS_HEAD="head waiting on the rendezvous",
+        )
+        self.assertEqual(res["returncode"], 1, res["stdout"] + res["stderr"])
+        self.assertIsNotNone(res["head"])
+        self.assertIn("is not running", res["stderr"])
+        self.assertIn("NCCL error", _worker_log(res))
+        self.assertNotIn("Timed out", res["stderr"], "worker death must not wait out the 1 h ready loop")
+        # The loaded head rank goes too, after its logs are saved.
+        head_logs = [text for name, text in res["run_state"].items() if name.startswith("head-")]
+        self.assertEqual(head_logs, ["head waiting on the rendezvous\n"])
+        logs = _call_index(res, lambda c: c["tool"] == "docker" and c["role"] == "head" and c["argv"][:1] == ["logs"])
+        rm = _call_index(res, lambda c: c["tool"] == "docker" and c["role"] == "head" and c["argv"][:2] == ["rm", "-f"])
+        self.assertTrue(0 <= logs < rm, (logs, rm))
+        self.assertIn("dsv41-dryrun-harness", res["calls"][rm]["argv"])
+
+    def test_head_failure_trap_saves_worker_logs_then_removes_worker(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(
+            STUB_CURL_FAIL="1",
+            STUB_HEAD_EXITS="1",
+            STUB_LOGS_WORKER="Launching vLLM headless multiproc executor\nworker stack trace",
+        )
+        self.assertEqual(res["returncode"], 1, res["stdout"] + res["stderr"])
+        self.assertIn("Container exited early", res["stderr"])
+        self.assertIn("worker stack trace", _worker_log(res))
+        logs = _call_index(res, lambda c: c["tool"] == "docker" and c["role"] == "worker" and c["argv"][:1] == ["logs"] and len(c["argv"]) == 2)
+        rm = _call_index(res, lambda c: c["tool"] == "docker" and c["role"] == "worker" and c["argv"][:1] == ["rm"])
+        self.assertTrue(0 <= logs < rm, (logs, rm))
+
+    def test_container_gets_no_hub_token_and_runs_offline(self) -> None:
+        container_env, dry_run, _ = _harness()
+        res = dry_run(HF_TOKEN="hf_dummy_not_a_token")
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        for role in ("head", "worker"):
+            env = container_env(res[role])
+            self.assertNotIn("HF_TOKEN", env, role)
+            self.assertNotIn("HUGGING_FACE_HUB_TOKEN", env, role)
+            self.assertEqual(env["HF_HUB_OFFLINE"], "1", role)
+            self.assertNotIn("hf_dummy_not_a_token", " ".join(res[role]), role)
+        self.assertNotIn("token_env", _read("run.sh"))
+
+    def test_worker_patch_dir_is_per_user(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run()
+        self.assertTrue(any(a[-1] == "dryrun-no-such-host:.cache/dsv41-patch" for a in res["scp"]), res["scp"])
+        ssh_cmds = [c["argv"][-1] for c in res["calls"] if c["tool"] == "ssh"]
+        start = [c for c in ssh_cmds if c.endswith("bash /tmp/dsv41-exl3-run.sh") and "PREFLIGHT_ONLY" not in c]
+        self.assertEqual(len(start), 1)
+        self.assertIn("DSV41_PATCH_DIR=$HOME/.cache/dsv41-patch ", start[0])
+
+    def test_refuse_busy_port_points_at_stop_sh(self) -> None:
+        self.assertIn("./stop.sh", _func_body(_read("run.sh"), "refuse_busy_port"))
+
+    def test_run_state_follows_the_script_not_cwd(self) -> None:
+        self.assertIn('RUN_STATE="$SCRIPT_DIR/.run-state"', _read("run.sh"))
+        self.assertNotIn("${PWD}", _read("run.sh"))
+        with tempfile.TemporaryDirectory() as d:
+            tmp = Path(d)
+            (tmp / "repo" / ".run-state").mkdir(parents=True)
+            (tmp / "repo" / ".run-state" / "worker_host").write_text("state-host-xyz\n")
+            stop = tmp / "repo" / "stop.sh"
+            stop.write_text(_read("stop.sh"))
+            stop.chmod(0o755)
+            bindir = tmp / "bin"
+            bindir.mkdir()
+            for name, body in {"docker": "#!/bin/sh\nexit 0\n", "ssh": "#!/bin/sh\nexit 255\n", "hostname": "#!/bin/sh\necho spark1\n"}.items():
+                (bindir / name).write_text(body)
+                (bindir / name).chmod(0o755)
+            env = _env(PATH=f"{bindir}{os.pathsep}{os.environ['PATH']}", ORCHESTRATE="auto", CONTAINER_NAME="dsv41-ops-test-none")
+            env.pop("WORKER_HOST", None)
+            proc = subprocess.run([str(stop)], cwd=str(tmp), env=env, capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("state-host-xyz", proc.stderr)
+
+    def test_validate_only_rejects_unknown_audit_mode(self) -> None:
+        proc = _run_sh(AUDIT="loud")
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("AUDIT=loud", proc.stderr)
+        for mode in ("warn", "strict", "off"):
+            self.assertEqual(_run_sh(AUDIT=mode).returncode, 0, mode)
+
+    def test_post_ready_audit_warn_strict_and_clean(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(AUDIT="warn", STUB_LOGS_HEAD="dsv41: lm_head mxfp8 self-disarmed (no key)")
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        self.assertIn("WARNING audit head: missing", res["stderr"])
+        self.assertIn("WARNING audit head: dsv41: lm_head mxfp8 self-disarmed", res["stderr"])
+        self.assertIn("WARNING audit worker: missing", res["stderr"])
+        self.assertEqual(_docker(res, "worker", "rm"), [], "an audit warning must not tear down the serve")
+        res = dry_run(AUDIT="strict")
+        self.assertEqual(res["returncode"], 1, res["stdout"] + res["stderr"])
+        self.assertIn("AUDIT=strict", res["stderr"])
+        self.assertEqual(_docker(res, "worker", "rm"), [], "strict audit reports; ./stop.sh tears down")
+        res = dry_run(
+            AUDIT="strict",
+            STUB_LOGS_HEAD=ENGAGED_LOG,
+            STUB_LOGS_WORKER=ENGAGED_LOG + "\n" + "Launching vLLM headless multiproc executor",
+        )
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        self.assertIn("audit ok", res["stdout"])
+        self.assertTrue(any(n.startswith("audit-head-") for n in res["run_state"]))
+        self.assertTrue(any(n.startswith("audit-worker-") for n in res["run_state"]))
+
+    def test_warmup_failure_warns_but_keeps_the_serve(self) -> None:
+        _, dry_run, _ = _harness()
+        res = dry_run(WARMUP="1")
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        self.assertIn("Warmup:", res["stdout"])
+        self.assertIn("WARNING: warmup failed", res["stderr"])
+
+
 class RecipeOpsTests(unittest.TestCase):
     def test_stop_sh_ssh_probe_has_else_exit_1(self) -> None:
         stop = _read("stop.sh")
@@ -131,8 +465,10 @@ class RecipeOpsTests(unittest.TestCase):
 
     def test_stop_sh_reads_worker_host_state_then_default(self) -> None:
         stop = _read("stop.sh")
-        self.assertIn(".run-state/worker_host", stop)
-        self.assertLess(stop.find(".run-state/worker_host"), stop.find('WORKER_HOST:-spark2'))
+        self.assertIn('RUN_STATE="$(cd "$(dirname "$0")" && pwd)/.run-state"', stop)
+        self.assertIn('"$RUN_STATE/worker_host"', stop)
+        self.assertNotIn("${PWD}", stop)
+        self.assertLess(stop.find("$RUN_STATE/worker_host"), stop.find('WORKER_HOST:-spark2'))
 
     def test_stop_sh_orchestrate_zero_is_local_only(self) -> None:
         stop = _read("stop.sh")
@@ -171,34 +507,18 @@ class RecipeOpsTests(unittest.TestCase):
 
     def test_run_sh_worker_ssh_forwards_snapshot_and_revision(self) -> None:
         run = _read("run.sh")
-        ssh_idx = run.find('ssh "$WORKER_HOST"')
-        self.assertGreater(ssh_idx, 0)
-        ssh_block = run[ssh_idx : ssh_idx + 3500]
-        self.assertIn("SNAPSHOT_SHA='$SNAPSHOT_SHA'", ssh_block)
-        self.assertIn("HF_CACHE='$HF_CACHE'", ssh_block)
-        self.assertIn("MODEL='$MODEL'", ssh_block)
-        self.assertIn("MM_ENCODER_TP_MODE='$MM_ENCODER_TP_MODE'", ssh_block)
-        self.assertIn("QUANTIZATION='$QUANTIZATION'", ssh_block)
-        self.assertIn("DSV41_ENGRAM_DISK='$DSV41_ENGRAM_DISK'", ssh_block)
-        self.assertIn("DSV41_PATCH_DIR='/tmp/dsv41-patch'", ssh_block)
-        self.assertIn('scp -q -r "$SCRIPT_DIR/docker/patch"', run)
+        config = _worker_config()
+        for name in ("SNAPSHOT_SHA", "HF_CACHE", "MODEL", "QUANTIZATION", "EXTRA_ARGS", "COMPILATION_CONFIG"):
+            self.assertIn(name, config)
+        self.assertIn('worker_env="ROLE=worker ORCHESTRATE=0 DSV41_PATCH_DIR=\\$HOME/$WORKER_PATCH_DIR"', run)
+        self.assertIn('ssh "$WORKER_HOST" "$worker_env bash /tmp/dsv41-exl3-run.sh"', run)
+        self.assertIn('scp -q -r "$PATCH_DIR" "${WORKER_HOST}:$WORKER_PATCH_DIR"', run)
+        self.assertNotIn("/tmp/dsv41-patch", run)
+        self.assertNotIn('scp -q -r "$SCRIPT_DIR/docker/patch"', run)
         self.assertIn("/opt/dsv41-patch:ro", run)
         self.assertIn("/usr/lib/python3.12/sitecustomize.py:ro", run)
-        self.assertIn("DSV41_STEP_CENSUS=", run)
-        self.assertIn("DSV41_INDEX_TOPK=", run)
-        self.assertIn("DSV41_MHC_DECODE_SPLITS=", run)
-        self.assertIn("DSV41_ENGRAM_CACHE=", run)
-        self.assertIn("DSV41_MHC_NO_DEEPGEMM=", run)
-        self.assertIn("DSV41_DSPARK_DRAFT_TOPK=", run)
-        self.assertIn("DSV41_DSPARK_TAIL_NGRAM=", run)
-        self.assertIn("DSV41_DSPARK_TAIL_NGRAM_POS=", run)
-        self.assertIn("DSV41_DSPARK_SOFTMAX_VERIFY=", run)
-        self.assertIn("DSV41_DSPARK_REFINE_PASS=", run)
-        self.assertIn("DSV41_DSPARK_CONF_GATE=", run)
-        self.assertIn("DSV41_MLA_IO_WARPS=", run)
-        self.assertIn("DSV41_MLA_CHUNKS_PER_BLOCK=", run)
         self.assertIn('--revision "$SNAPSHOT_SHA"', run)
-        self.assertIn(".run-state/worker_host", run)
+        self.assertIn('"$RUN_STATE/worker_host"', run)
         self.assertNotIn("starting local rank only", run)
 
     def test_run_sh_does_not_default_disable_xet(self) -> None:
@@ -305,7 +625,10 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("quant=exl3", proc.stdout)
         self.assertIn("engram_disk=1", proc.stdout)
         self.assertIn("spec=dspark", proc.stdout)
-        self.assertIn("spec_tokens=5", proc.stdout)
+        k = _recipe()["serve"]["env"]["NUM_SPECULATIVE_TOKENS"]
+        self.assertEqual(k, "3")
+        self.assertIn(f"spec_tokens={k}", proc.stdout)
+        self.assertIn('"cudagraph_capture_sizes":[1,3,4,6,8]', proc.stdout)
         self.assertIn("eager=0", proc.stdout)
         self.assertIn("lm_only=0", proc.stdout)
         self.assertNotIn("--language-model-only", proc.stdout)
@@ -315,10 +638,34 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         self.assertIn("exceeds 2", proc.stderr)
 
-    def test_validate_only_refuses_spec_tokens_not_divisible_by_5(self) -> None:
-        proc = _run_sh(SPEC="dspark", NUM_SPECULATIVE_TOKENS="3")
-        self.assertNotEqual(proc.returncode, 0)
-        self.assertIn("not divisible by 5", proc.stderr)
+    def test_validate_only_refuses_spec_tokens_above_block(self) -> None:
+        for k in ("10", "6", "0", "3.5"):
+            proc = _run_sh(SPEC="dspark", NUM_SPECULATIVE_TOKENS=k)
+            self.assertNotEqual(proc.returncode, 0, k)
+            self.assertIn("integer 1..5", proc.stderr)
+            self.assertIn("E6", proc.stderr)
+
+    def test_validate_only_spec_tokens_in_block_pass(self) -> None:
+        for k in ("1", "3", "5"):
+            proc = _run_sh(SPEC="dspark", NUM_SPECULATIVE_TOKENS=k)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertIn(f"spec_tokens={k}", proc.stdout)
+
+    def test_validate_only_capture_sizes_follow_k_and_seqs(self) -> None:
+        cases = {
+            ("3", "2"): "[1,3,4,6,8]",
+            ("5", "2"): "[1,5,6,10,12]",
+            ("2", "2"): "[1,2,3,4,6]",
+            ("3", "1"): "[1,3,4]",
+        }
+        for (k, seqs), sizes in cases.items():
+            proc = _run_sh(NUM_SPECULATIVE_TOKENS=k, MAX_NUM_SEQS=seqs)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertIn(f'"cudagraph_capture_sizes":{sizes}', proc.stdout, (k, seqs))
+        explicit = '{"cudagraph_mode":"PIECEWISE","cudagraph_capture_sizes":[1,2]}'
+        proc = _run_sh(COMPILATION_CONFIG=explicit)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn(f"compilation_config={explicit}", proc.stdout)
 
     def test_validate_only_refuses_26gib_kv_pin(self) -> None:
         proc = _run_sh(KV_CACHE_MEMORY="27917287424")
@@ -339,6 +686,72 @@ class RecipeOpsTests(unittest.TestCase):
         proc = _run_sh(DSV41_ENGRAM_DISK="0")
         self.assertNotEqual(proc.returncode, 0)
         self.assertIn("Engram", proc.stderr)
+
+    def test_image_default_is_the_readme_build_tag(self) -> None:
+        env = _recipe()["serve"]["env"]
+        self.assertEqual(env["IMAGE"], IMAGE_TAG)
+        self.assertEqual(_recipe()["image"]["local_tag"], IMAGE_TAG)
+        self.assertIn(f"docker build -f docker/Dockerfile -t {IMAGE_TAG} docker", _read("README.md"))
+        self.assertIn('LABEL dsv41.recipe.patches="', _read("docker/Dockerfile"))
+        self.assertIn('"dsv41.recipe.patches"', _func_body(_read("run.sh"), "ensure_image"))
+
+    def test_image_without_recipe_label_warns_but_boots(self) -> None:
+        container_env, dry_run, image_and_args = _harness()
+        res = dry_run()
+        self.assertEqual(res["returncode"], 0, res["stderr"])
+        self.assertIn("WARNING", res["stderr"])
+        self.assertIn("dsv41.recipe.patches", res["stderr"])
+        res = dry_run(STUB_IMAGE_LABELS='{"dsv41.recipe.patches":"x"}')
+        self.assertEqual(res["returncode"], 0, res["stderr"])
+        self.assertNotIn("dsv41.recipe.patches", res["stderr"])
+
+    def test_defaults_match_promoted_boot(self) -> None:
+        """A plain ./run.sh reproduces the measured 39.6/33.2 boot (results/2026-09-22-endgame2/boot-lm.sh).
+
+        Only intentional delta: FORCE_UNSAFE_CTX. The campaign set it per boot to get k=3 past the old
+        %5 spec guard; the default stays 0 (ARMS.md: never commit it).
+        """
+        import json
+        import shlex
+
+        allowed = {"FORCE_UNSAFE_CTX"}
+        boot = {}
+        for line in _read(PROMOTED_BOOT).splitlines():
+            if line.startswith("export "):
+                name, _, value = line[len("export ") :].partition("=")
+                boot[name] = shlex.split(value)[0]
+        self.assertIn("NCCL_PROTO", boot)
+        container_env, dry_run, image_and_args = _harness()
+        res = dry_run()
+        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+        image, args = image_and_args(res["head"])
+        effective = container_env(res["head"])
+        effective.update(
+            IMAGE=image,
+            SNAPSHOT_SHA=Path(args[1]).name,
+            MAX_NUM_BATCHED_TOKENS=args[args.index("--max-num-batched-tokens") + 1],
+            COMPILATION_CONFIG=args[args.index("--compilation-config") + 1],
+            NUM_SPECULATIVE_TOKENS=str(
+                json.loads(args[args.index("--speculative-config") + 1])["num_speculative_tokens"]
+            ),
+        )
+        for name, value in boot.items():
+            if name in allowed:
+                continue
+            self.assertEqual(effective.get(name), value, name)
+
+    def test_force_unsafe_defaults_are_off(self) -> None:
+        env = _recipe()["serve"]["env"]
+        for name in ("FORCE_UNSAFE_CTX", "FORCE_UNSAFE_ENGRAM", "FORCE_UNSAFE_QUANT"):
+            self.assertEqual(env[name], "0", name)
+
+    def test_patch_sources_compile_without_warnings(self) -> None:
+        import warnings
+
+        for path in sorted((ROOT / "docker/patch").glob("*.py")):
+            with warnings.catch_warnings():
+                warnings.simplefilter("error")
+                compile(path.read_text(), str(path), "exec")
 
     def test_gitignore_run_state(self) -> None:
         self.assertIn(".run-state/", _read(".gitignore"))
@@ -372,7 +785,9 @@ class RecipeOpsTests(unittest.TestCase):
         spec = _recipe()["serve"]["env"]["SPEC"]
         self.assertIn(f'SPEC="${{SPEC:-{spec}}}"', run)
         self.assertEqual(spec, "dspark")
-        self.assertIn('NUM_SPECULATIVE_TOKENS="${NUM_SPECULATIVE_TOKENS:-5}"', run)
+        k = _recipe()["serve"]["env"]["NUM_SPECULATIVE_TOKENS"]
+        self.assertEqual(k, "3")
+        self.assertIn(f'NUM_SPECULATIVE_TOKENS="${{NUM_SPECULATIVE_TOKENS:-{k}}}"', run)
         self.assertIn('ENFORCE_EAGER="${ENFORCE_EAGER:-0}"', run)
         self.assertIn('LANGUAGE_MODEL_ONLY="${LANGUAGE_MODEL_ONLY:-0}"', run)
         self.assertIn("enable_flashinfer_autotune", run)
@@ -389,7 +804,7 @@ class RecipeOpsTests(unittest.TestCase):
         body = _func_body(run, "start_local")
         self.assertIn('lm_args+=(--language-model-only)', body)
         self.assertIn('LANGUAGE_MODEL_ONLY" == "1"', body)
-        self.assertIn('LANGUAGE_MODEL_ONLY=$LANGUAGE_MODEL_ONLY', body)
+        self.assertIn("LANGUAGE_MODEL_ONLY", _forward_envs())
         self.assertIn('--mm-encoder-tp-mode', body)
         self.assertIn('MM_ENCODER_TP_MODE', body)
         proc = _run_sh()
@@ -397,24 +812,25 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("lm_only=0", proc.stdout)
         self.assertNotIn("--language-model-only", proc.stdout)
 
-    def test_default_prefill_batch_stays_2048_and_hub_rev_stays_mcg(self) -> None:
-        self.assertEqual(_recipe()["serve"]["env"]["MAX_NUM_BATCHED_TOKENS"], "2048")
+    def test_default_prefill_batch_is_8192_and_hub_rev_is_mcg_lmhead(self) -> None:
+        self.assertEqual(_recipe()["serve"]["env"]["MAX_NUM_BATCHED_TOKENS"], "8192")
         self.assertEqual(_recipe()["serve"]["env"]["MM_ENCODER_TP_MODE"], "data")
         self.assertEqual(_recipe()["serve"]["env"]["SNAPSHOT_SHA"], HUB_REV)
-        self.assertEqual(HUB_REV, "2.0bpw-mcg")
+        self.assertTrue(HUB_REV.startswith(STOCK_REV + "-"))
+        self.assertNotIn("mul1", HUB_REV)
         run = _read("run.sh")
-        self.assertIn('MAX_NUM_BATCHED_TOKENS="${MAX_NUM_BATCHED_TOKENS:-2048}"', run)
+        self.assertIn('MAX_NUM_BATCHED_TOKENS="${MAX_NUM_BATCHED_TOKENS:-8192}"', run)
         self.assertIn('MM_ENCODER_TP_MODE="${MM_ENCODER_TP_MODE:-data}"', run)
         row = _defaults_row("`--max-num-batched-tokens`")
-        self.assertIn("2048", row)
-        self.assertNotIn("8192", row)
+        self.assertIn("8192", row)
         self.assertIn("data", _defaults_row("`--mm-encoder-tp-mode`"))
         readme = _read("README.md")
         self.assertIn("−5%", readme)
         self.assertIn("12,712", readme)
         self.assertIn("23.52", readme)
         self.assertIn("27.98", readme)
-        self.assertIn("2.0bpw-mcg", _recipe()["serve"]["env"]["SNAPSHOT_SHA"])
+        self.assertIn(f"hf download {HUB_MODEL} --revision {HUB_REV}", readme)
+        self.assertIn(f"--revision {STOCK_REV}", readme)
 
     def test_locator_prefers_refs_commit_over_named_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as d:

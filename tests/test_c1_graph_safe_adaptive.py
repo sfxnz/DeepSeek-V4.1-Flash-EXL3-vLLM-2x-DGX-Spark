@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PATCHER = ROOT / "docker/patch/c1_graph_safe_adaptive.py"
+PATCHER = ROOT / "docker/patch/attic/c1_graph_safe_adaptive.py"
 
 
 def _load():

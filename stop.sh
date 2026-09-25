@@ -3,9 +3,10 @@ set -euo pipefail
 
 CONTAINER_NAME="${CONTAINER_NAME:-dsv41-flash-exl3}"
 ORCHESTRATE="${ORCHESTRATE:-auto}"
+RUN_STATE="$(cd "$(dirname "$0")" && pwd)/.run-state"
 
-if [[ -z "${WORKER_HOST:-}" && -f "${PWD}/.run-state/worker_host" ]]; then
-  WORKER_HOST="$(tr -d '[:space:]' <"${PWD}/.run-state/worker_host")"
+if [[ -z "${WORKER_HOST:-}" && -f "$RUN_STATE/worker_host" ]]; then
+  WORKER_HOST="$(tr -d '[:space:]' <"$RUN_STATE/worker_host")"
 fi
 WORKER_HOST="${WORKER_HOST:-spark2}"
 

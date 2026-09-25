@@ -24,6 +24,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+# Boot-log markers for tools/engagement_audit.py (run.sh post-ready audit).
+LOG_ENGAGED = "[woa-requant] fp8 einsum engaged"
+LOG_DISARMED = "[woa-requant] fp8 path rejected"
+
 HELPER = r'''
 # --- fix_o_proj_woa_fp8: exact requant of emulated-dequant wo_a ---
 def _woa_try_requant(wo_a, n_groups, o_lora_rank):

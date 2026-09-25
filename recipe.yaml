@@ -1,7 +1,7 @@
 # Source of truth. Edit here, then `python3 kit/render.py`.
 model:
   id: &model sfxnz/DeepSeek-V4.1-Flash-EXL3
-  revision: &revision 2.0bpw-mcg
+  revision: &revision 2.0bpw-mcg-lmhead-mxfp8
   served_name: &served_name deepseek-ai/DeepSeek-V4.1-Flash
   family: DeepSeek-V4.1-Flash
   params: 552B backbone / 8B prefill / 16B decode, plus 196B Engram
@@ -10,8 +10,7 @@ model:
 image:
   base: vllm/vllm-openai:deepseekv41-flash-0909
   digest: sha256:d84a123255b822fc22508635218000187221794f59c0694c33b0650d1e377d58
-  local_tag: &image dsv41-flash-exl3-sm121
-  canonical_tag: dsv41-flash-exl3-sm121:canonical-e12
+  local_tag: &image dsv41-flash-exl3-sm121:canonical-e12
   build: docker/Dockerfile
 
 engine:
@@ -51,7 +50,7 @@ serve:
     LANGUAGE_MODEL_ONLY: 0
     MM_ENCODER_TP_MODE: data
     MAX_NUM_BATCHED_TOKENS: 8192
-    FORCE_UNSAFE_CTX: 1
+    FORCE_UNSAFE_CTX: 0
     FORCE_UNSAFE_ENGRAM: 0
     FORCE_UNSAFE_QUANT: 0
     ENFORCE_EAGER: 0
@@ -61,11 +60,22 @@ serve:
     SNAPSHOT_SHA: *revision
     SKIP_DOWNLOAD: 0
     ORCHESTRATE: auto
+    AUDIT: warn
+    WARMUP: 1
     EXTRA_ARGS: ""
     DSV41_ENGRAM_PREFETCH: 1
     DSV41_ENGRAM_CENSUS: 1
     DSV41_ENGRAM_GATHER_V2: 1
     DSV41_LMHEAD_MXFP8: 1
+    NCCL_BUFFSIZE: 1048576
+    NCCL_LL128_BUFFSIZE: 262144
+    NCCL_PROTO: ^LL128
+    NCCL_MAX_NCHANNELS: 8
+    DSV41_DROP_PAGE_CACHE: 1
+    DSV41_INDEXER_PREFILL_FACTOR: 1
+    DSV41_PREFILL_EMPTY_CACHE_TOKENS: 8192
+    DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB: 2.5
+    VLLM_SPARSE_INDEXER_MAX_LOGITS_MB: 256
 
 readme:
   defaults:
@@ -81,11 +91,16 @@ readme:
     - Engram: "disk (`DSV41_ENGRAM_DISK={DSV41_ENGRAM_DISK}`)"
     - "`--block-size`": "{BLOCK_SIZE}"
     - Speculative: "DSpark-{NUM_SPECULATIVE_TOKENS} (`SPEC={SPEC}`)"
-    - CUDA graphs: "`FULL_AND_PIECEWISE` (`ENFORCE_EAGER={ENFORCE_EAGER}`, `DSV41_ALLOW_CUDA_GRAPHS={DSV41_ALLOW_CUDA_GRAPHS}`)"
+    - CUDA graphs: "`FULL_AND_PIECEWISE`, capture sizes {1} ∪ {s·k, s·(k+1)} for s ≤ `--max-num-seqs` (`[1,3,4,6,8]` at k=3) (`ENFORCE_EAGER={ENFORCE_EAGER}`, `DSV41_ALLOW_CUDA_GRAPHS={DSV41_ALLOW_CUDA_GRAPHS}`)"
+    - Engram prefetch / census / gather: "`DSV41_ENGRAM_PREFETCH={DSV41_ENGRAM_PREFETCH}` `DSV41_ENGRAM_CENSUS={DSV41_ENGRAM_CENSUS}` `DSV41_ENGRAM_GATHER_V2={DSV41_ENGRAM_GATHER_V2}`"
+    - lm_head: "MXFP8 (`DSV41_LMHEAD_MXFP8={DSV41_LMHEAD_MXFP8}`), needs the `{SNAPSHOT_SHA}` pack; self-disarms on stock `2.0bpw-mcg`"
+    - NCCL AR-tail set: "`NCCL_BUFFSIZE={NCCL_BUFFSIZE}` `NCCL_LL128_BUFFSIZE={NCCL_LL128_BUFFSIZE}` `NCCL_PROTO={NCCL_PROTO}` `NCCL_MAX_NCHANNELS={NCCL_MAX_NCHANNELS}`"
+    - Memory hygiene: "`DSV41_DROP_PAGE_CACHE={DSV41_DROP_PAGE_CACHE}` `DSV41_INDEXER_PREFILL_FACTOR={DSV41_INDEXER_PREFILL_FACTOR}` `DSV41_PREFILL_EMPTY_CACHE_TOKENS={DSV41_PREFILL_EMPTY_CACHE_TOKENS}` `DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB={DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB}` `VLLM_SPARSE_INDEXER_MAX_LOGITS_MB={VLLM_SPARSE_INDEXER_MAX_LOGITS_MB}`"
     - Tokenizers / tools / reasoning: "`deepseek_v41`"
     - Vision: "on (`LANGUAGE_MODEL_ONLY={LANGUAGE_MODEL_ONLY}`)"
     - "`--mm-encoder-tp-mode`": "{MM_ENCODER_TP_MODE}"
     - Default thinking: "`thinking=false`, `reasoning_effort=low`"
+    - Post-ready: "engagement audit of both ranks' logs (`AUDIT={AUDIT}`; `strict` fails the boot, `off` skips), then greedy, t=0.7 and ~3k-token nonce warmup requests (`WARMUP={WARMUP}`)"
     - API: "`http://<head>:{PORT}/v1`"
     - Container: "`{CONTAINER_NAME}`"
     - Master port: "{MASTER_PORT}"
