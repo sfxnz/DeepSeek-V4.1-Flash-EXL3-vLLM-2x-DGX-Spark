@@ -17,8 +17,13 @@ import random
 import shutil
 import sys
 import tempfile
+import textwrap
+import types
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 
@@ -275,6 +280,123 @@ class NativeStageModuleTests(unittest.TestCase):
                 sys.modules["engram_native_stage"] = saved
         site = (PATCH / "sitecustomize.py").read_text()
         self.assertNotIn("engram_native_stage", site)
+
+
+def _stage_fn(stage_text: str):
+    """The def line of a (patched) stage() text as a function whose body returns 0."""
+    head = stage_text[stage_text.index("    def stage(") : stage_text.index(") -> int:") + len(") -> int:")]
+    ns = {"torch": types.SimpleNamespace(Tensor=object)}
+    exec(textwrap.dedent(head) + "\n    return 0\n", ns)
+    return ns["stage"]
+
+
+def _stager_classes():
+    """EngramDiskStager stand-ins: stock, and as the cpu-hash / defer texts leave it."""
+    import engram_cpu_hash
+    import engram_defer
+
+    ch = {"_ch_try_stage": lambda self, *a: False}
+    df = {"_defer_try_stage": lambda self, *a: False}
+    defer_stage = engram_cpu_hash.NEW_STAGE.replace(engram_defer.SIG_OLD, engram_defer.SIG_NEW)
+    return {
+        "stock": type("EngramDiskStager", (), {"stage": _stage_fn(engram_stage_fast.STAGE_FAST)}),
+        # sitecustomize installs both texts when either env is 1 (defer anchors on cpu-hash)
+        "cpu_hash+defer": type("EngramDiskStager", (), dict(ch, **df, stage=_stage_fn(defer_stage))),
+        "cpu_hash": type("EngramDiskStager", (), dict(ch, stage=_stage_fn(engram_cpu_hash.NEW_STAGE))),
+        "signature": type("EngramDiskStager", (), {"stage": _stage_fn(defer_stage)}),
+    }
+
+
+def _fake_modules(cls):
+    eng = types.ModuleType("vllm.models.deepseek_v4_1.common.engram")
+    eng.EngramDiskStager = cls
+    mm = types.ModuleType("vllm.models.deepseek_v4_1.common.mm_preprocess")
+    mm.image_sentinel_mask = lambda t: t
+    torch = types.ModuleType("torch")
+    torch.inference_mode = lambda: (lambda fn: fn)
+    names = ("vllm", "vllm.models", "vllm.models.deepseek_v4_1", "vllm.models.deepseek_v4_1.common")
+    mods = {n: types.ModuleType(n) for n in names}
+    mods.update({eng.__name__: eng, mm.__name__: mm, "torch": torch})
+    return mods
+
+
+class InstallGuardTests(unittest.TestCase):
+    """DSV41_ENGRAM_CPU_HASH=1 / DSV41_ENGRAM_DEFER=1 rewrite stage(): never arm over them."""
+
+    def setUp(self) -> None:
+        self.saved = (dict(ens._STATE), ens._EARLY_HOOK[0])
+        ens._STATE.update(armed=True, verify_left=8, engaged=False)
+
+    def tearDown(self) -> None:
+        ens._STATE.clear()
+        ens._STATE.update(self.saved[0])
+        ens._EARLY_HOOK[0] = self.saved[1]
+
+    def test_the_rewrites_this_guards_against(self) -> None:
+        import engram_cpu_hash
+        import engram_defer
+
+        self.assertIn(engram_cpu_hash.OLD_STAGE, engram_stage_fast.STAGE_FAST)
+        self.assertIn(engram_defer.SIG_OLD, engram_cpu_hash.NEW_STAGE)
+        self.assertIn("input_batch=None", engram_defer.SIG_NEW)
+        self.assertIn("def _ch_try_stage(", engram_cpu_hash.STAGER_METHODS)
+        self.assertIn("def _defer_try_stage(", engram_defer.STAGER_METHODS)
+
+    def test_conflict_rules(self) -> None:
+        cls = _stager_classes()
+        self.assertIsNone(ens.stage_conflict(cls["stock"]))
+        self.assertIn("_ch_try_stage", ens.stage_conflict(cls["cpu_hash+defer"]))
+        self.assertIn("_ch_try_stage", ens.stage_conflict(cls["cpu_hash"]))
+        self.assertIn("input_batch", ens.stage_conflict(cls["signature"]))
+
+    def test_rewritten_stager_is_left_alone_with_a_disarm_line(self) -> None:
+        import decode_levers
+
+        for label in ("cpu_hash+defer", "cpu_hash", "signature"):
+            cls = _stager_classes()[label]
+            ens._STATE.update(armed=True)
+            before = (cls.__dict__.get("__init__"), cls.stage)
+            env = {"DSV41_ENGRAM_NATIVE_STAGE": "1", "DSV41_ENGRAM_EARLY_HASH": "1"}
+            with mock.patch.dict(sys.modules, _fake_modules(cls)), redirect_stdout(StringIO()) as out:
+                decode_levers.install(env)
+            log = out.getvalue()
+            self.assertIn("dsv41: engram native stage: not installed", log, label)
+            self.assertIn(ens.LOG_DISARMED, log, label)
+            self.assertNotIn("FAILED", log, label)
+            self.assertEqual((cls.__dict__.get("__init__"), cls.stage), before, label)
+            self.assertFalse(ens._STATE["armed"], label)
+            self.assertIsNone(ens._EARLY_HOOK[0], label)
+
+    def test_early_hook_failure_leaves_the_stager_untouched(self) -> None:
+        import decode_levers
+        import engram_early_hash
+
+        cls = _stager_classes()["stock"]
+        before = (cls.__dict__.get("__init__"), cls.stage)
+
+        def boom(torch, mask):
+            raise ImportError("no GPUModelRunner")
+
+        env = {"DSV41_ENGRAM_NATIVE_STAGE": "1", "DSV41_ENGRAM_EARLY_HASH": "1"}
+        with mock.patch.dict(sys.modules, _fake_modules(cls)), mock.patch.dict(os.environ, env), mock.patch.object(
+            engram_early_hash, "install", boom
+        ), redirect_stdout(StringIO()) as out:
+            decode_levers.install(env)
+        self.assertIn("decode lever engram-native-stage FAILED, lever is OFF", out.getvalue())
+        self.assertEqual((cls.__dict__.get("__init__"), cls.stage), before)
+        self.assertIsNone(ens._EARLY_HOOK[0])
+
+    def test_stock_stager_is_wrapped(self) -> None:
+        cls = _stager_classes()["stock"]
+        with mock.patch.dict(sys.modules, _fake_modules(cls)), mock.patch.dict(os.environ, {"DSV41_ENGRAM_EARLY_HASH": "0"}):
+            msg = ens.install()
+            again = ens.install()
+        self.assertIn("EngramDiskStager wrapped", msg)
+        self.assertEqual(again, "already installed")
+        self.assertTrue(getattr(cls.stage, "_dsv41_native", False))
+        self.assertTrue(ens._STATE["armed"])
+        self.assertIsNone(ens._EARLY_HOOK[0])
+
 
 if __name__ == "__main__":
     unittest.main()

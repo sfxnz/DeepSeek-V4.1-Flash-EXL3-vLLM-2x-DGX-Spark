@@ -26,6 +26,12 @@ DSV41_ENGRAM_CENSUS_EVERY calls (rows, page-cache misses, syscalls, us).
 DSV41_ENGRAM_EARLY_HASH=1 additionally moves the hash + DtoH ahead of the
 attention metadata (engram_early_hash.py), so the gather overlaps GPU work.
 
+The wrapper re-implements the stock stage() around its gather, so it only
+arms on the stock stage: when DSV41_ENGRAM_CPU_HASH=1 or DSV41_ENGRAM_DEFER=1
+has rewritten stage() (sitecustomize installs both texts for either env; the
+defer text adds an input_batch parameter), or the signature differs in any
+other way, install() prints one LOG_DISARMED line and patches nothing.
+
 Top-level imports are stdlib only. decode_levers.install() (called by the
 baked sitecustomize) calls install() here when the env is on.
 """
@@ -50,6 +56,9 @@ ABI_VERSION = 1
 NSTATS = 5  # rows, owned, miss, syscalls, nowait (engram_native.c)
 DEFAULT_MAX_TOKENS = 64
 DEFAULT_VERIFY = 8
+STOCK_STAGE_PARAMS = ("self", "input_ids", "positions", "query_start_loc", "lookback_token_ids", "num_tokens")
+# Methods the engram_cpu_hash / engram_defer texts add to EngramDiskStager.
+REWRITE_METHODS = ("_ch_try_stage", "_defer_try_stage")
 
 _LIB = None
 _STATE = {"armed": True, "verify_left": DEFAULT_VERIFY, "engaged": False}
@@ -136,6 +145,23 @@ def _disarm(exc: BaseException) -> None:
     if _STATE["armed"]:
         _STATE["armed"] = False
         print("dsv41: engram native stage DISABLED -> stock stage: %r" % (exc,), flush=True)
+
+
+def stage_conflict(cls) -> str | None:
+    """Why the native wrapper cannot replace cls.stage (None: it can)."""
+    import inspect
+
+    for name in REWRITE_METHODS:
+        if hasattr(cls, name):
+            return (
+                f"EngramDiskStager.{name} exists: stage() carries the engram cpu-hash/defer "
+                "rewrite (DSV41_ENGRAM_CPU_HASH / DSV41_ENGRAM_DEFER), which the native stage "
+                "would bypass"
+            )
+    params = tuple(inspect.signature(cls.stage).parameters)
+    if params != STOCK_STAGE_PARAMS:
+        return f"EngramDiskStager.stage{params} is not the stock signature {STOCK_STAGE_PARAMS}"
+    return None
 
 
 class _NativeStager:
@@ -305,8 +331,17 @@ def install() -> str:
     cls = eng.EngramDiskStager
     if getattr(cls.stage, "_dsv41_native", False):
         return "already installed"
+    conflict = stage_conflict(cls)
+    if conflict is not None:
+        _disarm(RuntimeError(conflict))
+        return "not installed (stage() is not the stock one)"
     _STATE["verify_left"] = verify_calls()
     max_tokens()  # validate the env before arming
+    import engram_early_hash
+
+    # The early hook patches the runner and the model state; install it before
+    # touching the stager so a failure there leaves nothing of this lever live.
+    early = engram_early_hash.install(torch, image_sentinel_mask) if engram_early_hash.enabled() else None
     orig_init, orig_stage = cls.__init__, cls.stage
 
     def __init__(self, hash_state, engrams):
@@ -326,10 +361,8 @@ def install() -> str:
 
     cls.__init__ = __init__
     cls.stage = _make_stage(orig_stage, torch, image_sentinel_mask)
+    _EARLY_HOOK[0] = early
     detail = f"EngramDiskStager wrapped (max_tokens={max_tokens()}, verify={_STATE['verify_left']})"
-    import engram_early_hash
-
-    if engram_early_hash.enabled():
-        _EARLY_HOOK[0] = engram_early_hash.install(torch, image_sentinel_mask)
+    if early is not None:
         detail += f"; early hash armed (verify={engram_early_hash._STATE['verify_left']})"
     return detail
