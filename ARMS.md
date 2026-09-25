@@ -35,6 +35,15 @@ One boot = one lever. Every arm produces the four numbers via
    (decode-side only; E0 prefill-flush caveat); real profiling is a
    separate gated step. `four_numbers.sh` does not run e2e: run
    `benches/e2e.py` separately on the same boot (step 6 requires exit 0).
+
+   **Order on a fresh boot** (the Round 34 FULL and DECODE protocols; keep
+   it the same on every arm so the cells compare like with like):
+   `smoke_chat.py` + `smoke_vision.py`, then the fresh L.A.I.L
+   (`tools/measure_lail_prose.py --runs 10`), then `bench_decode.py`, then
+   `benches/micro.py`, quality, and C2-STRESS last. The L.A.I.L goes before
+   `bench_decode.py` because bench_decode's default `--concurrency 1 2`
+   sends c=2 traffic. A c=1 cell that has to run before the L.A.I.L passes
+   `--concurrency 1`.
 6. **Promote rule**. The old text here ("9-run prose median beats
    baseline") was never what decided an arm. Rounds R16-R33 used +3% on
    the pooled L.A.I.L t=0.2 median (flags.md sections Round 16, Round 21,
@@ -97,8 +106,10 @@ One boot = one lever. Every arm produces the four numbers via
    L.A.I.L 3x 33.98 (`results/2026-09-24-review/campaign/s13-promote-final/`).
    Warm-prefix hits depend on the prompt length: a repeat of N tokens
    missed entirely when N ran only 10-58 tokens past the last 128-token
-   boundary, and hit at 68-127 (results/RESULTS.md round 34). Read a 0.0
-   `hit_fraction_of_expected` with that in mind.
+   boundary, and hit at 68-127 (results/RESULTS.md round 34).
+   `tools/warm_prefix.py` now pads the prompt so that tail is at least 80
+   tokens (`tail_tokens` in its summary). Read a 0.0 in older captures with
+   that in mind.
 
 ## Exact restore sequence
 
@@ -109,7 +120,8 @@ nodes with the round-34 defaults (`DSV41_ENGRAM_WILLNEED=1`,
 the perf-review-0924 worktree. Until that branch merges, the main checkout
 keeps the R33 defaults and boot-lm.sh below restores the R33 config. After
 the merge, boot-lm.sh exports only its own names, so it would inherit the
-round-34 lever defaults on e12. Use the "levers off" line further down instead.
+round-34 lever defaults on e12, and WOA would log `lever is OFF`. Use the
+"R33 reproduction" command further down instead.
 
 ```bash
 cd /home/sfxnz/projects/ai-lab/recipes/DeepSeek-V4.1-Flash-EXL3-vLLM-2x-DGX-Spark
@@ -129,5 +141,21 @@ bash results/2026-09-22-endgame2/boot-lm.sh   # R33 config (canonical-e12, lmhea
 - Round-34 levers off on the new code (the s3 B1 config):
   `IMAGE=dsv41-flash-exl3-sm121:canonical-e12 DSV41_ENGRAM_WILLNEED=0 DSV41_STREAM_FEED=0 DSV41_WOA_PREPACK=0 DSV41_DSPARK_SPARSE_MARKOV=0 ./run.sh`.
   An empty value keeps the default, so use `0`.
+- R33 reproduction after the merge. boot-lm.sh stays as recorded evidence and
+  is not edited. Run it with the four round-34 levers off, plus `WARMUP=0`
+  because the R33 run.sh sent no post-ready warmup:
+  ```bash
+  DSV41_ENGRAM_WILLNEED=0 DSV41_STREAM_FEED=0 DSV41_WOA_PREPACK=0 \
+    DSV41_DSPARK_SPARSE_MARKOV=0 WARMUP=0 bash results/2026-09-22-endgame2/boot-lm.sh
+  ```
+  In a run.sh dry run (tests/run_sh_harness.py), this gives the same container
+  env and vllm argv as the levers-off `./run.sh` line above, apart from the
+  port. The argv matches the s3 B1 capture. The env matches the R33 env
+  captured in s2 (`campaign/s2-old-fresh/serve_env_spark1.txt`) except for
+  three new names that do nothing on a clean boot:
+  `DSV41_PATCH_STRICT=1`, `DSV41_DENSE_DG_SMALLM=0` and
+  `DSV41_ENGRAM_WILLNEED_MIN_ROWS=512`. The patch code is the merged code. For
+  the R33 code as well, boot from a worktree at `45d3303`. `AUDIT` only reads
+  logs, so it does not change the config.
 - Patch-script changes (`docker/patch/engram_*`) take effect on restart
   without an image rebuild (patch dir is volume-mounted read-only).

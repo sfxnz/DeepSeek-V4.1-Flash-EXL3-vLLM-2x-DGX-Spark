@@ -6,7 +6,9 @@ Also drives tools/quantize_lmhead_mxfp8.py end-to-end on a synthetic
 two-shard snapshot COPY (head.weight bf16 -> lm_head.weight/.weight_scale),
 verifying index rewrite, tensor values, and idempotent refusal.
 
-Run: python3 -m unittest tests.test_lmhead_mxfp8 -v
+Needs torch: run it in the image from tests/ (the image's dist-packages
+ships its own `tests` package, so `tests.test_lmhead_mxfp8` imports the wrong
+one). AGENTS.md "Verify" has the docker command.
 """
 
 from __future__ import annotations
