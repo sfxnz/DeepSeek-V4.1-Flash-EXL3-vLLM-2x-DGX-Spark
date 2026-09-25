@@ -175,11 +175,14 @@ communicator), then A/B in the serve.
 
 7. Not done, and how to finish
 ------------------------------
-Needs spark1's GPU free of other processes (nvidia-smi shows only our containers):
-  NCCL rep 3:  cd kernels-r3 && ARMS="$(python3 tools/nccl_decode_sweep.py arms | tr ' ' '\n' | head -21 | tr '\n' ' ')" \
-               REPS=1 REP0=3 OUT=$HOME/projects/data/dsv41-nccl-decode/phase1 tools/nccl_decode_sweep.sh (in blocks under the GPU lock)
-  NCCL phase 2: scratchpad k3prof/run_sweep_phase2.sh (mix0_proxy_big, mix0_bare, mix0_so0 with keep and
-               graph_mixing0 interleaved, 3 reps; algo_tree rep 1)
-  c=2 window:  boot as in section 0, bench_decode --concurrency 2 --runs 1 (warm), then
-               CONCURRENCY=2 MAX_TOKENS=200 tools/profile_window.sh; stop the serve after one window: with
-               stacks on, the profiler keeps ~85 MB of worker host memory per profiled step.
+Needs spark1's GPU free of other processes. At 10:12Z a chromium GPU process was still attached
+(0-80% util in bursts since 07:27Z), so the stage stopped here with the serve down.
+  NCCL rep 3 + phase 2: scripts/nccl_sweep_finish.sh (waits for an exclusive GPU before each block of
+      <= 7 arms, runs each block under the spark1 GPU lock; rep 3 of the 21 phase-1 arms, algo_tree
+      rep 1, then mix0_proxy_big / mix0_bare / mix0_so0 with keep and graph_mixing0 interleaved, 3 reps),
+      then: python3 tools/nccl_decode_sweep.py summarize ~/projects/data/dsv41-nccl-decode/phase1 \
+            --weights results/2026-09-25-kernels/profile/nccl-weights.json
+      and scripts/nccl_contamination.py on the same dir to re-tag runs.
+  c=2 window: boot as in section 0, bench_decode.py --concurrency 2 --runs 1 (warm the m=8/6 graphs),
+      then CONCURRENCY=2 MAX_TOKENS=200 tools/profile_window.sh, then ./stop.sh (with stacks on the
+      profiler keeps ~85 MB of worker host memory per profiled step; one window per boot).
