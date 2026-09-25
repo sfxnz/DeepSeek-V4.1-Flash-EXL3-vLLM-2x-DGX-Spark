@@ -177,6 +177,9 @@ def unit_gate(rows: list[dict], ratio: float = GATE_RATIO) -> dict:
 def unit_stats(rows: list[dict]) -> dict:
     out = {k: summarize(r[k] for r in rows) for k in ("final", "viterbi", "stock")}
     out["refit_kept"] = sum(1 for r in rows if r["refit"])
+    for key in ("t_enc", "t_all"):
+        ts = [r[key] for r in rows if key in r]
+        out[f"{key}_mean"] = sum(ts) / len(ts) if ts else None
     for kind in ("w1", "w2", "w3"):
         sub = [r["final"] for r in rows if r["tensor"].endswith("." + kind)]
         out[f"final_{kind}_mean"] = sum(sub) / len(sub) if sub else None
@@ -506,8 +509,11 @@ def encode_unit(u: str, fname: str, srcs: list[Path], ref_dir: Path, out: Path, 
                 tensors[n] = fh.get_tensor(n)
         for i, wname in enumerate(experts):
             stem = wname[: -len(".weight")]
+            ta = time.time()
             w = _dequant_t(fh.get_tensor(wname), fh.get_tensor(stem + ".scale"), device).to(dev)
-            enc = encode(w, stem, tile_chunk)
+            tb = time.time()
+            enc = encode(w, stem, tile_chunk)  # returns CPU tensors, so the GPU work is done
+            t_enc = time.time() - tb
             trellis, su, sv = enc["trellis"], enc["suh"].to(dev), enc["svh"].to(dev)
             q = recon(trellis, su, sv, w.shape)
             e_vit = relerr(q, w)
@@ -530,14 +536,17 @@ def encode_unit(u: str, fname: str, srcs: list[Path], ref_dir: Path, out: Path, 
             tensors[stem + ".suh"] = su.cpu().contiguous()
             tensors[stem + ".svh"] = sv.cpu().contiguous()
             tensors[stem + "." + CODEBOOK] = enc[CODEBOOK]
+            row.update(t_enc=t_enc, t_all=time.time() - ta)
             rows.append(row)
             k = i + 1
             if k % HEARTBEAT_EVERY == 0 or k == len(experts):
                 spt = (time.time() - t0) / k
                 mf = sum(x["final"] for x in rows) / k
                 ms = sum(x["stock"] for x in rows) / k
-                log(f"unit {u} {k}/{len(experts)} {spt:.3f} s/tensor relerr {mf:.4f} (stock {ms:.4f}) "
-                    f"unit eta {(len(experts) - k) * spt / 60:.1f} min")
+                win = rows[-HEARTBEAT_EVERY:]
+                log(f"unit {u} {k}/{len(experts)} {spt:.3f} s/tensor (last {len(win)}: "
+                    f"{sum(x['t_all'] for x in win) / len(win):.3f}, encode {sum(x['t_enc'] for x in win) / len(win):.3f}) "
+                    f"relerr {mf:.4f} (stock {ms:.4f}) unit eta {(len(experts) - k) * spt / 60:.1f} min")
                 if heartbeat is not None:
                     heartbeat({"time": utcnow(), "tensors_done": k, "tensors": len(experts),
                                "sec_per_tensor": spt, "relerr_mean": mf, "stock_mean": ms})
@@ -554,6 +563,7 @@ def encode_unit(u: str, fname: str, srcs: list[Path], ref_dir: Path, out: Path, 
     rec = {"unit": u, "file": fname, "tensors": len(rows), "stats": unit_stats(rows), "gate": gate,
            "started": started, "encode_s": encode_s, "sec_per_tensor": encode_s / max(len(rows), 1),
            "tile_chunk": tile_chunk, "exllamav3": package_version("exllamav3"), "torch": torch.__version__,
+           "code": (ROOT / "COMMIT").read_text().strip() if (ROOT / "COMMIT").is_file() else None,
            "src": str(src_file), "ref": str(ref_file)}
     if limit or not gate["ok"]:
         # Partial (limit) or failed units never land in shards/.

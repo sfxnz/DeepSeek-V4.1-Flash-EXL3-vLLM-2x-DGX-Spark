@@ -95,6 +95,9 @@ class PureLogicTests(unittest.TestCase):
         self.assertEqual(st["refit_kept"], 1)
         self.assertAlmostEqual(st["final_w2_mean"], 0.2620)
         self.assertIsNone(st["final_w3_mean"])
+        self.assertIsNone(st["t_enc_mean"])
+        timed = [dict(rows[0], t_enc=1.8, t_all=2.0), dict(rows[0], t_enc=2.0, t_all=2.4)]
+        self.assertAlmostEqual(rf.unit_stats(timed)["t_all_mean"], 2.2)
 
     def test_eta(self) -> None:
         self.assertAlmostEqual(rf.eta_seconds(1152, {"spark1": 0.5}), 2304.0)
