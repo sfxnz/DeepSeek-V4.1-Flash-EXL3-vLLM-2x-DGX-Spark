@@ -128,7 +128,7 @@ Two-node NCCL runs need both GPUs: they are prepared here and scheduled for the 
     join before the next attention op (breakable-graph segments must not leave a stream forked).
 
 #7  Graph startup root cause: CPU deep idle, not NCCL. Lever DSV41_PM_QOS_US (docker/patch/pm_qos.py)
-    r3 trace (c1-rank0.pkl, script comm/an/launch_vs_ar0.py): the draft graph is launched on the host
+    r3 trace (c1-rank0.pkl, kernel_study/comm/launch_vs_ar0.py -> graph-startup/): the draft graph is launched on the host
     44.7 ms (median) before the GPU reaches it, yet the device idles 235 us (rank 0) / 427 us (rank 1)
     right before its first AR: the AR waits for its NCCL host node (hostStreamPlanCallback), which
     only runs when the GPU reaches the graph. Target graph: launched 68 us before the GPU starts it,
