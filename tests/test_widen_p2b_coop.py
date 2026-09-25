@@ -210,5 +210,29 @@ class CoopWiringTests(unittest.TestCase):
             self.assertEqual(h.container_env(res[role]).get("DSV41_P2B_COOP"), "1", role)
 
 
+class CoopMicrobenchSourceTests(unittest.TestCase):
+    def test_bench_toggles_coop_without_env(self) -> None:
+        mb = _load("make_bench_coop", ROOT / "kernel_study/p2b_coop/make_bench.py")
+        srcs = mb.build()
+        self.assertEqual(sorted(srcs), ["bench_coop.cu", "chain_coop.cu", "chain_srcsort.cu"])
+        self.assertIn("widen_p2b_srcsort", srcs["chain_srcsort.cu"])
+        self.assertNotIn("widen_p2b_coop", srcs["chain_srcsort.cu"])
+        self.assertEqual(srcs["chain_coop.cu"], _load("widen_p2b_coop").patch_cu(srcs["chain_srcsort.cu"]))
+        bench = srcs["bench_coop.cu"]
+        self.assertIn("g_bench_coop && m * e <= P2B_SORT_CAP", bench)
+        self.assertNotIn("p2b_coop_enabled() && m * e", bench)
+        for name in ('"set_coop"', '"occupancy"', '"p2b_fused_moe"'):
+            self.assertIn(f"mod.def({name}", bench)
+
+    def test_driver_geometry_matches_the_served_layer(self) -> None:
+        text = (ROOT / "kernel_study/p2b_coop/driver.py").read_text()
+        self.assertIn("HIDDEN, INTER, EXPERTS, TOPK = 5120, 1152, 384, 6", text)
+        self.assertIn("SWIGLU_LIMIT = 10.0", text)
+        self.assertIn('ap.add_argument("--dups", default="0,0.3,0.5")', text)
+        self.assertIn('ap.add_argument("--m", type=int, default=4', text)
+        self.assertIn("2, 2, 2, True, INTER, SWIGLU_LIMIT", text)  # K=2 gate/up/down, MCG
+        self.assertTrue((ROOT / "results/2026-09-24-review/campaign/s10-diag-census-skew/census_npy").is_dir())
+
+
 if __name__ == "__main__":
     unittest.main()
