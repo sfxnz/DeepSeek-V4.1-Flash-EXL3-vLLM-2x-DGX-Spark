@@ -184,3 +184,16 @@ Two-node NCCL runs need both GPUs: they are prepared here and scheduled for the 
     expert buys ~0; prefetching the 3.93 MB router gate too would buy at most the ~5-6 us slack plus
     what the gate itself saves before the glue dominates (split-K reduce 15 us + topk + ~15 glue
     kernels). The lever there is fusing the routing glue, not the AR window.
+
+#10 Serve-window preparation
+    tools/nccl_twin_check gains keep_qos / twin_qos arms (pm_qos.install() before any communicator;
+    the driver runs them as root with --device /dev/cpu_dma_latency). One-GPU selftest of twin_qos on
+    spark2: request held, 0 mismatches. In-image CPU checks of the three installs on the real e13
+    classes: all anchors pass, wrappers idempotent; pm_qos disarms without the device.
+    Considered and not added: cuMem/GDR arms in tools/nccl_decode_sweep.py (NCCL_CUMEM_ENABLE=1 is
+    what DMA-BUF GDR needs here, "cuMemGdrSupport 0" today) break the sweep's invariant that every arm
+    keeps the serve's base env (test_nccl_decode_sweep); it stays a follow-up, not a knob.
+    Interaction found while writing the plan: with the twin, the graph communicator's proxy thread is
+    idle between replays (the eager collectives moved to the twin) and pays its own deep-idle wake-up
+    at each replay's first collective unless PM QoS is on; B is to be judged on top of C.
+    Plan: serve_arm_plan.txt (phase A two-node check gates B; ABAB C, then B, then E per ARMS.md).

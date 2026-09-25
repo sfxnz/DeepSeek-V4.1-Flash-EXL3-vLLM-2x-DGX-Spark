@@ -1,0 +1,112 @@
+k3 comm: serve-window plan for the three comm levers (2026-09-25)
+=================================================================
+All three are default off, numerics-neutral by construction (no change to any math), and
+gated by env only. Run from the k3/comm worktree (or its merge), image canonical-e13, pack
+2.0bpw-mcg-lmhead-mxfp8, everything else at the round-34 defaults. Protocol = ARMS.md
+(one lever per boot, ABAB, four_numbers.sh on every boot, noise-aware promote rule, quality
+gate). Reference at the current defaults (k3 profile boot 1, clean): L.A.I.L 34.10 tok/s
+(62.8 ms/step), bench c=1 prose 39.79 (63.5 ms/step), structured 62.78.
+
+Levers
+------
+C  DSV41_PM_QOS_US=20        CPU wake-up latency request held by every serve process;
+                             run.sh adds --device /dev/cpu_dma_latency to both containers.
+B  DSV41_NCCL_EAGER_TWIN=1   NCCL_GRAPH_MIXING_SUPPORT=0 + eager-only twin TP communicator.
+E  DSV41_AR_L2_PREFETCH=1    L2 prefetch of the next qkv_a during each target MoE all-reduce
+                             (DSV41_AR_L2_PREFETCH_MIB, default 5.5).
+
+Expected, c=1 ms/step (basis in iterations.txt; ranges, not promises)
+  C  -0.7 .. -2.0   graph startup 1.13 ms/step is host-node / proxy wake-up from LPI-2/3
+                    (trace: draft AR0 waits 235 us rank 0 = LPI-2 231 us, 427 us rank 1 = LPI-3
+                    433 us); microbench latency 481-586 -> 3-15 us. Upper end only if other
+                    critical-path wake-ups (Engram stage pool, 3.2 ms of GPU idle) also shrink.
+  B  -0.5 .. -3.1   floor: gap (6.1 -> 3.1 us) + NCCL kernel (-2.5 us) x 88 calls; model: the
+                    clean sweep's gapped graph (57.6 -> 22.5 us per AR at m=4). Phase A decides.
+  E  -0.4 .. -0.8   -20.2 us x 37 windows through the lever's own hooks on one GPU.
+  c=2: C and B about the same absolute ms/step (sweep: B -3.06 modeled at c=2); E the same
+  per layer (qkv_a is weight-streaming at m=8 too).
+
+Preconditions (both nodes)
+  - requant finished and gone: `docker ps` shows no dsv41-requant / dsv41-quant on spark1.
+  - spark1 GPU free of foreign processes (chromium): results/2026-09-25-kernels/profile/
+    scripts/gpu_free_wait.sh returns GPUFREE (2 min clean); spark2 pmon shows only
+    Xorg/gnome-shell. Hold both GPU locks for the whole window (no kernel agent microbenches).
+  - `free -h` MemAvailable >= 12 GiB before each boot (ARMS.md step 4).
+
+Phase A: two-node checks, serve DOWN (~35 min)
+  A1  cd <k3/comm worktree>
+      ARMS="keep twin keep_qos twin_qos" REPS=3 tools/nccl_twin_check.sh          # c=1 sizes
+      ARMS="keep twin" REPS=2 ROWS="--m 8 --md 6" tools/nccl_twin_check.sh        # c=2 sizes
+      python3 tools/nccl_twin_check.py compare <OUT>                              # each OUT
+      Gate for B: every twin / twin_qos run exits 0 (no watchdog hang, 0 mismatches; outputs
+      are checked bitwise every 10 steps over 300 steps). Any hang or mismatch: stop, B does
+      not boot. Record per arm step_us median [p10, p90], pmon before each run, SM clocks.
+      Read-outs: twin - keep (mixing cost at the serve's spacing: 80 AR + 2 AG per target
+      graph with 431/149/547 us of memset work between them), keep_qos - keep (startup).
+  A2  (optional, ~40 min) finish the profile's sweep: results/2026-09-25-kernels/profile/
+      scripts/nccl_sweep_finish.sh (rep 3 + phase 2: mix0_proxy_big, mix0_bare, mix0_so0),
+      then tools/nccl_decode_sweep.py summarize ... --weights .../nccl-weights.json.
+
+Phase B: serve ABAB, one lever at a time, in this order (C first: highest confidence, no
+network code touched; B next only if A1 passed; E last)
+  Boot (from the worktree, after ./stop.sh on both nodes):
+    A:  env AUDIT=strict ./run.sh
+    C:  env AUDIT=strict DSV41_PM_QOS_US=20 ./run.sh
+    B:  env AUDIT=strict DSV41_NCCL_EAGER_TWIN=1 ./run.sh
+    E:  env AUDIT=strict DSV41_AR_L2_PREFETCH=1 ./run.sh
+    (after a promotion the next pair's A carries the promoted lever)
+  Sequences: A C A C, then A B A B, then A E A E (12 boots, ~35 min each with four_numbers;
+  ~7 h). If the window is short, run A C A C first, then A B A B.
+  Per boot, serialized, same order every time (ARMS.md step 5):
+    python3 smoke_chat.py          # 323
+    python3 smoke_vision.py        # red
+    free -h; ssh spark2 free -h    # boot floors
+    tools/disarm_scan.sh           # 0 lines; strict audit must also show the arm's marker on
+                                   # head and worker: "dsv41: pm qos engaged" (C),
+                                   # "dsv41: nccl eager twin engaged on tp:0" and one
+                                   # "dsv41: nccl eager twin routing on tp:0" line (B),
+                                   # "dsv41: ar l2 prefetch engaged: 37/40 layers" (E)
+    python3 tools/measure_lail_prose.py --runs 10
+    tools/four_numbers.sh --arm <label>
+    nvidia-smi --query-gpu=timestamp,clocks.sm,power.draw,temperature.gpu --format=csv -lms 500
+                                   # both nodes during the benches; C holds idle cores in WFI,
+                                   # so watch SM clock and power against A
+    results/2026-09-25-kernels/profile/scripts/hostload.sh     # CPU load during the benches
+    ./stop.sh
+  Order matters for B: with the twin, the graph communicator's NCCL proxy thread has no work
+  during the eager phase between graphs, sleeps, and must wake at the next replay's first
+  collective (after the host node's own wake-up). Without C that can add up to one more
+  LPI-3 exit (~0.43 ms) per replay start, so B is judged on top of C (C promoted first); if C
+  does not promote, boot B+C as the lever arm against A instead of B alone.
+  Promote rule (ARMS.md step 6): prose and prose_long c=1 ms/step, lever-vs-A improvement larger
+  than the boot-to-boot spread and every lever boot beats the A median, at matched acceptance
+  (the levers do not touch drafting, so acceptance must overlap); non-inferiority on
+  pp_warm / pp_novel 8k/32k, prose_long c=2, warm-prefix; quality quick against
+  results/2026-09-24-review/quality-baseline/quick.json on the second lever boot.
+  Numerics expectation: identical. The AR results are bitwise equal on either communicator
+  (same NCCL algorithm/protocol on the same data), the prefetch and the PM QoS request change
+  no math. A greedy output difference against the same-sequence A boot is a finding to chase.
+
+  Mechanism check: one extra boot per lever that the ABAB promotes (or that lands inside the
+  noise), not part of the ABAB numbers, booted like the k3 profile did:
+    env AUDIT=strict <lever env> EXTRA_ARGS='--profiler-config {"profiler":"torch","torch_profiler_dir":"/tmp/dsv41-traces"}' ./run.sh
+    python3 tools/measure_lail_prose.py --runs 3        # warm the graphs, profiler idle
+    CONCURRENCY=1 MAX_TOKENS=200 tools/profile_window.sh   # one window per boot, then ./stop.sh
+  then tools/decode_timeline.py on both ranks' traces (extract on the host that wrote them),
+  and kernel_study/comm/launch_vs_ar0.py and kernel_study/comm/ffn_prologue.py on the
+  pickles; compare with results/2026-09-25-kernels/profile/c1/. What each lever must show:
+    C  draft AR0 idle-before 235/427 us -> tens of us on both ranks; target AR0 duration
+       267/91 us -> near the steady 22 us; Engram-stage GPU idle (3.2 ms) reported as is.
+    B  gap before in-graph ARs 5.7 us -> ~3 us; AR kernel median 22.8 -> ~20-21 us; wo_b and
+       the other dense GEMMs' in-serve time vs the r3 table (the "serving tax" 7-19%); the
+       target cudaGraphLaunch host time 3.4 ms drops (fewer event nodes).
+    E  qkv_a median on the 37 prefetched layers 47.6 -> ~23-30 us; mhc_post / hc_prenorm not
+       slower by more than ~2 us; one 1-CTA l2 prefetch kernel per MoE all-reduce.
+
+What falsifies each expectation (and what then)
+  C  no change in draft AR0 idle: the wait is not wake-up in the serve (check the CUDA
+     callback thread's CPU with perf sched / hostload); keep off.
+  B  twin ~= keep in A1: the neighbour slowdown does not reproduce at the serve's spacing;
+     boot B only for the floor (-0.5) if still worth a slot.
+  E  qkv_a not faster: L2 not retained through the real NCCL window (NCCL LL traffic or the
+     proxy's polling); try DSV41_AR_L2_PREFETCH_MIB=3 once, else keep off.
