@@ -202,3 +202,19 @@ per run under runs/<tag>/), image dsv41-flash-exl3-sm121:canonical-e13, SM clock
     path-time-final2): T=4 stock 2149.7 (2146.8/2155.8) -> det 1138.8 (1136.2/1143.1), -1010.9
     us (-47.0%); T=1 2006.2 -> 1037.1; T=3 2142.8 -> 1122.8; T=6 2149.6 -> 1147.7; T=8 2013.1 ->
     1053.8. The T=8 run-to-run spread is bimodal (p90 2147.4 / 1156.8); arms alternate within a run.
+14. Where it stops (sass/mhc_det.sass, shipped cubin; registers: gemm_t8 44, gemm_t16 58,
+    post 40, norm 72; no local memory).
+    - Sinkhorn: every half-step is SHFL.BFLY -> FADD -> SHFL.BFLY -> FADD -> FADD(eps) ->
+      MUFU.RCP -> FFMA refinement -> FCHK -> branch around the slow-path CALL. The fast path is
+      inline and the chain is strictly dependent (each normalisation needs the previous one), so
+      ~126 ns per step is the floor for a bitwise replica. 19 steps take 2.4 us of the 3.6 us
+      tail.
+    - GEMM: DRAM-paced after its x lands; floor ~5.6 us (1.39 MB at 250 GB/s) vs 7.65 us per
+      call in the chain. The rest is the post -> x dependency and first-byte latency. Prefetching
+      more fn before the wait delays x (sweep_prefetch), and a separate issuer warp does not help
+      (item 9). The chain runs 52 vs 31.4 cycles per k-step (probe_mma_latency), but that only
+      matters on the last stage (~0.2 us).
+    - Remaining ideas, each <= ~0.1 ms/step with structural risk, not done: fold the post into
+      the GEMM prologue (the model calls post and pre separately, and engram layers modify the
+      residual in between); side stream (item 11: measured +0.08 ms/step).
+    Verdict: further kernel changes stop paying. Serve A/B next (serve_validation_plan.txt).
