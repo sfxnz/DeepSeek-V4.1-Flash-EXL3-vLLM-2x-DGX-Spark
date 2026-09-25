@@ -290,3 +290,49 @@ Projected: 45 fewer queued ops per target step: -0.13 ms/step at this bench's ~2
 -0.18 ms/step at the serve trace's 4.1 us/op; c=2 the same (op count does not depend on
 the batch). Latency-bound (a few KB per build), so GB/s is not the measure here.
 Bit-exact (integer math, same values in the same buffers).
+
+9. STOP: what is left does not pay (and the cumulative projection)
+------------------------------------------------------------------
+All levers together (levers_dryrun_spark2.txt, canonical-e13, all 7 envs = 1): every
+install line printed, no FAILED / "lever is OFF" / DISABLED line; the image classes carry
+the patched methods. Unit gate 615 tests OK (10 skipped), render --check 0.
+
+Cumulative projection (c=1 step 62.8 ms; c=2 clean step ~86 ms; paths are distinct, so
+the sums hold to first order; all serve-untested):
+  lever                              c=1 ms/step       c=2 ms/step
+  1 native Engram stage              -1.17..-1.29      -1.8..-2.05
+  3 early Engram hash                -0.17             -0.28
+  2 token map dedup                  -0.52             ~-0.6
+  8 SWA metadata fused               -0.13..-0.18      -0.13..-0.18
+  4 MoE prep fused (+ cast)          ~-0.3 (-0.04)     ~-0.3 (-0.04)
+  5 candidate mask bounded           -0.28..-0.36      ~-0.70
+  7 indexer weights_proj GEMV        ~-0.14            ~-0.14
+  total                              -2.75..-3.00      ~-4.0..-4.3
+  = 4.4-4.8% of the c=1 step (L.A.I.L 33.98 -> ~35.5 tok/s at equal acceptance).
+
+Remaining candidates from the step-120 eager census (profile c1-rank0) and the r3
+ranking, each estimated at the serve's ~4.1 us per queued op:
+  - compressor / indexer metadata builds before the target graph (2 groups x ~10 ops:
+    add, DtoD, add, add, elementwise, clamp, DtoD, BUnary, paged_mqa_logits_metadata,
+    DtoD): one kernel per group ~-0.065 ms/step;
+  - DSpark draft Markov argmax (3 single-CTA full-vocab argmax reduces, 23 us each, in
+    the draft graph): an exact argmax over the 256 gathered candidates plus the best
+    base logit outside them ~-0.064 ms/step, touches drafting;
+  - draft rejection/sampling chain after the target graph (14 ops, ~57 us span, v2
+    sampler kernels with host-visible outputs) ~-0.03..-0.04 ms/step;
+  - v2 runner prepare_inputs chain (~20 ops incl. 3 HtoD / 6 DtoH) ~-0.04 ms/step;
+  - Engram hash-prep masks (4 AUnary + 2 Binary before _hash_ids), fold into the hash
+    ~-0.025 ms/step (with the early hash they are already off the idle path);
+  - 3 x _prepare_dflash_inputs_kernel (13.4-14.2 us each): the cost is the work per
+    launch, not the gaps; merging saves ~-0.02..-0.03 ms/step.
+Each is <= 0.07 ms/step (<= 0.1% of the step), below anything a serve ABAB can resolve
+(identical configs spread 27.40 / 26.13 / 28.01 tok/s), and most sit in vLLM's sampler,
+speculator or runner core, where a rewrite carries real risk for no measurable gain.
+Stopped here.
+Not mine, handed on: the engram wkv TP shard (profile #3: ReplicatedLinear [25600, 6144]
+fp8, each rank reads all 162 MB per engram layer, 2 layers, 1.47 ms/step; column-parallel
+halves the per-rank read for a ~205 KB all_gather per layer: 0.78 ms/step in the profile's
+model, ~0.66 by my estimate after the two gathers at ~60 us) belongs to the dense-GEMM
+workstream; the p2b -> all-reduce combine fold (profile #8, 0.50) to coop-moe;
+the draft router gate (profile #9) is hidden behind the shared expert in the draft graph
+(iteration 7 trace), so a GEMV there does not shorten the step.

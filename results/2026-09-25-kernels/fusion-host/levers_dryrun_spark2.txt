@@ -1,0 +1,16 @@
+cmd: s2run.sh levers-dryrun docker run --rm --gpus all --network none --memory 16g -e DSV41_ENGRAM_NATIVE_STAGE=1 -e DSV41_ENGRAM_EARLY_HASH=1 -e DSV41_ATTN_T2R_DEDUP=1 -e DSV41_MOE_PREP_FUSED=1 -e DSV41_CANDIDATE_MASK_BOUNDED=1 -e DSV41_INDEXER_WP_GEMV=1 -e DSV41_SWA_META_FUSED=1 -v $R2:/repo -v $R2/docker/patch:/opt/dsv41-patch:ro -w /tmp --entrypoint python3 dsv41-flash-exl3-sm121:canonical-e13 /repo/kernel_study/fusion_host/levers_dryrun.py
+== 2026-09-25T14:28:09Z levers-dryrun
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+208 MHz, [N/A], 4.09 W, 43
+dsv41: engram native stage: EngramDiskStager wrapped (max_tokens=64, verify=8); early hash armed (verify=8)
+dsv41: attention token->request map dedup across KV-cache groups armed
+dsv41: moe prep fused: vllm_exl3 _apply_native_fused_moe glue fused, p2b output cast once (verify=16)
+dsv41: candidate mask bounded: sparse_attn_indexer._apply_candidate_mask wrapped (decode calls, verify=4)
+dsv41: indexer weights_proj: DeepseekV4Indexer.weights_proj GEMV armed (2<=m<=8, verify=8)
+dsv41: swa metadata fused: DeepseekSparseSWAMetadataBuilder.build fused decode path (verify=8)
+{"swa_meta_fused": true, "t2r_dedup": true, "wp_gemv": true, "modules": ["candidate_mask_bounded", "engram_early_hash", "engram_native_stage", "indexer_wp_gemv", "moe_prep_fused", "swa_meta_fused"]}
+== end 2026-09-25T14:28:18Z
+208 MHz, [N/A], 4.07 W, 43
