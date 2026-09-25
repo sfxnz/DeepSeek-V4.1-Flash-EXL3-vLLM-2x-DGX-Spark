@@ -91,7 +91,7 @@ CATEGORIES = [
     ("p2b_moe", r"p2b_moe"),
     ("exl3_moe", r"exl3_moe|exl3_gemm|exl3_"),
     ("dense_b12x", r"dense_blockscaled_gemm_sm120_b12x"),
-    ("woa_einsum", r"sm120_fp8_fp4_gemm_1d1d_impl<0u, [34]u, 4096u"),
+    ("woa_einsum", r"sm120_fp8_fp4_gemm_1d1d_impl<0u, \d+u, 4096u"),  # template M = verify rows
     ("deepgemm_fp8fp4_other", r"sm120_fp8_fp4_gemm_1d1d|fp8_fp4_gemm|m_grouped"),
     ("woa_pack", r"transpose_and_pack_fp32_into_ue8m0"),
     ("mhc_prenorm_gemm", r"hc_prenorm_gemm"),
@@ -236,7 +236,7 @@ def label_roles(seq: list[tuple], where: str) -> dict[int, str]:
         if cat != "dense_b12x":
             continue
         z = grid[2] if len(grid) > 2 else 0
-        if dur >= 1000:
+        if dur >= 1000 and where != "target":  # the target lm_head runs eager; slow graph GEMMs are not heads
             roles[idx] = "lm_head"
         elif pending_engram:
             roles[idx] = "engram_wkv"

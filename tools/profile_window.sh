@@ -16,7 +16,10 @@
 # if stop_profile failed (the traces may be partial).
 #
 # CONCURRENCY=N (default 1) sends N identical streams at once inside the window
-# (N=2 profiles the c=2 decode shape: verify m=8, draft m=6).
+# (N=2 profiles the c=2 decode shape: verify m=8, draft m=6). MAX_TOKENS (default
+# 512) shortens the profiled streams: with stacks on, the worker's host memory
+# grows ~85 MB per profiled step and is not returned (Round 3: 250 steps took
+# spark1 MemAvail from 23.6 to 1.8 GiB).
 #
 # This script never stops the serve. Run ./stop.sh yourself afterwards.
 set -euo pipefail
@@ -29,13 +32,14 @@ OUT_DIR="${OUT_DIR:-$HOME/projects/data/dsv41-traces/$(date +%Y%m%d-%H%M%S)}"
 FLUSH_S="${FLUSH_S:-15}"
 STOP_TIMEOUT_S="${STOP_TIMEOUT_S:-600}"
 CONCURRENCY="${CONCURRENCY:-1}"
+MAX_TOKENS="${MAX_TOKENS:-512}"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 PROMPT='Continue this essay in the same voice. Do not stop.\n\nDecode throughput and time-to-first-token feel different when a coding agent shares a long system prompt across tabs on a DGX Spark with unified memory. The KV cache is the product, not a leftover after util. '
 body() {
-  printf '{"messages":[{"role":"user","content":"%s"}],"max_tokens":512,"min_tokens":512,"ignore_eos":true,"temperature":0.2,%s,"chat_template_kwargs":{"thinking":false}}' \
-    "$PROMPT" "$1"
+  printf '{"messages":[{"role":"user","content":"%s"}],"max_tokens":%d,"min_tokens":%d,"ignore_eos":true,"temperature":0.2,%s,"chat_template_kwargs":{"thinking":false}}' \
+    "$PROMPT" "$MAX_TOKENS" "$MAX_TOKENS" "$1"
 }
 
 echo "== warmup (profiler off) =="
@@ -46,7 +50,7 @@ python3 -c "import json,sys; r=json.load(open(sys.argv[1])); print('warmup compl
 echo "== start profile =="
 curl -s --max-time 30 -X POST "$API/start_profile"
 echo
-echo "== profiled request(s) (stream, 512 tok, concurrency $CONCURRENCY) =="
+echo "== profiled request(s) (stream, $MAX_TOKENS tok, concurrency $CONCURRENCY) =="
 S=$(date +%s.%N)
 pids=()
 for ((i = 1; i <= CONCURRENCY; i++)); do

@@ -55,6 +55,9 @@ class HelperTests(unittest.TestCase):
         self.assertEqual(dt.classify(P2B), "p2b_moe")
         self.assertEqual(dt.classify(B12X), "dense_b12x")
         self.assertEqual(dt.classify(WOA), "woa_einsum")
+        self.assertEqual(dt.classify(WOA.replace("<0u, 4u,", "<0u, 8u,")), "woa_einsum")  # c=2 verify, m=8
+        self.assertEqual(dt.classify("void deep_gemm::sm120_fp8_fp4_gemm_1d1d_impl<0u, 2304u, 5120u>"),
+                         "deepgemm_fp8fp4_other")
         self.assertEqual(dt.classify(ADD), "torch_eltwise")
 
     def test_label_roles_target_layer_with_engram(self) -> None:
@@ -65,6 +68,12 @@ class HelperTests(unittest.TestCase):
         self.assertEqual(b12x, ["engram_wkv", "qkv_a", "wq_b", "wo_b", "shared_gate_up", "shared_down",
                                 "qkv_a", "wq_b", "wo_b", "shared_gate_up", "shared_down"])
         self.assertEqual([roles[i] for i, (n, _, _) in enumerate(ks) if n == WOA], ["wo_a", "wo_a"])
+
+    def test_slow_target_gemm_is_not_a_head(self) -> None:
+        ks = layer()
+        ks[3] = (B12X, (1, 1, 48), 1500.0)  # a contended wq_b
+        seq = [(i, dt.classify(n), g, d, n) for i, (n, g, d) in enumerate(ks)]
+        self.assertEqual(dt.label_roles(seq, "target")[3], "wq_b")
 
     def test_label_roles_lm_head_and_eager_main_proj(self) -> None:
         seq = [(0, "dense_b12x", (1, 1, 48), 1700.0, B12X), (1, "dense_b12x", (1, 1, 48), 460.0, B12X),

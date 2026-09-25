@@ -104,6 +104,13 @@ class ProfileWindowTests(unittest.TestCase):
         self.assertTrue(all(start < i < stop for i in streams))
         self.assertEqual(r.stdout.count("profiled req usage: {'completion_tokens': 512}"), 2)
 
+    def test_max_tokens_sets_both_bounds(self) -> None:
+        r, calls = self._run(LOGGER.format(name="ssh"), MAX_TOKENS="200")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        bodies = [c for c in calls if c.startswith("curl") and "chat/completions" in c]
+        self.assertTrue(bodies)
+        self.assertTrue(all('"max_tokens":200,"min_tokens":200' in c for c in bodies))
+
 
 if __name__ == "__main__":
     unittest.main()
