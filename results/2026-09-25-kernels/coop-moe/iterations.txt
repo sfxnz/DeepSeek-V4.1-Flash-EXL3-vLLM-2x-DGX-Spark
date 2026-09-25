@@ -16,6 +16,13 @@ Variant ids = DSV41_P2B_COOP values. Numbers: median cold us per call (census ro
 noted), p10/p90 in the JSON. "floor" = unique expert bytes / 250 GB/s (task definition);
 "ceiling" = unique bytes / 232 GB/s, the measured spark2 read ceiling (it 5 below).
 
+it 0' round-2 driver as shipped (kernel_study/p2b_coop/driver.py via run_prebuilt.py; random trellis,
+  its own routings; v0-driver-m4.json, v0-driver-m8.json). All its gates pass at m=4 and m=8: one-hot
+  bit-exact, full max rel <= 3.8e-4 (<= 1e-3), coop repeat bit-exact, finite, 16 graph replays equal;
+  occupancy 4 and 4 blocks/SM. Cold coop vs p2b: m=4 census -22.1%, dup0.3 -21.7%, dup0.5 -40.1%,
+  dup0 +2.0%; m=8 (8 consecutive census tokens) -37.3%, dup0 +2.6% (its own "dup0 >= -2%" gate
+  fails at m=8: nothing to share costs coop 27 us). Round 3 (below) fixes that: -7.6% at m=8 dup0.
+
 it 0  baseline (v0-base-r3.json)
   v0 p2b (served SORT=0) m=4 520.8, m=8 1014.8, m=1 181.2
   v1 round-2 coop (SORT=2) m=4 378.9 (-27%), m=8 670.3 (-34%); dup0 m=4 536.7 (+2.0%)
