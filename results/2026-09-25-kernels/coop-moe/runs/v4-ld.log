@@ -1,0 +1,47 @@
+# 2026-09-25T13:27:52Z host spark2 tag v4-ld
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.1Gi        96Gi       256Ki        21Gi       116Gi
+Swap:           15Gi       1.2Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode ld --variants 0 --ms 4 --iters 200 --out results/2026-09-25-kernels/coop-moe/v4-ld.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[13:28:05Z] loaded layer 20 rank 0 in 6.1 s
+[13:28:05Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}}
+[13:28:06Z] [ld] bps8_tma_bulk_2KB: 232.4 GB/s (max 234.6)
+[13:28:06Z] [ld] bps4_tma_bulk_2KB: 232.2 GB/s (max 235.2)
+[13:28:06Z] [ld] bps3_tma_bulk_2KB: 231.9 GB/s (max 235.0)
+[13:28:06Z] [ld] bps2_tma_bulk_2KB: 231.8 GB/s (max 234.8)
+[13:28:06Z] [ld] bps2_cp_async_16B: 231.8 GB/s (max 234.0)
+[13:28:06Z] [ld] bps3_ld: 231.4 GB/s (max 233.6)
+[13:28:06Z] [ld] bps2_ldcs: 231.4 GB/s (max 233.8)
+[13:28:06Z] [ld] bps2_ld: 231.3 GB/s (max 233.9)
+[13:28:06Z] [ld] bps2_ldg_nc: 231.2 GB/s (max 233.7)
+[13:28:06Z] [ld] bps2_ld_L1_noalloc: 231.1 GB/s (max 233.6)
+[13:28:06Z] [ld] bps3_ldcs: 231.0 GB/s (max 233.3)
+[13:28:06Z] [ld] bps4_cp_async_16B: 230.9 GB/s (max 233.6)
+[13:28:06Z] [ld] bps3_ldg_nc: 230.9 GB/s (max 233.8)
+[13:28:06Z] [ld] bps4_ld: 230.7 GB/s (max 233.8)
+[13:28:06Z] [ld] bps3_cp_async_16B: 230.7 GB/s (max 232.7)
+[13:28:06Z] [ld] bps4_ldcs: 230.6 GB/s (max 233.2)
+[13:28:06Z] [ld] bps8_ld_L1_noalloc: 230.6 GB/s (max 233.2)
+[13:28:06Z] [ld] bps3_ld_L1_noalloc: 230.4 GB/s (max 233.2)
+[13:28:06Z] [ld] bps8_ldg_nc: 230.4 GB/s (max 233.4)
+[13:28:06Z] [ld] bps8_ld: 230.1 GB/s (max 233.6)
+[13:28:06Z] [ld] bps4_ldg_nc: 230.1 GB/s (max 233.7)
+[13:28:06Z] [ld] bps4_ld_L1_noalloc: 230.0 GB/s (max 233.1)
+[13:28:06Z] [ld] bps8_cp_async_16B: 230.0 GB/s (max 233.6)
+[13:28:06Z] [ld] bps8_ldcs: 229.9 GB/s (max 233.1)
+[13:28:06Z] pass=True
+# 2026-09-25T13:28:08Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

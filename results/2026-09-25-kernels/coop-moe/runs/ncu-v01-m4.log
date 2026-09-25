@@ -1,0 +1,38 @@
+# 2026-09-25T12:42:19Z host spark2 tag ncu-v01-m4
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       4.9Gi       108Gi       252Ki       9.9Gi       116Gi
+Swap:           15Gi       1.2Gi        14Gi
+# cmd: --target-processes all --kernel-name regex:p2b_moe --clock-control none --set full --import-source yes -f -o /repo/kernel_study/p2b_coop/build/ncu/v01-m4 python3 kernel_study/p2b_coop/ncu_target.py --variants 0,1 --m 4 --calls 2
+dsv41: lm_head mxfp8 hook skipped: ModuleNotFoundError("No module named 'torch'")
+==WARNING== Note: Running with unmodified GPU clocks. If not controlled otherwise, profiling results may be inconsistent.
+==PROF== Connected to process 70 (/usr/bin/python3.12)
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+==PROF== Connected to process 123 (/usr/bin/python3.12)
+==PROF== Connected to process 145 (/usr/bin/python3.12)
+==PROF== Disconnected from process 123
+==PROF== Disconnected from process 145
+==PROF== Profiling "p2b_moe_batched_kernel": 0%....50%....100% - 39 passes
+variant 0 unique 14
+==PROF== Profiling "p2b_moe_batched_kernel": 0%....50%....100% - 38 passes
+variant 0 unique 18
+==PROF== Profiling "p2b_moe_batched_kernel": 0%....50%....100% - 38 passes
+variant 1 unique 14
+==PROF== Profiling "p2b_moe_batched_kernel": 0%....50%....100% - 38 passes
+variant 1 unique 18
+==PROF== Disconnected from process 70
+==WARNING== No source files were imported. Check that the target application was compiled with -lineinfo.
+==PROF== Report: /repo/kernel_study/p2b_coop/build/ncu/v01-m4.ncu-rep
+# 2026-09-25T12:42:50Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

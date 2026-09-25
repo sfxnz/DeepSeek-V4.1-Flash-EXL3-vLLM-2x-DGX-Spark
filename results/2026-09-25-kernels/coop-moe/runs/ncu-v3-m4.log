@@ -1,0 +1,35 @@
+# 2026-09-25T12:56:50Z host spark2 tag ncu-v3-m4
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.0Gi       101Gi       244Ki        16Gi       116Gi
+Swap:           15Gi       1.2Gi        14Gi
+# cmd: --target-processes all --kernel-name regex:p2b_coop_df --clock-control none --set full --import-source yes -f -o /repo/kernel_study/p2b_coop/build/ncu/v3-m4 python3 kernel_study/p2b_coop/ncu_target.py --variants 3 --m 4 --calls 2
+dsv41: lm_head mxfp8 hook skipped: ModuleNotFoundError("No module named 'torch'")
+==WARNING== Note: Running with unmodified GPU clocks. If not controlled otherwise, profiling results may be inconsistent.
+==PROF== Connected to process 67 (/usr/bin/python3.12)
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+==PROF== Connected to process 120 (/usr/bin/python3.12)
+==PROF== Connected to process 142 (/usr/bin/python3.12)
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+==PROF== Disconnected from process 120
+==PROF== Disconnected from process 142
+==PROF== Profiling "p2b_coop_df_kernel": 0%....50%....100% - 38 passes
+variant 3 unique 14
+==PROF== Profiling "p2b_coop_df_kernel": 0%....50%....100% - 38 passes
+variant 3 unique 18
+==PROF== Disconnected from process 67
+==WARNING== No source files were imported. Check that the target application was compiled with -lineinfo.
+==PROF== Report: /repo/kernel_study/p2b_coop/build/ncu/v3-m4.ncu-rep
+# 2026-09-25T12:57:14Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

@@ -1,0 +1,40 @@
+# 2026-09-25T13:08:16Z host spark2 tag v3-acct
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.0Gi        98Gi       244Ki        19Gi       116Gi
+Swap:           15Gi       1.2Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode phases --variants 0,3,4,6 --ms 1,4,8 --out results/2026-09-25-kernels/coop-moe/v3-acct.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[13:08:29Z] loaded layer 20 rank 0 in 5.9 s
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[13:08:29Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v3": {"grid": 144, "blocks_per_sm": 3.0}, "v4": {"grid": 144, "blocks_per_sm": 3.0}, "v6": {"grid": 144, "blocks_per_sm": 3.0}}
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[13:08:29Z] [phases] v0 m=1 grid 192: total 167.5 us, skew 0.1, s1 work 3.0 imb 2.7 bar 0.7 | s2 work 102.6 imb 29.3 bar 0.7 | s3 work 2.4 imb 2.1 bar 0.7 | s4 work 0.6 imb 0.3 bar 0.7 | s5 work 1.8 imb 1.5 bar 0.7 | s6 work 47.6 imb 2.9 bar 0.7 | s7 work 1.9 imb 1.6 bar 0.7 | s8 work 0.9 imb 0.1 bar 1.1 | tail 0.5 | uniq 6.0
+[13:08:29Z] [phases] v0 m=4 grid 192: total 505.7 us, skew 0.1, s1 work 3.6 imb 0.8 bar 0.7 | s2 work 315.4 imb 10.4 bar 0.7 | s3 work 2.4 imb 2.2 bar 0.8 | s4 work 0.6 imb 0.3 bar 0.8 | s5 work 1.8 imb 1.5 bar 0.7 | s6 work 169.9 imb 25.5 bar 0.7 | s7 work 2.5 imb 0.6 bar 0.7 | s8 work 1.9 imb 0.6 bar 0.7 | tail 0.5 | uniq 16.3
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[13:08:29Z] [phases] v0 m=8 grid 192: total 981.7 us, skew 0.1, s1 work 5.5 imb 1.6 bar 0.7 | s2 work 630.9 imb 45.0 bar 0.7 | s3 work 2.6 imb 2.3 bar 0.8 | s4 work 0.8 imb 0.3 bar 0.8 | s5 work 1.9 imb 1.6 bar 0.8 | s6 work 327.3 imb 50.1 bar 0.7 | s7 work 3.5 imb 1.1 bar 0.7 | s8 work 3.1 imb 0.8 bar 0.7 | tail 0.6 | uniq 29.5
+[13:08:29Z] [phases] v3 m=1 grid 144: total 155.0 us, skew 0.1, s1 work 4.0 imb 2.3 bar 0.7 | s2 work 142.9 imb 10.4 bar 0.7 | tail 6.6 | uniq 6.0 | df tiles_per_warp 4.8 fill_us 7.0 loop_us 100.0 reduce_us 7.2 span_us 143.4 between_tiles_us 28.8
+[13:08:29Z] [phases] v3 m=4 grid 144: total 339.0 us, skew 0.1, s1 work 5.8 imb 0.6 bar 0.7 | s2 work 325.6 imb 6.7 bar 0.7 | tail 5.9 | uniq 15.8 | df tiles_per_warp 12.9 fill_us 15.0 loop_us 262.1 reduce_us 23.5 span_us 326.0 between_tiles_us 25.9
+[13:08:30Z] [phases] v3 m=8 grid 144: total 614.3 us, skew 0.1, s1 work 9.2 imb 1.1 bar 0.6 | s2 work 597.7 imb 6.5 bar 0.7 | tail 6.0 | uniq 29.8 | df tiles_per_warp 23.4 fill_us 27.5 loop_us 478.6 reduce_us 43.2 span_us 598.2 between_tiles_us 41.8
+[13:08:30Z] [phases] v4 m=1 grid 144: total 164.9 us, skew 0.1, s1 work 4.0 imb 2.4 bar 0.7 | s2 work 152.5 imb 8.0 bar 0.7 | tail 6.9 | uniq 6.0 | df tiles_per_warp 4.8 fill_us 10.7 loop_us 86.0 reduce_us 11.0 span_us 152.9 between_tiles_us 44.9
+[13:08:30Z] [phases] v4 m=4 grid 144: total 316.4 us, skew 0.1, s1 work 5.9 imb 0.6 bar 0.7 | s2 work 302.4 imb 7.6 bar 0.7 | tail 6.5 | uniq 14.9 | df tiles_per_warp 12.1 fill_us 24.7 loop_us 211.0 reduce_us 30.4 span_us 302.8 between_tiles_us 37.4
+[13:08:30Z] [phases] v4 m=8 grid 144: total 644.0 us, skew 0.1, s1 work 9.6 imb 1.0 bar 0.7 | s2 work 626.7 imb 7.7 bar 0.7 | tail 6.4 | uniq 30.6 | df tiles_per_warp 25.0 fill_us 51.7 loop_us 433.3 reduce_us 66.7 span_us 627.2 between_tiles_us 70.3
+[13:08:30Z] [phases] v6 m=1 grid 144: total 165.4 us, skew 0.1, s1 work 4.0 imb 2.4 bar 0.7 | s2 work 152.8 imb 7.4 bar 0.7 | tail 7.1 | uniq 6.0 | df tiles_per_warp 4.8 fill_us 11.6 loop_us 85.0 reduce_us 11.7 span_us 153.2 between_tiles_us 45.7
+[13:08:30Z] [phases] v6 m=4 grid 144: total 336.2 us, skew 0.1, s1 work 6.0 imb 0.8 bar 0.7 | s2 work 322.7 imb 8.2 bar 0.7 | tail 6.5 | uniq 15.7 | df tiles_per_warp 12.9 fill_us 27.2 loop_us 220.9 reduce_us 35.5 span_us 323.1 between_tiles_us 40.7
+[13:08:30Z] [phases] v6 m=8 grid 144: total 591.8 us, skew 0.1, s1 work 9.5 imb 1.2 bar 0.7 | s2 work 574.1 imb 8.6 bar 0.7 | tail 6.3 | uniq 28.6 | df tiles_per_warp 22.6 fill_us 50.1 loop_us 390.5 reduce_us 60.9 span_us 574.6 between_tiles_us 67.5
+[13:08:30Z] pass=True
+# 2026-09-25T13:08:31Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
