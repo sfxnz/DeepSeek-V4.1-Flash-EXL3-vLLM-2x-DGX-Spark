@@ -114,11 +114,14 @@ readme:
 
 measured:
   decode:
-    conditions: "Campaign capture 2026-09-22 (results/2026-09-22-close/) on the promoted recipe: DSpark-3 greedy + cudagraph captures [1,3,4,6,8] + Engram prefetch v3 (pf_hit 100%) + census + gather v2 (preadv/vectorized dequant) + NCCL AR-tail set + mem-hygiene bundle + lm_head mxfp8 (b12x path, pack revision 2.0bpw-mcg-lmhead-mxfp8 — stock 2.0bpw-mcg with only model-00043 re-encoded), image canonical-e12, vision on, Engram on disk. bench_decode.py prose = streamed greedy 200 tokens thinking off, 9-run median; L.A.I.L prose = 512 tokens temperature 0.2, pooled n=10. Full campaign history rounds 1-33 in results/RESULTS.md; verdict ledger in the Hermes mlops/recipes skill."
+    conditions: "Round 34 (2026-09-24 review campaign, results/2026-09-24-review/campaign/): boot s8-S-sparse-markov, the exact round-34 default config (image canonical-e13 = review-e13 sha256:c81762335a12, pack 2.0bpw-mcg-lmhead-mxfp8, DSpark-3 greedy + captures [1,3,4,6,8], Engram prefetch v3 + census + gather v2 + WILLNEED, NCCL AR-tail set, mem-hygiene bundle, lm_head mxfp8, STREAM_FEED, WOA_PREPACK, SPARSE_MARKOV k=256, vision on, Engram on disk, AUDIT=strict clean). bench_decode.py = streamed greedy 200 tokens thinking off, 9-run median, ignore_eos (prose post-EOS fraction 0.59); L.A.I.L prose = tools/measure_lail_prose.py 512 tokens temperature 0.2, median of 10. Same-protocol fresh boot of the pre-round-34 config (s2-old-fresh): prose 37.07, L.A.I.L 32.44. History: results/RESULTS.md rounds 1-34."
     units: {decode: tok/s per stream (median), aggregate: tok/s, ttft_p50: s}
     rows:
-      - {phase: prose, concurrency: 1, decode: "39.6", aggregate: "39.6", ttft_p50: "0.31", evidence: results/2026-09-22-close/fournumbers/four_numbers.json}
-      - {phase: lail_prose, concurrency: 1, decode: "33.2", aggregate: "33.2", ttft_p50: "0.36", evidence: results/2026-09-22-close/lail_real1.json}
+      - {phase: prose, concurrency: 1, decode: "39.87", aggregate: "39.86", ttft_p50: "0.25", evidence: results/2026-09-24-review/campaign/s8-S-sparse-markov/04-bench-decode.summary.json}
+      - {phase: prose, concurrency: 2, decode: "29.41", aggregate: "57.55", ttft_p50: "0.28", evidence: results/2026-09-24-review/campaign/s8-S-sparse-markov/04-bench-decode.summary.json}
+      - {phase: structured, concurrency: 1, decode: "62.51", aggregate: "62.50", ttft_p50: "0.19", evidence: results/2026-09-24-review/campaign/s8-S-sparse-markov/04-bench-decode.summary.json}
+      - {phase: structured, concurrency: 2, decode: "45.45", aggregate: "89.39", ttft_p50: "0.31", evidence: results/2026-09-24-review/campaign/s8-S-sparse-markov/04-bench-decode.summary.json}
+      - {phase: lail_prose, concurrency: 1, decode: "34.51", aggregate: "34.51", ttft_p50: "0.32", evidence: results/2026-09-24-review/campaign/s8-S-sparse-markov/03-lail-prose-fresh.log}
 
 links:
   model: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash

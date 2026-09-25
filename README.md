@@ -156,7 +156,7 @@ Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-
 
 ## Measured on 2× DGX Spark
 
-`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median; the promoted recipe reports a 9-run median (39.6 tok/s in the table below). `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2) — this is the real-world-use cell: 33.2 tok/s, +44% vs the pre-campaign published recipe (23 tok/s). Default is DSpark-3 with matched cudagraph captures, vision on. These cells are the MCG pack with the lm_head-mxfp8 head (`2.0bpw-mcg-lmhead-mxfp8`) on native p2b `cb=1`. A MUL1 pack measured and lost prose decode at every bit-width tested (see below). The KV pool is 8 GiB. Every accepted/rejected experiment lives in `results/RESULTS.md` (33 rounds); run `benches/micro.sh` and `benches/e2e.sh` to reproduce cells, and `tests/correctness.sh --full` for the quality gate.
+`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median; the promoted recipe reports a 9-run median (39.87 tok/s in the table below; the prompt stops naturally at ~78 tokens, so the cell forces `ignore_eos` and 59% of it is post-EOS text). `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2) — this is the real-world-use cell: 34.51 tok/s, +50% vs the pre-campaign published recipe (23 tok/s). The table is the round-34 boot `s8-S-sparse-markov`, which ran exactly the current defaults. Default is DSpark-3 with matched cudagraph captures, vision on. These cells are the MCG pack with the lm_head-mxfp8 head (`2.0bpw-mcg-lmhead-mxfp8`) on native p2b `cb=1`. A MUL1 pack measured and lost prose decode at every bit-width tested (see below). The KV pool is 8 GiB. Every accepted/rejected experiment lives in `results/RESULTS.md` (34 rounds); run `benches/micro.sh` and `benches/e2e.sh` to reproduce cells, and `tests/correctness.sh --full` for the quality gate.
 
 `MAX_NUM_BATCHED_TOKENS` history: at 12.7k-token prompts 8192 measured −5% vs 2048 (`evidence/pr6-batched-8192/`), but on the campaign's prose/prefill cells 8192 was re-measured across rounds 15–33 as part of the promoted config — every kept lever was A/B'd on top of it. It ships as the default now; 2048 remains available for long-prompt-heavy workloads.
 
@@ -165,8 +165,11 @@ MUL1 + p2b `cb=2` (`2.0bpw-mul1` K=2 on `dsv41-flash-exl3-sm121:cb2`) lost prose
 <!-- BEGIN generated measured from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
 |---|---|---:|---:|---:|
-| prose | 1 | 39.6 | 39.6 | 0.31 s |
-| lail_prose | 1 | 33.2 | 33.2 | 0.36 s |
+| prose | 1 | 39.87 | 39.86 | 0.25 s |
+| prose | 2 | 29.41 | 57.55 | 0.28 s |
+| structured | 1 | 62.51 | 62.50 | 0.19 s |
+| structured | 2 | 45.45 | 89.39 | 0.31 s |
+| lail_prose | 1 | 34.51 | 34.51 | 0.32 s |
 <!-- END generated measured -->
 
 ## Rebuild the pack
