@@ -106,8 +106,10 @@ One boot = one lever. Every arm produces the four numbers via
    L.A.I.L 3x 33.98 (`results/2026-09-24-review/campaign/s13-promote-final/`).
    Warm-prefix hits depend on the prompt length: a repeat of N tokens
    missed entirely when N ran only 10-58 tokens past the last 128-token
-   boundary, and hit at 68-127 (results/RESULTS.md round 34). Read a 0.0
-   `hit_fraction_of_expected` with that in mind.
+   boundary, and hit at 68-127 (results/RESULTS.md round 34).
+   `tools/warm_prefix.py` now pads the prompt so that tail is at least 80
+   tokens (`tail_tokens` in its summary). Read a 0.0 in older captures with
+   that in mind.
 
 ## Exact restore sequence
 
