@@ -17,6 +17,10 @@ Preconditions
 - The serve is down on both nodes. Run from the worktree that carries the lever
   (k3/mhc-det, or its merge). `python3 -m unittest discover -s tests -q` and
   `python3 kit/render.py --check` pass.
+- The worktree is clean (`git status --short` empty): run.sh bind-mounts docker/patch into the
+  container and copies it to the worker, so the serve NVRTC-compiles whatever the worktree holds.
+  Record in each boot's run log `git rev-parse HEAD` and
+  `sha256sum docker/patch/mhc_det.cu docker/patch/mhc_det.py docker/patch/mhc_det_overlap.py`.
 
 Boots (A = baseline, B = lever; order A B A B, `./stop.sh` between boots)
   A:  ./stop.sh && AUDIT=strict ./run.sh
