@@ -120,3 +120,84 @@ code, byte-identical):
   optional engagement proof: one profiler boot (tools/profile_window.sh) shows
   p2b_moe_batched_kernel<2, 1, 2> in B, <2, 1, 0> in A.
 Rollback: ./stop.sh, then the usual canonical-e13 boot (unset DSV41_P2B_COOP).
+
+Round 3 (2026-09-25, branch k3/coop-moe): dataflow coop kernel, DSV41_P2B_COOP=2
+================================================================================
+
+What
+----
+docker/patch/widen_p2b_dataflow.py (after widen_p2b_coop.py) adds p2b_coop_df_kernel<2, 1>:
+the round-2 coop tiles scheduled as one atomic task list (gate/up tiles, then down tiles)
+with last-finisher epilogues and per-unit readiness counts, 2 grid barriers instead of 7,
+3 blocks/SM (80 registers, spill-free MMA loops), L2 prefetch 2 k-slices past the register
+ring, the A fragment one k-slice ahead, the first tile prefetched in the prologue, svh
+prefetch and an unrolled top-6 output pass. Bit-identical to DSV41_P2B_COOP=1 for any routing
+weights (one-hot: to p2b). docker/Dockerfile.e15 builds review-e15 (chain + coop + dataflow).
+
+Harness (all under kernel_study/p2b_coop, force-added: kernel_study/ is gitignored)
+-----------------------------------------------------------------------------------
+make_bench_r3.py   CPU. build_r3/chain_r3.cu (= the e15 TU), bench_r3.cu (runtime variant
+                   switch = DSV41_P2B_COOP value, bench-only read-ceiling kernels),
+                   bench_r3_ts.cu (%globaltimer phase stamps + per-warp tile accounting).
+bench_r3.py        GPU. Real layer weights from /hf (the pack), TP-sharded like vllm_exl3,
+                   census routing of the same layer. Modes: check (one-hot bitwise vs p2b,
+                   bitwise vs =1, full-weight tolerance, repeat, fp64 reference with --ref),
+                   capture (graph replay == eager), stress (race hunt vs =1, eager + graph),
+                   time (cold flush / warm, alternating arms, median p10 p90, GB/s, % floor),
+                   phases, stream (tile-pattern/contiguous read ceiling), bw / ld / gemm
+                   (plain read, load flavour and cuBLAS GEMV bandwidth probes).
+prebuild_r3.sh     CPU. JIT-builds both bench modules in the serve image (no GPU in the window).
+ptxas_r3.sh        CPU. ptxas resources + SASS + hot-loop spills of every K=2 MCG kernel.
+sass_identity_r3.sh CPU. e14 TU vs e15 TU: SORT=0/1/2 machine code byte-identical (13/13),
+                   exactly one new kernel.
+spark2.sh / gpu_run.sh  sync the worktree to spark2, flock spark2's GPU lock, refuse to run
+                   with a foreign GPU process (pmon), sample clocks every 250 ms, run in the
+                   serve image, sync results back. PROFILE=1 runs Nsight Compute instead.
+ncu_target.py      target process for ncu (flushed calls on the real layer).
+
+Reproduce (spark1, serve down or not: spark2's GPU is used)
+  kernel_study/p2b_coop/prebuild_r3.sh
+  kernel_study/p2b_coop/spark2.sh final-validate kernel_study/p2b_coop/bench_r3.py \
+      --mode check,capture,stress --variants 0,1,2 --ms 1,3,4,6,8 --check-routings 12 --ref \
+      --replays 32 --stress-calls 1000 --out results/2026-09-25-kernels/coop-moe/final-validate.json
+  kernel_study/p2b_coop/spark2.sh final-time kernel_study/p2b_coop/bench_r3.py \
+      --mode time,phases,stream --variants 0,1,2 --ms 1,3,4,6,8 --sources census,dup0 \
+      --iters 300 --phase-calls 40 --out results/2026-09-25-kernels/coop-moe/final-time.json
+  kernel_study/p2b_coop/sass_identity_r3.sh
+
+Results: results/2026-09-25-kernels/coop-moe/ (iterations.txt = every iteration with numbers;
+summary.json = the final table).
+
+Serve arm (DSV41_P2B_COOP=2), not run yet
+-----------------------------------------
+Gates already met (microbench): one-hot bit-exact vs p2b, bitwise = DSV41_P2B_COOP=1, full
+weights <= 1 fp16 ulp vs p2b (max rel <= 5.2e-4), fp64-reference error equal to p2b's,
+deterministic, graph replay bitwise (32 per m), 5000-call race hunt bitwise, SORT=0/1/2 SASS
+identical, no-sharing routing not slower (-7.4% at m=4).
+1. Build (network for apt + git clone; CPU nvcc ~2-5 min; serve down or >= 14 GiB MemAvailable):
+     cd /home/sfxnz/projects/ai-lab/recipes/.worktrees/k3-coop-moe
+     docker build -f docker/Dockerfile.e15 -t dsv41-flash-exl3-sm121:review-e15 docker
+     docker save dsv41-flash-exl3-sm121:review-e15 | ssh spark2 docker load
+     for h in "" "ssh spark2"; do $h docker run --rm --network none --entrypoint bash \
+       dsv41-flash-exl3-sm121:review-e15 -c 'grep -c "p2b coop dataflow kernel engaged" \
+       /usr/local/lib/python3.12/dist-packages/vllm_exl3_c*.so'; done
+2. ABAB per ARMS.md, one lever, the same image for A and B (A = env unset: canonical-e13's
+   p2b SORT=0 code, byte-identical), spark1's GPU exclusive (no chromium GPU process):
+     A: ./stop.sh && AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e15 ./run.sh
+     B: ./stop.sh && AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e15 DSV41_P2B_COOP=2 ./run.sh
+   each boot: python3 smoke_chat.py (323); python3 smoke_vision.py;
+              tools/four_numbers.sh --arm coopdf-{A1,B1,A2,B2}; tools/disarm_scan.sh
+   B boots: the strict audit must find "dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)"
+            on head and worker and no "p2b coop dataflow lever is OFF" / "decode lever
+            p2b_coop_dataflow" line; then
+            python3 tests/quality_eval.py --quick --baseline results/2026-09-24-review/quality-baseline/quick.json \
+                --out <arm-dir>/quality_quick.json
+            python3 tests/quality_eval.py --full --baseline results/2026-09-24-review/quality-baseline/full.json \
+                --out <arm-dir>/quality_full.json
+            (numerics differ from p2b only by the fixed fp32 slot-sum order, <= 1 fp16 ulp)
+   Engagement proof (one boot): tools/profile_window.sh shows p2b_coop_df_kernel<2, 1> (grid 144)
+   in B and p2b_moe_batched_kernel<2, 1, 0> in A.
+3. Expected: p2b 23.2 ms/step (c=1 profile) -> ~15.8 ms (-7.4 ms of ~63: ~+13% tok/s at matched
+   acceptance); c=2 ~-16 ms/step. Accept on ms/step at matched acceptance (L.A.I.L n=10 and
+   bench c=1/c=2) with the ARMS.md noise gate; quality quick+full within baseline bands.
+Rollback: ./stop.sh, canonical-e13 boot with DSV41_P2B_COOP unset.

@@ -392,7 +392,7 @@ def bench(src: str, stamps: bool) -> str:
 
 DF_REGIONS = {
     # region start, region end, edits (old, new) applied once inside the region
-    "tile": ("template <int PFL2, bool APF>\n__device__ __forceinline__ void p2b_df_tile(", "// Task -> (B stream", (
+    "tile": ("__device__ __forceinline__ void p2b_df_tile(", "// L2 prefetch of the first n k-slices", (
         ("    const half2 hzero = __half2half2(__ushort_as_half(0));\n",
          "    const half2 hzero = __half2half2(__ushort_as_half(0));\n    DF_ENTRY();\n"),
         ("                bench_fshift::dq8_regs_2bits_fs<1>(awv, bwv, lane << 3, f0, f1);\n",
@@ -401,31 +401,11 @@ DF_REGIONS = {
         ("        C[p2b_coop_em(mem[r], m, experts) * (size_t) (ntiles * 16) + group * COLS + c] = __float2half_rn(sum);\n    }\n    __syncthreads();\n}\n",
          "        C[p2b_coop_em(mem[r], m, experts) * (size_t) (ntiles * 16) + group * COLS + c] = __float2half_rn(sum);\n    }\n    __syncthreads();\n    DF_EXIT();\n}\n"),
     )),
-    "df": ("void p2b_coop_df_kernel(", "// df2: the dataflow kernel", (
-        ("    __shared__ int s_df[3];\n", "    __shared__ int s_df[3];\n    DF_INIT();\n"),
-        ("    for (;;) {\n        const int task = *static_cast<volatile int*>(s_df);\n",
-         "    DF_SPAN0();\n    for (;;) {\n        const int task = *static_cast<volatile int*>(s_df);\n"),
-        ("    if constexpr (DFOUT)\n        return;\n", "    DF_SPAN1();\n    DF_DUMP();\n    if constexpr (DFOUT)\n        return;\n"),
-    )),
-    "df2": ("void p2b_coop_df2_kernel(", "// Warp-stream variant", (
-        ("    __shared__ int s_df[3];\n", "    __shared__ int s_df[3];\n    DF_INIT();\n"),
+    "df": ("void p2b_coop_df_kernel(", "template <int BITS, int CB>\nstatic void launch_moe_batched(", (
+        ("    __shared__ int s_df[2];\n", "    __shared__ int s_df[2];\n    DF_INIT();\n"),
         ("    for (;;) {\n        const int task = *static_cast<volatile int*>(s_df);\n",
          "    DF_SPAN0();\n    for (;;) {\n        const int task = *static_cast<volatile int*>(s_df);\n"),
         ("    // Out of tasks: pull the svh scales", "    DF_SPAN1();\n    DF_DUMP();\n    // Out of tasks: pull the svh scales"),
-    )),
-    "krange": ("__device__ __forceinline__ void p2b_ws_krange(", "template <int BITS, int CB, int MINB, int PF, int ROWS, int NB>\n__global__ __launch_bounds__(256, MINB)\nvoid p2b_ws_kernel(", (
-        ("    const half2 hzero = __half2half2(__ushort_as_half(0));\n",
-         "    const half2 hzero = __half2half2(__ushort_as_half(0));\n    DF_ENTRY();\n"),
-        ("                bench_fshift::dq8_regs_2bits_fs<1>(awv, bwv, lane << 3, f0, f1);\n",
-         "                bench_fshift::dq8_regs_2bits_fs<1>(awv, bwv, lane << 3, f0, f1);\n                if (t == 0) DF_FILL(i, bwv);\n"),
-        ("                        ch[t][f][0] = hzero;\n                    }\n            }\n        }\n    }\n}\n",
-         "                        ch[t][f][0] = hzero;\n                    }\n            }\n        }\n    }\n    DF_LOOPEND();\n}\n"),
-    )),
-    "ws": ("void p2b_ws_kernel(", "// DSV41_P2B_COOP value -> dataflow kernel", (
-        ("    __shared__ int s_done[NB];\n", "    __shared__ int s_done[NB];\n    DF_INIT();\n"),
-        ("    for (int k = 0;; ++k) {\n", "    DF_SPAN0();\n    for (int k = 0;; ++k) {\n"),
-        ("        last = __shfl_sync(0xffffffffu, last, 0);\n", "        last = __shfl_sync(0xffffffffu, last, 0);\n        DF_EXIT();\n"),
-        ("    P2B_GRID_SYNC();\n\n    // Down output Hadamard", "    DF_SPAN1();\n    DF_DUMP();\n    P2B_GRID_SYNC();\n\n    // Down output Hadamard"),
     )),
 }
 

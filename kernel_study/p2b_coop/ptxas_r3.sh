@@ -6,6 +6,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IMG="${1:-dsv41-flash-exl3-sm121:canonical-e13}"
 python3 "$HERE/make_bench_r3.py" >/dev/null
+set +e
 docker run --rm --network none --memory 12g --cpus 6 --user "$(id -u):$(id -g)" -e HOME=/tmp \
     -v "$HERE/build_r3:/w" --entrypoint bash "$IMG" -c '
 set -e
@@ -15,8 +16,11 @@ T=/usr/local/lib/python3.12/dist-packages/torch/include
 nvcc -c chain_r3.cu -o chain_r3.o -std=c++17 -O3 -gencode arch=compute_121a,code=sm_121a \
     -I$EXL -I$T -I$T/torch/csrc/api/include -I/usr/include/python3.12 \
     -DTORCH_EXTENSION_NAME=p2b_r3 -DTORCH_API_INCLUDE_EXTENSION_H -D_GLIBCXX_USE_CXX11_ABI=1 \
-    --expt-relaxed-constexpr -Xptxas -v 2> chain_r3.ptxas.txt || { tail -40 chain_r3.ptxas.txt; exit 1; }
-' 2>&1 | grep -v 'vllm._C\|cpp_extension.py\|^$' || true
+    --expt-relaxed-constexpr -Xptxas -v 2> chain_r3.ptxas.txt || { grep -B2 -A2 " error" chain_r3.ptxas.txt | head -40; exit 1; }
+' 2>&1 | grep -v 'vllm._C\|cpp_extension.py\|^$'
+rc=${PIPESTATUS[0]}
+set -e
+[ "$rc" = 0 ] || { echo "ptxas_r3: compile failed" >&2; exit 1; }
 python3 - "$HERE/build_r3/chain_r3.ptxas.txt" <<'EOF'
 import re, sys
 lines = open(sys.argv[1]).read().splitlines()

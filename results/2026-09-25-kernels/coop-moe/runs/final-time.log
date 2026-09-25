@@ -1,0 +1,136 @@
+# 2026-09-25T14:21:38Z host spark2 tag final-time
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.1Gi        92Gi       244Ki        25Gi       116Gi
+Swap:           15Gi       1.2Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode time,phases,stream --variants 0,1,2 --ms 1,3,4,6,8 --sources census,dup0 --iters 300 --phase-calls 40 --out results/2026-09-25-kernels/coop-moe/final-time.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[14:21:51Z] loaded layer 20 rank 0 in 5.9 s
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[14:21:51Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v1": {"grid": 192, "blocks_per_sm": 4.0}, "v2": {"grid": 144, "blocks_per_sm": 3.0}}
+[14:21:52Z] [time] m=1 census cold: v0 182.3us [180.3,188.4] 147GB/s 59%floor  v1 186.5us [185.3,196.6] 144GB/s 57%floor  v2 157.7us [154.7,169.0] 170GB/s 68%floor
+[14:21:52Z] [time] m=1 census warm: v0 178.1us [176.1,180.3] 150GB/s 60%floor  v1 182.3us [180.2,184.3] 147GB/s 59%floor  v2 151.5us [148.4,156.7] 177GB/s 71%floor
+[14:21:53Z] [time] m=1 dup0 cold: v0 182.3us [180.2,185.3] 147GB/s 59%floor  v1 186.4us [184.3,188.4] 144GB/s 57%floor  v2 156.7us [154.6,162.8] 171GB/s 68%floor
+[14:21:53Z] [time] m=1 dup0 warm: v0 178.2us [176.1,180.3] 150GB/s 60%floor  v1 182.3us [180.2,184.4] 147GB/s 59%floor  v2 151.6us [148.5,155.7] 177GB/s 71%floor
+[14:21:54Z] [time] m=3 census cold: v0 409.5us [399.5,413.7] 141GB/s 56%floor  v1 317.4us [264.2,376.8] 179GB/s 72%floor  v2 281.6us [224.4,326.2] 205GB/s 82%floor
+[14:21:55Z] [time] m=3 census warm: v0 401.4us [391.2,409.6] 143GB/s 57%floor  v1 313.3us [260.1,373.7] 182GB/s 73%floor  v2 277.5us [221.3,327.0] 207GB/s 83%floor
+[14:21:56Z] [time] m=3 dup0 cold: v0 413.7us [409.6,426.1] 194GB/s 78%floor  v1 419.8us [415.8,430.1] 191GB/s 77%floor  v2 377.8us [374.0,393.2] 213GB/s 85%floor
+[14:21:57Z] [time] m=3 dup0 warm: v0 407.6us [403.4,420.9] 197GB/s 79%floor  v1 413.7us [410.6,426.0] 194GB/s 78%floor  v2 371.7us [367.6,390.1] 216GB/s 86%floor
+[14:21:58Z] [time] m=4 census cold: v0 520.2us [512.0,524.4] 136GB/s 54%floor  v1 378.8us [300.0,448.5] 186GB/s 75%floor  v2 335.9us [261.2,393.2] 211GB/s 84%floor
+[14:21:58Z] [time] m=4 census warm: v0 509.9us [501.7,516.2] 138GB/s 55%floor  v1 374.8us [297.0,442.4] 189GB/s 75%floor  v2 330.3us [257.0,387.2] 215GB/s 86%floor
+[14:22:00Z] [time] m=4 dup0 cold: v0 525.3us [522.5,528.4] 204GB/s 82%floor  v1 536.6us [534.5,538.7] 200GB/s 80%floor  v2 487.4us [485.4,489.5] 220GB/s 88%floor
+[14:22:01Z] [time] m=4 dup0 warm: v0 520.2us [518.1,523.4] 206GB/s 82%floor  v1 531.5us [529.4,534.5] 201GB/s 81%floor  v2 481.3us [479.3,484.4] 222GB/s 89%floor
+[14:22:02Z] [time] m=6 census cold: v0 757.7us [748.4,763.9] 145GB/s 58%floor  v1 558.1us [485.4,624.6] 195GB/s 78%floor  v2 507.7us [431.2,566.2] 219GB/s 88%floor
+[14:22:03Z] [time] m=6 census warm: v0 744.9us [733.2,756.8] 146GB/s 59%floor  v1 553.0us [481.3,626.7] 196GB/s 79%floor  v2 500.9us [427.0,560.8] 221GB/s 88%floor
+[14:22:04Z] [time] m=6 dup0 cold: v0 766.0us [763.7,776.2] 210GB/s 84%floor  v1 780.3us [778.2,785.4] 206GB/s 82%floor  v2 716.8us [713.8,728.1] 224GB/s 90%floor
+[14:22:06Z] [time] m=6 dup0 warm: v0 760.0us [757.8,764.1] 211GB/s 85%floor  v1 774.1us [772.1,777.2] 207GB/s 83%floor  v2 708.7us [706.6,711.7] 227GB/s 91%floor
+[14:22:07Z] [time] m=8 census cold: v0 1009.7us [1001.3,1017.9] 132GB/s 53%floor  v1 667.6us [567.5,784.4] 199GB/s 79%floor  v2 604.2us [510.0,703.6] 221GB/s 88%floor
+[14:22:08Z] [time] m=8 census warm: v0 990.7us [978.9,1002.5] 135GB/s 54%floor  v1 662.5us [561.2,772.1] 200GB/s 80%floor  v2 597.1us [504.8,694.1] 224GB/s 89%floor
+[14:22:10Z] [time] m=8 dup0 cold: v0 1022.9us [1019.9,1028.0] 209GB/s 84%floor  v1 1048.7us [1046.5,1052.7] 204GB/s 82%floor  v2 944.1us [941.1,947.2] 227GB/s 91%floor
+[14:22:12Z] [time] m=8 dup0 warm: v0 1014.8us [1012.7,1020.8] 211GB/s 84%floor  v1 1041.4us [1038.3,1045.5] 206GB/s 82%floor  v2 935.9us [933.7,939.0] 229GB/s 92%floor
+[14:22:13Z] [stream] m=1: tile_barrier 120.9us 219.5GB/s [208.7,221.6]  tile_nobarrier 120.9us 219.6GB/s [210.8,221.8]  contiguous 120.8us 219.7GB/s [207.4,223.4]
+[14:22:13Z] [stream] m=3: tile_barrier 257.0us 223.8GB/s [219.0,226.6]  tile_nobarrier 257.9us 223.2GB/s [217.1,225.9]  contiguous 254.0us 225.2GB/s [220.7,228.3]
+[14:22:14Z] [stream] m=4: tile_barrier 313.4us 225.0GB/s [219.7,228.1]  tile_nobarrier 314.5us 224.7GB/s [219.3,227.3]  contiguous 313.3us 224.6GB/s [218.4,228.6]
+[14:22:15Z] [stream] m=6: tile_barrier 487.8us 229.0GB/s [223.7,230.8]  tile_nobarrier 488.5us 228.2GB/s [221.8,229.8]  contiguous 500.7us 226.3GB/s [218.2,229.0]
+[14:22:16Z] [stream] m=8: tile_barrier 573.6us 230.2GB/s [228.8,231.4]  tile_nobarrier 576.5us 229.3GB/s [227.4,230.4]  contiguous 579.6us 227.7GB/s [225.1,229.6]
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[14:22:16Z] [phases] v0 m=1 grid 192: total 165.1 us, skew 0.1, s1 work 3.0 imb 2.7 bar 0.7 | s2 work 101.1 imb 28.8 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.8 | s4 work 0.6 imb 0.4 bar 0.7 | s5 work 1.8 imb 1.6 bar 0.8 | s6 work 46.3 imb 2.8 bar 0.7 | s7 work 2.0 imb 1.7 bar 0.7 | s8 work 0.9 imb 0.1 bar 0.9 | tail 0.5 | uniq 6.0
+[14:22:16Z] [phases] v0 m=3 grid 192: total 386.2 us, skew 0.1, s1 work 3.2 imb 2.8 bar 0.7 | s2 work 241.3 imb 18.3 bar 0.7 | s3 work 2.4 imb 2.2 bar 0.8 | s4 work 0.6 imb 0.3 bar 0.8 | s5 work 1.8 imb 1.5 bar 0.8 | s6 work 127.1 imb 15.3 bar 0.7 | s7 work 2.3 imb 1.9 bar 0.7 | s8 work 1.5 imb 0.3 bar 0.8 | tail 0.5 | uniq 12.8
+[14:22:16Z] [phases] v0 m=4 grid 192: total 500.5 us, skew 0.1, s1 work 3.5 imb 0.8 bar 0.7 | s2 work 313.2 imb 9.8 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.8 | s4 work 0.6 imb 0.3 bar 0.8 | s5 work 1.8 imb 1.5 bar 0.8 | s6 work 167.8 imb 26.0 bar 0.7 | s7 work 2.5 imb 0.6 bar 0.7 | s8 work 1.8 imb 0.4 bar 0.7 | tail 0.6 | uniq 15.4
+[14:22:16Z] [phases] v0 m=6 grid 192: total 733.8 us, skew 0.1, s1 work 4.3 imb 0.9 bar 0.7 | s2 work 465.2 imb 15.2 bar 0.7 | s3 work 2.6 imb 2.3 bar 0.8 | s4 work 0.7 imb 0.2 bar 0.8 | s5 work 1.8 imb 1.6 bar 0.7 | s6 work 246.8 imb 37.0 bar 0.7 | s7 work 2.9 imb 0.7 bar 0.7 | s8 work 2.2 imb 0.4 bar 0.7 | tail 0.6 | uniq 24.4
+[14:22:16Z] [phases] v0 m=8 grid 192: total 979.9 us, skew 0.1, s1 work 5.5 imb 1.6 bar 0.7 | s2 work 627.8 imb 45.1 bar 0.7 | s3 work 2.7 imb 2.3 bar 0.8 | s4 work 0.8 imb 0.3 bar 0.8 | s5 work 1.9 imb 1.6 bar 0.8 | s6 work 326.6 imb 48.5 bar 0.7 | s7 work 3.6 imb 1.1 bar 0.6 | s8 work 3.0 imb 0.7 bar 0.7 | tail 0.6 | uniq 29.2
+[14:22:16Z] [phases] v1 m=1 grid 192: total 159.6 us, skew 0.1, s1 work 4.0 imb 2.3 bar 0.7 | s2 work 97.3 imb 27.0 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.7 | s4 work 0.5 imb 0.3 bar 0.7 | s5 work 1.8 imb 1.6 bar 0.7 | s6 work 45.2 imb 2.5 bar 0.7 | s7 work 2.0 imb 1.7 bar 0.7 | tail 1.4 | uniq 6.0
+[14:22:17Z] [phases] v1 m=3 grid 192: total 311.2 us, skew 0.1, s1 work 5.5 imb 2.8 bar 0.7 | s2 work 190.5 imb 19.2 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.7 | s4 work 0.6 imb 0.3 bar 0.8 | s5 work 1.8 imb 1.6 bar 0.7 | s6 work 94.7 imb 11.7 bar 0.7 | s7 work 2.4 imb 1.9 bar 0.7 | tail 1.6 | uniq 13.3
+[14:22:17Z] [phases] v1 m=4 grid 192: total 341.6 us, skew 0.1, s1 work 6.0 imb 0.9 bar 0.7 | s2 work 212.7 imb 17.9 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.7 | s4 work 0.6 imb 0.2 bar 0.8 | s5 work 1.9 imb 1.6 bar 0.7 | s6 work 109.5 imb 12.8 bar 0.7 | s7 work 2.6 imb 0.6 bar 0.7 | tail 1.5 | uniq 15.8
+[14:22:17Z] [phases] v1 m=6 grid 192: total 505.9 us, skew 0.1, s1 work 7.7 imb 0.8 bar 0.7 | s2 work 312.1 imb 17.0 bar 0.7 | s3 work 2.6 imb 2.3 bar 0.7 | s4 work 0.6 imb 0.2 bar 0.8 | s5 work 1.9 imb 1.6 bar 0.7 | s6 work 171.3 imb 23.3 bar 0.7 | s7 work 2.9 imb 0.6 bar 0.7 | tail 1.8 | uniq 24.0
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[14:22:17Z] [phases] v1 m=8 grid 192: total 628.2 us, skew 0.1, s1 work 9.4 imb 1.6 bar 0.7 | s2 work 391.9 imb 19.2 bar 0.7 | s3 work 2.7 imb 2.4 bar 0.7 | s4 work 0.8 imb 0.3 bar 0.7 | s5 work 1.9 imb 1.7 bar 0.7 | s6 work 210.6 imb 24.5 bar 0.7 | s7 work 3.6 imb 1.1 bar 0.7 | tail 1.9 | uniq 29.2
+[14:22:17Z] [phases] v2 m=1 grid 144: total 151.1 us, skew 0.1, s1 work 7.7 imb 5.2 bar 0.7 | s2 work 139.2 imb 10.3 bar 0.7 | tail 2.9 | uniq 6.0 | df tiles_per_warp 4.8 fill_us 9.0 loop_us 84.7 reduce_us 7.8 span_us 126.0 between_tiles_us 24.7
+[14:22:17Z] [phases] v2 m=3 grid 144: total 249.1 us, skew 0.1, s1 work 9.0 imb 0.6 bar 0.7 | s2 work 235.7 imb 8.2 bar 0.7 | tail 2.8 | uniq 11.9 | df tiles_per_warp 9.7 fill_us 18.2 loop_us 169.5 reduce_us 19.3 span_us 226.1 between_tiles_us 19.2
+[14:22:17Z] [phases] v2 m=4 grid 144: total 339.9 us, skew 0.1, s1 work 9.4 imb 0.6 bar 0.7 | s2 work 325.7 imb 8.3 bar 0.7 | tail 2.8 | uniq 15.9 | df tiles_per_warp 12.9 fill_us 25.0 loop_us 234.1 reduce_us 26.8 span_us 316.2 between_tiles_us 27.2
+[14:22:17Z] [phases] v2 m=6 grid 144: total 491.5 us, skew 0.1, s1 work 12.1 imb 1.6 bar 0.7 | s2 work 475.2 imb 8.5 bar 0.7 | tail 2.8 | uniq 24.2 | df tiles_per_warp 19.3 fill_us 36.3 loop_us 342.0 reduce_us 40.0 span_us 465.4 between_tiles_us 41.6
+[14:22:17Z] [phases] v2 m=8 grid 144: total 613.5 us, skew 0.1, s1 work 13.1 imb 1.2 bar 0.7 | s2 work 595.9 imb 8.7 bar 0.7 | tail 2.8 | uniq 29.8 | df tiles_per_warp 25.0 fill_us 47.0 loop_us 436.0 reduce_us 50.9 span_us 586.2 between_tiles_us 51.6
+[14:22:17Z] pass=True
+# 2026-09-25T14:22:18Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# 2026-09-25T14:30:59Z host spark2 tag final-time
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.2Gi        92Gi       244Ki        25Gi       116Gi
+Swap:           15Gi       1.2Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode time,phases,stream --variants 0,1,2 --ms 1,3,4,6,8 --sources census,dup0 --iters 300 --phase-calls 40 --out results/2026-09-25-kernels/coop-moe/final-time.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[14:31:11Z] loaded layer 20 rank 0 in 5.7 s
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[14:31:11Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v1": {"grid": 192, "blocks_per_sm": 4.0}, "v2": {"grid": 144, "blocks_per_sm": 3.0}}
+[14:31:12Z] [time] m=1 census cold: v0 182.3us [180.2,186.3] 147GB/s 59%floor  v1 186.4us [184.4,188.5] 144GB/s 57%floor  v2 157.7us [154.7,163.9] 170GB/s 68%floor
+[14:31:12Z] [time] m=1 census warm: v0 178.1us [176.1,180.2] 150GB/s 60%floor  v1 182.3us [180.2,185.3] 147GB/s 59%floor  v2 151.5us [147.6,155.6] 177GB/s 71%floor
+[14:31:13Z] [time] m=1 dup0 cold: v0 182.3us [180.2,184.4] 147GB/s 59%floor  v1 186.4us [184.5,188.6] 144GB/s 57%floor  v2 157.7us [154.6,162.9] 170GB/s 68%floor
+[14:31:13Z] [time] m=1 dup0 warm: v0 178.2us [176.2,184.3] 150GB/s 60%floor  v1 184.2us [182.2,188.4] 145GB/s 58%floor  v2 152.5us [148.5,159.7] 176GB/s 70%floor
+[14:31:14Z] [time] m=3 census cold: v0 409.6us [401.4,415.7] 141GB/s 56%floor  v1 317.4us [264.2,378.8] 179GB/s 72%floor  v2 282.6us [226.3,328.7] 204GB/s 82%floor
+[14:31:15Z] [time] m=3 census warm: v0 403.5us [393.2,417.8] 142GB/s 57%floor  v1 314.3us [260.1,374.8] 180GB/s 72%floor  v2 279.6us [224.3,332.8] 205GB/s 82%floor
+[14:31:16Z] [time] m=3 dup0 cold: v0 411.6us [409.6,414.8] 195GB/s 78%floor  v1 418.8us [415.8,421.9] 192GB/s 77%floor  v2 376.8us [373.9,379.8] 213GB/s 85%floor
+[14:31:17Z] [time] m=3 dup0 warm: v0 403.6us [402.4,412.5] 199GB/s 80%floor  v1 411.7us [409.7,417.8] 195GB/s 78%floor  v2 369.4us [367.6,377.8] 217GB/s 87%floor
+[14:31:18Z] [time] m=4 census cold: v0 520.2us [512.0,524.4] 136GB/s 54%floor  v1 378.7us [301.1,447.6] 187GB/s 75%floor  v2 335.9us [263.2,393.2] 211GB/s 84%floor
+[14:31:18Z] [time] m=4 census warm: v0 510.0us [501.8,518.0] 138GB/s 55%floor  v1 373.3us [297.0,442.3] 188GB/s 75%floor  v2 330.6us [257.1,387.2] 214GB/s 86%floor
+[14:31:19Z] [time] m=4 dup0 cold: v0 526.1us [523.3,528.4] 204GB/s 81%floor  v1 536.6us [534.6,538.8] 200GB/s 80%floor  v2 487.4us [485.4,489.5] 220GB/s 88%floor
+[14:31:20Z] [time] m=4 dup0 warm: v0 520.2us [518.1,524.3] 206GB/s 82%floor  v1 532.0us [530.3,534.5] 201GB/s 81%floor  v2 481.3us [479.5,484.4] 222GB/s 89%floor
+[14:31:22Z] [time] m=6 census cold: v0 757.8us [748.6,763.9] 146GB/s 58%floor  v1 557.7us [484.4,624.6] 195GB/s 78%floor  v2 505.9us [432.1,567.3] 219GB/s 88%floor
+[14:31:23Z] [time] m=6 census warm: v0 742.5us [731.1,753.7] 147GB/s 59%floor  v1 554.0us [481.2,618.5] 197GB/s 79%floor  v2 500.7us [425.2,560.1] 222GB/s 89%floor
+[14:31:24Z] [time] m=6 dup0 cold: v0 766.0us [762.0,769.2] 210GB/s 84%floor  v1 780.3us [778.1,783.4] 206GB/s 82%floor  v2 716.8us [714.6,719.9] 224GB/s 90%floor
+[14:31:25Z] [time] m=6 dup0 warm: v0 761.7us [757.8,773.1] 211GB/s 84%floor  v1 775.2us [772.1,784.4] 207GB/s 83%floor  v2 710.5us [707.6,726.0] 226GB/s 90%floor
+[14:31:27Z] [time] m=8 census cold: v0 1009.7us [1001.5,1018.9] 132GB/s 53%floor  v1 667.7us [567.5,782.3] 198GB/s 79%floor  v2 604.2us [511.0,704.5] 221GB/s 89%floor
+[14:31:28Z] [time] m=8 census warm: v0 991.2us [979.0,1002.5] 135GB/s 54%floor  v1 661.5us [561.2,768.0] 200GB/s 80%floor  v2 598.0us [504.8,693.2] 223GB/s 89%floor
+[14:31:30Z] [time] m=8 dup0 cold: v0 1023.0us [1019.9,1026.4] 209GB/s 84%floor  v1 1050.5us [1046.5,1053.7] 204GB/s 82%floor  v2 945.0us [942.1,948.2] 227GB/s 91%floor
+[14:31:32Z] [time] m=8 dup0 warm: v0 1015.8us [1012.6,1019.9] 211GB/s 84%floor  v1 1042.4us [1039.4,1046.5] 205GB/s 82%floor  v2 937.0us [934.0,941.0] 229GB/s 91%floor
+[14:31:32Z] [stream] m=1: tile_barrier 121.0us 219.4GB/s [209.2,221.6]  tile_nobarrier 120.9us 219.6GB/s [207.8,221.7]  contiguous 120.9us 219.6GB/s [209.1,223.4]
+[14:31:33Z] [stream] m=3: tile_barrier 256.0us 224.2GB/s [219.5,226.7]  tile_nobarrier 257.9us 222.9GB/s [218.2,225.9]  contiguous 255.0us 225.0GB/s [220.4,228.2]
+[14:31:34Z] [stream] m=4: tile_barrier 312.8us 226.6GB/s [222.5,228.6]  tile_nobarrier 314.2us 225.7GB/s [221.5,227.9]  contiguous 311.4us 225.7GB/s [221.5,228.9]
+[14:31:35Z] [stream] m=6: tile_barrier 484.4us 229.3GB/s [227.4,230.7]  tile_nobarrier 486.4us 228.3GB/s [226.3,229.7]  contiguous 491.1us 226.9GB/s [223.2,229.2]
+[14:31:36Z] [stream] m=8: tile_barrier 578.6us 228.6GB/s [222.1,230.7]  tile_nobarrier 579.6us 227.4GB/s [221.2,229.8]  contiguous 584.8us 225.7GB/s [216.0,229.0]
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[14:31:36Z] [phases] v0 m=1 grid 192: total 165.5 us, skew 0.1, s1 work 2.9 imb 2.6 bar 0.7 | s2 work 101.5 imb 28.9 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.8 | s4 work 0.6 imb 0.3 bar 0.7 | s5 work 1.8 imb 1.6 bar 0.8 | s6 work 46.6 imb 2.8 bar 0.7 | s7 work 2.0 imb 1.7 bar 0.7 | s8 work 0.8 imb 0.1 bar 0.9 | tail 0.5 | uniq 6.0
+[14:31:36Z] [phases] v0 m=3 grid 192: total 388.4 us, skew 0.1, s1 work 3.2 imb 2.8 bar 0.7 | s2 work 241.9 imb 18.5 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.7 | s4 work 0.6 imb 0.3 bar 0.8 | s5 work 1.9 imb 1.6 bar 0.8 | s6 work 127.4 imb 14.8 bar 0.7 | s7 work 2.3 imb 1.9 bar 0.7 | s8 work 1.6 imb 0.5 bar 0.7 | tail 0.5 | uniq 12.8
+[14:31:36Z] [phases] v0 m=4 grid 192: total 499.3 us, skew 0.1, s1 work 3.5 imb 0.8 bar 0.7 | s2 work 313.1 imb 9.6 bar 0.7 | s3 work 2.4 imb 2.2 bar 0.8 | s4 work 0.6 imb 0.2 bar 0.8 | s5 work 1.8 imb 1.5 bar 0.8 | s6 work 167.7 imb 25.6 bar 0.7 | s7 work 2.4 imb 0.6 bar 0.7 | s8 work 1.8 imb 0.4 bar 0.7 | tail 0.5 | uniq 15.4
+[14:31:36Z] [phases] v0 m=6 grid 192: total 735.8 us, skew 0.1, s1 work 4.3 imb 0.9 bar 0.7 | s2 work 467.4 imb 15.9 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.8 | s4 work 0.7 imb 0.2 bar 0.8 | s5 work 1.9 imb 1.7 bar 0.7 | s6 work 247.5 imb 37.3 bar 0.7 | s7 work 2.8 imb 0.6 bar 0.7 | s8 work 2.1 imb 0.4 bar 0.7 | tail 0.6 | uniq 24.4
+[14:31:36Z] [phases] v0 m=8 grid 192: total 978.6 us, skew 0.1, s1 work 5.4 imb 1.6 bar 0.7 | s2 work 628.5 imb 46.6 bar 0.7 | s3 work 2.7 imb 2.3 bar 0.8 | s4 work 0.8 imb 0.3 bar 0.8 | s5 work 2.0 imb 1.7 bar 0.8 | s6 work 326.6 imb 49.5 bar 0.7 | s7 work 3.5 imb 1.0 bar 0.6 | s8 work 2.9 imb 0.6 bar 0.7 | tail 0.6 | uniq 29.2
+[14:31:36Z] [phases] v1 m=1 grid 192: total 159.8 us, skew 0.1, s1 work 4.0 imb 2.3 bar 0.7 | s2 work 97.6 imb 27.2 bar 0.7 | s3 work 2.4 imb 2.2 bar 0.7 | s4 work 0.5 imb 0.3 bar 0.7 | s5 work 1.8 imb 1.6 bar 0.7 | s6 work 45.3 imb 2.6 bar 0.7 | s7 work 1.9 imb 1.7 bar 0.7 | tail 1.4 | uniq 6.0
+[14:31:36Z] [phases] v1 m=3 grid 192: total 293.7 us, skew 0.1, s1 work 5.6 imb 2.8 bar 0.7 | s2 work 180.2 imb 19.6 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.7 | s4 work 0.6 imb 0.3 bar 0.7 | s5 work 1.9 imb 1.7 bar 0.7 | s6 work 94.7 imb 11.3 bar 0.7 | s7 work 2.4 imb 1.9 bar 0.7 | tail 1.6 | uniq 13.3
+[14:31:36Z] [phases] v1 m=4 grid 192: total 341.7 us, skew 0.1, s1 work 5.8 imb 0.8 bar 0.7 | s2 work 212.5 imb 18.7 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.7 | s4 work 0.6 imb 0.2 bar 0.7 | s5 work 1.9 imb 1.7 bar 0.7 | s6 work 109.6 imb 13.1 bar 0.7 | s7 work 2.5 imb 0.5 bar 0.7 | tail 1.5 | uniq 15.8
+[14:31:36Z] [phases] v1 m=6 grid 192: total 505.6 us, skew 0.1, s1 work 7.5 imb 0.8 bar 0.7 | s2 work 312.4 imb 17.3 bar 0.7 | s3 work 2.6 imb 2.3 bar 0.7 | s4 work 0.6 imb 0.2 bar 0.8 | s5 work 2.0 imb 1.7 bar 0.7 | s6 work 171.0 imb 22.4 bar 0.7 | s7 work 2.9 imb 0.6 bar 0.7 | tail 1.8 | uniq 24.0
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[14:31:36Z] [phases] v1 m=8 grid 192: total 620.4 us, skew 0.1, s1 work 9.3 imb 1.5 bar 0.6 | s2 work 386.3 imb 20.7 bar 0.7 | s3 work 2.7 imb 2.3 bar 0.7 | s4 work 0.8 imb 0.3 bar 0.7 | s5 work 2.0 imb 1.7 bar 0.7 | s6 work 208.9 imb 24.5 bar 0.7 | s7 work 3.5 imb 1.1 bar 0.6 | tail 1.9 | uniq 29.2
+[14:31:37Z] [phases] v2 m=1 grid 144: total 151.5 us, skew 0.1, s1 work 7.7 imb 5.2 bar 0.7 | s2 work 139.4 imb 10.4 bar 0.7 | tail 3.0 | uniq 6.0 | df tiles_per_warp 4.8 fill_us 9.0 loop_us 84.7 reduce_us 7.8 span_us 126.1 between_tiles_us 24.3
+[14:31:37Z] [phases] v2 m=3 grid 144: total 252.0 us, skew 0.1, s1 work 9.1 imb 0.8 bar 0.7 | s2 work 238.3 imb 8.6 bar 0.7 | tail 2.8 | uniq 11.9 | df tiles_per_warp 9.7 fill_us 18.0 loop_us 170.4 reduce_us 19.6 span_us 229.1 between_tiles_us 19.8
+[14:31:37Z] [phases] v2 m=4 grid 144: total 329.4 us, skew 0.1, s1 work 9.5 imb 0.7 bar 0.7 | s2 work 315.9 imb 8.6 bar 0.7 | tail 2.9 | uniq 15.9 | df tiles_per_warp 12.9 fill_us 24.8 loop_us 228.0 reduce_us 25.3 span_us 305.5 between_tiles_us 26.8
+[14:31:37Z] [phases] v2 m=6 grid 144: total 515.0 us, skew 0.1, s1 work 11.9 imb 1.7 bar 0.6 | s2 work 497.1 imb 8.8 bar 0.7 | tail 2.8 | uniq 24.2 | df tiles_per_warp 19.3 fill_us 37.7 loop_us 356.5 reduce_us 42.2 span_us 485.8 between_tiles_us 42.0
+[14:31:37Z] [phases] v2 m=8 grid 144: total 613.3 us, skew 0.1, s1 work 13.0 imb 1.1 bar 0.7 | s2 work 596.2 imb 8.4 bar 0.7 | tail 2.8 | uniq 29.8 | df tiles_per_warp 25.0 fill_us 47.4 loop_us 434.4 reduce_us 52.1 span_us 586.6 between_tiles_us 51.5
+[14:31:37Z] pass=True
+# 2026-09-25T14:31:38Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

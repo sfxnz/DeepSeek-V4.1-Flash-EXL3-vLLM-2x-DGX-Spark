@@ -14,7 +14,7 @@ clocks sampled every 250 ms (runs/<tag>.clocks.csv). Raw JSON per run in this di
 
 Variant ids = DSV41_P2B_COOP values. Numbers: median cold us per call (census routing unless
 noted), p10/p90 in the JSON. "floor" = unique expert bytes / 250 GB/s (task definition);
-"ceiling" = unique bytes / 232 GB/s, the measured spark2 read ceiling (it 9 below).
+"ceiling" = unique bytes / 232 GB/s, the measured spark2 read ceiling (it 5 below).
 
 it 0  baseline (v0-base-r3.json)
   v0 p2b (served SORT=0) m=4 520.8, m=8 1014.8, m=1 181.2
@@ -116,3 +116,29 @@ it 10 next-task prefetch via a shared unit table, prefetch distance sweep (v9-ne
   485.4 / 604.2 / 952.3; PFL2 2 without the A-fragment prefetch (v23) 331.9 / 482.3 / 599.1 /
   943.1. -> FINAL: v19 = 3 blocks/SM, L2 prefetch distance 2, A prefetch, static first task +
   prologue prefetch, cheap publication, svh prefetch + top-6 output.
+
+it 11 final kernel = v19, cleaned into docker/patch/widen_p2b_dataflow.py as DSV41_P2B_COOP=2
+  (the exploratory variants 3-23 live in commit 64c9c7b). The kernel got its own shared sort /
+  chunk / reduction arrays: sharing widen_p2b_coop's moved the SORT=2 kernel's shared-memory
+  offsets. sass_identity_r3.sh: SORT=0/1 (12 kernels) and SORT=2 byte-identical e14 vs e15 TU,
+  one new kernel. ptxas: 80 regs, 17.7 KB smem, MMA loops spill-free (609/613 instr per 2 k-slices).
+  final-validate.json (12 routings x m 1,3,4,6,8 x census/dup0/census_seq, --ref): one-hot bitwise =
+  p2b, full weights bitwise = v1, max rel vs p2b <= 5.2e-4 (1 ulp), repeat bitwise, fp64-reference
+  error = p2b's (max rel 1.0e-3 .. 1.2e-3, rms rel 8.8e-4); 32 graph replays per m bitwise; stress:
+  1000 fresh routings per m, eager and graph replay, 0 mismatches vs v1.
+  final-time.json (300 iterations per arm, cold, census): p2b / v1 / v2 median us
+    m=1 182.3 / 186.4 / 157.7   m=3 409.6 / 317.4 / 282.6   m=4 520.2 / 378.7 / 335.9
+    m=6 757.8 / 557.7 / 505.9   m=8 1009.7 / 667.7 / 604.2
+    dup0 m=4 526.1 / 536.6 / 487.4, m=8 1023.0 / 1050.5 / 945.0
+  v2 = 91% (m=4), 95% (m=8), 98% (m=8 dup0) of the 232 GB/s ceiling; the same routings' trellis
+  read with no decode takes 312.8 (m=4) / 578.6 (m=8) us.
+  ncu (final-m4, 2 routings each): v2 vs v1 duration -12%, issue active 52-54% vs 42-45%, local
+  (spill) load sectors 46 K vs 1.35-1.64 M (p2b 5.2 M), barrier stall share 15-16% vs 22-24% (p2b
+  22-30%).
+
+What is left at m=4 (stamps, v2): prologue ~10 us (DRAM busy with the first-tile prefetch for
+~7.6 us of it), final down-tile imbalance ~8.5 us (one 9-k-slice tile latency; bit-exactness pins
+the down tile's K-split), output pass ~3 us. Beyond that the stream is at the memory ceiling.
+Not attempted: fusing the input Hadamard into the gate/up tiles (removes the prologue Hadamard and
+its barrier, ~3%; A fragments then come from per-warp Hadamards, +2.5-20% loop instructions by
+chunk length), split-K of the last down tiles (breaks the bit-exact K-range order).

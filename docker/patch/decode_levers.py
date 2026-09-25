@@ -23,6 +23,8 @@
   code (built before the patch), where the env would silently do nothing.
 - DSV41_P2B_COOP=1 is read by the compiled vllm_exl3_c (widen_p2b_coop in
   docker/Dockerfile.e14). Same warning when that .so has no coop code.
+- DSV41_P2B_COOP=2 selects the dataflow coop kernel (widen_p2b_dataflow in
+  docker/Dockerfile.e15). Same warning when that .so has no dataflow code.
 
 Top-level imports are stdlib only, so importing this module cannot fail.
 """
@@ -138,8 +140,9 @@ def _check_woa_prepack(env) -> None:
         )
 
 
-def _check_p2b_env(env, name: str, lever: str, code: str, dockerfile: str) -> None:
-    if (env.get(name, "0") or "0") != "1":
+def _check_p2b_env(env, name: str, lever: str, code: str, dockerfile: str, value: str = "1",
+                   needle: str | None = None) -> None:
+    if (env.get(name, "0") or "0") != value:
         return
     import importlib.util
     import mmap
@@ -147,9 +150,9 @@ def _check_p2b_env(env, name: str, lever: str, code: str, dockerfile: str) -> No
     spec = importlib.util.find_spec("vllm_exl3_c")
     if spec is None or not spec.origin:
         raise RuntimeError("vllm_exl3_c extension not found")
-    # The patched host code reads the env by name; the literal is in .rodata.
+    # The patched host code reads the env by name (or prints `needle`); the literal is in .rodata.
     with open(spec.origin, "rb") as fh, mmap.mmap(fh.fileno(), 0, access=mmap.ACCESS_READ) as so:
-        if so.find(name.encode()) < 0:
+        if so.find((needle or name).encode()) < 0:
             print(
                 f"dsv41: decode lever {lever}: {spec.origin} has no {code} code; "
                 f"the lever is OFF. Rebuild {dockerfile}.",
@@ -161,8 +164,14 @@ def _check_p2b_src_sort(env) -> None:
     _check_p2b_env(env, "DSV41_P2B_SRC_SORT", "p2b_src_sort", "srcsort", "docker/Dockerfile")
 
 
+# widen_p2b_dataflow.LOG_ENGAGED: printed by the dataflow launch path, so it is in that .so only.
+P2B_DATAFLOW_NEEDLE = "p2b coop dataflow kernel engaged"
+
+
 def _check_p2b_coop(env) -> None:
     _check_p2b_env(env, "DSV41_P2B_COOP", "p2b_coop", "coop", "docker/Dockerfile.e14")
+    _check_p2b_env(env, "DSV41_P2B_COOP", "p2b_coop_dataflow", "dataflow", "docker/Dockerfile.e15",
+                   value="2", needle=P2B_DATAFLOW_NEEDLE)
 
 
 def install(env=None) -> None:

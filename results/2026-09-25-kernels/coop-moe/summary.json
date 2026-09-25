@@ -1,0 +1,1059 @@
+{
+ "what": "routed-MoE decode kernel, DSV41_P2B_COOP=2 (widen_p2b_dataflow.py) vs p2b (unset) and round-2 coop (=1)",
+ "machine": {
+  "gpu": "spark2 GB10, 48 SMs, L2 24 MiB, SM 2178-2190 MHz",
+  "image": "dsv41-flash-exl3-sm121:canonical-e13 (JIT of the e15 TU)"
+ },
+ "data": {
+  "weights": "pack 2.0bpw-mcg-lmhead-mxfp8 layer 20, TP rank 0 (384 experts, hidden 5120, inter 1152, K=2 MCG)",
+  "routing": "s10 census of layer 20 (m<=4: consecutive tokens; m>4: two independent 4-token windows)",
+  "activations": "RMS-normalized Gaussian x the layer's ffn_norm weight"
+ },
+ "method": {
+  "iters_per_arm": 300,
+  "warmup": 20,
+  "cold": "128 MiB read-flush before every timed call, fresh routing per iteration",
+  "warm": "the same call ran untimed right before",
+  "arms": "alternating in rotating order, identical routings",
+  "timer": "CUDA events per call",
+  "floor_gbps": 250,
+  "measured_read_ceiling_gbps": 232.0,
+  "ceiling_evidence": "v4-bw.json, v4-ld.json, v4-gemm.json, final-time.json stream"
+ },
+ "variant_ids": {
+  "0": "p2b SORT=0 (served)",
+  "1": "round-2 coop SORT=2 (DSV41_P2B_COOP=1)",
+  "2": "dataflow p2b_coop_df_kernel (DSV41_P2B_COOP=2)"
+ },
+ "time": {
+  "m1/census/cold": {
+   "v0": {
+    "median_us": 182.3,
+    "p10_us": 180.2,
+    "p90_us": 186.3,
+    "gbps_unique_median": 146.8,
+    "pct_of_250_floor": 58.7,
+    "pct_of_232_ceiling": 63.3,
+    "unique_experts_mean": 6.0
+   },
+   "v1": {
+    "median_us": 186.4,
+    "p10_us": 184.4,
+    "p90_us": 188.5,
+    "gbps_unique_median": 143.6,
+    "pct_of_250_floor": 57.4,
+    "pct_of_232_ceiling": 61.9,
+    "unique_experts_mean": 6.0
+   },
+   "v2": {
+    "median_us": 157.7,
+    "p10_us": 154.7,
+    "p90_us": 163.9,
+    "gbps_unique_median": 169.7,
+    "pct_of_250_floor": 67.9,
+    "pct_of_232_ceiling": 73.2,
+    "unique_experts_mean": 6.0
+   }
+  },
+  "m1/census/warm": {
+   "v0": {
+    "median_us": 178.1,
+    "p10_us": 176.1,
+    "p90_us": 180.2,
+    "gbps_unique_median": 150.3,
+    "pct_of_250_floor": 60.1,
+    "pct_of_232_ceiling": 64.8,
+    "unique_experts_mean": 6.0
+   },
+   "v1": {
+    "median_us": 182.3,
+    "p10_us": 180.2,
+    "p90_us": 185.3,
+    "gbps_unique_median": 146.9,
+    "pct_of_250_floor": 58.7,
+    "pct_of_232_ceiling": 63.3,
+    "unique_experts_mean": 6.0
+   },
+   "v2": {
+    "median_us": 151.5,
+    "p10_us": 147.6,
+    "p90_us": 155.6,
+    "gbps_unique_median": 176.7,
+    "pct_of_250_floor": 70.7,
+    "pct_of_232_ceiling": 76.2,
+    "unique_experts_mean": 6.0
+   }
+  },
+  "m3/census/cold": {
+   "v0": {
+    "median_us": 409.6,
+    "p10_us": 401.4,
+    "p90_us": 415.7,
+    "gbps_unique_median": 140.5,
+    "pct_of_250_floor": 56.2,
+    "pct_of_232_ceiling": 60.6,
+    "unique_experts_mean": 12.76
+   },
+   "v1": {
+    "median_us": 317.4,
+    "p10_us": 264.2,
+    "p90_us": 378.8,
+    "gbps_unique_median": 179.2,
+    "pct_of_250_floor": 71.7,
+    "pct_of_232_ceiling": 77.3,
+    "unique_experts_mean": 12.76
+   },
+   "v2": {
+    "median_us": 282.6,
+    "p10_us": 226.3,
+    "p90_us": 328.7,
+    "gbps_unique_median": 204.2,
+    "pct_of_250_floor": 81.7,
+    "pct_of_232_ceiling": 88.0,
+    "unique_experts_mean": 12.76
+   }
+  },
+  "m3/census/warm": {
+   "v0": {
+    "median_us": 403.5,
+    "p10_us": 393.2,
+    "p90_us": 417.8,
+    "gbps_unique_median": 141.6,
+    "pct_of_250_floor": 56.6,
+    "pct_of_232_ceiling": 61.0,
+    "unique_experts_mean": 12.76
+   },
+   "v1": {
+    "median_us": 314.3,
+    "p10_us": 260.1,
+    "p90_us": 374.8,
+    "gbps_unique_median": 180.3,
+    "pct_of_250_floor": 72.1,
+    "pct_of_232_ceiling": 77.7,
+    "unique_experts_mean": 12.76
+   },
+   "v2": {
+    "median_us": 279.6,
+    "p10_us": 224.3,
+    "p90_us": 332.8,
+    "gbps_unique_median": 204.9,
+    "pct_of_250_floor": 82.0,
+    "pct_of_232_ceiling": 88.3,
+    "unique_experts_mean": 12.76
+   }
+  },
+  "m4/census/cold": {
+   "v0": {
+    "median_us": 520.2,
+    "p10_us": 512.0,
+    "p90_us": 524.4,
+    "gbps_unique_median": 135.9,
+    "pct_of_250_floor": 54.3,
+    "pct_of_232_ceiling": 58.6,
+    "unique_experts_mean": 15.64
+   },
+   "v1": {
+    "median_us": 378.7,
+    "p10_us": 301.1,
+    "p90_us": 447.6,
+    "gbps_unique_median": 187.4,
+    "pct_of_250_floor": 75.0,
+    "pct_of_232_ceiling": 80.8,
+    "unique_experts_mean": 15.64
+   },
+   "v2": {
+    "median_us": 335.9,
+    "p10_us": 263.2,
+    "p90_us": 393.2,
+    "gbps_unique_median": 211.0,
+    "pct_of_250_floor": 84.4,
+    "pct_of_232_ceiling": 90.9,
+    "unique_experts_mean": 15.64
+   }
+  },
+  "m4/census/warm": {
+   "v0": {
+    "median_us": 510.0,
+    "p10_us": 501.8,
+    "p90_us": 518.0,
+    "gbps_unique_median": 138.3,
+    "pct_of_250_floor": 55.3,
+    "pct_of_232_ceiling": 59.6,
+    "unique_experts_mean": 15.64
+   },
+   "v1": {
+    "median_us": 373.3,
+    "p10_us": 297.0,
+    "p90_us": 442.3,
+    "gbps_unique_median": 188.4,
+    "pct_of_250_floor": 75.4,
+    "pct_of_232_ceiling": 81.2,
+    "unique_experts_mean": 15.64
+   },
+   "v2": {
+    "median_us": 330.6,
+    "p10_us": 257.1,
+    "p90_us": 387.2,
+    "gbps_unique_median": 214.5,
+    "pct_of_250_floor": 85.8,
+    "pct_of_232_ceiling": 92.4,
+    "unique_experts_mean": 15.64
+   }
+  },
+  "m6/census/cold": {
+   "v0": {
+    "median_us": 757.8,
+    "p10_us": 748.6,
+    "p90_us": 763.9,
+    "gbps_unique_median": 146.0,
+    "pct_of_250_floor": 58.4,
+    "pct_of_232_ceiling": 62.9,
+    "unique_experts_mean": 24.37
+   },
+   "v1": {
+    "median_us": 557.7,
+    "p10_us": 484.4,
+    "p90_us": 624.6,
+    "gbps_unique_median": 195.4,
+    "pct_of_250_floor": 78.2,
+    "pct_of_232_ceiling": 84.2,
+    "unique_experts_mean": 24.37
+   },
+   "v2": {
+    "median_us": 505.9,
+    "p10_us": 432.1,
+    "p90_us": 567.3,
+    "gbps_unique_median": 218.8,
+    "pct_of_250_floor": 87.5,
+    "pct_of_232_ceiling": 94.3,
+    "unique_experts_mean": 24.37
+   }
+  },
+  "m6/census/warm": {
+   "v0": {
+    "median_us": 742.5,
+    "p10_us": 731.1,
+    "p90_us": 753.7,
+    "gbps_unique_median": 147.5,
+    "pct_of_250_floor": 59.0,
+    "pct_of_232_ceiling": 63.6,
+    "unique_experts_mean": 24.37
+   },
+   "v1": {
+    "median_us": 554.0,
+    "p10_us": 481.2,
+    "p90_us": 618.5,
+    "gbps_unique_median": 196.7,
+    "pct_of_250_floor": 78.7,
+    "pct_of_232_ceiling": 84.8,
+    "unique_experts_mean": 24.37
+   },
+   "v2": {
+    "median_us": 500.7,
+    "p10_us": 425.2,
+    "p90_us": 560.1,
+    "gbps_unique_median": 221.5,
+    "pct_of_250_floor": 88.6,
+    "pct_of_232_ceiling": 95.5,
+    "unique_experts_mean": 24.37
+   }
+  },
+  "m8/census/cold": {
+   "v0": {
+    "median_us": 1009.7,
+    "p10_us": 1001.5,
+    "p90_us": 1018.9,
+    "gbps_unique_median": 132.3,
+    "pct_of_250_floor": 52.9,
+    "pct_of_232_ceiling": 57.0,
+    "unique_experts_mean": 29.85
+   },
+   "v1": {
+    "median_us": 667.7,
+    "p10_us": 567.5,
+    "p90_us": 782.3,
+    "gbps_unique_median": 198.4,
+    "pct_of_250_floor": 79.3,
+    "pct_of_232_ceiling": 85.5,
+    "unique_experts_mean": 29.85
+   },
+   "v2": {
+    "median_us": 604.2,
+    "p10_us": 511.0,
+    "p90_us": 704.5,
+    "gbps_unique_median": 221.3,
+    "pct_of_250_floor": 88.5,
+    "pct_of_232_ceiling": 95.4,
+    "unique_experts_mean": 29.85
+   }
+  },
+  "m8/census/warm": {
+   "v0": {
+    "median_us": 991.2,
+    "p10_us": 979.0,
+    "p90_us": 1002.5,
+    "gbps_unique_median": 134.9,
+    "pct_of_250_floor": 54.0,
+    "pct_of_232_ceiling": 58.2,
+    "unique_experts_mean": 29.85
+   },
+   "v1": {
+    "median_us": 661.5,
+    "p10_us": 561.2,
+    "p90_us": 768.0,
+    "gbps_unique_median": 200.3,
+    "pct_of_250_floor": 80.1,
+    "pct_of_232_ceiling": 86.3,
+    "unique_experts_mean": 29.85
+   },
+   "v2": {
+    "median_us": 598.0,
+    "p10_us": 504.8,
+    "p90_us": 693.2,
+    "gbps_unique_median": 223.4,
+    "pct_of_250_floor": 89.4,
+    "pct_of_232_ceiling": 96.3,
+    "unique_experts_mean": 29.85
+   }
+  },
+  "m1/dup0/cold": {
+   "v0": {
+    "median_us": 182.3,
+    "p10_us": 180.2,
+    "p90_us": 184.4,
+    "gbps_unique_median": 146.9,
+    "pct_of_250_floor": 58.7,
+    "pct_of_232_ceiling": 63.3,
+    "unique_experts_mean": 6.0
+   },
+   "v1": {
+    "median_us": 186.4,
+    "p10_us": 184.5,
+    "p90_us": 188.6,
+    "gbps_unique_median": 143.6,
+    "pct_of_250_floor": 57.4,
+    "pct_of_232_ceiling": 61.9,
+    "unique_experts_mean": 6.0
+   },
+   "v2": {
+    "median_us": 157.7,
+    "p10_us": 154.6,
+    "p90_us": 162.9,
+    "gbps_unique_median": 169.7,
+    "pct_of_250_floor": 67.9,
+    "pct_of_232_ceiling": 73.2,
+    "unique_experts_mean": 6.0
+   }
+  },
+  "m1/dup0/warm": {
+   "v0": {
+    "median_us": 178.2,
+    "p10_us": 176.2,
+    "p90_us": 184.3,
+    "gbps_unique_median": 150.2,
+    "pct_of_250_floor": 60.1,
+    "pct_of_232_ceiling": 64.7,
+    "unique_experts_mean": 6.0
+   },
+   "v1": {
+    "median_us": 184.2,
+    "p10_us": 182.2,
+    "p90_us": 188.4,
+    "gbps_unique_median": 145.3,
+    "pct_of_250_floor": 58.1,
+    "pct_of_232_ceiling": 62.6,
+    "unique_experts_mean": 6.0
+   },
+   "v2": {
+    "median_us": 152.5,
+    "p10_us": 148.5,
+    "p90_us": 159.7,
+    "gbps_unique_median": 175.5,
+    "pct_of_250_floor": 70.2,
+    "pct_of_232_ceiling": 75.7,
+    "unique_experts_mean": 6.0
+   }
+  },
+  "m3/dup0/cold": {
+   "v0": {
+    "median_us": 411.6,
+    "p10_us": 409.6,
+    "p90_us": 414.8,
+    "gbps_unique_median": 195.1,
+    "pct_of_250_floor": 78.0,
+    "pct_of_232_ceiling": 84.1,
+    "unique_experts_mean": 18.0
+   },
+   "v1": {
+    "median_us": 418.8,
+    "p10_us": 415.8,
+    "p90_us": 421.9,
+    "gbps_unique_median": 191.8,
+    "pct_of_250_floor": 76.7,
+    "pct_of_232_ceiling": 82.7,
+    "unique_experts_mean": 18.0
+   },
+   "v2": {
+    "median_us": 376.8,
+    "p10_us": 373.9,
+    "p90_us": 379.8,
+    "gbps_unique_median": 213.1,
+    "pct_of_250_floor": 85.2,
+    "pct_of_232_ceiling": 91.9,
+    "unique_experts_mean": 18.0
+   }
+  },
+  "m3/dup0/warm": {
+   "v0": {
+    "median_us": 403.6,
+    "p10_us": 402.4,
+    "p90_us": 412.5,
+    "gbps_unique_median": 199.0,
+    "pct_of_250_floor": 79.6,
+    "pct_of_232_ceiling": 85.8,
+    "unique_experts_mean": 18.0
+   },
+   "v1": {
+    "median_us": 411.7,
+    "p10_us": 409.7,
+    "p90_us": 417.8,
+    "gbps_unique_median": 195.0,
+    "pct_of_250_floor": 78.0,
+    "pct_of_232_ceiling": 84.1,
+    "unique_experts_mean": 18.0
+   },
+   "v2": {
+    "median_us": 369.4,
+    "p10_us": 367.6,
+    "p90_us": 377.8,
+    "gbps_unique_median": 217.4,
+    "pct_of_250_floor": 87.0,
+    "pct_of_232_ceiling": 93.7,
+    "unique_experts_mean": 18.0
+   }
+  },
+  "m4/dup0/cold": {
+   "v0": {
+    "median_us": 526.1,
+    "p10_us": 523.3,
+    "p90_us": 528.4,
+    "gbps_unique_median": 203.5,
+    "pct_of_250_floor": 81.4,
+    "pct_of_232_ceiling": 87.7,
+    "unique_experts_mean": 24.0
+   },
+   "v1": {
+    "median_us": 536.6,
+    "p10_us": 534.6,
+    "p90_us": 538.8,
+    "gbps_unique_median": 199.5,
+    "pct_of_250_floor": 79.8,
+    "pct_of_232_ceiling": 86.0,
+    "unique_experts_mean": 24.0
+   },
+   "v2": {
+    "median_us": 487.4,
+    "p10_us": 485.4,
+    "p90_us": 489.5,
+    "gbps_unique_median": 219.7,
+    "pct_of_250_floor": 87.9,
+    "pct_of_232_ceiling": 94.7,
+    "unique_experts_mean": 24.0
+   }
+  },
+  "m4/dup0/warm": {
+   "v0": {
+    "median_us": 520.2,
+    "p10_us": 518.1,
+    "p90_us": 524.3,
+    "gbps_unique_median": 205.8,
+    "pct_of_250_floor": 82.3,
+    "pct_of_232_ceiling": 88.7,
+    "unique_experts_mean": 24.0
+   },
+   "v1": {
+    "median_us": 532.0,
+    "p10_us": 530.3,
+    "p90_us": 534.5,
+    "gbps_unique_median": 201.3,
+    "pct_of_250_floor": 80.5,
+    "pct_of_232_ceiling": 86.8,
+    "unique_experts_mean": 24.0
+   },
+   "v2": {
+    "median_us": 481.3,
+    "p10_us": 479.5,
+    "p90_us": 484.4,
+    "gbps_unique_median": 222.5,
+    "pct_of_250_floor": 89.0,
+    "pct_of_232_ceiling": 95.9,
+    "unique_experts_mean": 24.0
+   }
+  },
+  "m6/dup0/cold": {
+   "v0": {
+    "median_us": 766.0,
+    "p10_us": 762.0,
+    "p90_us": 769.2,
+    "gbps_unique_median": 209.7,
+    "pct_of_250_floor": 83.9,
+    "pct_of_232_ceiling": 90.4,
+    "unique_experts_mean": 36.0
+   },
+   "v1": {
+    "median_us": 780.3,
+    "p10_us": 778.1,
+    "p90_us": 783.4,
+    "gbps_unique_median": 205.8,
+    "pct_of_250_floor": 82.3,
+    "pct_of_232_ceiling": 88.7,
+    "unique_experts_mean": 36.0
+   },
+   "v2": {
+    "median_us": 716.8,
+    "p10_us": 714.6,
+    "p90_us": 719.9,
+    "gbps_unique_median": 224.1,
+    "pct_of_250_floor": 89.6,
+    "pct_of_232_ceiling": 96.6,
+    "unique_experts_mean": 36.0
+   }
+  },
+  "m6/dup0/warm": {
+   "v0": {
+    "median_us": 761.7,
+    "p10_us": 757.8,
+    "p90_us": 773.1,
+    "gbps_unique_median": 210.9,
+    "pct_of_250_floor": 84.3,
+    "pct_of_232_ceiling": 90.9,
+    "unique_experts_mean": 36.0
+   },
+   "v1": {
+    "median_us": 775.2,
+    "p10_us": 772.1,
+    "p90_us": 784.4,
+    "gbps_unique_median": 207.2,
+    "pct_of_250_floor": 82.9,
+    "pct_of_232_ceiling": 89.3,
+    "unique_experts_mean": 36.0
+   },
+   "v2": {
+    "median_us": 710.5,
+    "p10_us": 707.6,
+    "p90_us": 726.0,
+    "gbps_unique_median": 226.0,
+    "pct_of_250_floor": 90.4,
+    "pct_of_232_ceiling": 97.4,
+    "unique_experts_mean": 36.0
+   }
+  },
+  "m8/dup0/cold": {
+   "v0": {
+    "median_us": 1023.0,
+    "p10_us": 1019.9,
+    "p90_us": 1026.4,
+    "gbps_unique_median": 209.3,
+    "pct_of_250_floor": 83.7,
+    "pct_of_232_ceiling": 90.2,
+    "unique_experts_mean": 48.0
+   },
+   "v1": {
+    "median_us": 1050.5,
+    "p10_us": 1046.5,
+    "p90_us": 1053.7,
+    "gbps_unique_median": 203.8,
+    "pct_of_250_floor": 81.5,
+    "pct_of_232_ceiling": 87.9,
+    "unique_experts_mean": 48.0
+   },
+   "v2": {
+    "median_us": 945.0,
+    "p10_us": 942.1,
+    "p90_us": 948.2,
+    "gbps_unique_median": 226.6,
+    "pct_of_250_floor": 90.6,
+    "pct_of_232_ceiling": 97.7,
+    "unique_experts_mean": 48.0
+   }
+  },
+  "m8/dup0/warm": {
+   "v0": {
+    "median_us": 1015.8,
+    "p10_us": 1012.6,
+    "p90_us": 1019.9,
+    "gbps_unique_median": 210.8,
+    "pct_of_250_floor": 84.3,
+    "pct_of_232_ceiling": 90.9,
+    "unique_experts_mean": 48.0
+   },
+   "v1": {
+    "median_us": 1042.4,
+    "p10_us": 1039.4,
+    "p90_us": 1046.5,
+    "gbps_unique_median": 205.4,
+    "pct_of_250_floor": 82.2,
+    "pct_of_232_ceiling": 88.5,
+    "unique_experts_mean": 48.0
+   },
+   "v2": {
+    "median_us": 937.0,
+    "p10_us": 934.0,
+    "p90_us": 941.0,
+    "gbps_unique_median": 228.6,
+    "pct_of_250_floor": 91.4,
+    "pct_of_232_ceiling": 98.5,
+    "unique_experts_mean": 48.0
+   }
+  }
+ },
+ "projected_ms_per_step_40_layers_cold_census": {
+  "m1": {
+   "vs_p2b": 0.98,
+   "vs_coop1": 1.15,
+   "pct_vs_p2b": 13.5,
+   "pct_vs_coop1": 15.4
+  },
+  "m3": {
+   "vs_p2b": 5.08,
+   "vs_coop1": 1.39,
+   "pct_vs_p2b": 31.0,
+   "pct_vs_coop1": 11.0
+  },
+  "m4": {
+   "vs_p2b": 7.37,
+   "vs_coop1": 1.71,
+   "pct_vs_p2b": 35.4,
+   "pct_vs_coop1": 11.3
+  },
+  "m6": {
+   "vs_p2b": 10.07,
+   "vs_coop1": 2.07,
+   "pct_vs_p2b": 33.2,
+   "pct_vs_coop1": 9.3
+  },
+  "m8": {
+   "vs_p2b": 16.22,
+   "vs_coop1": 2.54,
+   "pct_vs_p2b": 40.2,
+   "pct_vs_coop1": 9.5
+  }
+ },
+ "numerics": {
+  "m1/census": {
+   "onehot_bitexact": true,
+   "v1_full_bitexact": true,
+   "full_max_abs": 1.52587890625e-05,
+   "full_max_rel": 5.8630394050851464e-05,
+   "full_max_ulp": 1,
+   "repeat_bitexact": true,
+   "ref_max_rel": 0.001126671659991053,
+   "p2b_ref_max_rel": 0.001126671659991053,
+   "ref_rms_rel": 0.0008773057490163086,
+   "p2b_ref_rms_rel": 0.0008773014551555304,
+   "routings": 12
+  },
+  "m1/dup0": {
+   "onehot_bitexact": true,
+   "v1_full_bitexact": true,
+   "full_max_abs": 6.103515625e-05,
+   "full_max_rel": 0.0002871912729460746,
+   "full_max_ulp": 1,
+   "repeat_bitexact": true,
+   "ref_max_rel": 0.00101324923095753,
+   "p2b_ref_max_rel": 0.00101324923095753,
+   "ref_rms_rel": 0.0008849182540158357,
+   "p2b_ref_rms_rel": 0.0008849436932509145,
+   "routings": 12
+  },
+  "m3/census": {
+   "onehot_bitexact": true,
+   "v1_full_bitexact": true,
+   "full_max_abs": 6.103515625e-05,
+   "full_max_rel": 0.0002727768733166158,
+   "full_max_ulp": 1,
+   "repeat_bitexact": true,
+   "ref_max_rel": 0.000977540605559429,
+   "p2b_ref_max_rel": 0.000977540605559429,
+   "ref_rms_rel": 0.0008834384891996553,
+   "p2b_ref_rms_rel": 0.0008834305724870163,
+   "routings": 12
+  },
+  "m3/dup0": {
+   "onehot_bitexact": true,
+   "v1_full_bitexact": true,
+   "full_max_abs": 6.103515625e-05,
+   "full_max_rel": 0.00026709403027780354,
+   "full_max_ulp": 1,
+   "repeat_bitexact": true,
+   "ref_max_rel": 0.0011108676957850483,
+   "p2b_ref_max_rel": 0.0011108676957850483,
+   "ref_rms_rel": 0.0008796993975364218,
+   "p2b_ref_rms_rel": 0.0008797003878082774,
+   "routings": 12
+  },
+  "m4/census": {
+   "onehot_bitexact": true,
+   "v1_full_bitexact": true,
+   "full_max_abs": 6.103515625e-05,
+   "full_max_rel": 0.00026191724464297295,
+   "full_max_ulp": 1,
+   "repeat_bitexact": true,
+   "ref_max_rel": 0.0010006821805950926,
+   "p2b_ref_max_rel": 0.0010006821805950926,
+   "ref_rms_rel": 0.0008857698459372175,
+   "p2b_ref_rms_rel": 0.0008857721596246973,
+   "routings": 12
+  },
+  "m4/dup0": {
+   "onehot_bitexact": true,
+   "v1_full_bitexact": true,
+   "full_max_abs": 6.103515625e-05,
+   "full_max_rel": 0.0002627430367283523,
+   "full_max_ulp": 1,
+   "repeat_bitexact": true,
+   "ref_max_rel": 0.00102044209083529,
+   "p2b_ref_max_rel": 0.00102044209083529,
+   "ref_rms_rel": 0.0008837536370394995,
+   "p2b_ref_rms_rel": 0.0008837754125403881,
+   "routings": 12
+  },
+  "m6/census": {
+   "onehot_bitexact": true,
+   "v1_full_bitexact": true,
+   "full_max_abs": 6.103515625e-05,
+   "full_max_rel": 0.00024108003708533943,
+   "full_max_ulp": 1,
+   "repeat_bitexact": true,
+   "ref_max_rel": 0.0011445454748771745,
+   "p2b_ref_max_rel": 0.0011445454748771745,
+   "ref_rms_rel": 0.000881998316470527,
+   "p2b_ref_rms_rel": 0.0008819997686633128,
+   "routings": 12
+  },
+  "m6/dup0": {
+   "onehot_bitexact": true,
+   "v1_full_bitexact": true,
+   "full_max_abs": 3.0517578125e-05,
+   "full_max_rel": 0.00011837121564894915,
+   "full_max_ulp": 1,
+   "repeat_bitexact": true,
+   "ref_max_rel": 0.00098706352229839,
+   "p2b_ref_max_rel": 0.00098706352229839,
+   "ref_rms_rel": 0.0008792139564579801,
+   "p2b_ref_rms_rel": 0.0008792161523634365,
+   "routings": 12
+  },
+  "m6/census_seq": {
+   "onehot_bitexact": true,
+   "v1_full_bitexact": true,
+   "full_max_abs": 0.0001220703125,
+   "full_max_rel": 0.0004761904710903764,
+   "full_max_ulp": 1,
+   "repeat_bitexact": true,
+   "ref_max_rel": 0.0009676908656944309,
+   "p2b_ref_max_rel": 0.0009676908656944309,
+   "ref_rms_rel": 0.000878359458016526,
+   "p2b_ref_rms_rel": 0.0008783700161564651,
+   "routings": 12
+  },
+  "m8/census": {
+   "onehot_bitexact": true,
+   "v1_full_bitexact": true,
+   "full_max_abs": 6.103515625e-05,
+   "full_max_rel": 0.00022441652254201472,
+   "full_max_ulp": 1,
+   "repeat_bitexact": true,
+   "ref_max_rel": 0.0011688196337711655,
+   "p2b_ref_max_rel": 0.0011688196337711655,
+   "ref_rms_rel": 0.0008802490941433441,
+   "p2b_ref_rms_rel": 0.0008802531852429369,
+   "routings": 12
+  },
+  "m8/dup0": {
+   "onehot_bitexact": true,
+   "v1_full_bitexact": true,
+   "full_max_abs": 6.103515625e-05,
+   "full_max_rel": 0.0002369668218307197,
+   "full_max_ulp": 1,
+   "repeat_bitexact": true,
+   "ref_max_rel": 0.0009984870287343866,
+   "p2b_ref_max_rel": 0.0009984870287343866,
+   "ref_rms_rel": 0.0008834047008458137,
+   "p2b_ref_rms_rel": 0.0008834068371761287,
+   "routings": 12
+  },
+  "m8/census_seq": {
+   "onehot_bitexact": true,
+   "v1_full_bitexact": true,
+   "full_max_abs": 0.0001220703125,
+   "full_max_rel": 0.0005146680632606149,
+   "full_max_ulp": 1,
+   "repeat_bitexact": true,
+   "ref_max_rel": 0.0011125361830279588,
+   "p2b_ref_max_rel": 0.0011125361830279588,
+   "ref_rms_rel": 0.0008820907451311101,
+   "p2b_ref_rms_rel": 0.0008821062018217396,
+   "routings": 12
+  }
+ },
+ "capture": {
+  "v1/m1": {
+   "replays": 32,
+   "replay_equals_eager": true
+  },
+  "v1/m3": {
+   "replays": 32,
+   "replay_equals_eager": true
+  },
+  "v1/m4": {
+   "replays": 32,
+   "replay_equals_eager": true
+  },
+  "v1/m6": {
+   "replays": 32,
+   "replay_equals_eager": true
+  },
+  "v1/m8": {
+   "replays": 32,
+   "replay_equals_eager": true
+  },
+  "v2/m1": {
+   "replays": 32,
+   "replay_equals_eager": true
+  },
+  "v2/m3": {
+   "replays": 32,
+   "replay_equals_eager": true
+  },
+  "v2/m4": {
+   "replays": 32,
+   "replay_equals_eager": true
+  },
+  "v2/m6": {
+   "replays": 32,
+   "replay_equals_eager": true
+  },
+  "v2/m8": {
+   "replays": 32,
+   "replay_equals_eager": true
+  }
+ },
+ "stress": {
+  "v2/m1": {
+   "calls": 1000,
+   "eager_mismatch": 0,
+   "graph_mismatch": 0
+  },
+  "v2/m3": {
+   "calls": 1000,
+   "eager_mismatch": 0,
+   "graph_mismatch": 0
+  },
+  "v2/m4": {
+   "calls": 1000,
+   "eager_mismatch": 0,
+   "graph_mismatch": 0
+  },
+  "v2/m6": {
+   "calls": 1000,
+   "eager_mismatch": 0,
+   "graph_mismatch": 0
+  },
+  "v2/m8": {
+   "calls": 1000,
+   "eager_mismatch": 0,
+   "graph_mismatch": 0
+  }
+ },
+ "resources": {
+  "v0": "64 regs, 4 blocks/SM (192), 56/140 B spill",
+  "v1": "64 regs, 4 blocks/SM, 56/140 B spill",
+  "v2": "80 regs, 3 blocks/SM (144), MMA loops spill-free (24 B stack outside), 17.7 KB smem"
+ },
+ "sass_identity": "SORT=0/1 (12) + SORT=2 (<2,1,2>) byte-identical between the e14 and e15 TUs; one new kernel p2b_coop_df_kernel<2,1>",
+ "stream_ceiling": {
+  "m1": {
+   "tile_barrier": {
+    "median_us": 120.95999717712402,
+    "gbps_median": 219.42857654943504,
+    "gbps_p10": 209.19040789427035,
+    "gbps_p90": 221.59764327834745
+   },
+   "tile_nobarrier": {
+    "median_us": 120.86399644613266,
+    "gbps_median": 219.60286586940242,
+    "gbps_p10": 207.77554438417056,
+    "gbps_p90": 221.71611391500332
+   },
+   "contiguous": {
+    "median_us": 120.86399644613266,
+    "gbps_median": 219.60286586940242,
+    "gbps_p10": 209.084941803155,
+    "gbps_p90": 223.4482702944323
+   }
+  },
+  "m3": {
+   "tile_barrier": {
+    "median_us": 256.03199005126953,
+    "gbps_median": 224.22751954623806,
+    "gbps_p10": 219.54473867404857,
+    "gbps_p90": 226.66667137471316
+   },
+   "tile_nobarrier": {
+    "median_us": 257.87200033664703,
+    "gbps_median": 222.8709676907653,
+    "gbps_p10": 218.18182449531312,
+    "gbps_p90": 225.88235166521085
+   },
+   "contiguous": {
+    "median_us": 254.97600436210632,
+    "gbps_median": 224.99999204155787,
+    "gbps_p10": 220.43160087855392,
+    "gbps_p90": 228.19412241335843
+   }
+  },
+  "m4": {
+   "tile_barrier": {
+    "median_us": 312.8480017185211,
+    "gbps_median": 226.57343056791646,
+    "gbps_p10": 222.52439007416274,
+    "gbps_p90": 228.59033294033753
+   },
+   "tile_nobarrier": {
+    "median_us": 314.2399936914444,
+    "gbps_median": 225.65651167290153,
+    "gbps_p10": 221.538455424577,
+    "gbps_p90": 227.94953512540297
+   },
+   "contiguous": {
+    "median_us": 311.3759905099869,
+    "gbps_median": 225.6584801240479,
+    "gbps_p10": 221.51873775701577,
+    "gbps_p90": 228.94105819163926
+   }
+  },
+  "m6": {
+   "tile_barrier": {
+    "median_us": 484.3840003013611,
+    "gbps_median": 229.32218114086442,
+    "gbps_p10": 227.38227284032564,
+    "gbps_p90": 230.6916719326052
+   },
+   "tile_nobarrier": {
+    "median_us": 486.36800050735474,
+    "gbps_median": 228.31881387404522,
+    "gbps_p10": 226.28571608206448,
+    "gbps_p90": 229.69608356547226
+   },
+   "contiguous": {
+    "median_us": 491.10399186611176,
+    "gbps_median": 226.89076272789723,
+    "gbps_p10": 223.18372812814326,
+    "gbps_p90": 229.2385211062303
+   }
+  },
+  "m8": {
+   "tile_barrier": {
+    "median_us": 578.5920023918152,
+    "gbps_median": 228.64683254659082,
+    "gbps_p10": 222.11535472988135,
+    "gbps_p90": 230.71177497318698
+   },
+   "tile_nobarrier": {
+    "median_us": 579.6160101890564,
+    "gbps_median": 227.38660382404953,
+    "gbps_p10": 221.1729436374207,
+    "gbps_p90": 229.81885352411106
+   },
+   "contiguous": {
+    "median_us": 584.7840011119843,
+    "gbps_median": 225.74039968685238,
+    "gbps_p10": 216.03648776461503,
+    "gbps_p90": 229.0366968110235
+   }
+  }
+ },
+ "phases_v2": {
+  "v2/m1": {
+   "calls": 40,
+   "grid": 144,
+   "unique_mean": 6,
+   "launch_skew_us": 0.064,
+   "tail_us": 3.008,
+   "total_us": 151.536,
+   "df": {
+    "tiles_per_warp": 4.833333333333333,
+    "fill_us": 8.954208333333334,
+    "loop_us": 84.70295833333333,
+    "reduce_us": 7.811569444444444,
+    "span_us": 126.115625,
+    "between_tiles_us": 24.294430555555554
+   }
+  },
+  "v2/m3": {
+   "calls": 40,
+   "grid": 144,
+   "unique_mean": 11.95,
+   "launch_skew_us": 0.064,
+   "tail_us": 2.816,
+   "total_us": 251.96800000000002,
+   "df": {
+    "tiles_per_warp": 9.666666666666666,
+    "fill_us": 18.00241666666667,
+    "loop_us": 170.436375,
+    "reduce_us": 19.63147222222222,
+    "span_us": 229.05505555555555,
+    "between_tiles_us": 19.78237499999998
+   }
+  },
+  "v2/m4": {
+   "calls": 40,
+   "grid": 144,
+   "unique_mean": 15.9,
+   "launch_skew_us": 0.064,
+   "tail_us": 2.88,
+   "total_us": 329.392,
+   "df": {
+    "tiles_per_warp": 12.88888888888889,
+    "fill_us": 24.802708333333335,
+    "loop_us": 228.00416666666666,
+    "reduce_us": 25.292277777777777,
+    "span_us": 305.46488888888894,
+    "between_tiles_us": 26.84395833333336
+   }
+  },
+  "v2/m6": {
+   "calls": 40,
+   "grid": 144,
+   "unique_mean": 24.225,
+   "launch_skew_us": 0.064,
+   "tail_us": 2.768,
+   "total_us": 514.992,
+   "df": {
+    "tiles_per_warp": 19.333333333333332,
+    "fill_us": 37.71851388888889,
+    "loop_us": 356.47888888888883,
+    "reduce_us": 42.156277777777774,
+    "span_us": 485.8052361111111,
+    "between_tiles_us": 42.00961111111113
+   }
+  },
+  "v2/m8": {
+   "calls": 40,
+   "grid": 144,
+   "unique_mean": 29.8,
+   "launch_skew_us": 0.064,
+   "tail_us": 2.816,
+   "total_us": 613.28,
+   "df": {
+    "tiles_per_warp": 24.97222222222222,
+    "fill_us": 47.38241666666667,
+    "loop_us": 434.44505555555554,
+    "reduce_us": 52.11688888888889,
+    "span_us": 586.6429444444444,
+    "between_tiles_us": 51.498680555555495
+   }
+  }
+ }
+}

@@ -32,6 +32,7 @@ PATCHES = {
     "sitecustomize.py": None,  # disarm markers only
     "decode_levers.py": None,  # disarm markers only
     "dense_mxfp8_deepgemm.py": None,  # disarm markers only (opt-in lever)
+    "widen_p2b_dataflow.py": {"DSV41_P2B_COOP": "2"},  # printed by the patched vllm_exl3_c
 }
 # vLLM's own line (vllm/compilation/breakable_cudagraph.py:290 in the pinned image).
 BREAKABLE_CUDAGRAPH = "Breakable CUDA graph enabled"

@@ -25,6 +25,7 @@ check (every variant vs p2b, every m, every source; tolerances fixed before any 
   full     real routing weights: fixed slot order vs p2b's atomic order, so only a tolerance:
            max|v - p2b| / max|p2b| <= 1e-3 and max ulp reported (gate: rel <= 1e-3).
   repeat   the variant twice on the same inputs is bitwise equal (p2b's own repeat is reported).
+  v1       variants >= 2 (dataflow): bitwise equal to round-2 coop (v1) with real routing weights.
   ref      fp64 reference from the decoded weights (exllamav3_ext.reconstruct): error of p2b and
            of the variant vs exact math, max|err| / max|ref| and rms(err) / rms(ref).
 capture  per variant and m: one CUDA graph, replays after new ids and weights are copied into
@@ -300,7 +301,8 @@ def check(b: Bench, routes: Routings, variants, ms, sources, n: int, ref: Refere
             rows_all = [routes.draw(src, m) for _ in range(n)]
             per = {v: {"onehot_bitexact": True, "onehot_max_ulp": 0, "full_max_abs": 0.0, "full_max_rel": 0.0,
                        "full_max_ulp": 0, "full_frac_differ": [], "repeat_bitexact": True, "finite": True,
-                       "ref_max_rel": 0.0, "ref_rms_rel": [], "p2b_ref_max_rel": 0.0, "p2b_ref_rms_rel": []}
+                       "ref_max_rel": 0.0, "ref_rms_rel": [], "p2b_ref_max_rel": 0.0, "p2b_ref_rms_rel": [],
+                       "v1_full_bitexact": True}
                    for v in variants if v != 0}
             p2b_repeat = True
             for rows in rows_all:
@@ -313,9 +315,11 @@ def check(b: Bench, routes: Routings, variants, ms, sources, n: int, ref: Refere
                     oh = torch.zeros_like(rw)
                     oh[:, slot] = 1.0
                     onehots.append((oh, b.once(0, x, ids, oh)))
+                coop1 = b.once(1, x, ids, rw)
                 for v, r in per.items():
                     y = b.once(v, x, ids, rw)
                     r["repeat_bitexact"] &= bitwise(y, b.once(v, x, ids, rw))
+                    r["v1_full_bitexact"] &= bitwise(y, coop1)
                     r["finite"] &= bool(torch.isfinite(y).all()) and bool(torch.isfinite(base).all())
                     d = (y.float() - base.float()).abs()
                     r["full_max_abs"] = max(r["full_max_abs"], float(d.max()))
@@ -340,10 +344,11 @@ def check(b: Bench, routes: Routings, variants, ms, sources, n: int, ref: Refere
                 r["unique_ratio"] = statistics.mean(n_unique(rw_) / (m * TOPK) for rw_ in rows_all)
                 r["routings"] = n
                 r["p2b_repeat_bitexact"] = p2b_repeat
-                r["pass"] = bool(r["onehot_bitexact"] and r["full_max_rel"] <= REL_TOL and r["repeat_bitexact"] and r["finite"])
+                r["pass"] = bool(r["onehot_bitexact"] and r["full_max_rel"] <= REL_TOL and r["repeat_bitexact"] and r["finite"]
+                                 and (v < 2 or r["v1_full_bitexact"]))
                 res[f"v{v}/m{m}/{src}"] = r
                 log(f"[check] v{v} m={m} {src}: " + json.dumps({k: r[k] for k in (
-                    "pass", "onehot_bitexact", "full_max_rel", "full_max_ulp", "repeat_bitexact", "ref_max_rel",
+                    "pass", "onehot_bitexact", "v1_full_bitexact", "full_max_rel", "full_max_ulp", "repeat_bitexact", "ref_max_rel",
                     "p2b_ref_max_rel", "ref_rms_rel", "p2b_ref_rms_rel")}))
     return res
 
@@ -454,6 +459,46 @@ def timing(b: Bench, routes: Routings, variants, ms, sources, iters: int, warmup
                     f"{entry[kind][f'v{v}']['p90_us']:.1f}] {entry[kind][f'v{v}']['gbps_median']:.0f}GB/s "
                     f"{entry[kind][f'v{v}']['pct_of_floor_median']:.0f}%floor" for v in variants))
             res[f"m{m}/{src}"] = entry
+    return res
+
+
+def stress(b: Bench, routes: Routings, variants, ms, calls: int, flush: Flusher) -> dict:
+    """Race hunt for the dataflow synchronization: every variant >= 2 vs round-2 coop (v1, whose
+    phases are separated by grid.sync only) on `calls` fresh census routings per m, eager (every
+    4th call after an L2 flush, the rest back to back) and as CUDA-graph replays; bitwise."""
+    res = {}
+    for v in variants:
+        if v < 2:
+            continue
+        for m in ms:
+            x, rw = b.x(m), b.rw(m)
+            out1, out2 = torch.empty_like(x), torch.empty_like(x)
+            ids = b.ids(routes.draw("census", m))
+            gout = torch.empty_like(x)
+            side = torch.cuda.Stream()
+            side.wait_stream(torch.cuda.current_stream())
+            with torch.cuda.stream(side):
+                for _ in range(3):
+                    b.call(v, x, ids, rw, gout)
+            torch.cuda.current_stream().wait_stream(side)
+            g = torch.cuda.CUDAGraph()
+            b.ext.set_variant(v)
+            with torch.cuda.graph(g):
+                b.ext.p2b_fused_moe(x, gout, *b.L.tables, ids, rw, 2, 2, 2, True, INTER, SWIGLU_LIMIT)
+            eager_bad = graph_bad = 0
+            for i in range(calls):
+                ids.copy_(b.ids(routes.draw("census", m)))
+                if i % 4 == 0:
+                    flush()
+                b.call(1, x, ids, rw, out1)
+                b.call(v, x, ids, rw, out2)
+                g.replay()
+                torch.cuda.synchronize()
+                eager_bad += not bitwise(out1, out2)
+                graph_bad += not bitwise(out1, gout)
+            res[f"v{v}/m{m}"] = {"calls": calls, "eager_mismatch": eager_bad, "graph_mismatch": graph_bad}
+            log(f"[stress] v{v} m={m}: {calls} calls, eager mismatches {eager_bad}, graph mismatches {graph_bad}")
+            del g
     return res
 
 
@@ -637,7 +682,7 @@ def phases(ext_ts, layer: Layer, routes: Routings, variants, ms, calls: int, flu
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", default="all", help="comma list of check,capture,time,phases,stream (all = the first four)")
+    ap.add_argument("--mode", default="all", help="comma list of check,capture,time,phases,stress,stream,bw,ld,gemm (all = the first four)")
     ap.add_argument("--variants", default="0,1")
     ap.add_argument("--ms", default="1,3,4,6,8")
     ap.add_argument("--time-ms", default=None, help="m list for timing (default --ms)")
@@ -650,6 +695,7 @@ def main() -> int:
     ap.add_argument("--iters", type=int, default=200)
     ap.add_argument("--warmup", type=int, default=20)
     ap.add_argument("--phase-calls", type=int, default=30)
+    ap.add_argument("--stress-calls", type=int, default=1000)
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--out", type=Path)
     args = ap.parse_args()
@@ -702,12 +748,15 @@ def main() -> int:
         result["ld"] = ld_probe(b, max(10, args.iters // 10), flush)
     if "bw" in modes:
         result["bw"] = bw_probe(b, max(10, args.iters // 10), flush)
+    if "stress" in modes:
+        result["stress"] = stress(b, routes, variants, ms, args.stress_calls, flush)
     if "stream" in modes:
         result["stream"] = stream_ceiling(b, routes, tms, args.iters, flush)
     if "phases" in modes:
         result["phases"] = phases(build_ext(True), layer, routes, variants, tms, args.phase_calls, flush, args.seed)
     ok = all(r["pass"] for r in result.get("check", {}).values()) and all(
-        r["replay_equals_eager"] for r in result.get("capture", {}).values())
+        r["replay_equals_eager"] for r in result.get("capture", {}).values()) and all(
+        r["eager_mismatch"] == 0 and r["graph_mismatch"] == 0 for r in result.get("stress", {}).values())
     result["pass"] = ok
     text = json.dumps(result, indent=1)
     if args.out:
