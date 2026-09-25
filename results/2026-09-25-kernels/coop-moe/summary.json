@@ -1,24 +1,24 @@
 {
  "what": "routed-MoE decode kernel, DSV41_P2B_COOP=2 (widen_p2b_dataflow.py) vs p2b (unset) and round-2 coop (=1)",
  "machine": {
-  "gpu": "spark2 GB10, 48 SMs, L2 24 MiB, SM 2178-2190 MHz",
+  "gpu": "spark2 GB10, 48 SMs, L2 24 MiB, SM 2171-2190 MHz in every timed section (final4-time)",
   "image": "dsv41-flash-exl3-sm121:canonical-e13 (JIT of the e15 TU)"
  },
  "data": {
-  "weights": "pack 2.0bpw-mcg-lmhead-mxfp8 layer 20, TP rank 0 (384 experts, hidden 5120, inter 1152, K=2 MCG)",
+  "weights": "pack 2.0bpw-mcg-lmhead-mxfp8 layer 20, TP rank 0 (384 experts, hidden 5120, inter 1152, K=2 MCG); validation also on layer 33, TP rank 1",
   "routing": "time_layer20: s10 census of layer 20 (m<=4: consecutive tokens; m>4: two independent 4-token windows); projected_ms_per_step_40_layers: the same windows from all 40 routed layers, layer-stratified",
   "activations": "RMS-normalized Gaussian x the layer's ffn_norm weight"
  },
  "method": {
-  "iters_per_arm": 300,
+  "iters_per_arm": 800,
   "warmup": 20,
   "cold": "128 MiB read-flush before every timed call, fresh routing per iteration",
   "warm": "the same call ran untimed right before",
   "arms": "alternating in rotating order, identical routings",
   "timer": "CUDA events per call",
   "floor_gbps": 250,
-  "measured_read_ceiling_gbps": 232.0,
-  "ceiling_evidence": "v4-bw.json, v4-ld.json, v4-gemm.json, final-time.json stream"
+  "read_ceiling": "flat 16-B grid-stride read of the same experts' trellis bytes at 144 blocks, same process and flush (stream_ceiling.*.flat16_g144): 231-236 GB/s median; it replaces the r3 '232 GB/s' ceiling, which came from per-warp read probes (v4-bw/ld/gemm) that top out at 227-232",
+  "source": "final4-time.json (runs/final4-time.log, .clocks.csv), seed 71"
  },
  "variant_ids": {
   "0": "p2b SORT=0 (served)",
@@ -30,599 +30,960 @@
    "v0": {
     "median_us": 182.3,
     "p10_us": 180.2,
-    "p90_us": 186.3,
-    "gbps_unique_median": 146.8,
+    "p90_us": 184.4,
+    "mean_us": 184.0,
+    "gbps_unique_median": 146.9,
     "pct_of_250_floor": 58.7,
-    "pct_of_232_ceiling": 63.3,
+    "pct_of_flat_read": 63.5,
     "unique_experts_mean": 6.0
    },
    "v1": {
     "median_us": 186.4,
     "p10_us": 184.4,
-    "p90_us": 188.5,
+    "p90_us": 188.4,
+    "mean_us": 188.7,
     "gbps_unique_median": 143.6,
-    "pct_of_250_floor": 57.4,
-    "pct_of_232_ceiling": 61.9,
+    "pct_of_250_floor": 57.5,
+    "pct_of_flat_read": 62.1,
     "unique_experts_mean": 6.0
    },
    "v2": {
-    "median_us": 157.7,
-    "p10_us": 154.7,
-    "p90_us": 163.9,
-    "gbps_unique_median": 169.7,
+    "median_us": 157.6,
+    "p10_us": 154.6,
+    "p90_us": 162.8,
+    "mean_us": 158.8,
+    "gbps_unique_median": 169.9,
     "pct_of_250_floor": 67.9,
-    "pct_of_232_ceiling": 73.2,
+    "pct_of_flat_read": 73.4,
     "unique_experts_mean": 6.0
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": -4.68,
+     "ci95": 1.05
+    },
+    "v0-v2": {
+     "mean": 25.27,
+     "ci95": 1.05
+    },
+    "v1-v2": {
+     "mean": 29.95,
+     "ci95": 1.19
+    }
    }
   },
   "m1/census/warm": {
    "v0": {
     "median_us": 178.1,
     "p10_us": 176.1,
-    "p90_us": 180.2,
+    "p90_us": 179.2,
+    "mean_us": 178.3,
     "gbps_unique_median": 150.3,
     "pct_of_250_floor": 60.1,
-    "pct_of_232_ceiling": 64.8,
+    "pct_of_flat_read": 64.9,
     "unique_experts_mean": 6.0
    },
    "v1": {
     "median_us": 182.3,
     "p10_us": 180.2,
-    "p90_us": 185.3,
+    "p90_us": 184.3,
+    "mean_us": 183.0,
     "gbps_unique_median": 146.9,
     "pct_of_250_floor": 58.7,
-    "pct_of_232_ceiling": 63.3,
+    "pct_of_flat_read": 63.5,
     "unique_experts_mean": 6.0
    },
    "v2": {
-    "median_us": 151.5,
-    "p10_us": 147.6,
-    "p90_us": 155.6,
-    "gbps_unique_median": 176.7,
-    "pct_of_250_floor": 70.7,
-    "pct_of_232_ceiling": 76.2,
+    "median_us": 150.6,
+    "p10_us": 147.5,
+    "p90_us": 154.8,
+    "mean_us": 151.7,
+    "gbps_unique_median": 177.8,
+    "pct_of_250_floor": 71.1,
+    "pct_of_flat_read": 76.8,
     "unique_experts_mean": 6.0
-   }
-  },
-  "m3/census/cold": {
-   "v0": {
-    "median_us": 409.6,
-    "p10_us": 401.4,
-    "p90_us": 415.7,
-    "gbps_unique_median": 140.5,
-    "pct_of_250_floor": 56.2,
-    "pct_of_232_ceiling": 60.6,
-    "unique_experts_mean": 12.76
    },
-   "v1": {
-    "median_us": 317.4,
-    "p10_us": 264.2,
-    "p90_us": 378.8,
-    "gbps_unique_median": 179.2,
-    "pct_of_250_floor": 71.7,
-    "pct_of_232_ceiling": 77.3,
-    "unique_experts_mean": 12.76
-   },
-   "v2": {
-    "median_us": 282.6,
-    "p10_us": 226.3,
-    "p90_us": 328.7,
-    "gbps_unique_median": 204.2,
-    "pct_of_250_floor": 81.7,
-    "pct_of_232_ceiling": 88.0,
-    "unique_experts_mean": 12.76
-   }
-  },
-  "m3/census/warm": {
-   "v0": {
-    "median_us": 403.5,
-    "p10_us": 393.2,
-    "p90_us": 417.8,
-    "gbps_unique_median": 141.6,
-    "pct_of_250_floor": 56.6,
-    "pct_of_232_ceiling": 61.0,
-    "unique_experts_mean": 12.76
-   },
-   "v1": {
-    "median_us": 314.3,
-    "p10_us": 260.1,
-    "p90_us": 374.8,
-    "gbps_unique_median": 180.3,
-    "pct_of_250_floor": 72.1,
-    "pct_of_232_ceiling": 77.7,
-    "unique_experts_mean": 12.76
-   },
-   "v2": {
-    "median_us": 279.6,
-    "p10_us": 224.3,
-    "p90_us": 332.8,
-    "gbps_unique_median": 204.9,
-    "pct_of_250_floor": 82.0,
-    "pct_of_232_ceiling": 88.3,
-    "unique_experts_mean": 12.76
-   }
-  },
-  "m4/census/cold": {
-   "v0": {
-    "median_us": 520.2,
-    "p10_us": 512.0,
-    "p90_us": 524.4,
-    "gbps_unique_median": 135.9,
-    "pct_of_250_floor": 54.3,
-    "pct_of_232_ceiling": 58.6,
-    "unique_experts_mean": 15.64
-   },
-   "v1": {
-    "median_us": 378.7,
-    "p10_us": 301.1,
-    "p90_us": 447.6,
-    "gbps_unique_median": 187.4,
-    "pct_of_250_floor": 75.0,
-    "pct_of_232_ceiling": 80.8,
-    "unique_experts_mean": 15.64
-   },
-   "v2": {
-    "median_us": 335.9,
-    "p10_us": 263.2,
-    "p90_us": 393.2,
-    "gbps_unique_median": 211.0,
-    "pct_of_250_floor": 84.4,
-    "pct_of_232_ceiling": 90.9,
-    "unique_experts_mean": 15.64
-   }
-  },
-  "m4/census/warm": {
-   "v0": {
-    "median_us": 510.0,
-    "p10_us": 501.8,
-    "p90_us": 518.0,
-    "gbps_unique_median": 138.3,
-    "pct_of_250_floor": 55.3,
-    "pct_of_232_ceiling": 59.6,
-    "unique_experts_mean": 15.64
-   },
-   "v1": {
-    "median_us": 373.3,
-    "p10_us": 297.0,
-    "p90_us": 442.3,
-    "gbps_unique_median": 188.4,
-    "pct_of_250_floor": 75.4,
-    "pct_of_232_ceiling": 81.2,
-    "unique_experts_mean": 15.64
-   },
-   "v2": {
-    "median_us": 330.6,
-    "p10_us": 257.1,
-    "p90_us": 387.2,
-    "gbps_unique_median": 214.5,
-    "pct_of_250_floor": 85.8,
-    "pct_of_232_ceiling": 92.4,
-    "unique_experts_mean": 15.64
-   }
-  },
-  "m6/census/cold": {
-   "v0": {
-    "median_us": 757.8,
-    "p10_us": 748.6,
-    "p90_us": 763.9,
-    "gbps_unique_median": 146.0,
-    "pct_of_250_floor": 58.4,
-    "pct_of_232_ceiling": 62.9,
-    "unique_experts_mean": 24.37
-   },
-   "v1": {
-    "median_us": 557.7,
-    "p10_us": 484.4,
-    "p90_us": 624.6,
-    "gbps_unique_median": 195.4,
-    "pct_of_250_floor": 78.2,
-    "pct_of_232_ceiling": 84.2,
-    "unique_experts_mean": 24.37
-   },
-   "v2": {
-    "median_us": 505.9,
-    "p10_us": 432.1,
-    "p90_us": 567.3,
-    "gbps_unique_median": 218.8,
-    "pct_of_250_floor": 87.5,
-    "pct_of_232_ceiling": 94.3,
-    "unique_experts_mean": 24.37
-   }
-  },
-  "m6/census/warm": {
-   "v0": {
-    "median_us": 742.5,
-    "p10_us": 731.1,
-    "p90_us": 753.7,
-    "gbps_unique_median": 147.5,
-    "pct_of_250_floor": 59.0,
-    "pct_of_232_ceiling": 63.6,
-    "unique_experts_mean": 24.37
-   },
-   "v1": {
-    "median_us": 554.0,
-    "p10_us": 481.2,
-    "p90_us": 618.5,
-    "gbps_unique_median": 196.7,
-    "pct_of_250_floor": 78.7,
-    "pct_of_232_ceiling": 84.8,
-    "unique_experts_mean": 24.37
-   },
-   "v2": {
-    "median_us": 500.7,
-    "p10_us": 425.2,
-    "p90_us": 560.1,
-    "gbps_unique_median": 221.5,
-    "pct_of_250_floor": 88.6,
-    "pct_of_232_ceiling": 95.5,
-    "unique_experts_mean": 24.37
-   }
-  },
-  "m8/census/cold": {
-   "v0": {
-    "median_us": 1009.7,
-    "p10_us": 1001.5,
-    "p90_us": 1018.9,
-    "gbps_unique_median": 132.3,
-    "pct_of_250_floor": 52.9,
-    "pct_of_232_ceiling": 57.0,
-    "unique_experts_mean": 29.85
-   },
-   "v1": {
-    "median_us": 667.7,
-    "p10_us": 567.5,
-    "p90_us": 782.3,
-    "gbps_unique_median": 198.4,
-    "pct_of_250_floor": 79.3,
-    "pct_of_232_ceiling": 85.5,
-    "unique_experts_mean": 29.85
-   },
-   "v2": {
-    "median_us": 604.2,
-    "p10_us": 511.0,
-    "p90_us": 704.5,
-    "gbps_unique_median": 221.3,
-    "pct_of_250_floor": 88.5,
-    "pct_of_232_ceiling": 95.4,
-    "unique_experts_mean": 29.85
-   }
-  },
-  "m8/census/warm": {
-   "v0": {
-    "median_us": 991.2,
-    "p10_us": 979.0,
-    "p90_us": 1002.5,
-    "gbps_unique_median": 134.9,
-    "pct_of_250_floor": 54.0,
-    "pct_of_232_ceiling": 58.2,
-    "unique_experts_mean": 29.85
-   },
-   "v1": {
-    "median_us": 661.5,
-    "p10_us": 561.2,
-    "p90_us": 768.0,
-    "gbps_unique_median": 200.3,
-    "pct_of_250_floor": 80.1,
-    "pct_of_232_ceiling": 86.3,
-    "unique_experts_mean": 29.85
-   },
-   "v2": {
-    "median_us": 598.0,
-    "p10_us": 504.8,
-    "p90_us": 693.2,
-    "gbps_unique_median": 223.4,
-    "pct_of_250_floor": 89.4,
-    "pct_of_232_ceiling": 96.3,
-    "unique_experts_mean": 29.85
+   "paired_us": {
+    "v0-v1": {
+     "mean": -4.62,
+     "ci95": 0.77
+    },
+    "v0-v2": {
+     "mean": 26.6,
+     "ci95": 0.6
+    },
+    "v1-v2": {
+     "mean": 31.22,
+     "ci95": 0.73
+    }
    }
   },
   "m1/dup0/cold": {
    "v0": {
-    "median_us": 182.3,
-    "p10_us": 180.2,
-    "p90_us": 184.4,
-    "gbps_unique_median": 146.9,
-    "pct_of_250_floor": 58.7,
-    "pct_of_232_ceiling": 63.3,
+    "median_us": 180.2,
+    "p10_us": 180.0,
+    "p90_us": 182.3,
+    "mean_us": 181.9,
+    "gbps_unique_median": 148.5,
+    "pct_of_250_floor": 59.4,
+    "pct_of_flat_read": 64.2,
     "unique_experts_mean": 6.0
    },
    "v1": {
-    "median_us": 186.4,
-    "p10_us": 184.5,
-    "p90_us": 188.6,
-    "gbps_unique_median": 143.6,
-    "pct_of_250_floor": 57.4,
-    "pct_of_232_ceiling": 61.9,
+    "median_us": 184.3,
+    "p10_us": 184.2,
+    "p90_us": 186.4,
+    "mean_us": 185.8,
+    "gbps_unique_median": 145.2,
+    "pct_of_250_floor": 58.1,
+    "pct_of_flat_read": 62.8,
     "unique_experts_mean": 6.0
    },
    "v2": {
-    "median_us": 157.7,
-    "p10_us": 154.6,
-    "p90_us": 162.9,
-    "gbps_unique_median": 169.7,
-    "pct_of_250_floor": 67.9,
-    "pct_of_232_ceiling": 73.2,
+    "median_us": 155.7,
+    "p10_us": 153.6,
+    "p90_us": 160.6,
+    "mean_us": 157.9,
+    "gbps_unique_median": 171.9,
+    "pct_of_250_floor": 68.8,
+    "pct_of_flat_read": 74.3,
     "unique_experts_mean": 6.0
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": -3.91,
+     "ci95": 0.74
+    },
+    "v0-v2": {
+     "mean": 24.06,
+     "ci95": 1.39
+    },
+    "v1-v2": {
+     "mean": 27.97,
+     "ci95": 1.19
+    }
    }
   },
   "m1/dup0/warm": {
    "v0": {
-    "median_us": 178.2,
-    "p10_us": 176.2,
-    "p90_us": 184.3,
-    "gbps_unique_median": 150.2,
-    "pct_of_250_floor": 60.1,
-    "pct_of_232_ceiling": 64.7,
+    "median_us": 176.1,
+    "p10_us": 174.1,
+    "p90_us": 178.1,
+    "mean_us": 177.0,
+    "gbps_unique_median": 152.0,
+    "pct_of_250_floor": 60.8,
+    "pct_of_flat_read": 65.7,
     "unique_experts_mean": 6.0
    },
    "v1": {
-    "median_us": 184.2,
-    "p10_us": 182.2,
-    "p90_us": 188.4,
-    "gbps_unique_median": 145.3,
-    "pct_of_250_floor": 58.1,
-    "pct_of_232_ceiling": 62.6,
+    "median_us": 180.2,
+    "p10_us": 178.4,
+    "p90_us": 182.3,
+    "mean_us": 181.6,
+    "gbps_unique_median": 148.5,
+    "pct_of_250_floor": 59.4,
+    "pct_of_flat_read": 64.2,
     "unique_experts_mean": 6.0
    },
    "v2": {
-    "median_us": 152.5,
-    "p10_us": 148.5,
-    "p90_us": 159.7,
-    "gbps_unique_median": 175.5,
-    "pct_of_250_floor": 70.2,
-    "pct_of_232_ceiling": 75.7,
+    "median_us": 149.5,
+    "p10_us": 147.3,
+    "p90_us": 153.7,
+    "mean_us": 151.2,
+    "gbps_unique_median": 179.0,
+    "pct_of_250_floor": 71.6,
+    "pct_of_flat_read": 77.4,
     "unique_experts_mean": 6.0
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": -4.62,
+     "ci95": 0.95
+    },
+    "v0-v2": {
+     "mean": 25.86,
+     "ci95": 1.12
+    },
+    "v1-v2": {
+     "mean": 30.49,
+     "ci95": 1.07
+    }
+   }
+  },
+  "m3/census/cold": {
+   "v0": {
+    "median_us": 405.5,
+    "p10_us": 399.1,
+    "p90_us": 411.6,
+    "mean_us": 408.1,
+    "gbps_unique_median": 142.4,
+    "pct_of_250_floor": 56.9,
+    "pct_of_flat_read": 60.6,
+    "unique_experts_mean": 12.89
+   },
+   "v1": {
+    "median_us": 315.5,
+    "p10_us": 262.2,
+    "p90_us": 374.8,
+    "mean_us": 321.1,
+    "gbps_unique_median": 180.5,
+    "pct_of_250_floor": 72.2,
+    "pct_of_flat_read": 76.9,
+    "unique_experts_mean": 12.89
+   },
+   "v2": {
+    "median_us": 279.6,
+    "p10_us": 224.1,
+    "p90_us": 326.7,
+    "mean_us": 279.4,
+    "gbps_unique_median": 206.7,
+    "pct_of_250_floor": 82.7,
+    "pct_of_flat_read": 88.0,
+    "unique_experts_mean": 12.89
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": 87.06,
+     "ci95": 2.95
+    },
+    "v0-v2": {
+     "mean": 128.74,
+     "ci95": 2.74
+    },
+    "v1-v2": {
+     "mean": 41.69,
+     "ci95": 1.04
+    }
+   }
+  },
+  "m3/census/warm": {
+   "v0": {
+    "median_us": 397.3,
+    "p10_us": 389.1,
+    "p90_us": 403.5,
+    "mean_us": 398.4,
+    "gbps_unique_median": 145.6,
+    "pct_of_250_floor": 58.2,
+    "pct_of_flat_read": 62.0,
+    "unique_experts_mean": 12.89
+   },
+   "v1": {
+    "median_us": 311.3,
+    "p10_us": 258.3,
+    "p90_us": 368.6,
+    "mean_us": 316.5,
+    "gbps_unique_median": 183.1,
+    "pct_of_250_floor": 73.2,
+    "pct_of_flat_read": 78.0,
+    "unique_experts_mean": 12.89
+   },
+   "v2": {
+    "median_us": 275.4,
+    "p10_us": 219.1,
+    "p90_us": 314.3,
+    "mean_us": 274.0,
+    "gbps_unique_median": 210.5,
+    "pct_of_250_floor": 84.2,
+    "pct_of_flat_read": 89.7,
+    "unique_experts_mean": 12.89
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": 81.93,
+     "ci95": 2.87
+    },
+    "v0-v2": {
+     "mean": 124.37,
+     "ci95": 2.67
+    },
+    "v1-v2": {
+     "mean": 42.44,
+     "ci95": 1.39
+    }
    }
   },
   "m3/dup0/cold": {
    "v0": {
-    "median_us": 411.6,
-    "p10_us": 409.6,
-    "p90_us": 414.8,
-    "gbps_unique_median": 195.1,
-    "pct_of_250_floor": 78.0,
-    "pct_of_232_ceiling": 84.1,
+    "median_us": 409.6,
+    "p10_us": 407.6,
+    "p90_us": 411.6,
+    "mean_us": 412.0,
+    "gbps_unique_median": 196.1,
+    "pct_of_250_floor": 78.4,
+    "pct_of_flat_read": 83.5,
     "unique_experts_mean": 18.0
    },
    "v1": {
-    "median_us": 418.8,
-    "p10_us": 415.8,
-    "p90_us": 421.9,
-    "gbps_unique_median": 191.8,
-    "pct_of_250_floor": 76.7,
-    "pct_of_232_ceiling": 82.7,
+    "median_us": 417.8,
+    "p10_us": 415.7,
+    "p90_us": 419.8,
+    "mean_us": 418.6,
+    "gbps_unique_median": 192.2,
+    "pct_of_250_floor": 76.9,
+    "pct_of_flat_read": 81.9,
     "unique_experts_mean": 18.0
    },
    "v2": {
-    "median_us": 376.8,
-    "p10_us": 373.9,
-    "p90_us": 379.8,
-    "gbps_unique_median": 213.1,
-    "pct_of_250_floor": 85.2,
-    "pct_of_232_ceiling": 91.9,
+    "median_us": 373.9,
+    "p10_us": 372.7,
+    "p90_us": 376.6,
+    "mean_us": 375.0,
+    "gbps_unique_median": 214.8,
+    "pct_of_250_floor": 85.9,
+    "pct_of_flat_read": 91.5,
     "unique_experts_mean": 18.0
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": -6.6,
+     "ci95": 1.52
+    },
+    "v0-v2": {
+     "mean": 36.97,
+     "ci95": 1.74
+    },
+    "v1-v2": {
+     "mean": 43.57,
+     "ci95": 1.15
+    }
    }
   },
   "m3/dup0/warm": {
    "v0": {
     "median_us": 403.6,
     "p10_us": 402.4,
-    "p90_us": 412.5,
+    "p90_us": 407.5,
+    "mean_us": 406.8,
     "gbps_unique_median": 199.0,
     "pct_of_250_floor": 79.6,
-    "pct_of_232_ceiling": 85.8,
+    "pct_of_flat_read": 84.8,
     "unique_experts_mean": 18.0
    },
    "v1": {
-    "median_us": 411.7,
-    "p10_us": 409.7,
-    "p90_us": 417.8,
-    "gbps_unique_median": 195.0,
+    "median_us": 411.6,
+    "p10_us": 409.6,
+    "p90_us": 413.8,
+    "mean_us": 413.9,
+    "gbps_unique_median": 195.1,
     "pct_of_250_floor": 78.0,
-    "pct_of_232_ceiling": 84.1,
+    "pct_of_flat_read": 83.1,
     "unique_experts_mean": 18.0
    },
    "v2": {
-    "median_us": 369.4,
+    "median_us": 368.8,
     "p10_us": 367.6,
-    "p90_us": 377.8,
-    "gbps_unique_median": 217.4,
-    "pct_of_250_floor": 87.0,
-    "pct_of_232_ceiling": 93.7,
+    "p90_us": 371.5,
+    "mean_us": 370.5,
+    "gbps_unique_median": 217.8,
+    "pct_of_250_floor": 87.1,
+    "pct_of_flat_read": 92.8,
     "unique_experts_mean": 18.0
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": -7.05,
+     "ci95": 1.46
+    },
+    "v0-v2": {
+     "mean": 36.31,
+     "ci95": 1.54
+    },
+    "v1-v2": {
+     "mean": 43.37,
+     "ci95": 1.42
+    }
+   }
+  },
+  "m4/census/cold": {
+   "v0": {
+    "median_us": 521.3,
+    "p10_us": 514.0,
+    "p90_us": 528.4,
+    "mean_us": 522.9,
+    "gbps_unique_median": 136.0,
+    "pct_of_250_floor": 54.4,
+    "pct_of_flat_read": 57.8,
+    "unique_experts_mean": 15.63
+   },
+   "v1": {
+    "median_us": 378.8,
+    "p10_us": 299.2,
+    "p90_us": 446.6,
+    "mean_us": 377.4,
+    "gbps_unique_median": 187.4,
+    "pct_of_250_floor": 74.9,
+    "pct_of_flat_read": 79.6,
+    "unique_experts_mean": 15.63
+   },
+   "v2": {
+    "median_us": 336.3,
+    "p10_us": 263.1,
+    "p90_us": 392.2,
+    "mean_us": 332.6,
+    "gbps_unique_median": 210.8,
+    "pct_of_250_floor": 84.3,
+    "pct_of_flat_read": 89.5,
+    "unique_experts_mean": 15.63
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": 145.54,
+     "ci95": 3.47
+    },
+    "v0-v2": {
+     "mean": 190.33,
+     "ci95": 3.37
+    },
+    "v1-v2": {
+     "mean": 44.8,
+     "ci95": 1.26
+    }
+   }
+  },
+  "m4/census/warm": {
+   "v0": {
+    "median_us": 508.9,
+    "p10_us": 501.7,
+    "p90_us": 516.1,
+    "mean_us": 510.4,
+    "gbps_unique_median": 139.0,
+    "pct_of_250_floor": 55.6,
+    "pct_of_flat_read": 59.0,
+    "unique_experts_mean": 15.63
+   },
+   "v1": {
+    "median_us": 374.7,
+    "p10_us": 295.8,
+    "p90_us": 442.1,
+    "mean_us": 371.9,
+    "gbps_unique_median": 189.4,
+    "pct_of_250_floor": 75.8,
+    "pct_of_flat_read": 80.5,
+    "unique_experts_mean": 15.63
+   },
+   "v2": {
+    "median_us": 330.7,
+    "p10_us": 257.1,
+    "p90_us": 387.0,
+    "mean_us": 325.7,
+    "gbps_unique_median": 215.0,
+    "pct_of_250_floor": 86.0,
+    "pct_of_flat_read": 91.3,
+    "unique_experts_mean": 15.63
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": 138.43,
+     "ci95": 3.44
+    },
+    "v0-v2": {
+     "mean": 184.72,
+     "ci95": 3.26
+    },
+    "v1-v2": {
+     "mean": 46.29,
+     "ci95": 0.95
+    }
    }
   },
   "m4/dup0/cold": {
    "v0": {
-    "median_us": 526.1,
-    "p10_us": 523.3,
-    "p90_us": 528.4,
-    "gbps_unique_median": 203.5,
+    "median_us": 526.3,
+    "p10_us": 524.3,
+    "p90_us": 529.4,
+    "mean_us": 528.5,
+    "gbps_unique_median": 203.4,
     "pct_of_250_floor": 81.4,
-    "pct_of_232_ceiling": 87.7,
+    "pct_of_flat_read": 86.4,
     "unique_experts_mean": 24.0
    },
    "v1": {
-    "median_us": 536.6,
-    "p10_us": 534.6,
-    "p90_us": 538.8,
-    "gbps_unique_median": 199.5,
-    "pct_of_250_floor": 79.8,
-    "pct_of_232_ceiling": 86.0,
+    "median_us": 537.5,
+    "p10_us": 535.3,
+    "p90_us": 540.7,
+    "mean_us": 540.1,
+    "gbps_unique_median": 199.2,
+    "pct_of_250_floor": 79.7,
+    "pct_of_flat_read": 84.6,
     "unique_experts_mean": 24.0
    },
    "v2": {
-    "median_us": 487.4,
-    "p10_us": 485.4,
-    "p90_us": 489.5,
-    "gbps_unique_median": 219.7,
-    "pct_of_250_floor": 87.9,
-    "pct_of_232_ceiling": 94.7,
+    "median_us": 488.4,
+    "p10_us": 486.4,
+    "p90_us": 490.6,
+    "mean_us": 488.8,
+    "gbps_unique_median": 219.2,
+    "pct_of_250_floor": 87.7,
+    "pct_of_flat_read": 93.1,
     "unique_experts_mean": 24.0
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": -11.65,
+     "ci95": 1.3
+    },
+    "v0-v2": {
+     "mean": 39.7,
+     "ci95": 1.28
+    },
+    "v1-v2": {
+     "mean": 51.35,
+     "ci95": 1.63
+    }
    }
   },
   "m4/dup0/warm": {
    "v0": {
-    "median_us": 520.2,
-    "p10_us": 518.1,
-    "p90_us": 524.3,
-    "gbps_unique_median": 205.8,
-    "pct_of_250_floor": 82.3,
-    "pct_of_232_ceiling": 88.7,
+    "median_us": 522.1,
+    "p10_us": 519.2,
+    "p90_us": 528.5,
+    "mean_us": 524.5,
+    "gbps_unique_median": 205.1,
+    "pct_of_250_floor": 82.0,
+    "pct_of_flat_read": 87.1,
     "unique_experts_mean": 24.0
    },
    "v1": {
-    "median_us": 532.0,
-    "p10_us": 530.3,
-    "p90_us": 534.5,
-    "gbps_unique_median": 201.3,
-    "pct_of_250_floor": 80.5,
-    "pct_of_232_ceiling": 86.8,
+    "median_us": 532.5,
+    "p10_us": 530.4,
+    "p90_us": 537.6,
+    "mean_us": 536.3,
+    "gbps_unique_median": 201.1,
+    "pct_of_250_floor": 80.4,
+    "pct_of_flat_read": 85.4,
     "unique_experts_mean": 24.0
    },
    "v2": {
-    "median_us": 481.3,
-    "p10_us": 479.5,
-    "p90_us": 484.4,
-    "gbps_unique_median": 222.5,
-    "pct_of_250_floor": 89.0,
-    "pct_of_232_ceiling": 95.9,
+    "median_us": 482.5,
+    "p10_us": 480.3,
+    "p90_us": 490.5,
+    "mean_us": 486.0,
+    "gbps_unique_median": 221.9,
+    "pct_of_250_floor": 88.8,
+    "pct_of_flat_read": 94.3,
     "unique_experts_mean": 24.0
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": -11.73,
+     "ci95": 1.68
+    },
+    "v0-v2": {
+     "mean": 38.57,
+     "ci95": 1.32
+    },
+    "v1-v2": {
+     "mean": 50.3,
+     "ci95": 1.77
+    }
+   }
+  },
+  "m6/census/cold": {
+   "v0": {
+    "median_us": 759.8,
+    "p10_us": 750.6,
+    "p90_us": 764.9,
+    "mean_us": 760.6,
+    "gbps_unique_median": 146.2,
+    "pct_of_250_floor": 58.5,
+    "pct_of_flat_read": 61.9,
+    "unique_experts_mean": 24.58
+   },
+   "v1": {
+    "median_us": 559.5,
+    "p10_us": 462.9,
+    "p90_us": 626.7,
+    "mean_us": 561.1,
+    "gbps_unique_median": 195.4,
+    "pct_of_250_floor": 78.2,
+    "pct_of_flat_read": 82.7,
+    "unique_experts_mean": 24.58
+   },
+   "v2": {
+    "median_us": 508.9,
+    "p10_us": 416.7,
+    "p90_us": 568.3,
+    "mean_us": 502.5,
+    "gbps_unique_median": 218.7,
+    "pct_of_250_floor": 87.5,
+    "pct_of_flat_read": 92.6,
+    "unique_experts_mean": 24.58
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": 199.51,
+     "ci95": 4.56
+    },
+    "v0-v2": {
+     "mean": 258.05,
+     "ci95": 4.31
+    },
+    "v1-v2": {
+     "mean": 58.54,
+     "ci95": 1.29
+    }
+   }
+  },
+  "m6/census/warm": {
+   "v0": {
+    "median_us": 743.4,
+    "p10_us": 732.2,
+    "p90_us": 754.7,
+    "mean_us": 745.6,
+    "gbps_unique_median": 148.8,
+    "pct_of_250_floor": 59.5,
+    "pct_of_flat_read": 63.0,
+    "unique_experts_mean": 24.58
+   },
+   "v1": {
+    "median_us": 555.0,
+    "p10_us": 463.9,
+    "p90_us": 622.6,
+    "mean_us": 556.5,
+    "gbps_unique_median": 196.7,
+    "pct_of_250_floor": 78.7,
+    "pct_of_flat_read": 83.3,
+    "unique_experts_mean": 24.58
+   },
+   "v2": {
+    "median_us": 502.8,
+    "p10_us": 416.6,
+    "p90_us": 562.1,
+    "mean_us": 497.4,
+    "gbps_unique_median": 221.4,
+    "pct_of_250_floor": 88.6,
+    "pct_of_flat_read": 93.7,
+    "unique_experts_mean": 24.58
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": 189.11,
+     "ci95": 4.39
+    },
+    "v0-v2": {
+     "mean": 248.24,
+     "ci95": 4.04
+    },
+    "v1-v2": {
+     "mean": 59.14,
+     "ci95": 1.52
+    }
    }
   },
   "m6/dup0/cold": {
    "v0": {
-    "median_us": 766.0,
-    "p10_us": 762.0,
-    "p90_us": 769.2,
-    "gbps_unique_median": 209.7,
-    "pct_of_250_floor": 83.9,
-    "pct_of_232_ceiling": 90.4,
+    "median_us": 767.8,
+    "p10_us": 764.0,
+    "p90_us": 771.0,
+    "mean_us": 770.3,
+    "gbps_unique_median": 209.2,
+    "pct_of_250_floor": 83.7,
+    "pct_of_flat_read": 88.6,
     "unique_experts_mean": 36.0
    },
    "v1": {
-    "median_us": 780.3,
-    "p10_us": 778.1,
-    "p90_us": 783.4,
+    "median_us": 780.4,
+    "p10_us": 778.2,
+    "p90_us": 784.4,
+    "mean_us": 782.9,
     "gbps_unique_median": 205.8,
     "pct_of_250_floor": 82.3,
-    "pct_of_232_ceiling": 88.7,
+    "pct_of_flat_read": 87.1,
     "unique_experts_mean": 36.0
    },
    "v2": {
-    "median_us": 716.8,
-    "p10_us": 714.6,
-    "p90_us": 719.9,
-    "gbps_unique_median": 224.1,
-    "pct_of_250_floor": 89.6,
-    "pct_of_232_ceiling": 96.6,
+    "median_us": 717.9,
+    "p10_us": 715.8,
+    "p90_us": 721.7,
+    "mean_us": 719.6,
+    "gbps_unique_median": 223.7,
+    "pct_of_250_floor": 89.5,
+    "pct_of_flat_read": 94.7,
     "unique_experts_mean": 36.0
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": -12.58,
+     "ci95": 1.87
+    },
+    "v0-v2": {
+     "mean": 50.66,
+     "ci95": 2.15
+    },
+    "v1-v2": {
+     "mean": 63.25,
+     "ci95": 1.52
+    }
    }
   },
   "m6/dup0/warm": {
    "v0": {
-    "median_us": 761.7,
-    "p10_us": 757.8,
-    "p90_us": 773.1,
-    "gbps_unique_median": 210.9,
+    "median_us": 761.9,
+    "p10_us": 759.7,
+    "p90_us": 766.0,
+    "mean_us": 763.8,
+    "gbps_unique_median": 210.8,
     "pct_of_250_floor": 84.3,
-    "pct_of_232_ceiling": 90.9,
+    "pct_of_flat_read": 89.2,
     "unique_experts_mean": 36.0
    },
    "v1": {
-    "median_us": 775.2,
-    "p10_us": 772.1,
-    "p90_us": 784.4,
-    "gbps_unique_median": 207.2,
-    "pct_of_250_floor": 82.9,
-    "pct_of_232_ceiling": 89.3,
+    "median_us": 776.1,
+    "p10_us": 773.1,
+    "p90_us": 778.3,
+    "mean_us": 776.7,
+    "gbps_unique_median": 206.9,
+    "pct_of_250_floor": 82.8,
+    "pct_of_flat_read": 87.6,
     "unique_experts_mean": 36.0
    },
    "v2": {
-    "median_us": 710.5,
-    "p10_us": 707.6,
-    "p90_us": 726.0,
+    "median_us": 710.7,
+    "p10_us": 708.6,
+    "p90_us": 713.9,
+    "mean_us": 714.0,
     "gbps_unique_median": 226.0,
     "pct_of_250_floor": 90.4,
-    "pct_of_232_ceiling": 97.4,
+    "pct_of_flat_read": 95.7,
     "unique_experts_mean": 36.0
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": -12.92,
+     "ci95": 1.32
+    },
+    "v0-v2": {
+     "mean": 49.8,
+     "ci95": 1.96
+    },
+    "v1-v2": {
+     "mean": 62.72,
+     "ci95": 1.72
+    }
+   }
+  },
+  "m8/census/cold": {
+   "v0": {
+    "median_us": 1013.7,
+    "p10_us": 1002.6,
+    "p90_us": 1028.0,
+    "mean_us": 1021.8,
+    "gbps_unique_median": 131.5,
+    "pct_of_250_floor": 52.6,
+    "pct_of_flat_read": 55.6,
+    "unique_experts_mean": 29.79
+   },
+   "v1": {
+    "median_us": 669.6,
+    "p10_us": 563.2,
+    "p90_us": 782.3,
+    "mean_us": 678.8,
+    "gbps_unique_median": 198.0,
+    "pct_of_250_floor": 79.2,
+    "pct_of_flat_read": 83.8,
+    "unique_experts_mean": 29.79
+   },
+   "v2": {
+    "median_us": 606.8,
+    "p10_us": 508.9,
+    "p90_us": 710.6,
+    "mean_us": 608.5,
+    "gbps_unique_median": 220.3,
+    "pct_of_250_floor": 88.1,
+    "pct_of_flat_read": 93.2,
+    "unique_experts_mean": 29.79
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": 343.0,
+     "ci95": 6.44
+    },
+    "v0-v2": {
+     "mean": 413.31,
+     "ci95": 6.08
+    },
+    "v1-v2": {
+     "mean": 70.31,
+     "ci95": 2.16
+    }
+   }
+  },
+  "m8/census/warm": {
+   "v0": {
+    "median_us": 991.1,
+    "p10_us": 977.9,
+    "p90_us": 1002.6,
+    "mean_us": 991.6,
+    "gbps_unique_median": 134.7,
+    "pct_of_250_floor": 53.9,
+    "pct_of_flat_read": 57.0,
+    "unique_experts_mean": 29.79
+   },
+   "v1": {
+    "median_us": 663.5,
+    "p10_us": 558.0,
+    "p90_us": 770.0,
+    "mean_us": 668.7,
+    "gbps_unique_median": 199.9,
+    "pct_of_250_floor": 80.0,
+    "pct_of_flat_read": 84.6,
+    "unique_experts_mean": 29.79
+   },
+   "v2": {
+    "median_us": 600.0,
+    "p10_us": 502.6,
+    "p90_us": 694.4,
+    "mean_us": 597.5,
+    "gbps_unique_median": 223.0,
+    "pct_of_250_floor": 89.2,
+    "pct_of_flat_read": 94.4,
+    "unique_experts_mean": 29.79
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": 322.93,
+     "ci95": 5.48
+    },
+    "v0-v2": {
+     "mean": 394.06,
+     "ci95": 5.01
+    },
+    "v1-v2": {
+     "mean": 71.12,
+     "ci95": 1.55
+    }
    }
   },
   "m8/dup0/cold": {
    "v0": {
-    "median_us": 1023.0,
-    "p10_us": 1019.9,
-    "p90_us": 1026.4,
-    "gbps_unique_median": 209.3,
-    "pct_of_250_floor": 83.7,
-    "pct_of_232_ceiling": 90.2,
+    "median_us": 1026.0,
+    "p10_us": 1022.9,
+    "p90_us": 1031.2,
+    "mean_us": 1031.8,
+    "gbps_unique_median": 208.7,
+    "pct_of_250_floor": 83.5,
+    "pct_of_flat_read": 88.3,
     "unique_experts_mean": 48.0
    },
    "v1": {
-    "median_us": 1050.5,
-    "p10_us": 1046.5,
-    "p90_us": 1053.7,
-    "gbps_unique_median": 203.8,
+    "median_us": 1051.6,
+    "p10_us": 1048.6,
+    "p90_us": 1055.9,
+    "mean_us": 1056.8,
+    "gbps_unique_median": 203.6,
     "pct_of_250_floor": 81.5,
-    "pct_of_232_ceiling": 87.9,
+    "pct_of_flat_read": 86.2,
     "unique_experts_mean": 48.0
    },
    "v2": {
-    "median_us": 945.0,
-    "p10_us": 942.1,
-    "p90_us": 948.2,
-    "gbps_unique_median": 226.6,
-    "pct_of_250_floor": 90.6,
-    "pct_of_232_ceiling": 97.7,
+    "median_us": 948.2,
+    "p10_us": 945.2,
+    "p90_us": 952.3,
+    "mean_us": 952.7,
+    "gbps_unique_median": 225.8,
+    "pct_of_250_floor": 90.3,
+    "pct_of_flat_read": 95.6,
     "unique_experts_mean": 48.0
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": -25.04,
+     "ci95": 3.1
+    },
+    "v0-v2": {
+     "mean": 79.06,
+     "ci95": 2.5
+    },
+    "v1-v2": {
+     "mean": 104.09,
+     "ci95": 2.49
+    }
    }
   },
   "m8/dup0/warm": {
    "v0": {
-    "median_us": 1015.8,
-    "p10_us": 1012.6,
-    "p90_us": 1019.9,
-    "gbps_unique_median": 210.8,
-    "pct_of_250_floor": 84.3,
-    "pct_of_232_ceiling": 90.9,
+    "median_us": 1017.9,
+    "p10_us": 1015.0,
+    "p90_us": 1026.0,
+    "mean_us": 1022.1,
+    "gbps_unique_median": 210.4,
+    "pct_of_250_floor": 84.2,
+    "pct_of_flat_read": 89.0,
     "unique_experts_mean": 48.0
    },
    "v1": {
-    "median_us": 1042.4,
-    "p10_us": 1039.4,
-    "p90_us": 1046.5,
-    "gbps_unique_median": 205.4,
-    "pct_of_250_floor": 82.2,
-    "pct_of_232_ceiling": 88.5,
+    "median_us": 1044.5,
+    "p10_us": 1041.4,
+    "p90_us": 1051.5,
+    "mean_us": 1048.6,
+    "gbps_unique_median": 205.0,
+    "pct_of_250_floor": 82.0,
+    "pct_of_flat_read": 86.8,
     "unique_experts_mean": 48.0
    },
    "v2": {
-    "median_us": 937.0,
-    "p10_us": 934.0,
-    "p90_us": 941.0,
-    "gbps_unique_median": 228.6,
-    "pct_of_250_floor": 91.4,
-    "pct_of_232_ceiling": 98.5,
+    "median_us": 941.0,
+    "p10_us": 938.0,
+    "p90_us": 950.3,
+    "mean_us": 944.2,
+    "gbps_unique_median": 227.6,
+    "pct_of_250_floor": 91.0,
+    "pct_of_flat_read": 96.3,
     "unique_experts_mean": 48.0
+   },
+   "paired_us": {
+    "v0-v1": {
+     "mean": -26.47,
+     "ci95": 2.4
+    },
+    "v0-v2": {
+     "mean": 77.95,
+     "ci95": 1.78
+    },
+    "v1-v2": {
+     "mean": 104.42,
+     "ci95": 2.21
+    }
    }
   }
  },
  "projected_ms_per_step_40_layers": {
   "method": "census_all: census routings of all 40 routed layers, drawn layer-stratified (20 draws per layer per m), on the layer-20 weights; 800 iterations per arm after 20 warmup, arms alternated in the same process, cold (128 MiB flush) and warm. Per-step saving = mean of the paired per-call savings x 40 routed layers; ci95 = 1.96 x standard error of that mean x 40.",
-  "source": "fix-tlayers.json (runs/fix-tlayers.log, runs/fix-tlayers.clocks.csv)",
+  "source": "final4-time.json census_all (runs/final4-time.log, .clocks.csv)",
+  "replicates": {
+   "note": "three independent 800-iteration census_all runs, paired mean x 40 (cold), ms/step",
+   "fix-tlayers.json (builder, it 14)": {
+    "m4_vs_p2b": 6.77,
+    "m8_vs_p2b": 15.27,
+    "m4_vs_coop1": 1.88,
+    "m8_vs_coop1": 3.03
+   },
+   "review r4 (/home/sfxnz/projects/data/dsv41-coop-moe/review-r4/r4-time.json)": {
+    "m4_vs_p2b": 6.76,
+    "m8_vs_p2b": 15.17,
+    "m4_vs_coop1": 1.84,
+    "m8_vs_coop1": 2.99
+   },
+   "final4-time.json (it 16)": {
+    "m4_vs_p2b": 6.81,
+    "m8_vs_p2b": 15.34,
+    "m4_vs_coop1": 1.89,
+    "m8_vs_coop1": 2.92
+   }
+  },
   "replaces": "r3 figure 'layer-20 median saving x 40' (m=4 7.37, m=8 16.22 ms/step vs p2b): biased high, layer 20's census duplicate fraction at m=4 is 0.344 vs the 40-layer mean 0.2987 (11th of 40). Same run, layer-20 census only, paired mean x 40: m=4 7.49, m=8 16.76 ms/step.",
-  "reading": "c=1 verify (m=4): -6.77 ms of a ~63 ms step, ~+12% tok/s at matched acceptance; -1.88 ms/step vs DSV41_P2B_COOP=1. c=2 verify (m=8): -15.27 ms/step. Per layer the saving is linear in the layer's duplicate fraction (r = 0.99 at m=4 and m=8).",
+  "reading": "c=1 verify (m=4): -6.81 +- 0.16 ms of a ~63 ms step (6.76-6.81 over the three runs), ~+12% tok/s at matched acceptance; -1.84..-1.89 ms/step vs DSV41_P2B_COOP=1. c=2 verify (m=8): -15.34 +- 0.28 ms/step (15.17-15.34). Per layer the saving is linear in the layer's duplicate fraction.",
   "m1": {
    "dup_frac_mean": 0.0,
    "cold": {
     "vs_p2b_ms": 0.97,
-    "vs_p2b_ci95_ms": 0.05,
-    "vs_coop1_ms": 1.17,
+    "vs_p2b_ci95_ms": 0.06,
+    "vs_coop1_ms": 1.1,
     "vs_coop1_ci95_ms": 0.05,
     "per_call_mean_us": {
-     "v0": 184.5,
-     "v1": 189.4,
-     "v2": 160.2
+     "v0": 185.5,
+     "v1": 188.6,
+     "v2": 161.2
     },
     "per_call_median_us": {
      "v0": 182.3,
@@ -632,601 +993,1062 @@
     "pct_vs_p2b_mean": 13.1
    },
    "warm": {
-    "vs_p2b_ms": 1.08,
-    "vs_p2b_ci95_ms": 0.03,
-    "vs_coop1_ms": 1.26,
-    "vs_coop1_ci95_ms": 0.03,
+    "vs_p2b_ms": 1.07,
+    "vs_p2b_ci95_ms": 0.02,
+    "vs_coop1_ms": 1.23,
+    "vs_coop1_ci95_ms": 0.02,
     "per_call_mean_us": {
-     "v0": 178.4,
-     "v1": 182.8,
-     "v2": 151.4
+     "v0": 176.6,
+     "v1": 180.7,
+     "v2": 149.9
     },
     "per_call_median_us": {
-     "v0": 178.1,
-     "v1": 182.2,
-     "v2": 150.5
+     "v0": 176.1,
+     "v1": 180.2,
+     "v2": 149.5
     },
     "pct_vs_p2b_mean": 15.2
    }
   },
   "m3": {
-   "dup_frac_mean": 0.2454,
+   "dup_frac_mean": 0.2451,
    "cold": {
-    "vs_p2b_ms": 4.66,
-    "vs_p2b_ci95_ms": 0.12,
-    "vs_coop1_ms": 1.74,
+    "vs_p2b_ms": 4.63,
+    "vs_p2b_ci95_ms": 0.13,
+    "vs_coop1_ms": 1.68,
     "vs_coop1_ci95_ms": 0.04,
     "per_call_mean_us": {
+     "v0": 407.8,
+     "v1": 334.0,
+     "v2": 292.0
+    },
+    "per_call_median_us": {
      "v0": 407.4,
-     "v1": 334.3,
-     "v2": 290.8
-    },
-    "per_call_median_us": {
-     "v0": 406.5,
      "v1": 342.0,
-     "v2": 297.0
-    },
-    "pct_vs_p2b_mean": 28.6
-   },
-   "warm": {
-    "vs_p2b_ms": 4.55,
-    "vs_p2b_ci95_ms": 0.12,
-    "vs_coop1_ms": 1.74,
-    "vs_coop1_ci95_ms": 0.04,
-    "per_call_mean_us": {
-     "v0": 400.1,
-     "v1": 329.9,
-     "v2": 286.4
-    },
-    "per_call_median_us": {
-     "v0": 399.4,
-     "v1": 337.9,
-     "v2": 292.3
+     "v2": 297.9
     },
     "pct_vs_p2b_mean": 28.4
+   },
+   "warm": {
+    "vs_p2b_ms": 4.51,
+    "vs_p2b_ci95_ms": 0.12,
+    "vs_coop1_ms": 1.71,
+    "vs_coop1_ci95_ms": 0.05,
+    "per_call_mean_us": {
+     "v0": 400.4,
+     "v1": 330.4,
+     "v2": 287.6
+    },
+    "per_call_median_us": {
+     "v0": 399.3,
+     "v1": 337.9,
+     "v2": 292.9
+    },
+    "pct_vs_p2b_mean": 28.2
    }
   },
   "m4": {
-   "dup_frac_mean": 0.3001,
+   "dup_frac_mean": 0.2997,
    "cold": {
-    "vs_p2b_ms": 6.77,
-    "vs_p2b_ci95_ms": 0.15,
-    "vs_coop1_ms": 1.88,
-    "vs_coop1_ci95_ms": 0.04,
+    "vs_p2b_ms": 6.81,
+    "vs_p2b_ci95_ms": 0.16,
+    "vs_coop1_ms": 1.89,
+    "vs_coop1_ci95_ms": 0.05,
     "per_call_mean_us": {
-     "v0": 521.6,
-     "v1": 399.4,
-     "v2": 352.4
+     "v0": 523.2,
+     "v1": 400.4,
+     "v2": 353.0
     },
     "per_call_median_us": {
-     "v0": 521.2,
-     "v1": 397.4,
-     "v2": 354.4
+     "v0": 522.2,
+     "v1": 399.2,
+     "v2": 355.3
     },
-    "pct_vs_p2b_mean": 32.4
+    "pct_vs_p2b_mean": 32.5
    },
    "warm": {
-    "vs_p2b_ms": 6.64,
-    "vs_p2b_ci95_ms": 0.16,
+    "vs_p2b_ms": 6.61,
+    "vs_p2b_ci95_ms": 0.15,
     "vs_coop1_ms": 1.93,
     "vs_coop1_ci95_ms": 0.04,
     "per_call_mean_us": {
-     "v0": 513.3,
-     "v1": 395.5,
-     "v2": 347.3
+     "v0": 512.9,
+     "v1": 395.8,
+     "v2": 347.7
     },
     "per_call_median_us": {
-     "v0": 511.0,
-     "v1": 394.2,
+     "v0": 511.1,
+     "v1": 394.3,
      "v2": 350.2
     },
-    "pct_vs_p2b_mean": 32.3
+    "pct_vs_p2b_mean": 32.2
    },
    "cold_per_layer_saving_us": {
-    "min": 78.7,
-    "max": 248.8,
-    "layer20": 187.8,
-    "slope_us_per_dup": 424.2,
-    "r": 0.992
+    "min": 83.2,
+    "max": 241.7,
+    "layer20": 200.9,
+    "slope_us_per_dup": 427.2,
+    "r": 0.994
    }
   },
   "m6": {
-   "dup_frac_mean": 0.2855,
+   "dup_frac_mean": 0.2858,
    "cold": {
-    "vs_p2b_ms": 9.55,
-    "vs_p2b_ci95_ms": 0.22,
-    "vs_coop1_ms": 2.41,
-    "vs_coop1_ci95_ms": 0.08,
+    "vs_p2b_ms": 9.5,
+    "vs_p2b_ci95_ms": 0.2,
+    "vs_coop1_ms": 2.39,
+    "vs_coop1_ci95_ms": 0.07,
     "per_call_mean_us": {
-     "v0": 764.9,
-     "v1": 586.5,
-     "v2": 526.2
+     "v0": 763.4,
+     "v1": 585.7,
+     "v2": 525.9
     },
     "per_call_median_us": {
-     "v0": 759.8,
-     "v1": 600.1,
-     "v2": 527.4
+     "v0": 761.7,
+     "v1": 600.0,
+     "v2": 527.3
     },
-    "pct_vs_p2b_mean": 31.2
+    "pct_vs_p2b_mean": 31.1
    },
    "warm": {
-    "vs_p2b_ms": 9.25,
-    "vs_p2b_ci95_ms": 0.2,
+    "vs_p2b_ms": 9.21,
+    "vs_p2b_ci95_ms": 0.19,
     "vs_coop1_ms": 2.5,
-    "vs_coop1_ci95_ms": 0.04,
+    "vs_coop1_ci95_ms": 0.06,
     "per_call_mean_us": {
-     "v0": 748.2,
-     "v1": 579.3,
-     "v2": 516.9
+     "v0": 748.4,
+     "v1": 580.5,
+     "v2": 518.1
     },
     "per_call_median_us": {
-     "v0": 745.5,
-     "v1": 594.4,
-     "v2": 520.4
+     "v0": 747.5,
+     "v1": 594.5,
+     "v2": 521.2
     },
-    "pct_vs_p2b_mean": 30.9
+    "pct_vs_p2b_mean": 30.8
    }
   },
   "m8": {
-   "dup_frac_mean": 0.3437,
+   "dup_frac_mean": 0.3478,
    "cold": {
-    "vs_p2b_ms": 15.27,
+    "vs_p2b_ms": 15.34,
     "vs_p2b_ci95_ms": 0.28,
-    "vs_coop1_ms": 3.03,
-    "vs_coop1_ci95_ms": 0.08,
+    "vs_coop1_ms": 2.92,
+    "vs_coop1_ci95_ms": 0.06,
     "per_call_mean_us": {
-     "v0": 1018.0,
-     "v1": 712.0,
-     "v2": 636.3
+     "v0": 1016.0,
+     "v1": 705.6,
+     "v2": 632.5
     },
     "per_call_median_us": {
-     "v0": 1012.7,
-     "v1": 714.7,
-     "v2": 624.6
+     "v0": 1013.8,
+     "v1": 713.8,
+     "v2": 625.6
     },
-    "pct_vs_p2b_mean": 37.5
+    "pct_vs_p2b_mean": 37.7
    },
    "warm": {
-    "vs_p2b_ms": 14.76,
+    "vs_p2b_ms": 14.97,
     "vs_p2b_ci95_ms": 0.27,
-    "vs_coop1_ms": 3.1,
-    "vs_coop1_ci95_ms": 0.09,
+    "vs_coop1_ms": 2.96,
+    "vs_coop1_ci95_ms": 0.07,
     "per_call_mean_us": {
-     "v0": 998.3,
-     "v1": 706.8,
-     "v2": 629.2
+     "v0": 1001.7,
+     "v1": 701.4,
+     "v2": 627.4
     },
     "per_call_median_us": {
-     "v0": 995.3,
-     "v1": 707.6,
-     "v2": 617.9
+     "v0": 998.5,
+     "v1": 708.7,
+     "v2": 621.1
     },
-    "pct_vs_p2b_mean": 37.0
+    "pct_vs_p2b_mean": 37.4
    },
    "cold_per_layer_saving_us": {
-    "min": 198.0,
-    "max": 527.4,
-    "layer20": 431.6,
-    "slope_us_per_dup": 858.9,
-    "r": 0.995
+    "min": 217.9,
+    "max": 529.6,
+    "layer20": 402.9,
+    "slope_us_per_dup": 871.3,
+    "r": 0.996
    }
   }
  },
  "numerics": {
+  "source": "final4-validate.json (layer 20 rank 0, 16 routings per case, fp64 reference)",
   "m1/census": {
    "onehot_bitexact": true,
    "v1_full_bitexact": true,
-   "full_max_abs": 1.52587890625e-05,
-   "full_max_rel": 5.8630394050851464e-05,
+   "full_max_abs": 8e-06,
+   "full_max_rel": 3.2e-05,
    "full_max_ulp": 1,
    "repeat_bitexact": true,
-   "ref_max_rel": 0.001126671659991053,
-   "p2b_ref_max_rel": 0.001126671659991053,
-   "ref_rms_rel": 0.0008773057490163086,
-   "p2b_ref_rms_rel": 0.0008773014551555304,
-   "routings": 12
+   "ref_max_rel": 0.001147,
+   "p2b_ref_max_rel": 0.001147,
+   "ref_rms_rel": 0.00088,
+   "p2b_ref_rms_rel": 0.00088,
+   "routings": 16
   },
   "m1/dup0": {
    "onehot_bitexact": true,
    "v1_full_bitexact": true,
-   "full_max_abs": 6.103515625e-05,
-   "full_max_rel": 0.0002871912729460746,
+   "full_max_abs": 3.1e-05,
+   "full_max_rel": 0.000147,
    "full_max_ulp": 1,
    "repeat_bitexact": true,
-   "ref_max_rel": 0.00101324923095753,
-   "p2b_ref_max_rel": 0.00101324923095753,
-   "ref_rms_rel": 0.0008849182540158357,
-   "p2b_ref_rms_rel": 0.0008849436932509145,
-   "routings": 12
+   "ref_max_rel": 0.001089,
+   "p2b_ref_max_rel": 0.001089,
+   "ref_rms_rel": 0.000888,
+   "p2b_ref_rms_rel": 0.000888,
+   "routings": 16
   },
   "m3/census": {
    "onehot_bitexact": true,
    "v1_full_bitexact": true,
-   "full_max_abs": 6.103515625e-05,
-   "full_max_rel": 0.0002727768733166158,
+   "full_max_abs": 6.1e-05,
+   "full_max_rel": 0.000268,
    "full_max_ulp": 1,
    "repeat_bitexact": true,
-   "ref_max_rel": 0.000977540605559429,
-   "p2b_ref_max_rel": 0.000977540605559429,
-   "ref_rms_rel": 0.0008834384891996553,
-   "p2b_ref_rms_rel": 0.0008834305724870163,
-   "routings": 12
+   "ref_max_rel": 0.00107,
+   "p2b_ref_max_rel": 0.00107,
+   "ref_rms_rel": 0.000878,
+   "p2b_ref_rms_rel": 0.000878,
+   "routings": 16
   },
   "m3/dup0": {
    "onehot_bitexact": true,
    "v1_full_bitexact": true,
-   "full_max_abs": 6.103515625e-05,
-   "full_max_rel": 0.00026709403027780354,
+   "full_max_abs": 6.1e-05,
+   "full_max_rel": 0.000283,
    "full_max_ulp": 1,
    "repeat_bitexact": true,
-   "ref_max_rel": 0.0011108676957850483,
-   "p2b_ref_max_rel": 0.0011108676957850483,
-   "ref_rms_rel": 0.0008796993975364218,
-   "p2b_ref_rms_rel": 0.0008797003878082774,
-   "routings": 12
+   "ref_max_rel": 0.000974,
+   "p2b_ref_max_rel": 0.000974,
+   "ref_rms_rel": 0.00088,
+   "p2b_ref_rms_rel": 0.00088,
+   "routings": 16
   },
   "m4/census": {
    "onehot_bitexact": true,
    "v1_full_bitexact": true,
-   "full_max_abs": 6.103515625e-05,
-   "full_max_rel": 0.00026191724464297295,
+   "full_max_abs": 6.1e-05,
+   "full_max_rel": 0.000257,
    "full_max_ulp": 1,
    "repeat_bitexact": true,
-   "ref_max_rel": 0.0010006821805950926,
-   "p2b_ref_max_rel": 0.0010006821805950926,
-   "ref_rms_rel": 0.0008857698459372175,
-   "p2b_ref_rms_rel": 0.0008857721596246973,
-   "routings": 12
+   "ref_max_rel": 0.001085,
+   "p2b_ref_max_rel": 0.001085,
+   "ref_rms_rel": 0.000879,
+   "p2b_ref_rms_rel": 0.000879,
+   "routings": 16
   },
   "m4/dup0": {
    "onehot_bitexact": true,
    "v1_full_bitexact": true,
-   "full_max_abs": 6.103515625e-05,
-   "full_max_rel": 0.0002627430367283523,
+   "full_max_abs": 6.1e-05,
+   "full_max_rel": 0.000264,
    "full_max_ulp": 1,
    "repeat_bitexact": true,
-   "ref_max_rel": 0.00102044209083529,
-   "p2b_ref_max_rel": 0.00102044209083529,
-   "ref_rms_rel": 0.0008837536370394995,
-   "p2b_ref_rms_rel": 0.0008837754125403881,
-   "routings": 12
+   "ref_max_rel": 0.001022,
+   "p2b_ref_max_rel": 0.001022,
+   "ref_rms_rel": 0.000885,
+   "p2b_ref_rms_rel": 0.000885,
+   "routings": 16
   },
   "m6/census": {
    "onehot_bitexact": true,
    "v1_full_bitexact": true,
-   "full_max_abs": 6.103515625e-05,
-   "full_max_rel": 0.00024108003708533943,
+   "full_max_abs": 6.1e-05,
+   "full_max_rel": 0.000246,
    "full_max_ulp": 1,
    "repeat_bitexact": true,
-   "ref_max_rel": 0.0011445454748771745,
-   "p2b_ref_max_rel": 0.0011445454748771745,
-   "ref_rms_rel": 0.000881998316470527,
-   "p2b_ref_rms_rel": 0.0008819997686633128,
-   "routings": 12
+   "ref_max_rel": 0.001109,
+   "p2b_ref_max_rel": 0.001109,
+   "ref_rms_rel": 0.000879,
+   "p2b_ref_rms_rel": 0.000879,
+   "routings": 16
   },
   "m6/dup0": {
    "onehot_bitexact": true,
    "v1_full_bitexact": true,
-   "full_max_abs": 3.0517578125e-05,
-   "full_max_rel": 0.00011837121564894915,
+   "full_max_abs": 6.1e-05,
+   "full_max_rel": 0.000247,
    "full_max_ulp": 1,
    "repeat_bitexact": true,
-   "ref_max_rel": 0.00098706352229839,
-   "p2b_ref_max_rel": 0.00098706352229839,
-   "ref_rms_rel": 0.0008792139564579801,
-   "p2b_ref_rms_rel": 0.0008792161523634365,
-   "routings": 12
+   "ref_max_rel": 0.000979,
+   "p2b_ref_max_rel": 0.000979,
+   "ref_rms_rel": 0.000879,
+   "p2b_ref_rms_rel": 0.000879,
+   "routings": 16
   },
   "m6/census_seq": {
    "onehot_bitexact": true,
    "v1_full_bitexact": true,
-   "full_max_abs": 0.0001220703125,
-   "full_max_rel": 0.0004761904710903764,
+   "full_max_abs": 6.1e-05,
+   "full_max_rel": 0.000262,
    "full_max_ulp": 1,
    "repeat_bitexact": true,
-   "ref_max_rel": 0.0009676908656944309,
-   "p2b_ref_max_rel": 0.0009676908656944309,
-   "ref_rms_rel": 0.000878359458016526,
-   "p2b_ref_rms_rel": 0.0008783700161564651,
-   "routings": 12
+   "ref_max_rel": 0.000956,
+   "p2b_ref_max_rel": 0.000956,
+   "ref_rms_rel": 0.000876,
+   "p2b_ref_rms_rel": 0.000876,
+   "routings": 16
   },
   "m8/census": {
    "onehot_bitexact": true,
    "v1_full_bitexact": true,
-   "full_max_abs": 6.103515625e-05,
-   "full_max_rel": 0.00022441652254201472,
+   "full_max_abs": 1.5e-05,
+   "full_max_rel": 6.6e-05,
    "full_max_ulp": 1,
    "repeat_bitexact": true,
-   "ref_max_rel": 0.0011688196337711655,
-   "p2b_ref_max_rel": 0.0011688196337711655,
-   "ref_rms_rel": 0.0008802490941433441,
-   "p2b_ref_rms_rel": 0.0008802531852429369,
-   "routings": 12
+   "ref_max_rel": 0.001017,
+   "p2b_ref_max_rel": 0.001017,
+   "ref_rms_rel": 0.000876,
+   "p2b_ref_rms_rel": 0.000876,
+   "routings": 16
   },
   "m8/dup0": {
    "onehot_bitexact": true,
    "v1_full_bitexact": true,
-   "full_max_abs": 6.103515625e-05,
-   "full_max_rel": 0.0002369668218307197,
+   "full_max_abs": 6.1e-05,
+   "full_max_rel": 0.000265,
    "full_max_ulp": 1,
    "repeat_bitexact": true,
-   "ref_max_rel": 0.0009984870287343866,
-   "p2b_ref_max_rel": 0.0009984870287343866,
-   "ref_rms_rel": 0.0008834047008458137,
-   "p2b_ref_rms_rel": 0.0008834068371761287,
-   "routings": 12
+   "ref_max_rel": 0.00102,
+   "p2b_ref_max_rel": 0.00102,
+   "ref_rms_rel": 0.000883,
+   "p2b_ref_rms_rel": 0.000883,
+   "routings": 16
   },
   "m8/census_seq": {
    "onehot_bitexact": true,
    "v1_full_bitexact": true,
-   "full_max_abs": 0.0001220703125,
-   "full_max_rel": 0.0005146680632606149,
+   "full_max_abs": 0.000122,
+   "full_max_rel": 0.000487,
    "full_max_ulp": 1,
    "repeat_bitexact": true,
-   "ref_max_rel": 0.0011125361830279588,
-   "p2b_ref_max_rel": 0.0011125361830279588,
-   "ref_rms_rel": 0.0008820907451311101,
-   "p2b_ref_rms_rel": 0.0008821062018217396,
-   "routings": 12
+   "ref_max_rel": 0.001053,
+   "p2b_ref_max_rel": 0.001053,
+   "ref_rms_rel": 0.00088,
+   "p2b_ref_rms_rel": 0.000881,
+   "routings": 16
   }
  },
+ "numerics_layer33_rank1": {
+  "source": "final4-validate-l33.json (16 routings per case, no fp64 reference)",
+  "all_pass": true,
+  "cases": 24,
+  "full_max_rel_v2": 0.000397,
+  "full_max_ulp_v2": 1
+ },
  "capture": {
-  "v1/m1": {
-   "replays": 32,
-   "replay_equals_eager": true
+  "layer20_rank0": {
+   "v1/m1": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v1/m3": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v1/m4": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v1/m6": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v1/m8": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v2/m1": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v2/m3": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v2/m4": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v2/m6": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v2/m8": {
+    "replays": 48,
+    "replay_equals_eager": true
+   }
   },
-  "v1/m3": {
-   "replays": 32,
-   "replay_equals_eager": true
-  },
-  "v1/m4": {
-   "replays": 32,
-   "replay_equals_eager": true
-  },
-  "v1/m6": {
-   "replays": 32,
-   "replay_equals_eager": true
-  },
-  "v1/m8": {
-   "replays": 32,
-   "replay_equals_eager": true
-  },
-  "v2/m1": {
-   "replays": 32,
-   "replay_equals_eager": true
-  },
-  "v2/m3": {
-   "replays": 32,
-   "replay_equals_eager": true
-  },
-  "v2/m4": {
-   "replays": 32,
-   "replay_equals_eager": true
-  },
-  "v2/m6": {
-   "replays": 32,
-   "replay_equals_eager": true
-  },
-  "v2/m8": {
-   "replays": 32,
-   "replay_equals_eager": true
+  "layer33_rank1": {
+   "v1/m1": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v1/m3": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v1/m4": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v1/m6": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v1/m8": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v2/m1": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v2/m3": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v2/m4": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v2/m6": {
+    "replays": 48,
+    "replay_equals_eager": true
+   },
+   "v2/m8": {
+    "replays": 48,
+    "replay_equals_eager": true
+   }
   }
  },
  "stress": {
-  "v2/m1": {
-   "calls": 1000,
-   "eager_mismatch": 0,
-   "graph_mismatch": 0
+  "layer20_rank0": {
+   "v2/m1": {
+    "calls": 2000,
+    "eager_mismatch": 0,
+    "graph_mismatch": 0
+   },
+   "v2/m3": {
+    "calls": 2000,
+    "eager_mismatch": 0,
+    "graph_mismatch": 0
+   },
+   "v2/m4": {
+    "calls": 2000,
+    "eager_mismatch": 0,
+    "graph_mismatch": 0
+   },
+   "v2/m6": {
+    "calls": 2000,
+    "eager_mismatch": 0,
+    "graph_mismatch": 0
+   },
+   "v2/m8": {
+    "calls": 2000,
+    "eager_mismatch": 0,
+    "graph_mismatch": 0
+   }
   },
-  "v2/m3": {
-   "calls": 1000,
-   "eager_mismatch": 0,
-   "graph_mismatch": 0
-  },
-  "v2/m4": {
-   "calls": 1000,
-   "eager_mismatch": 0,
-   "graph_mismatch": 0
-  },
-  "v2/m6": {
-   "calls": 1000,
-   "eager_mismatch": 0,
-   "graph_mismatch": 0
-  },
-  "v2/m8": {
-   "calls": 1000,
-   "eager_mismatch": 0,
-   "graph_mismatch": 0
+  "layer33_rank1": {
+   "v2/m1": {
+    "calls": 2000,
+    "eager_mismatch": 0,
+    "graph_mismatch": 0
+   },
+   "v2/m3": {
+    "calls": 2000,
+    "eager_mismatch": 0,
+    "graph_mismatch": 0
+   },
+   "v2/m4": {
+    "calls": 2000,
+    "eager_mismatch": 0,
+    "graph_mismatch": 0
+   },
+   "v2/m6": {
+    "calls": 2000,
+    "eager_mismatch": 0,
+    "graph_mismatch": 0
+   },
+   "v2/m8": {
+    "calls": 2000,
+    "eager_mismatch": 0,
+    "graph_mismatch": 0
+   }
   }
+ },
+ "real_extension": {
+  "source": "final4-real-ext.json: vllm_exl3_c built with docker/Dockerfile.e15's steps vs the bench, bitwise",
+  "checks": {
+   "unset_onehot_eq_bench_v0": true,
+   "mode0_onehot_eq_bench_v0": true,
+   "mode1_rw_eq_bench_v1": true,
+   "mode2_rw_eq_bench_v2": true,
+   "mode2_rw_eq_real_mode1": true,
+   "mode2_onehot_eq_bench_v0": true,
+   "engaged_only_mode2": true,
+   "no_disarm_line": true
+  },
+  "timing_cold_median_us": {
+   "bench_v2": {
+    "m1/t0": 158.76799821853638,
+    "m4/t0": 230.3680032491684,
+    "m8/t0": 676.9599914550781
+   },
+   "real_mode2": {
+    "m1/t0": 157.74399787187576,
+    "m4/t0": 227.4399995803833,
+    "m8/t0": 674.8480200767517
+   }
+  },
+  "pass": true
  },
  "resources": {
   "v0": "64 regs, 4 blocks/SM (192), 56/140 B spill",
   "v1": "64 regs, 4 blocks/SM, 56/140 B spill",
   "v2": "80 regs, 3 blocks/SM (144), MMA loops spill-free (24 B stack outside), 17.7 KB smem"
  },
- "sass_identity": "SORT=0/1 (12) + SORT=2 (<2,1,2>) byte-identical between the e14 and e15 TUs; one new kernel p2b_coop_df_kernel<2,1>",
+ "sass_identity": "SORT=0/1 (12) + SORT=2 (<2,1,2>) byte-identical between the e14 and e15 TUs; one new kernel p2b_coop_df_kernel<2,1>; re-run at the end of round 4: final4-sass-identity.txt",
  "stream_ceiling": {
+  "source": "final4-time.json stream (census routing of layer 20, cold, 800 iterations, arms rotating), GB/s over trellis bytes; flat16_g* = flat 16-B grid-stride read, tile_* = coop tile pattern without decode, nsplit_* = 8 adjacent 64-column strips per block, *_g144 = the dataflow grid",
   "m1": {
    "tile_barrier": {
-    "median_us": 120.95999717712402,
-    "gbps_median": 219.42857654943504,
-    "gbps_p10": 209.19040789427035,
-    "gbps_p90": 221.59764327834745
+    "median_us": 120.9,
+    "gbps_median": 219.6,
+    "gbps_p10": 216.0,
+    "gbps_p90": 221.5
    },
    "tile_nobarrier": {
-    "median_us": 120.86399644613266,
-    "gbps_median": 219.60286586940242,
-    "gbps_p10": 207.77554438417056,
-    "gbps_p90": 221.71611391500332
+    "median_us": 120.9,
+    "gbps_median": 219.6,
+    "gbps_p10": 215.9,
+    "gbps_p90": 221.6
    },
    "contiguous": {
-    "median_us": 120.86399644613266,
-    "gbps_median": 219.60286586940242,
-    "gbps_p10": 209.084941803155,
-    "gbps_p90": 223.4482702944323
+    "median_us": 120.8,
+    "gbps_median": 219.7,
+    "gbps_p10": 214.2,
+    "gbps_p90": 223.4
+   },
+   "nsplit_g": {
+    "median_us": 126.0,
+    "gbps_median": 210.7,
+    "gbps_p10": 207.3,
+    "gbps_p90": 212.5
+   },
+   "nsplit_k": {
+    "median_us": 127.0,
+    "gbps_median": 209.0,
+    "gbps_p10": 205.7,
+    "gbps_p90": 210.8
+   },
+   "tile_barrier_g144": {
+    "median_us": 124.9,
+    "gbps_median": 212.5,
+    "gbps_p10": 210.7,
+    "gbps_p90": 216.0
+   },
+   "nsplit_g_g144": {
+    "median_us": 124.9,
+    "gbps_median": 212.5,
+    "gbps_p10": 209.0,
+    "gbps_p90": 212.7
+   },
+   "nsplit_k_g144": {
+    "median_us": 125.0,
+    "gbps_median": 212.4,
+    "gbps_p10": 209.0,
+    "gbps_p90": 212.5
+   },
+   "flat16_g48": {
+    "median_us": 123.1,
+    "gbps_median": 215.7,
+    "gbps_p10": 209.1,
+    "gbps_p90": 216.1
+   },
+   "flat16_g96": {
+    "median_us": 116.7,
+    "gbps_median": 227.4,
+    "gbps_p10": 223.4,
+    "gbps_p90": 231.4
+   },
+   "flat16_g144": {
+    "median_us": 114.7,
+    "gbps_median": 231.4,
+    "gbps_p10": 225.5,
+    "gbps_p90": 231.9
    }
   },
   "m3": {
    "tile_barrier": {
-    "median_us": 256.03199005126953,
-    "gbps_median": 224.22751954623806,
-    "gbps_p10": 219.54473867404857,
-    "gbps_p90": 226.66667137471316
+    "median_us": 258.0,
+    "gbps_median": 223.2,
+    "gbps_p10": 217.8,
+    "gbps_p90": 225.9
    },
    "tile_nobarrier": {
-    "median_us": 257.87200033664703,
-    "gbps_median": 222.8709676907653,
-    "gbps_p10": 218.18182449531312,
-    "gbps_p90": 225.88235166521085
+    "median_us": 259.1,
+    "gbps_median": 222.5,
+    "gbps_p10": 217.1,
+    "gbps_p90": 225.3
    },
    "contiguous": {
-    "median_us": 254.97600436210632,
-    "gbps_median": 224.99999204155787,
-    "gbps_p10": 220.43160087855392,
-    "gbps_p90": 228.19412241335843
+    "median_us": 256.0,
+    "gbps_median": 224.0,
+    "gbps_p10": 218.9,
+    "gbps_p90": 227.4
+   },
+   "nsplit_g": {
+    "median_us": 255.0,
+    "gbps_median": 224.8,
+    "gbps_p10": 220.4,
+    "gbps_p90": 227.4
+   },
+   "nsplit_k": {
+    "median_us": 256.0,
+    "gbps_median": 223.8,
+    "gbps_p10": 219.3,
+    "gbps_p90": 226.5
+   },
+   "tile_barrier_g144": {
+    "median_us": 257.0,
+    "gbps_median": 224.3,
+    "gbps_p10": 219.7,
+    "gbps_p90": 227.4
+   },
+   "nsplit_g_g144": {
+    "median_us": 264.2,
+    "gbps_median": 219.1,
+    "gbps_p10": 214.1,
+    "gbps_p90": 222.9
+   },
+   "nsplit_k_g144": {
+    "median_us": 265.2,
+    "gbps_median": 218.3,
+    "gbps_p10": 214.2,
+    "gbps_p90": 222.7
+   },
+   "flat16_g48": {
+    "median_us": 260.1,
+    "gbps_median": 221.1,
+    "gbps_p10": 217.8,
+    "gbps_p90": 223.4
+   },
+   "flat16_g96": {
+    "median_us": 246.6,
+    "gbps_median": 233.4,
+    "gbps_p10": 229.4,
+    "gbps_p90": 235.6
+   },
+   "flat16_g144": {
+    "median_us": 245.6,
+    "gbps_median": 234.8,
+    "gbps_p10": 230.4,
+    "gbps_p90": 237.7
    }
   },
   "m4": {
    "tile_barrier": {
-    "median_us": 312.8480017185211,
-    "gbps_median": 226.57343056791646,
-    "gbps_p10": 222.52439007416274,
-    "gbps_p90": 228.59033294033753
+    "median_us": 312.3,
+    "gbps_median": 225.7,
+    "gbps_p10": 221.6,
+    "gbps_p90": 227.9
    },
    "tile_nobarrier": {
-    "median_us": 314.2399936914444,
-    "gbps_median": 225.65651167290153,
-    "gbps_p10": 221.538455424577,
-    "gbps_p90": 227.94953512540297
+    "median_us": 313.3,
+    "gbps_median": 224.8,
+    "gbps_p10": 220.7,
+    "gbps_p90": 227.3
    },
    "contiguous": {
-    "median_us": 311.3759905099869,
-    "gbps_median": 225.6584801240479,
-    "gbps_p10": 221.51873775701577,
-    "gbps_p90": 228.94105819163926
+    "median_us": 310.2,
+    "gbps_median": 224.9,
+    "gbps_p10": 220.4,
+    "gbps_p90": 228.2
+   },
+   "nsplit_g": {
+    "median_us": 314.4,
+    "gbps_median": 225.3,
+    "gbps_p10": 222.8,
+    "gbps_p90": 227.4
+   },
+   "nsplit_k": {
+    "median_us": 315.4,
+    "gbps_median": 224.4,
+    "gbps_p10": 221.6,
+    "gbps_p90": 226.6
+   },
+   "tile_barrier_g144": {
+    "median_us": 309.2,
+    "gbps_median": 226.7,
+    "gbps_p10": 222.1,
+    "gbps_p90": 229.6
+   },
+   "nsplit_g_g144": {
+    "median_us": 316.4,
+    "gbps_median": 222.2,
+    "gbps_p10": 216.0,
+    "gbps_p90": 226.0
+   },
+   "nsplit_k_g144": {
+    "median_us": 317.4,
+    "gbps_median": 222.0,
+    "gbps_p10": 216.0,
+    "gbps_p90": 225.5
+   },
+   "flat16_g48": {
+    "median_us": 317.4,
+    "gbps_median": 222.5,
+    "gbps_p10": 219.5,
+    "gbps_p90": 224.6
+   },
+   "flat16_g96": {
+    "median_us": 301.1,
+    "gbps_median": 234.2,
+    "gbps_p10": 230.6,
+    "gbps_p90": 236.7
+   },
+   "flat16_g144": {
+    "median_us": 299.0,
+    "gbps_median": 235.4,
+    "gbps_p10": 232.1,
+    "gbps_p90": 238.2
    }
   },
   "m6": {
    "tile_barrier": {
-    "median_us": 484.3840003013611,
-    "gbps_median": 229.32218114086442,
-    "gbps_p10": 227.38227284032564,
-    "gbps_p90": 230.6916719326052
+    "median_us": 481.3,
+    "gbps_median": 228.8,
+    "gbps_p10": 226.7,
+    "gbps_p90": 230.3
    },
    "tile_nobarrier": {
-    "median_us": 486.36800050735474,
-    "gbps_median": 228.31881387404522,
-    "gbps_p10": 226.28571608206448,
-    "gbps_p90": 229.69608356547226
+    "median_us": 483.3,
+    "gbps_median": 227.8,
+    "gbps_p10": 225.7,
+    "gbps_p90": 229.4
    },
    "contiguous": {
-    "median_us": 491.10399186611176,
-    "gbps_median": 226.89076272789723,
-    "gbps_p10": 223.18372812814326,
-    "gbps_p90": 229.2385211062303
+    "median_us": 484.3,
+    "gbps_median": 226.2,
+    "gbps_p10": 222.6,
+    "gbps_p90": 228.6
+   },
+   "nsplit_g": {
+    "median_us": 484.5,
+    "gbps_median": 226.8,
+    "gbps_p10": 223.3,
+    "gbps_p90": 229.0
+   },
+   "nsplit_k": {
+    "median_us": 486.4,
+    "gbps_median": 226.0,
+    "gbps_p10": 222.9,
+    "gbps_p90": 228.3
+   },
+   "tile_barrier_g144": {
+    "median_us": 477.2,
+    "gbps_median": 230.2,
+    "gbps_p10": 227.9,
+    "gbps_p90": 231.7
+   },
+   "nsplit_g_g144": {
+    "median_us": 487.5,
+    "gbps_median": 224.6,
+    "gbps_p10": 220.7,
+    "gbps_p90": 227.0
+   },
+   "nsplit_k_g144": {
+    "median_us": 488.4,
+    "gbps_median": 224.3,
+    "gbps_p10": 220.7,
+    "gbps_p90": 226.9
+   },
+   "flat16_g48": {
+    "median_us": 489.5,
+    "gbps_median": 224.3,
+    "gbps_p10": 221.8,
+    "gbps_p90": 225.8
+   },
+   "flat16_g96": {
+    "median_us": 466.9,
+    "gbps_median": 235.2,
+    "gbps_p10": 231.6,
+    "gbps_p90": 237.2
+   },
+   "flat16_g144": {
+    "median_us": 465.0,
+    "gbps_median": 236.2,
+    "gbps_p10": 233.0,
+    "gbps_p90": 238.5
    }
   },
   "m8": {
    "tile_barrier": {
-    "median_us": 578.5920023918152,
-    "gbps_median": 228.64683254659082,
-    "gbps_p10": 222.11535472988135,
-    "gbps_p90": 230.71177497318698
+    "median_us": 577.0,
+    "gbps_median": 229.5,
+    "gbps_p10": 227.4,
+    "gbps_p90": 230.7
    },
    "tile_nobarrier": {
-    "median_us": 579.6160101890564,
-    "gbps_median": 227.38660382404953,
-    "gbps_p10": 221.1729436374207,
-    "gbps_p90": 229.81885352411106
+    "median_us": 579.6,
+    "gbps_median": 228.4,
+    "gbps_p10": 226.4,
+    "gbps_p90": 229.8
    },
    "contiguous": {
-    "median_us": 584.7840011119843,
-    "gbps_median": 225.74039968685238,
-    "gbps_p10": 216.03648776461503,
-    "gbps_p90": 229.0366968110235
+    "median_us": 583.7,
+    "gbps_median": 226.9,
+    "gbps_p10": 223.4,
+    "gbps_p90": 229.0
+   },
+   "nsplit_g": {
+    "median_us": 578.5,
+    "gbps_median": 227.8,
+    "gbps_p10": 225.2,
+    "gbps_p90": 229.4
+   },
+   "nsplit_k": {
+    "median_us": 579.6,
+    "gbps_median": 227.4,
+    "gbps_p10": 224.6,
+    "gbps_p90": 228.9
+   },
+   "tile_barrier_g144": {
+    "median_us": 573.4,
+    "gbps_median": 231.1,
+    "gbps_p10": 228.4,
+    "gbps_p90": 232.3
+   },
+   "nsplit_g_g144": {
+    "median_us": 593.9,
+    "gbps_median": 225.3,
+    "gbps_p10": 221.9,
+    "gbps_p90": 227.7
+   },
+   "nsplit_k_g144": {
+    "median_us": 593.9,
+    "gbps_median": 225.1,
+    "gbps_p10": 222.1,
+    "gbps_p90": 227.4
+   },
+   "flat16_g48": {
+    "median_us": 589.8,
+    "gbps_median": 224.8,
+    "gbps_p10": 222.4,
+    "gbps_p90": 226.3
+   },
+   "flat16_g96": {
+    "median_us": 561.2,
+    "gbps_median": 235.6,
+    "gbps_p10": 232.9,
+    "gbps_p90": 237.4
+   },
+   "flat16_g144": {
+    "median_us": 560.7,
+    "gbps_median": 236.3,
+    "gbps_p10": 233.3,
+    "gbps_p90": 238.4
    }
   }
  },
  "phases_v2": {
-  "v2/m1": {
+  "source": "final4-time.json phases (stamped build, 40 calls; its absolute times are not the reported ones)",
+  "m1": {
    "calls": 40,
    "grid": 144,
    "unique_mean": 6,
    "launch_skew_us": 0.064,
-   "tail_us": 3.008,
-   "total_us": 151.536,
+   "tail_us": 3.024,
+   "total_us": 164.38400000000001,
+   "syncs": [
+    {
+     "work_us": 11.104,
+     "imbalance_us": 5.392,
+     "barrier_us": 0.672,
+     "release_spread_us": 0.256
+    },
+    {
+     "work_us": 148.752,
+     "imbalance_us": 12.568000000000001,
+     "barrier_us": 0.704,
+     "release_spread_us": 0.224
+    }
+   ],
    "df": {
     "tiles_per_warp": 4.833333333333333,
-    "fill_us": 8.954208333333334,
-    "loop_us": 84.70295833333333,
-    "reduce_us": 7.811569444444444,
-    "span_us": 126.115625,
-    "between_tiles_us": 24.294430555555554
+    "fill_us": 11.996597222222222,
+    "loop_us": 84.08997222222222,
+    "reduce_us": 7.102569444444445,
+    "span_us": 133.67290277777778,
+    "between_tiles_us": 29.719236111111115
+   },
+   "pro": {
+    "build_us": 1.536,
+    "prefetch_issue_us": 3.648,
+    "hadamard_us": 0.128,
+    "first_release_us": 11.76
    }
   },
-  "v2/m3": {
+  "m3": {
    "calls": 40,
    "grid": 144,
-   "unique_mean": 11.95,
+   "unique_mean": 12.925,
    "launch_skew_us": 0.064,
-   "tail_us": 2.816,
-   "total_us": 251.96800000000002,
+   "tail_us": 2.912,
+   "total_us": 268.84799999999996,
+   "syncs": [
+    {
+     "work_us": 9.504,
+     "imbalance_us": 0.84,
+     "barrier_us": 0.704,
+     "release_spread_us": 0.256
+    },
+    {
+     "work_us": 255.088,
+     "imbalance_us": 8.512,
+     "barrier_us": 0.704,
+     "release_spread_us": 0.224
+    }
+   ],
    "df": {
-    "tiles_per_warp": 9.666666666666666,
-    "fill_us": 18.00241666666667,
-    "loop_us": 170.436375,
-    "reduce_us": 19.63147222222222,
-    "span_us": 229.05505555555555,
-    "between_tiles_us": 19.78237499999998
+    "tiles_per_warp": 10.472222222222221,
+    "fill_us": 20.19426388888889,
+    "loop_us": 184.03975,
+    "reduce_us": 19.20265277777778,
+    "span_us": 244.8417777777778,
+    "between_tiles_us": 21.550819444444446
+   },
+   "pro": {
+    "build_us": 2.48,
+    "prefetch_issue_us": 0.864,
+    "hadamard_us": 5.152,
+    "first_release_us": 10.256
    }
   },
-  "v2/m4": {
+  "m4": {
    "calls": 40,
    "grid": 144,
-   "unique_mean": 15.9,
+   "unique_mean": 15.475,
    "launch_skew_us": 0.064,
-   "tail_us": 2.88,
-   "total_us": 329.392,
+   "tail_us": 2.944,
+   "total_us": 324.592,
+   "syncs": [
+    {
+     "work_us": 9.632,
+     "imbalance_us": 0.64,
+     "barrier_us": 0.672,
+     "release_spread_us": 0.256
+    },
+    {
+     "work_us": 310.976,
+     "imbalance_us": 8.68,
+     "barrier_us": 0.704,
+     "release_spread_us": 0.224
+    }
+   ],
    "df": {
     "tiles_per_warp": 12.88888888888889,
-    "fill_us": 24.802708333333335,
-    "loop_us": 228.00416666666666,
-    "reduce_us": 25.292277777777777,
-    "span_us": 305.46488888888894,
-    "between_tiles_us": 26.84395833333336
+    "fill_us": 23.340736111111113,
+    "loop_us": 225.450875,
+    "reduce_us": 25.577194444444444,
+    "span_us": 300.86929166666664,
+    "between_tiles_us": 25.861277777777794
+   },
+   "pro": {
+    "build_us": 2.592,
+    "prefetch_issue_us": 0.832,
+    "hadamard_us": 5.44,
+    "first_release_us": 10.304
    }
   },
-  "v2/m6": {
+  "m6": {
    "calls": 40,
    "grid": 144,
-   "unique_mean": 24.225,
+   "unique_mean": 23.825,
    "launch_skew_us": 0.064,
-   "tail_us": 2.768,
-   "total_us": 514.992,
+   "tail_us": 2.784,
+   "total_us": 490.592,
+   "syncs": [
+    {
+     "work_us": 12.352,
+     "imbalance_us": 1.768,
+     "barrier_us": 0.656,
+     "release_spread_us": 0.256
+    },
+    {
+     "work_us": 474.352,
+     "imbalance_us": 8.336,
+     "barrier_us": 0.704,
+     "release_spread_us": 0.224
+    }
+   ],
    "df": {
     "tiles_per_warp": 19.333333333333332,
-    "fill_us": 37.71851388888889,
-    "loop_us": 356.47888888888883,
-    "reduce_us": 42.156277777777774,
-    "span_us": 485.8052361111111,
-    "between_tiles_us": 42.00961111111113
+    "fill_us": 36.63633333333334,
+    "loop_us": 339.89048611111104,
+    "reduce_us": 41.45577777777778,
+    "span_us": 464.24605555555553,
+    "between_tiles_us": 40.872847222222255
+   },
+   "pro": {
+    "build_us": 3.552,
+    "prefetch_issue_us": 0.864,
+    "hadamard_us": 5.984,
+    "first_release_us": 13.024
    }
   },
-  "v2/m8": {
+  "m8": {
    "calls": 40,
    "grid": 144,
-   "unique_mean": 29.8,
+   "unique_mean": 29.525,
    "launch_skew_us": 0.064,
-   "tail_us": 2.816,
-   "total_us": 613.28,
+   "tail_us": 2.88,
+   "total_us": 594.896,
+   "syncs": [
+    {
+     "work_us": 13.168,
+     "imbalance_us": 1.08,
+     "barrier_us": 0.672,
+     "release_spread_us": 0.256
+    },
+    {
+     "work_us": 577.328,
+     "imbalance_us": 8.576,
+     "barrier_us": 0.704,
+     "release_spread_us": 0.224
+    }
+   ],
    "df": {
-    "tiles_per_warp": 24.97222222222222,
-    "fill_us": 47.38241666666667,
-    "loop_us": 434.44505555555554,
-    "reduce_us": 52.11688888888889,
-    "span_us": 586.6429444444444,
-    "between_tiles_us": 51.498680555555495
+    "tiles_per_warp": 24.166666666666668,
+    "fill_us": 46.679125,
+    "loop_us": 422.7783194444445,
+    "reduce_us": 48.56411111111112,
+    "span_us": 567.2104166666667,
+    "between_tiles_us": 49.895277777777736
+   },
+   "pro": {
+    "build_us": 4.16,
+    "prefetch_issue_us": 0.952,
+    "hadamard_us": 6.92,
+    "first_release_us": 13.808
    }
+  }
+ },
+ "round4_exploration": {
+  "source": "iterations.txt it 15; x1-check .. x6-early2 *.json; exploration kernel in commit 59a1c95",
+  "gate": "promote only if the paired saving vs v2 and vs the same-binary control is >= 0.5% of the call at m=4 AND m=8 (census_all cold, 95% CI above 0) and nothing else is slower; all correctness gates bitwise",
+  "verdicts": {
+   "32-column down tiles, last 1 / 2 grids / all": "bitwise; slower: m=4 -1.3 / -4.0 / -22.4 us, m=8 -1.9 / -2.9 / -44.1 us vs control",
+   "whole-K L2 prefetch of the last grid of down tiles": "no change (m=4 -1.1 +- 1.3, m=8 -0.4 +- 1.2 us)",
+   "prologue prefetch 8 / 12 k-slices (production 4)": "no change (m=4 +0.7 +- 1.2 / -0.4 +- 1.6 us)",
+   "early Hadamard loads, first round": "m=3/4 +0.8/+0.9%, m=6/8 0, m=1 -1.6%: fails",
+   "early Hadamard loads, both rounds, m >= 3": "m=4 +0.74% (CI 0.5..0.96), m=8 +0.36%: under the 0.5% bar at m=8, not promoted",
+   "N-split read pattern (2 KB contiguous per block)": "reads no faster than the tile pattern (219-225 vs 224-231 GB/s); flags.md Round 10"
   }
  }
 }

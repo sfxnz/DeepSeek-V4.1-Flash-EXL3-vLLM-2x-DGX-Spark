@@ -169,17 +169,24 @@ Reproduce (spark1, serve down or not: spark2's GPU is used)
       --mode time --variants 0,1,2 --ms 1,3,4,6,8 --sources census_all,census --iters 800 \
       --out results/2026-09-25-kernels/coop-moe/fix-tlayers.json
   kernel_study/p2b_coop/sass_identity_r3.sh
+  Round-4 final suite (it 16): final4-validate (--mode check,capture,stress --check-routings 16 --ref
+  --replays 48 --stress-calls 2000), the same on --layer 33 --tp-rank 1 without --ref, final4-time
+  (--mode time,phases,stream --sources census,census_all,dup0 --iters 800), real_ext_check.py; the
+  exact commands are the "# cmd:" lines of results/2026-09-25-kernels/coop-moe/runs/final4-*.log.
 
 Results: results/2026-09-25-kernels/coop-moe/ (iterations.txt = every iteration with numbers;
-summary.json = the final table: time_layer20 = per call on layer 20, projected_ms_per_step_40_layers
-= the per-step projection from all 40 layers).
+summary.json = the final table from the round-4 final suite (final4-*.json): time_layer20 = per call
+on layer 20, projected_ms_per_step_40_layers = the per-step projection from all 40 layers with its
+three replicates, stream_ceiling = read ceilings of the same bytes, phases_v2 = barrier and prologue
+stamps, round4_exploration = the rejected fixed-cost variants).
 
 Serve arm (DSV41_P2B_COOP=2), not run yet
 -----------------------------------------
-Gates already met (microbench): one-hot bit-exact vs p2b, bitwise = DSV41_P2B_COOP=1, full
-weights <= 1 fp16 ulp vs p2b (max rel <= 5.2e-4), fp64-reference error equal to p2b's,
-deterministic, graph replay bitwise (32 per m), 5000-call race hunt bitwise, SORT=0/1/2 SASS
-identical, no-sharing routing not slower (-7.4% at m=4).
+Gates already met (microbench, re-run at the end of round 4: iterations.txt it 16): one-hot
+bit-exact vs p2b, bitwise = DSV41_P2B_COOP=1, full weights <= 1 fp16 ulp vs p2b (max rel <= 4.9e-4),
+fp64-reference error equal to p2b's, deterministic, graph replay bitwise (48 per m), 2000-call race
+hunts per m bitwise, all on layer 20 rank 0 and layer 33 rank 1; the real vllm_exl3_c from the e15
+recipe = the bench bitwise; SORT=0/1/2 SASS identical; no-sharing routing not slower (-7.2% at m=4).
 1. Build (network for apt + git clone; CPU nvcc ~2-5 min; serve down or >= 14 GiB MemAvailable):
      cd /home/sfxnz/projects/ai-lab/recipes/.worktrees/k3-coop-moe
      docker build -f docker/Dockerfile.e15 -t dsv41-flash-exl3-sm121:review-e15 docker
@@ -204,12 +211,13 @@ identical, no-sharing routing not slower (-7.4% at m=4).
    Engagement proof (one boot): tools/profile_window.sh shows p2b_coop_df_kernel<2, 1> (grid 144)
    in B and p2b_moe_batched_kernel<2, 1, 0> in A.
 3. Expected: p2b 23.2 ms/step (c=1 profile) -> ~16.4 ms (-6.8 ms of ~63: ~+12% tok/s at matched
-   acceptance; -1.9 ms/step vs DSV41_P2B_COOP=1); c=2 ~-15.3 ms/step. Basis: census routing of all
-   40 routed layers drawn layer-stratified, mean of the paired per-call savings x 40 (fix-tlayers.json;
-   m=4 6.77 +- 0.15, m=8 15.27 +- 0.28 ms/step). The earlier -7.4 / -16.2 were layer 20's median
-   saving x 40, biased high: layer 20 shares more experts (dup 0.344 at m=4) than the 40-layer mean
-   (0.2987). Accept on ms/step at matched acceptance (L.A.I.L n=10 and bench c=1/c=2) with the
-   ARMS.md noise gate; quality quick+full within baseline bands.
+   acceptance; -1.8 to -1.9 ms/step vs DSV41_P2B_COOP=1); c=2 -15.2 to -15.3 ms/step. Basis: census
+   routing of all 40 routed layers drawn layer-stratified, mean of the paired per-call savings x 40,
+   three independent 800-iteration runs: m=4 6.77 / 6.76 / 6.81 (+- 0.16), m=8 15.27 / 15.17 / 15.34
+   (+- 0.28) ms/step (fix-tlayers.json, review r4, final4-time.json). The earlier -7.4 / -16.2 were
+   layer 20's median saving x 40, biased high: layer 20 shares more experts (dup 0.344 at m=4) than
+   the 40-layer mean (0.2987). Accept on ms/step at matched acceptance (L.A.I.L n=10 and bench
+   c=1/c=2) with the ARMS.md noise gate; quality quick+full within baseline bands.
 Rollback: ./stop.sh, canonical-e13 boot with DSV41_P2B_COOP unset.
 
 Round 4 fix pass (2026-09-25): the review's missed opportunities, measured; nothing promoted

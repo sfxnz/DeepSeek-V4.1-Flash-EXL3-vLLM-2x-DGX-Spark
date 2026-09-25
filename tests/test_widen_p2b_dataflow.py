@@ -328,6 +328,13 @@ class DataflowBenchSourceTests(unittest.TestCase):
         self.assertEqual(ts.count("P2B_GRID_SYNC();"), bench.count("grid.sync();"))
         self.assertIn("DF_ENTRY();", ts)
         self.assertIn("DF_DUMP();", ts)
+        # round 4: prologue sub-stamps (stamped build only) and the flat read-ceiling probe
+        self.assertEqual(ts.count("P2B_TS(56);"), 1)
+        self.assertEqual(ts.count("P2B_TS(57);"), 1)
+        self.assertNotIn("P2B_TS(56);", bench)
+        self.assertIn('mod.def("flat", &p2b_flat', bench)
+        # the bench keeps the image's host conditions: only DSV41_P2B_COOP=2 takes the dataflow path
+        self.assertEqual(bench.count("p2b_coop_mode() == 2"), chain.count("p2b_coop_mode() == 2"))
 
 
 if __name__ == "__main__":

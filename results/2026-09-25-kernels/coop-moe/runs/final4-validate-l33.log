@@ -1,0 +1,63 @@
+# 2026-09-25T18:26:23Z host spark2 tag final4-validate-l33
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.7Gi        85Gi       264Ki        32Gi       115Gi
+Swap:           15Gi       1.1Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode check,capture,stress --variants 0,1,2 --ms 1,3,4,6,8 --sources census,dup0 --layer 33 --tp-rank 1 --check-routings 16 --replays 48 --stress-calls 2000 --seed 67 --out results/2026-09-25-kernels/coop-moe/final4-validate-l33.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[18:26:33Z] loaded layer 33 rank 1 in 2.9 s
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[18:26:33Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v1": {"grid": 192, "blocks_per_sm": 4.0}, "v2": {"grid": 144, "blocks_per_sm": 3.0}}
+[18:26:33Z] [check] v1 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.8460837711463682e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:33Z] [check] v2 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.8460837711463682e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:34Z] [check] v1 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 5.283178325043991e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:34Z] [check] v2 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 5.283178325043991e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:34Z] [check] v1 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00019260401313658804, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:34Z] [check] v2 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00019260401313658804, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:34Z] [check] v1 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00017705382197164, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:34Z] [check] v2 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00017705382197164, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:34Z] [check] v1 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 9.819324623094872e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:34Z] [check] v2 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 9.819324623094872e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:34Z] [check] v1 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0003787878667935729, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:34Z] [check] v2 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0003787878667935729, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:35Z] [check] v1 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0003599711926653981, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:35Z] [check] v2 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0003599711926653981, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:35Z] [check] v1 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0001867065002443269, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:35Z] [check] v2 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0001867065002443269, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:35Z] [check] v1 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0003602305368985981, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:35Z] [check] v2 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0003602305368985981, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:36Z] [check] v1 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00039682540227659047, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:36Z] [check] v2 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00039682540227659047, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:36Z] [check] v1 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0003631082072388381, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:36Z] [check] v2 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0003631082072388381, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:36Z] [check] v1 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00037174721364863217, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:36Z] [check] v2 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00037174721364863217, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[18:26:36Z] [capture] v1 m=1: replay_equals_eager=True (48 replays)
+[18:26:36Z] [capture] v1 m=3: replay_equals_eager=True (48 replays)
+[18:26:36Z] [capture] v1 m=4: replay_equals_eager=True (48 replays)
+[18:26:37Z] [capture] v1 m=6: replay_equals_eager=True (48 replays)
+[18:26:37Z] [capture] v1 m=8: replay_equals_eager=True (48 replays)
+[18:26:37Z] [capture] v2 m=1: replay_equals_eager=True (48 replays)
+[18:26:37Z] [capture] v2 m=3: replay_equals_eager=True (48 replays)
+[18:26:37Z] [capture] v2 m=4: replay_equals_eager=True (48 replays)
+[18:26:37Z] [capture] v2 m=6: replay_equals_eager=True (48 replays)
+[18:26:37Z] [capture] v2 m=8: replay_equals_eager=True (48 replays)
+[18:26:38Z] [stress] v2 m=1: 2000 calls, eager mismatches 0, graph mismatches 0
+[18:26:41Z] [stress] v2 m=3: 2000 calls, eager mismatches 0, graph mismatches 0
+[18:26:43Z] [stress] v2 m=4: 2000 calls, eager mismatches 0, graph mismatches 0
+[18:26:47Z] [stress] v2 m=6: 2000 calls, eager mismatches 0, graph mismatches 0
+[18:26:52Z] [stress] v2 m=8: 2000 calls, eager mismatches 0, graph mismatches 0
+[18:26:52Z] pass=True
+# 2026-09-25T18:26:53Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

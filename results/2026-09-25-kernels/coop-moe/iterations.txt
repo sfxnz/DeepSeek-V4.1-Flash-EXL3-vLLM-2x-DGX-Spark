@@ -254,3 +254,40 @@ it 15 round-4 fix pass: the reviewer's missed opportunities (plan and gates writ
   behind the whole p2b call. A microbench cannot reproduce that SM scheduling faithfully, and ARMS.md
   says "one boot = one lever": first the DSV41_P2B_COOP=2 serve ABAB, then this as its own lever (plan
   in kernel_study/p2b_coop/README.txt).
+  The exploration kernel and its variant ids 3-12 live in commit 59a1c95 (make_bench_r3.explore);
+  the harness keeps the prologue sub-stamps, the flat / N-split read probes and --pair-base.
+
+it 16 final suite on the served kernel (unchanged: chain_r3.cu md5 ab128959 = the e15 TU), gates as
+  in it 11 (all bitwise except the full-weight tolerance vs p2b, rel <= 1e-3), more coverage:
+  final4-validate      layer 20 rank 0: check 16 routings x m 1,3,4,6,8 x census/dup0/census_seq with
+                       the fp64 reference, 48 graph replays per m, stress 2000 calls per m
+  final4-validate-l33  layer 33 rank 1 (other weights, other routing): the same without --ref
+  final4-time          time (census layer 20 = per call, census_all = per step, dup0), 800 iterations
+                       per arm, cold and warm, paired; phases (40 calls); stream ceilings (800)
+  final4-real-ext      the real vllm_exl3_c from the e15 recipe vs the bench, bitwise
+  sass_identity_r3.sh  SORT=0/1/2 machine code e14 TU vs e15 TU
+  Results (spark2, pmon clean before and after every run, SM 2171-2190 MHz in every timed section):
+  final4-validate (layer 20 rank 0): 24 check cases pass; =2 one-hot bitwise = p2b, full weights
+    bitwise = =1, repeat bitwise, max rel vs p2b 4.9e-4 (1 ulp), fp64-reference error equal to p2b's
+    in every case (max rel 0.96e-3 .. 1.15e-3, rms rel 8.8e-4); 48 graph replays per m bitwise; stress
+    2000 fresh routings per m, eager and graph replay, 0 mismatches vs =1.
+  final4-validate-l33 (layer 33 rank 1): 24 cases pass, max rel 4.0e-4 (1 ulp), 48 replays per m, stress
+    2000 per m, 0 mismatches.
+  final4-real-ext: the e15-recipe vllm_exl3_c: unset / 0 one-hot = p2b, 1 = bench =1, 2 = bench =2 =
+    real 1, all bitwise; engaged line only for 2, no disarm line; cold m=4 real 227.4 vs bench 230.4 us.
+  final4-sass-identity: SORT=0/1/2 13/13 byte-identical, one new kernel p2b_coop_df_kernel<2, 1>.
+  final4-time (seed 71, 800 iterations per arm), cold median per call, layer-20 census, p2b / =1 / =2:
+    m=1 182.3 / 186.4 / 157.6   m=3 405.5 / 315.5 / 279.6   m=4 521.3 / 378.8 / 336.3 [p10 263.1,
+    p90 392.2]   m=6 759.8 / 559.5 / 508.9   m=8 1013.7 / 669.6 / 606.8 [508.9, 710.6]
+    dup0: m=4 526.3 / 537.5 / 488.4, m=8 1026.0 / 1051.6 / 948.2 (=2 faster than p2b at every m)
+  per step, census_all, paired mean x 40: m=4 6.81 +- 0.16 (vs =1 1.89 +- 0.05), m=8 15.34 +- 0.28
+    (2.92 +- 0.06), m=1 0.97, m=3 4.63, m=6 9.50. Three independent runs now agree: m=4 6.77 / 6.76 /
+    6.81, m=8 15.27 / 15.17 / 15.34 (fix-tlayers, review r4, final4). Per-layer saving linear in the
+    layer's duplicate fraction (m=4 427 us per unit dup, r = 0.994; m=8 871, r = 0.996).
+  read ceiling (same run, same routings' bytes): flat 16-B sweep 231.4 / 234.8 / 235.4 / 236.2 / 236.3
+    GB/s at m = 1 / 3 / 4 / 6 / 8; =2 = 73.4 / 88.0 / 89.5 / 92.6 / 93.2% of it (the review's 89% /
+    93% against 237 GB/s). Tile pattern at the dataflow grid 212.5 / 224.3 / 226.7 / 230.2 / 231.1.
+  phases (=2, stamped): m=4 prologue first release 10.3 us (sort/build 2.6, prefetch issue 0.8,
+    input Hadamard 5.4), final down-tile imbalance 8.7, output 2.9; m=8 13.8 (4.2 / 1.0 / 6.9), 8.6, 2.9.
+  summary.json regenerated from these files. The kernel, the patch and the e15 recipe are unchanged in
+  round 4; DSV41_P2B_COOP=2 goes to the serve ABAB as committed in 421c945.

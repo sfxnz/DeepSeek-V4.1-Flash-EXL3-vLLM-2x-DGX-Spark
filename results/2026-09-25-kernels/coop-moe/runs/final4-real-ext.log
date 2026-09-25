@@ -1,0 +1,78 @@
+# 2026-09-25T18:33:40Z host spark2 tag final4-real-ext
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       8.9Gi        79Gi       260Ki        35Gi       112Gi
+Swap:           15Gi       1.1Gi        14Gi
+# cmd: kernel_study/p2b_coop/real_ext_check.py --so-dir kernel_study/p2b_coop/build/e15so --out results/2026-09-25-kernels/coop-moe/final4-real-ext.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+{
+ "so_dir": "kernel_study/p2b_coop/build/e15so",
+ "cases": 24,
+ "modes": {
+  "unset": {
+   "so": "/repo/kernel_study/p2b_coop/build/e15so/vllm_exl3_c.cpython-312-aarch64-linux-gnu.so",
+   "engaged_line": false,
+   "disarm_line": false,
+   "timing_us": {}
+  },
+  "0": {
+   "so": "/repo/kernel_study/p2b_coop/build/e15so/vllm_exl3_c.cpython-312-aarch64-linux-gnu.so",
+   "engaged_line": false,
+   "disarm_line": false,
+   "timing_us": {}
+  },
+  "1": {
+   "so": "/repo/kernel_study/p2b_coop/build/e15so/vllm_exl3_c.cpython-312-aarch64-linux-gnu.so",
+   "engaged_line": false,
+   "disarm_line": false,
+   "timing_us": {}
+  },
+  "2": {
+   "so": "/repo/kernel_study/p2b_coop/build/e15so/vllm_exl3_c.cpython-312-aarch64-linux-gnu.so",
+   "engaged_line": true,
+   "disarm_line": false,
+   "timing_us": {
+    "m1/t0": 157.74399787187576,
+    "m4/t0": 227.4399995803833,
+    "m8/t0": 674.8480200767517
+   }
+  }
+ },
+ "checks": {
+  "unset_onehot_eq_bench_v0": true,
+  "mode0_onehot_eq_bench_v0": true,
+  "mode1_rw_eq_bench_v1": true,
+  "mode2_rw_eq_bench_v2": true,
+  "mode2_rw_eq_real_mode1": true,
+  "mode2_onehot_eq_bench_v0": true,
+  "engaged_only_mode2": true,
+  "no_disarm_line": true
+ },
+ "timing_cold_median_us": {
+  "bench_v2": {
+   "m1/t0": 158.76799821853638,
+   "m4/t0": 230.3680032491684,
+   "m8/t0": 676.9599914550781
+  },
+  "real_mode2": {
+   "m1/t0": 157.74399787187576,
+   "m4/t0": 227.4399995803833,
+   "m8/t0": 674.8480200767517
+  }
+ },
+ "pass": true
+}
+# 2026-09-25T18:34:50Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
