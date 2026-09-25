@@ -22,6 +22,7 @@ mm_mxfp8(q, W.t(), s, swizzle_mxfp8_scale(scale_2d)).
    sleep before the start event hides the graph launch, cold L2 (a 128 MiB
    write before each replay; GB10 L2 is 24 MiB) and warm; achieved GB/s =
    weight + scale bytes / time.
+3. prefill: the same at M 512 and 2048 (compute-bound; TFLOP/s), >= 100 replays.
 Prints one JSON line; exit 1 on any bit difference.
 """
 from __future__ import annotations
@@ -166,6 +167,35 @@ def main() -> int:
                 cell[k]["pct_of_250"] = round(100 * cell[k]["GBps"] / 250, 1)
             cell["delta_us"] = round(cell["full"]["median"] - cell["h0"]["median"], 2)
             out["timing_us"][f"m{m}_{l2}"] = cell
+    # 3. prefill chunk sizes (compute-bound: what a rank's half saves at prefill, to set
+    # against the gather of [M, 12800] bf16 per rank, which one GPU cannot time)
+    out["timing_prefill_us"] = {}
+    for m in (512, 2048):
+        x = make_x(m, "normal", g)
+        graphs = {}
+        for name in ("full", "h0"):
+            call(x, t[name])
+            torch.cuda.synchronize()
+            gr = torch.cuda.CUDAGraph()
+            with torch.cuda.graph(gr):
+                call(x, t[name])
+            graphs[name] = gr
+        times = {"full": [], "h0": []}
+        for it in range(args.warmup + args.iters // 3):
+            for name in (("full", "h0") if it % 2 == 0 else ("h0", "full")):
+                torch.cuda._sleep(200_000)
+                e0, e1 = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+                e0.record()
+                graphs[name].replay()
+                e1.record()
+                torch.cuda.synchronize()
+                if it >= args.warmup:
+                    times[name].append(e0.elapsed_time(e1) * 1e3)
+        cell = {k: summarize(v) for k, v in times.items()}
+        for k in cell:
+            cell[k]["TFLOPs"] = round(2 * m * (N_FULL if k == "full" else half) * K / (cell[k]["median"] * 1e-6) / 1e12, 1)
+        cell["delta_us"] = round(cell["full"]["median"] - cell["h0"]["median"], 2)
+        out["timing_prefill_us"][f"m{m}"] = cell
     out["mismatches"] = bad
     print(json.dumps(out))
     return 1 if bad else 0
