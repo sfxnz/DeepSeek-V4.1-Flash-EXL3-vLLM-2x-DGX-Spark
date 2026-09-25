@@ -26,24 +26,43 @@ import decode_levers as dl  # noqa: E402
 import moe_prep_fused as mpf  # noqa: E402
 
 
-def pinned_function() -> str:
+def pinned_function(name: str = "_apply_native_fused_moe") -> str:
     src = FIX.read_text()
     tree = ast.parse(src)
-    fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef))
+    fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == name)
     return ast.get_source_segment(src, fn)
 
 
 class RewriteTests(unittest.TestCase):
-    def test_glue_block_is_replaced_and_nothing_else(self) -> None:
+    def test_only_the_three_anchors_change(self) -> None:
         src = pinned_function()
         out = mpf.patch_source(src)
         ast.parse(out)
-        head, _, tail = src.partition(mpf.OLD_BLOCK)
-        self.assertTrue(out.startswith(head))
-        self.assertTrue(out.endswith(tail))
-        self.assertEqual(out[len(head) : len(out) - len(tail)], mpf.NEW_BLOCK)
+        undo = (
+            out.replace(mpf.NEW_BLOCK, mpf.OLD_BLOCK)
+            .replace(mpf.SIG_NEW, mpf.SIG_OLD)
+            .replace(mpf.RET_NEW, mpf.RET_OLD)
+        )
+        self.assertEqual(undo, src)
         self.assertNotIn("map_topk_to_local(", out)
         self.assertEqual(out.count("_dsv41_moe_prep(ids, weights, x2d, n_exp, expert_map)"), 1)
+        self.assertIn("out_dtype: torch.dtype | None = None,", out)
+        self.assertIn("return native_out.to(dtype=torch.float32 if out_dtype is None else out_dtype)", out)
+
+    def test_experts_call_passes_the_model_dtype(self) -> None:
+        src = pinned_function("apply_exl3_experts")
+        out = mpf.patch_experts_source(src)
+        ast.parse(out)
+        self.assertEqual(out.replace(mpf.CALL_NEW, mpf.CALL_OLD), src)
+        self.assertIn("x2d, ids, weights, layer, inners, expert_map, limit, out_dtype=x.dtype", out)
+        # the caller's own cast then sees x.dtype already: no kernel
+        self.assertIn("return native_out.to(dtype=x.dtype)", out)
+
+    def test_other_callers_keep_the_fp32_contract(self) -> None:
+        # apply_exl3_fused_moe's native attempt (not rewritten) calls without
+        # out_dtype and keeps getting fp32.
+        out = mpf.patch_source(pinned_function())
+        self.assertIn("torch.float32 if out_dtype is None", out)
 
     def test_names_the_block_defined_are_still_bound(self) -> None:
         # The rest of the function uses safe_ids, safe_weights and xh only.

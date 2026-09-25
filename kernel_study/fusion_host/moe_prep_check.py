@@ -15,9 +15,11 @@ Runs in the serving image on a GPU (patch dir mounted at /opt/dsv41-patch):
 2. graph: the fused kernel captured in a CUDA graph, replayed after new inputs
    are copied into the static buffers; every replay must equal the eager stock
    ops bit for bit.
-3. function: the image's _apply_native_fused_moe with the glue swapped
-   (moe_prep_fused.patch_source) vs the stock function, with a stand-in p2b
-   op that records its inputs; the recorded tensors must be bitwise equal.
+3. function: the image's _apply_native_fused_moe and apply_exl3_experts as
+   rewritten (moe_prep_fused.patch_source / patch_experts_source) vs the stock
+   functions, with a stand-in p2b op that records its inputs; recorded inputs
+   and the bf16 routed output must be bitwise equal; plus all 65536 fp16 bit
+   patterns: one cast to bf16 == through fp32.
 4. timing: each arm captured in a CUDA graph at m = 1, 3, 4, 6, 8 (the decode
    capture sizes), replayed >= 300 times, CUDA events per replay, arms
    alternating; alone, and beside a 512 MiB device copy on another stream
@@ -141,7 +143,9 @@ def main() -> int:
     ns = dict(exl3.__dict__)
     ns["_dsv41_moe_prep"] = prep
     exec(compile(mpf.patch_source(src), "patched", "exec"), ns)
+    exec(compile(mpf.patch_experts_source(inspect.getsource(exl3.apply_exl3_experts)), "patched", "exec"), ns)
     patched = ns["_apply_native_fused_moe"]
+    patched_experts = ns["apply_exl3_experts"]
     rec = []
 
     class FakeExt:
@@ -161,11 +165,14 @@ def main() -> int:
         _exl3_k=2, _exl3_codebook_flags=(True, False, True, False, True, False),
     )
     inners = [None] * N_EXP
-    saved = (exl3._load_native_exl3_ext, exl3._native_moe_dimensions_supported)
-    exl3._load_native_exl3_ext = lambda: FakeExt
-    exl3._native_moe_dimensions_supported = lambda *a: True
-    ns["_load_native_exl3_ext"] = lambda: FakeExt
-    ns["_native_moe_dimensions_supported"] = lambda *a: True
+    saved = (exl3._load_native_exl3_ext, exl3._native_moe_dimensions_supported,
+             exl3.get_moe_kernel_backend, exl3.pin_exl3_expert_map)
+    for d in (exl3.__dict__, ns):
+        d["_load_native_exl3_ext"] = lambda: FakeExt
+        d["_native_moe_dimensions_supported"] = lambda *a: True
+        d["get_moe_kernel_backend"] = lambda: "native"
+        d["pin_exl3_expert_map"] = lambda layer, dev: None
+    layer._exl3_inners = inners
     try:
         for m in (1, 4, 8):
             for adv in (False, True):
@@ -176,8 +183,23 @@ def main() -> int:
                 torch.cuda.synchronize()
                 if len(rec) != 2 or not same(rec[0], rec[1]) or not same((a,), (b,)):
                     bad.append(f"function m={m} adv={adv}")
+                # the whole routed apply: stock (fp16 -> fp32 -> bf16) vs rewritten (one cast)
+                rec.clear()
+                ea = exl3.apply_exl3_experts(x, ids, w, layer, limit=10.0)
+                eb = patched_experts(x, ids, w, layer, limit=10.0)
+                torch.cuda.synchronize()
+                if ea.dtype != torch.bfloat16 or not same((ea,), (eb,)) or not same(rec[0], rec[1]):
+                    bad.append(f"experts m={m} adv={adv}")
     finally:
-        exl3._load_native_exl3_ext, exl3._native_moe_dimensions_supported = saved
+        (exl3._load_native_exl3_ext, exl3._native_moe_dimensions_supported,
+         exl3.get_moe_kernel_backend, exl3.pin_exl3_expert_map) = saved
+
+    # fp16 -> bf16 in one cast vs through fp32, every fp16 bit pattern
+    allh = torch.arange(-32768, 32768, dtype=torch.int32).to(torch.int16).view(torch.float16).to(dev)
+    one, two = allh.to(torch.bfloat16), allh.to(torch.float32).to(torch.bfloat16)
+    if not torch.equal(one.view(torch.int16), two.view(torch.int16)):
+        bad.append("fp16->bf16 single cast != via fp32")
+    out["cast_patterns"] = int(allh.numel())
 
     # 4. timing in CUDA graphs
     side = torch.cuda.Stream()
@@ -213,6 +235,31 @@ def main() -> int:
                     if it >= args.warmup:
                         t[name].append(e0.elapsed_time(e1) * 1e3)
             timing[f"m{m}_{load}"] = {k: summarize(v) for k, v in t.items()}
+    # p2b epilogue: fp16 -> fp32 -> bf16 (stock) vs fp16 -> bf16. One graph
+    # holds 40 of them (one per routed layer), so the graph launch cost does
+    # not swamp a ~1-2 us difference; reported per step (40 layers).
+    for m in (4, 8):
+        hs = [torch.randn(m, HIDDEN, device=dev).half() for _ in range(40)]
+        graphs = {}
+        for name, conv in (("stock", lambda h: h.to(torch.float32).to(torch.bfloat16)), ("single", lambda h: h.to(torch.bfloat16))):
+            fn = lambda conv=conv: [conv(h) for h in hs]
+            fn()
+            torch.cuda.synchronize()
+            gr = torch.cuda.CUDAGraph()
+            with torch.cuda.graph(gr):
+                fn()
+            graphs[name] = gr
+        t = {"stock": [], "single": []}
+        for it in range(args.warmup + args.iters):
+            for name in (("stock", "single") if it % 2 == 0 else ("single", "stock")):
+                e0, e1 = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+                e0.record()
+                graphs[name].replay()
+                e1.record()
+                torch.cuda.synchronize()
+                if it >= args.warmup:
+                    t[name].append(e0.elapsed_time(e1) * 1e3)
+        timing[f"epilogue_x40_m{m}"] = {k: summarize(v) for k, v in t.items()}
     out["timing_us"] = timing
     kernels = {}
     for name, fn in (("stock", lambda: prep.stock(ids, w, x, N_EXP, None)), ("fused", lambda: prep.fused(ids, w, x, N_EXP))):

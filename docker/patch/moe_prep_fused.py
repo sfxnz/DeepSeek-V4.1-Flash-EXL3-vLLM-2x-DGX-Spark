@@ -19,6 +19,13 @@ DSV41_MOE_PREP_VERIFY eager calls (default 16, minimum 1; never during CUDA
 graph capture) also run the stock ops and compare raw bits; a mismatch
 disarms to the stock ops for good.
 
+The same lever drops one of the two conversions after p2b: the native path
+returns p2b's fp16 output as fp32 and apply_exl3_experts casts that to the
+model dtype (two kernels between p2b and the MoE all-reduce, 40 a step).
+_apply_native_fused_moe gains out_dtype (default fp32, the stock contract for
+every other caller) and apply_exl3_experts passes x.dtype: fp16 -> bf16 in one
+cast is bit-identical to fp16 -> fp32 -> bf16 (the fp32 step is exact).
+
 Top-level imports are stdlib only. decode_levers.install() calls install()
 when the env is on.
 """
@@ -60,6 +67,34 @@ NEW_BLOCK = """    n_exp = len(inners)
     safe_ids, safe_weights, xh = _dsv41_moe_prep(ids, weights, x2d, n_exp, expert_map)
 """
 
+# p2b output: one cast to the model dtype (apply_exl3_experts only).
+SIG_OLD = """    expert_map: torch.Tensor | None,
+    limit: float | None = None,
+) -> torch.Tensor | None:
+    \"\"\"Run the native cooperative kernel for decode rows when it is safe."""
+SIG_NEW = """    expert_map: torch.Tensor | None,
+    limit: float | None = None,
+    out_dtype: torch.dtype | None = None,
+) -> torch.Tensor | None:
+    \"\"\"Run the native cooperative kernel for decode rows when it is safe."""
+RET_OLD = """    return native_out.to(dtype=torch.float32)"""
+RET_NEW = """    # dsv41 moe_prep_fused: one cast when the caller names its dtype (bit-exact).
+    return native_out.to(dtype=torch.float32 if out_dtype is None else out_dtype)"""
+CALL_OLD = """            native_out = _apply_native_fused_moe(
+                x2d, ids, weights, layer, inners, expert_map, limit
+            )
+        except Exception as exc:
+            native_out = None
+            layer._exl3_native_error = repr(exc)
+            getattr(logger, "warning_once", logger.warning)("""
+CALL_NEW = """            native_out = _apply_native_fused_moe(
+                x2d, ids, weights, layer, inners, expert_map, limit, out_dtype=x.dtype
+            )
+        except Exception as exc:
+            native_out = None
+            layer._exl3_native_error = repr(exc)
+            getattr(logger, "warning_once", logger.warning)("""
+
 _STATE = {"armed": True, "verify_left": DEFAULT_VERIFY, "engaged": False}
 
 
@@ -73,11 +108,22 @@ def verify_calls(env=None) -> int:
     return max(1, int(env.get("DSV41_MOE_PREP_VERIFY", "") or DEFAULT_VERIFY))
 
 
+def _replace_once(src: str, old: str, new: str, what: str) -> str:
+    if src.count(old) != 1:
+        raise ValueError(f"{what} not found verbatim")
+    return src.replace(old, new)
+
+
 def patch_source(src: str) -> str:
-    """The image's _apply_native_fused_moe with the glue block replaced."""
-    if src.count(OLD_BLOCK) != 1:
-        raise ValueError("glue block not found verbatim in _apply_native_fused_moe")
-    return src.replace(OLD_BLOCK, NEW_BLOCK)
+    """The image's _apply_native_fused_moe: glue block, out_dtype parameter."""
+    src = _replace_once(src, OLD_BLOCK, NEW_BLOCK, "glue block of _apply_native_fused_moe")
+    src = _replace_once(src, SIG_OLD, SIG_NEW, "signature of _apply_native_fused_moe")
+    return _replace_once(src, RET_OLD, RET_NEW, "return of _apply_native_fused_moe")
+
+
+def patch_experts_source(src: str) -> str:
+    """The image's apply_exl3_experts: pass the model dtype to the native path."""
+    return _replace_once(src, CALL_OLD, CALL_NEW, "native call of apply_exl3_experts")
 
 
 def _disarm(exc: BaseException) -> None:
@@ -206,6 +252,7 @@ def install() -> str:
         return "already installed"
     try:
         new_src = patch_source(inspect.getsource(fn))
+        experts_src = patch_experts_source(inspect.getsource(exl3.apply_exl3_experts))
     except (OSError, ValueError) as exc:
         _disarm(exc)
         return "not installed"
@@ -213,5 +260,9 @@ def install() -> str:
     ns = exl3.__dict__
     ns["_dsv41_moe_prep"] = MoePrep(torch, _build_kernel(tl, triton), triton, exl3.map_topk_to_local)
     exec(compile(new_src, f"{exl3.__file__} [dsv41 moe_prep_fused]", "exec"), ns)
+    exec(compile(experts_src, f"{exl3.__file__} [dsv41 moe_prep_fused]", "exec"), ns)
     ns["_apply_native_fused_moe"]._dsv41_moe_prep = True
-    return f"vllm_exl3 _apply_native_fused_moe glue fused (verify={_STATE['verify_left']})"
+    return (
+        "vllm_exl3 _apply_native_fused_moe glue fused, p2b output cast once "
+        f"(verify={_STATE['verify_left']})"
+    )

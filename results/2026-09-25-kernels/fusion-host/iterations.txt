@@ -195,3 +195,20 @@ median (p10/p90):
 Projected: 4 calls/step -> ~-0.28..-0.36 ms/step at c=1 (trace-based 77.7 us/call in
 the serve), ~-0.70 ms/step at c=2 (rows 8). Numerics: the top-k input below the end is
 bit-identical; the selected sets are identical.
+
+6. ITERATION 6: one cast after p2b (KEEP, folded into DSV41_MOE_PREP_FUSED)
+--------------------------------------------------------------------------
+Trace: after every p2b, direct_copy (fp16 -> fp32, 2.4 us, grid 40) then
+bfloat16_copy (fp32 -> bf16, 1.2 us) before the add and the MoE all-reduce: the
+native path returns fp32 (_apply_native_fused_moe) and apply_exl3_experts casts to the
+model dtype. fp16 -> fp32 is exact, so fp16 -> bf16 in one cast is the same bits.
+What: the same rewrite gives _apply_native_fused_moe an out_dtype parameter (default
+fp32: apply_exl3_fused_moe's native attempt and its fp32 chunk buffer keep the stock
+contract) and makes apply_exl3_experts pass x.dtype (its own final cast is then a no-op).
+Checks (moe_prep_check_spark2.json): all 65536 fp16 bit patterns, one cast == through
+fp32; the rewritten apply_exl3_experts vs stock with a stand-in p2b, bf16 routed output
+and recorded p2b inputs bit-exact (m 1/4/8, random and adversarial).
+Timing: a graph of 40 epilogues (one per routed layer; a single-epilogue graph is
+dominated by the ~5 us graph launch and showed 7.0 vs 7.1 us, no signal), 400 replays
+alternating: m=4 stock 123.6 us (123.4/124.0) -> 86.6 (85.3/86.8) per step; m=8 125.7 ->
+86.8. ~-0.04 ms/step on the p2b -> all-reduce critical path (more under contention).
