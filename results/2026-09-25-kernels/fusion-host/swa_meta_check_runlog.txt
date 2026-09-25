@@ -1,0 +1,13 @@
+cmd: s2run.sh swa-meta2 docker run --rm --gpus all --network none --memory 16g -v $R2:/repo -v $R2/docker/patch:/opt/dsv41-patch:ro -w /tmp --entrypoint python3 dsv41-flash-exl3-sm121:canonical-e13 /repo/kernel_study/fusion_host/swa_meta_check.py
+(run 1 at 14:18:50Z, before sections 5-6 existed: stock 561.95 (555.87/606.05) vs fused 430.88 (430.75/441.06) us c1_m4; 564.00 vs 430.88 c2_m8; 48 builds + 20 replays bit-exact)
+== 2026-09-25T14:19:54Z swa-meta2
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+208 MHz, [N/A], 4.14 W, 44
+dsv41: swa metadata fused self-check bit-exact (decode tokens 1, width 128)
+dsv41: swa metadata fused DISABLED -> stock ops: RuntimeError('fused != stock (decode tokens 4, slots 4)')
+dsv41: swa metadata fused self-check bit-exact (decode tokens 8, width 128)
+== end 2026-09-25T14:20:12Z
+2190 MHz, [N/A], 8.47 W, 47

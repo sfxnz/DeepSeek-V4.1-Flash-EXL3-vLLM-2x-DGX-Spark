@@ -245,3 +245,48 @@ us median (p10/p90):
 Projected: the +wp layers stop waiting at the join (~-24 us x 4), the comp+wp layers are
 left with the compressor as the last branch (~-10..-17 us x 4): ~-0.14 ms/step at c=1.
 Bit-identical, so no quality risk.
+
+8. ITERATION 8: SWA decode metadata as one kernel per KV-cache group (KEEP, env
+   DSV41_SWA_META_FUSED=1)
+------------------------------------------------------------------------------
+Trace (eager ops of step 120, c1-rank0.pkl): 15 causal SWA metadata builds per target
+step, each = the token map (8 ops; see iteration 2) + compare_scalar (slot_mapping >= 0)
+1.2 us + DtoD (copy_ into is_valid_token) 1.0 + Fill<int> (decode_swa_lens[n:] = 0)
+0.9-1.2 + _compute_swa_indices_and_lens_kernel 2.2-2.6, op starts 4.1 us apart (queued).
+The 3 non-causal DSpark draft builds (DSpark kernel) stay stock.
+What: docker/patch/swa_meta_fused.py re-compiles DeepseekSparseSWAMetadataBuilder.build
+from the image's own source with two verbatim blocks rewritten (the validity copy, the
+decode branch head), in a copy of the module namespace (sources that need the class
+scope -- super(), __class__, mangled names -- are refused). A causal pure-decode build
+(armed, prefill tokens 0, causal is the bool True, decode tokens <= slot_mapping rows,
+int32 buffers) launches one Triton kernel: programs < n compute validity from
+slot_mapping and then the stock kernel's causal no-image integer arithmetic; programs
+>= n write validity for the rest of slot_mapping and zero the lens tail to the buffer
+end. Everything else (prefill, mixed, non-causal, update_draft_decode_metadata) is the
+stock code. The first 8 fused builds run the stock ops into the real buffers, snapshot,
+run the fused kernel over poisoned buffers and compare every written element; a mismatch
+or launch error -> one DISABLED line, stock values restored, stock from then on.
+Checks (swa_meta_check_spark2.json, spark2, canonical-e13, pmon clean, 2190 MHz):
+- 48 builds, the rewritten build vs the image's build on the same batches (12 random
+  block-table draws x c=1 m=1, c=1 m=4, c=2 m=8 with a request shorter than the window,
+  3 requests incl. a padded request and 2 padded tokens): index rows, the whole lens
+  buffer, validity, token map and the returned metadata equal; verify path ran 8x, armed;
+- fallbacks: prefill, mixed, non-causal, a tensor-valued causal flag, fewer slot rows
+  than decode tokens -> stock;
+- 20 CUDA-graph replays of the fused launch with new seq_lens / slot mappings (0-2
+  invalid tokens) / block tables == the stock ops each time;
+- sabotage (fused launch + one wrong lens element): disarmed, stock values kept, next
+  build stock; install() on the image class: patched, equal to stock, second install
+  "already installed".
+Timing: 15 builds per step (each with its own token map, as stock) queued behind ~4 ms of
+matmuls so the device runs them back to back, CUDA events around the 15 builds, 300 iters
+after 20 warmup, arms alternating, every iteration each fused builder's buffers compared
+with its stock twin's (0 mismatches). us median (p10/p90):
+  c=1 m=4: stock 568.1 (557.9/576.3)  fused 441.1 (430.9/445.2)  -127.0
+  c=2 m=8: stock 566.0 (557.9/576.3)  fused 439.1 (430.8/443.1)  -126.9
+  (run 1, before the sabotage/install sections: 562.0 -> 430.9 c=1, 564.0 -> 430.9 c=2)
+GPU ops per build 12 -> 9; with DSV41_ATTN_T2R_DEDUP=1 groups 2..15 go 5 -> 2.
+Projected: 45 fewer queued ops per target step: -0.13 ms/step at this bench's ~2.9 us/op,
+-0.18 ms/step at the serve trace's 4.1 us/op; c=2 the same (op count does not depend on
+the batch). Latency-bound (a few KB per build), so GB/s is not the measure here.
+Bit-exact (integer math, same values in the same buffers).

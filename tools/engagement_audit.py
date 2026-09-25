@@ -32,6 +32,7 @@ PATCHES = {
     "moe_prep_fused.py": {"DSV41_MOE_PREP_FUSED": "1"},
     "candidate_mask_bounded.py": {"DSV41_CANDIDATE_MASK_BOUNDED": "1"},
     "indexer_wp_gemv.py": {"DSV41_INDEXER_WP_GEMV": "1"},
+    "swa_meta_fused.py": {"DSV41_SWA_META_FUSED": "1"},
     "fix_o_proj_woa_fp8.py": {},  # baked into the image at build time
     "drop_page_cache.py": {"DSV41_DROP_PAGE_CACHE": "1"},
     "sitecustomize.py": None,  # disarm markers only

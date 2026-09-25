@@ -1,0 +1,102 @@
+{
+ "torch": "2.13.0+cu130",
+ "builds_compared": 48,
+ "state_after_builds": {
+  "armed": true,
+  "verify_left": 0,
+  "engaged": true
+ },
+ "fallback": {
+  "prefill": true,
+  "mixed": true,
+  "noncausal": true,
+  "tensor_causal": true,
+  "short_slots": true
+ },
+ "graph_replays": 20,
+ "n_mm": 19,
+ "timing_15_builds_us": {
+  "c1_m4": {
+   "stock": {
+    "n": 300,
+    "median": 568.0799782276154,
+    "p10": 557.856023311615,
+    "p90": 576.2879848480225,
+    "mean": 574.1149880488714
+   },
+   "fused": {
+    "n": 300,
+    "median": 441.1199986934662,
+    "p10": 430.88001012802124,
+    "p90": 445.21600008010864,
+    "mean": 455.9444287419319
+   }
+  },
+  "c2_m8": {
+   "stock": {
+    "n": 300,
+    "median": 566.0000145435333,
+    "p10": 557.856023311615,
+    "p90": 576.2879848480225,
+    "mean": 572.8477883338928
+   },
+   "fused": {
+    "n": 300,
+    "median": 439.07201290130615,
+    "p10": 430.84800243377686,
+    "p90": 443.10399889945984,
+    "mean": 441.28213475147885
+   }
+  }
+ },
+ "gpu_ops_per_build": {
+  "stock": 12,
+  "fused": 9
+ },
+ "gpu_op_names": {
+  "stock": [
+   "Memcpy DtoD (Device -> Device)",
+   "Memcpy DtoD (Device -> Device)",
+   "_compute_swa_indices_and_lens_kernel",
+   "void (anonymous namespace)::elementwise_kernel_with_index<in",
+   "void at::native::(anonymous namespace)::indexSelectSmallInde",
+   "void at::native::unrolled_elementwise_kernel<at::native::CUD",
+   "void at::native::unrolled_elementwise_kernel<at::native::dir",
+   "void at::native::vectorized_elementwise_kernel<4, at::native",
+   "void at::native::vectorized_elementwise_kernel<4, at::native",
+   "void at_cuda_detail::cub::detail::scan::DeviceScanInitKernel",
+   "void at_cuda_detail::cub::detail::scan::DeviceScanKernel<at_",
+   "void compute_cuda_kernel<int>(int const*, long const*, int*,"
+  ],
+  "fused": [
+   "Memcpy DtoD (Device -> Device)",
+   "_swa_decode_fused_kernel",
+   "void (anonymous namespace)::elementwise_kernel_with_index<in",
+   "void at::native::(anonymous namespace)::indexSelectSmallInde",
+   "void at::native::unrolled_elementwise_kernel<at::native::CUD",
+   "void at::native::unrolled_elementwise_kernel<at::native::dir",
+   "void at_cuda_detail::cub::detail::scan::DeviceScanInitKernel",
+   "void at_cuda_detail::cub::detail::scan::DeviceScanKernel<at_",
+   "void compute_cuda_kernel<int>(int const*, long const*, int*,"
+  ]
+ },
+ "sabotage": {
+  "disarmed": true,
+  "stock_values_kept": true,
+  "next_build_stock": true
+ },
+ "install": {
+  "msg": "DeepseekSparseSWAMetadataBuilder.build fused decode path (verify=8)",
+  "patched": true,
+  "qualname": "DeepseekSparseSWAMetadataBuilder.build",
+  "equal": true,
+  "state": {
+   "armed": true,
+   "verify_left": 5,
+   "engaged": true
+  },
+  "again": "already installed"
+ },
+ "mismatches": [],
+ "n_mismatches": 0
+}

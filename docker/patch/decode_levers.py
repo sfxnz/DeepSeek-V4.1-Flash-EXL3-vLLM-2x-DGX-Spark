@@ -48,6 +48,10 @@
   same token counts) copies the previous result into its own buffer (one
   kernel). Every builder keeps its own buffer, so captured graph addresses and
   values are the stock ones.
+- DSV41_SWA_META_FUSED=1: a causal pure-decode SWA metadata build writes
+  is_valid_token, the lens tail and the SWA indices/lens in one Triton kernel
+  instead of compare + copy + fill + the stock kernel (15 builds a target
+  step; integer math, bit-exact; swa_meta_fused.py).
 
 Top-level imports are stdlib only, so importing this module cannot fail.
 """
@@ -272,6 +276,14 @@ def _install_candidate_mask_bounded(env) -> None:
     print(f"dsv41: candidate mask bounded: {candidate_mask_bounded.install()}", flush=True)
 
 
+def _install_swa_meta_fused(env) -> None:
+    if (env.get("DSV41_SWA_META_FUSED", "0") or "0") != "1":
+        return
+    import swa_meta_fused
+
+    print(f"dsv41: swa metadata fused: {swa_meta_fused.install()}", flush=True)
+
+
 def _install_moe_prep_fused(env) -> None:
     if (env.get("DSV41_MOE_PREP_FUSED", "0") or "0") != "1":
         return
@@ -302,6 +314,7 @@ def install(env=None) -> None:
         ("moe-prep-fused", _install_moe_prep_fused),
         ("candidate-mask-bounded", _install_candidate_mask_bounded),
         ("indexer-wp-gemv", _install_indexer_wp_gemv),
+        ("swa-meta-fused", _install_swa_meta_fused),
     ):
         try:
             step(env)
