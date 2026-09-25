@@ -51,7 +51,9 @@ def _prefill(nonce: str, doc: str) -> str:
 def requests(nonce: str, vision: bool = True) -> list[tuple[str, str | list, float, int]]:
     """(label, content, temperature, max_tokens) for the warmup chats."""
     seed = int(nonce, 16)
-    doc = build_doc(PREFILL_TOKENS, TOKENS_PER_CHAR, seed=seed)
+    # Cut like the bucket prefills: build_doc overshoots by up to one repo segment
+    # (a flags.md table is one multi-KB segment), which moves with every repo edit.
+    doc = build_doc(PREFILL_TOKENS, TOKENS_PER_CHAR, seed=seed)[: int(PREFILL_TOKENS / TOKENS_PER_CHAR)]
     reqs: list[tuple[str, str | list, float, int]] = [
         ("greedy", f"[{nonce}] What is 17*19? Return only the integer.", 0.0, 16),
         ("t=0.7", f"[{nonce}] Name one prime number above 100.", 0.7, 16),
