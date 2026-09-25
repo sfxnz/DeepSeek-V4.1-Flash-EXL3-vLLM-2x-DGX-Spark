@@ -1,0 +1,868 @@
+# 2026-09-25T20:19:03+01:00 spark1 build of review-e14 from 59bb3ccb9d08f9c3de805256e8973993ebc519fe
+# cmd: DOCKER_BUILDKIT=0 docker build --memory 12g --memory-swap 12g --cpuset-cpus 0-5 -f docker/Dockerfile.e14 -t dsv41-flash-exl3-sm121:review-e14 docker
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi        11Gi        25Gi        49Mi        86Gi       110Gi
+Swap:           15Gi       3.5Gi        12Gi
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            BuildKit is currently disabled; enable it by removing the DOCKER_BUILDKIT=0
+            environment-variable.
+
+Sending build context to Docker daemon   9.63MB
+Step 1/6 : FROM dsv41-flash-exl3-sm121:canonical-e13
+ ---> c81762335a12
+Step 2/6 : COPY patch /opt/dsv41-patch
+ ---> eb3173a001ab
+Step 3/6 : ARG VLLM_EXL3_REF=d3cfd394920360d69f820d2dc96f8292a9e10283
+ ---> Running in 5beb3fd63e33
+ ---> Removed intermediate container 5beb3fd63e33
+ ---> 978f15066af7
+Step 4/6 : RUN apt-get update  && apt-get install -y --no-install-recommends git  && git clone https://github.com/vcruz305/vllm-exl3.git /opt/vllm-exl3  && git -C /opt/vllm-exl3 checkout "$VLLM_EXL3_REF"  && python3 /opt/dsv41-patch/fix_vllm_exl3_setup.py /opt/vllm-exl3/setup.py  && python3 /opt/dsv41-patch/widen_p2b_shapes.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_mrow.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_cfg1.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_codebook.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_fshift.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_srcsort.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_coop.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_dataflow.py /opt/vllm-exl3  && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps --force-reinstall /opt/vllm-exl3  && python3 -c "import torch, vllm_exl3, vllm_exl3_c; so = open(vllm_exl3_c.__file__, 'rb').read(); assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); assert b'DSV41_P2B_SRC_SORT' in so and b'DSV41_P2B_COOP' in so and b'p2b coop dataflow kernel engaged' in so; print('vllm_exl3 coop+dataflow cuda ok')"  && rm -rf /opt/vllm-exl3 /var/lib/apt/lists/*
+ ---> Running in f36c1be8c840
+Get:1 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa  InRelease [1576 B]
+Get:2 https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu noble InRelease [17.8 kB]
+Get:3 http://ports.ubuntu.com/ubuntu-ports noble InRelease [256 kB]
+Get:4 https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu noble/main arm64 Packages [52.1 kB]
+Get:5 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease [126 kB]
+Get:6 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease [126 kB]
+Get:7 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease [126 kB]
+Get:8 http://ports.ubuntu.com/ubuntu-ports noble/universe arm64 Packages [19.0 MB]
+Get:9 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa  Packages [1729 kB]
+Get:10 http://ports.ubuntu.com/ubuntu-ports noble/restricted arm64 Packages [113 kB]
+Get:11 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 Packages [1776 kB]
+Get:12 http://ports.ubuntu.com/ubuntu-ports noble/multiverse arm64 Packages [274 kB]
+Get:13 http://ports.ubuntu.com/ubuntu-ports noble-updates/multiverse arm64 Packages [94.8 kB]
+Get:14 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 Packages [1692 kB]
+Get:15 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 Packages [2199 kB]
+Get:16 http://ports.ubuntu.com/ubuntu-ports noble-updates/restricted arm64 Packages [2996 kB]
+Get:17 http://ports.ubuntu.com/ubuntu-ports noble-backports/universe arm64 Packages [36.3 kB]
+Get:18 http://ports.ubuntu.com/ubuntu-ports noble-backports/multiverse arm64 Packages [671 B]
+Get:19 http://ports.ubuntu.com/ubuntu-ports noble-backports/main arm64 Packages [49.0 kB]
+Get:20 http://ports.ubuntu.com/ubuntu-ports noble-security/multiverse arm64 Packages [89.7 kB]
+Get:21 http://ports.ubuntu.com/ubuntu-ports noble-security/main arm64 Packages [1356 kB]
+Get:22 http://ports.ubuntu.com/ubuntu-ports noble-security/universe arm64 Packages [1635 kB]
+Get:23 http://ports.ubuntu.com/ubuntu-ports noble-security/restricted arm64 Packages [2811 kB]
+Fetched 36.6 MB in 2s (15.1 MB/s)
+Reading package lists...
+[91mW: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/InRelease: Key is stored in legacy trusted.gpg keyring (/etc/apt/trusted.gpg), see the DEPRECATION section in apt-key(8) for details.
+[0mReading package lists...
+Building dependency tree...
+Reading state information...
+git is already the newest version (1:2.43.0-1ubuntu7.3).
+0 upgraded, 0 newly installed, 0 to remove and 78 not upgraded.
+[91mCloning into '/opt/vllm-exl3'...
+[0m[91mNote: switching to 'd3cfd394920360d69f820d2dc96f8292a9e10283'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+HEAD is now at d3cfd39 chore: remove one-time SUH cache maintenance workflow
+[0m[91mdsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+[0m[91mdsv41-patch ok prefer_b12x_mxfp8
+[0mdsv41-indexer-workspace: already applied
+[91mdsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+[0m[91mdsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+[0mINFO 09-25 19:19:14 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-25 19:19:14 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 09-25 19:19:14 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mW0925 19:19:14.942000 307 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+[0mWARNING 09-25 19:19:15 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-25 19:19:15 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mdsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+[0m[91mdsv41-patch ok warmup_stubs
+[0m[91mdsv41-patch ok cudagraph_worker_stub
+[0m[91mdsv41-patch ok swa_page_coerce
+[0m[91mdsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+[0m[91mdsv41-patch ok swa_image_width: already applied
+[0m[91mdsv41-patch ok attention_image_width: already applied
+[0m[91mdsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+[0m[91mdsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+[0m[91mdsv41-patch ok decode_levers
+[0mpatched /opt/vllm-exl3/setup.py
+[91mdsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+[0m[91mdsv41-patch ok prefer_b12x_mxfp8
+[0mdsv41-indexer-workspace: already applied
+[91mdsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+[0m[91mdsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+[0mINFO 09-25 19:19:24 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-25 19:19:24 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 09-25 19:19:24 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mW0925 19:19:24.987000 340 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+[0mWARNING 09-25 19:19:25 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-25 19:19:25 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mdsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+[0m[91mdsv41-patch ok warmup_stubs
+[0m[91mdsv41-patch ok cudagraph_worker_stub
+[0m[91mdsv41-patch ok swa_page_coerce
+[0m[91mdsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+[0m[91mdsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+[0m[91mdsv41-patch ok indexer_adaptive: already applied
+[0m[91mdsv41-patch ok indexer_short_context: already applied
+[0m[91mdsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+[0m[91mdsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+[0m[91mdsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+[0m[91mdsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+[0m[91mdsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+[0m[91mdsv41-patch ok decode_levers
+[0mpatched /opt/vllm-exl3/csrc/p2b_moe.cu
+patched /opt/vllm-exl3/src/vllm_exl3/exl3.py
+[91mdsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+[0m[91mdsv41-patch ok prefer_b12x_mxfp8
+[0mdsv41-indexer-workspace: already applied
+[91mdsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+[0m[91mdsv41-patch ok persistent_topk: already applied
+[0m[91mdsv41-patch ok kpool_persistent_topk: already applied
+[0mINFO 09-25 19:19:36 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-25 19:19:36 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 09-25 19:19:36 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mW0925 19:19:36.503000 388 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+[0mWARNING 09-25 19:19:37 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-25 19:19:37 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mdsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+[0m[91mdsv41-patch ok warmup_stubs
+[0m[91mdsv41-patch ok cudagraph_worker_stub
+[0m[91mdsv41-patch ok swa_page_coerce
+[0m[91mdsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+[0m[91mdsv41-patch ok decode_levers
+[0mpatched /opt/vllm-exl3/csrc/p2b_moe.cu
+patched /opt/vllm-exl3/src/vllm_exl3/exl3.py
+[91mdsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+[0m[91mdsv41-patch ok prefer_b12x_mxfp8
+[0mdsv41-indexer-workspace: already applied
+[91mdsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+[0m[91mdsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+[0mINFO 09-25 19:19:46 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-25 19:19:46 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 09-25 19:19:46 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mW0925 19:19:46.726000 436 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+[0mWARNING 09-25 19:19:47 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-25 19:19:47 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mdsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+[0m[91mdsv41-patch ok warmup_stubs
+[0m[91mdsv41-patch ok cudagraph_worker_stub
+[0m[91mdsv41-patch ok swa_page_coerce
+[0m[91mdsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+[0m[91mdsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+[0m[91mdsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+[0m[91mdsv41-patch ok indexer_short_context: already applied
+[0m[91mdsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+[0m[91mdsv41-patch ok decode_levers
+[0mpatched /opt/vllm-exl3/csrc/p2b_moe.cu
+[91mdsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+[0m[91mdsv41-patch ok prefer_b12x_mxfp8
+[0mdsv41-indexer-workspace: already applied
+[91mdsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+[0m[91mdsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+[0mINFO 09-25 19:19:58 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-25 19:19:58 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 09-25 19:19:58 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mW0925 19:19:58.981000 484 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+[0mWARNING 09-25 19:19:59 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-25 19:19:59 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mdsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+[0m[91mdsv41-patch ok warmup_stubs
+[0m[91mdsv41-patch ok cudagraph_worker_stub
+[0m[91mdsv41-patch ok swa_page_coerce
+[0m[91mdsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+[0m[91mdsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+[0m[91mdsv41-patch ok indexer_short_context: already applied
+[0m[91mdsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+[0m[91mdsv41-patch ok decode_levers
+[0mpatched /opt/vllm-exl3/csrc/p2b_moe.cu
+patched /opt/vllm-exl3/src/vllm_exl3/exl3.py
+[91mdsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+[0m[91mdsv41-patch ok prefer_b12x_mxfp8
+[0mdsv41-indexer-workspace: already applied
+[91mdsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+[0m[91mdsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+[0mINFO 09-25 19:20:09 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-25 19:20:09 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 09-25 19:20:09 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mW0925 19:20:09.530000 532 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+[0mWARNING 09-25 19:20:10 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-25 19:20:10 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mdsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+[0m[91mdsv41-patch ok warmup_stubs
+[0m[91mdsv41-patch ok cudagraph_worker_stub
+[0m[91mdsv41-patch ok swa_page_coerce
+[0m[91mdsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+[0m[91mdsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+[0m[91mdsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+[0m[91mdsv41-patch ok indexer_short_context: already applied
+[0m[91mdsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+[0m[91mdsv41-patch ok decode_levers
+[0mpatched /opt/vllm-exl3/csrc/p2b_moe.cu
+[91mdsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+[0m[91mdsv41-patch ok prefer_b12x_mxfp8
+[0mdsv41-indexer-workspace: already applied
+[91mdsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+[0m[91mdsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+[0mINFO 09-25 19:20:20 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-25 19:20:20 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 09-25 19:20:20 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mW0925 19:20:20.848000 580 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+[0mWARNING 09-25 19:20:21 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-25 19:20:21 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mdsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+[0m[91mdsv41-patch ok warmup_stubs
+[0m[91mdsv41-patch ok cudagraph_worker_stub
+[0m[91mdsv41-patch ok swa_page_coerce
+[0m[91mdsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+[0m[91mdsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+[0m[91mdsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+[0m[91mdsv41-patch ok indexer_short_context: already applied
+[0m[91mdsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+[0m[91mdsv41-patch ok decode_levers
+[0mpatched /opt/vllm-exl3/csrc/p2b_moe.cu
+[91mdsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+[0m[91mdsv41-patch ok prefer_b12x_mxfp8
+[0mdsv41-indexer-workspace: already applied
+[91mdsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+[0m[91mdsv41-patch ok persistent_topk: already applied
+[0m[91mdsv41-patch ok kpool_persistent_topk: already applied
+[0mINFO 09-25 19:20:32 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-25 19:20:32 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 09-25 19:20:33 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mW0925 19:20:33.088000 628 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+[0mWARNING 09-25 19:20:33 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-25 19:20:33 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mdsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+[0m[91mdsv41-patch ok warmup_stubs
+[0m[91mdsv41-patch ok cudagraph_worker_stub
+[0m[91mdsv41-patch ok swa_page_coerce
+[0m[91mdsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+[0m[91mdsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+[0m[91mdsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+[0m[91mdsv41-patch ok decode_levers
+[0mpatched /opt/vllm-exl3/csrc/p2b_moe.cu
+[91mdsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+[0m[91mdsv41-patch ok prefer_b12x_mxfp8
+[0mdsv41-indexer-workspace: already applied
+[91mdsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+[0m[91mdsv41-patch ok persistent_topk: already applied
+[0m[91mdsv41-patch ok kpool_persistent_topk: already applied
+[0mINFO 09-25 19:20:44 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-25 19:20:44 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 09-25 19:20:44 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mW0925 19:20:44.626000 676 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+[0mWARNING 09-25 19:20:45 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-25 19:20:45 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mdsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+[0m[91mdsv41-patch ok warmup_stubs
+[0m[91mdsv41-patch ok cudagraph_worker_stub
+[0m[91mdsv41-patch ok swa_page_coerce
+[0m[91mdsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+[0m[91mdsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+[0m[91mdsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+[0m[91mdsv41-patch ok indexer_short_context: already applied
+[0m[91mdsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+[0m[91mdsv41-patch ok decode_levers
+[0mpatched /opt/vllm-exl3/csrc/p2b_moe.cu
+[91mdsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+[0m[91mdsv41-patch ok prefer_b12x_mxfp8
+[0mdsv41-indexer-workspace: already applied
+[91mdsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+[0m[91mdsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+[0mINFO 09-25 19:20:55 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-25 19:20:55 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 09-25 19:20:56 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mW0925 19:20:56.071000 724 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+[0mWARNING 09-25 19:20:56 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-25 19:20:56 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[91mdsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+[0m[91mdsv41-patch ok warmup_stubs
+[0m[91mdsv41-patch ok cudagraph_worker_stub
+[0m[91mdsv41-patch ok swa_page_coerce
+[0m[91mdsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+[0m[91mdsv41-patch ok swa_image_width: already applied
+[0m[91mdsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+[0m[91mdsv41-patch ok indexer_adaptive: already applied
+[0m[91mdsv41-patch ok indexer_short_context: already applied
+[0m[91mdsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+[0m[91mdsv41-patch ok decode_levers
+[0mProcessing /opt/vllm-exl3
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: vllm-exl3
+  Building wheel for vllm-exl3 (pyproject.toml): started
+  Building wheel for vllm-exl3 (pyproject.toml): still running...
+  Building wheel for vllm-exl3 (pyproject.toml): finished with status 'error'
+[91m  error: subprocess-exited-with-error
+  
+  × Building wheel for vllm-exl3 (pyproject.toml) did not run successfully.
+  │ exit code: 1
+  ╰─> [429 lines of output]
+      dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+      dsv41-patch ok prefer_b12x_mxfp8
+      dsv41-indexer-workspace: already applied
+      dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+      dsv41-patch ok persistent_topk: already applied
+      dsv41-patch ok kpool_persistent_topk: already applied
+      INFO 09-25 19:21:15 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+      INFO 09-25 19:21:15 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+      WARNING 09-25 19:21:15 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+      W0925 19:21:15.976000 841 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+      WARNING 09-25 19:21:16 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+      WARNING 09-25 19:21:16 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+      dsv41-patch ok load_general_plugins
+      dsv41-patch ok exl3_weight_block_size
+      dsv41-patch ok warmup_stubs
+      dsv41-patch ok cudagraph_worker_stub
+      dsv41-patch ok swa_page_coerce
+      dsv41-patch ok kernel_block_sizes
+      dsv41-patch ok extra_page_bump
+      dsv41-patch ok v41_config_vision
+      dsv41-patch ok swa_image_width: already applied
+      dsv41-patch ok attention_image_width: already applied
+      dsv41-patch ok native_indexer_decode: already applied
+      dsv41-patch ok indexer_adaptive: already applied
+      dsv41-patch ok indexer_short_context: already applied
+      dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+      dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+      dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+      dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+      dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+      dsv41-patch ok decode_levers
+      running bdist_wheel
+      running build
+      running build_py
+      creating build/lib.linux-aarch64-cpython-312/vllm_exl3
+      copying src/vllm_exl3/prefill_policy.py -> build/lib.linux-aarch64-cpython-312/vllm_exl3
+      copying src/vllm_exl3/runtime_policy.py -> build/lib.linux-aarch64-cpython-312/vllm_exl3
+      copying src/vllm_exl3/__init__.py -> build/lib.linux-aarch64-cpython-312/vllm_exl3
+      copying src/vllm_exl3/dequant.py -> build/lib.linux-aarch64-cpython-312/vllm_exl3
+      copying src/vllm_exl3/exl3.py -> build/lib.linux-aarch64-cpython-312/vllm_exl3
+      creating build/lib.linux-aarch64-cpython-312/glm53_exl3_plugin
+      copying src/glm53_exl3_plugin/__init__.py -> build/lib.linux-aarch64-cpython-312/glm53_exl3_plugin
+      copying src/glm53_exl3_plugin/exl3.py -> build/lib.linux-aarch64-cpython-312/glm53_exl3_plugin
+      running egg_info
+      creating src/vllm_exl3.egg-info
+      writing src/vllm_exl3.egg-info/PKG-INFO
+      writing dependency_links to src/vllm_exl3.egg-info/dependency_links.txt
+      writing entry points to src/vllm_exl3.egg-info/entry_points.txt
+      writing top-level names to src/vllm_exl3.egg-info/top_level.txt
+      writing manifest file 'src/vllm_exl3.egg-info/SOURCES.txt'
+      adding license file 'LICENSE'
+      adding license file 'LICENSE.APACHE-2.0'
+      adding license file 'NOTICE'
+      adding license file 'THIRD_PARTY_NOTICES.md'
+      writing manifest file 'src/vllm_exl3.egg-info/SOURCES.txt'
+      running build_ext
+      building 'vllm_exl3_c' extension
+      creating /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc
+      [1/6] /usr/local/cuda/bin/nvcc -MD -MF /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/p2b_batched.o.d -I/opt/vllm-exl3/csrc -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/quant -I/usr/local/lib/python3.12/dist-packages/torch/include -I/usr/local/lib/python3.12/dist-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda/include -I/usr/include/python3.12 -c -c /opt/vllm-exl3/csrc/p2b_batched.cu -o /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/p2b_batched.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -std=c++17 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=vllm_exl3_c -gencode=arch=compute_121a,code=sm_121a
+      FAILED: [code=137] /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/p2b_batched.o
+      /usr/local/cuda/bin/nvcc -MD -MF /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/p2b_batched.o.d -I/opt/vllm-exl3/csrc -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/quant -I/usr/local/lib/python3.12/dist-packages/torch/include -I/usr/local/lib/python3.12/dist-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda/include -I/usr/include/python3.12 -c -c /opt/vllm-exl3/csrc/p2b_batched.cu -o /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/p2b_batched.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -std=c++17 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=vllm_exl3_c -gencode=arch=compute_121a,code=sm_121a
+      /opt/vllm-exl3/csrc/p2b_batched.cu:16: warning: "__global__" redefined
+         16 | #define __global__ __device__
+            |
+      In file included from /usr/local/cuda/include/device_types.h:59,
+                       from /usr/local/cuda/include/builtin_types.h:56,
+                       from /usr/local/cuda/include/cuda_runtime.h:90,
+                       from <command-line>:
+      /usr/local/cuda/include/crt/host_defines.h:219: note: this is the location of the previous definition
+        219 | #define __global__ \
+            |
+      /opt/vllm-exl3/csrc/p2b_batched.cu:17: warning: "__launch_bounds__" redefined
+         17 | #define __launch_bounds__(...)
+            |
+      /usr/local/cuda/include/crt/host_defines.h:188: note: this is the location of the previous definition
+        188 | #define __launch_bounds__(...) \
+            |
+      In file included from /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/quant/exl3_gemv_kernel.cuh:27,
+                       from /opt/vllm-exl3/csrc/p2b_batched.cu:18:
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/quant/exl3_kernel_map.cuh:17: warning: "EXL3_GEMM_ARGS" redefined
+         17 | #define EXL3_GEMM_ARGS \
+            |
+      /opt/vllm-exl3/csrc/p2b_batched.cu:9: note: this is the location of the previous definition
+          9 | #define EXL3_GEMM_ARGS const half*, const uint16_t*, void*, const int, const int, const int, int*, const half*, half*, const half*
+            |
+      /opt/vllm-exl3/csrc/p2b_batched.cu:16: warning: "__global__" redefined
+         16 | #define __global__ __device__
+            |
+      In file included from /usr/local/cuda/include/device_types.h:59,
+                       from /usr/local/cuda/include/builtin_types.h:56,
+                       from /usr/local/cuda/include/cuda_runtime.h:90,
+                       from <command-line>:
+      /usr/local/cuda/include/crt/host_defines.h:219: note: this is the location of the previous definition
+        219 | #define __global__ \
+            |
+      /opt/vllm-exl3/csrc/p2b_batched.cu:17: warning: "__launch_bounds__" redefined
+         17 | #define __launch_bounds__(...)
+            |
+      /usr/local/cuda/include/crt/host_defines.h:188: note: this is the location of the previous definition
+        188 | #define __launch_bounds__(...) \
+            |
+      In file included from /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/quant/exl3_gemv_kernel.cuh:27,
+                       from /opt/vllm-exl3/csrc/p2b_batched.cu:18:
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/quant/exl3_kernel_map.cuh:17: warning: "EXL3_GEMM_ARGS" redefined
+         17 | #define EXL3_GEMM_ARGS \
+            |
+      /opt/vllm-exl3/csrc/p2b_batched.cu:9: note: this is the location of the previous definition
+          9 | #define EXL3_GEMM_ARGS const half*, const uint16_t*, void*, const int, const int, const int, int*, const half*, half*, const half*
+            |
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(89): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool view_replay_enabled_ : 1 = false;
+                                        ^
+      
+      Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(90): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool grad_layout_enforcement_enabled_ : 1 = true;
+                                                    ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(12): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half4") that is explicitly defaulted on its first declaration
+            __attribute__((device)) half4() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(24): warning #20012-D: __device__ annotation is ignored on a non-virtual function("bfloat164") that is explicitly defaulted on its first declaration
+            __attribute__((device)) bfloat164() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(38): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half8") that is explicitly defaulted on its first declaration
+             __attribute__((device)) half8() = default;
+                            ^
+      
+      Killed
+      [2/6] c++ -MMD -MF /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/bindings.o.d -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O2 -Wall -fPIC -I/opt/vllm-exl3/csrc -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/quant -I/usr/local/lib/python3.12/dist-packages/torch/include -I/usr/local/lib/python3.12/dist-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda/include -I/usr/include/python3.12 -c -c /opt/vllm-exl3/csrc/bindings.cpp -o /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/bindings.o -O3 -std=c++17 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=vllm_exl3_c
+      In file included from /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/InferenceMode.h:4,
+                       from /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/TensorImpl.h:9,
+                       from /usr/local/lib/python3.12/dist-packages/torch/include/ATen/core/TensorBody.h:21,
+                       from /usr/local/lib/python3.12/dist-packages/torch/include/ATen/core/Tensor.h:4,
+                       from /usr/local/lib/python3.12/dist-packages/torch/include/ATen/Tensor.h:4,
+                       from /usr/local/lib/python3.12/dist-packages/torch/include/torch/csrc/autograd/function_hook.h:4,
+                       from /usr/local/lib/python3.12/dist-packages/torch/include/torch/csrc/autograd/cpp_hook.h:3,
+                       from /usr/local/lib/python3.12/dist-packages/torch/include/torch/csrc/autograd/variable.h:7,
+                       from /usr/local/lib/python3.12/dist-packages/torch/include/torch/csrc/autograd/autograd.h:4,
+                       from /usr/local/lib/python3.12/dist-packages/torch/include/torch/csrc/api/include/torch/autograd.h:4,
+                       from /usr/local/lib/python3.12/dist-packages/torch/include/torch/csrc/api/include/torch/all.h:8,
+                       from /usr/local/lib/python3.12/dist-packages/torch/include/torch/extension.h:6,
+                       from /opt/vllm-exl3/csrc/bindings.cpp:1:
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h:89:33: warning: default member initializers for bit-fields only available with ‘-std=c++20’ or ‘-std=gnu++20’ [-Wc++20-extensions]
+         89 |   bool view_replay_enabled_ : 1 = false;
+            |                                 ^
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h:90:45: warning: default member initializers for bit-fields only available with ‘-std=c++20’ or ‘-std=gnu++20’ [-Wc++20-extensions]
+         90 |   bool grad_layout_enforcement_enabled_ : 1 = true;
+            |                                             ^
+      [3/6] /usr/local/cuda/bin/nvcc -MD -MF /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/exl3_gemv.o.d -I/opt/vllm-exl3/csrc -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/quant -I/usr/local/lib/python3.12/dist-packages/torch/include -I/usr/local/lib/python3.12/dist-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda/include -I/usr/include/python3.12 -c -c /opt/vllm-exl3/csrc/exl3_gemv.cu -o /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/exl3_gemv.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -std=c++17 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=vllm_exl3_c -gencode=arch=compute_121a,code=sm_121a
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(89): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool view_replay_enabled_ : 1 = false;
+                                        ^
+      
+      Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(90): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool grad_layout_enforcement_enabled_ : 1 = true;
+                                                    ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(12): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half4") that is explicitly defaulted on its first declaration
+            __attribute__((device)) half4() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(24): warning #20012-D: __device__ annotation is ignored on a non-virtual function("bfloat164") that is explicitly defaulted on its first declaration
+            __attribute__((device)) bfloat164() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(38): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half8") that is explicitly defaulted on its first declaration
+             __attribute__((device)) half8() = default;
+                            ^
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(89): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool view_replay_enabled_ : 1 = false;
+                                        ^
+      
+      Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(90): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool grad_layout_enforcement_enabled_ : 1 = true;
+                                                    ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(12): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half4") that is explicitly defaulted on its first declaration
+            __attribute__((device)) half4() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(24): warning #20012-D: __device__ annotation is ignored on a non-virtual function("bfloat164") that is explicitly defaulted on its first declaration
+            __attribute__((device)) bfloat164() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(38): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half8") that is explicitly defaulted on its first declaration
+             __attribute__((device)) half8() = default;
+                            ^
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h:89:33: warning: default member initializers for bit-fields only available with ‘-std=c++20’ or ‘-std=gnu++20’ [-Wc++20-extensions]
+         89 |   bool view_replay_enabled_ : 1 = false;
+            |                                 ^
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h:90:45: warning: default member initializers for bit-fields only available with ‘-std=c++20’ or ‘-std=gnu++20’ [-Wc++20-extensions]
+         90 |   bool grad_layout_enforcement_enabled_ : 1 = true;
+            |                                             ^
+      [4/6] /usr/local/cuda/bin/nvcc -MD -MF /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/exl3_fat_gemm.o.d -I/opt/vllm-exl3/csrc -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/quant -I/usr/local/lib/python3.12/dist-packages/torch/include -I/usr/local/lib/python3.12/dist-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda/include -I/usr/include/python3.12 -c -c /opt/vllm-exl3/csrc/exl3_fat_gemm.cu -o /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/exl3_fat_gemm.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -std=c++17 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=vllm_exl3_c -gencode=arch=compute_121a,code=sm_121a
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(89): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool view_replay_enabled_ : 1 = false;
+                                        ^
+      
+      Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(90): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool grad_layout_enforcement_enabled_ : 1 = true;
+                                                    ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(12): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half4") that is explicitly defaulted on its first declaration
+            __attribute__((device)) half4() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(24): warning #20012-D: __device__ annotation is ignored on a non-virtual function("bfloat164") that is explicitly defaulted on its first declaration
+            __attribute__((device)) bfloat164() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(38): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half8") that is explicitly defaulted on its first declaration
+             __attribute__((device)) half8() = default;
+                            ^
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(89): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool view_replay_enabled_ : 1 = false;
+                                        ^
+      
+      Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(90): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool grad_layout_enforcement_enabled_ : 1 = true;
+                                                    ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(12): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half4") that is explicitly defaulted on its first declaration
+            __attribute__((device)) half4() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(24): warning #20012-D: __device__ annotation is ignored on a non-virtual function("bfloat164") that is explicitly defaulted on its first declaration
+            __attribute__((device)) bfloat164() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(38): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half8") that is explicitly defaulted on its first declaration
+             __attribute__((device)) half8() = default;
+                            ^
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h:89:33: warning: default member initializers for bit-fields only available with ‘-std=c++20’ or ‘-std=gnu++20’ [-Wc++20-extensions]
+         89 |   bool view_replay_enabled_ : 1 = false;
+            |                                 ^
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h:90:45: warning: default member initializers for bit-fields only available with ‘-std=c++20’ or ‘-std=gnu++20’ [-Wc++20-extensions]
+         90 |   bool grad_layout_enforcement_enabled_ : 1 = true;
+            |                                             ^
+      [5/6] /usr/local/cuda/bin/nvcc -MD -MF /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/exl3_gemm.o.d -I/opt/vllm-exl3/csrc -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/quant -I/usr/local/lib/python3.12/dist-packages/torch/include -I/usr/local/lib/python3.12/dist-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda/include -I/usr/include/python3.12 -c -c /opt/vllm-exl3/csrc/exl3_gemm.cu -o /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/exl3_gemm.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -std=c++17 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=vllm_exl3_c -gencode=arch=compute_121a,code=sm_121a
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(89): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool view_replay_enabled_ : 1 = false;
+                                        ^
+      
+      Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(90): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool grad_layout_enforcement_enabled_ : 1 = true;
+                                                    ^
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(89): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool view_replay_enabled_ : 1 = false;
+                                        ^
+      
+      Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(90): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool grad_layout_enforcement_enabled_ : 1 = true;
+                                                    ^
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h:89:33: warning: default member initializers for bit-fields only available with ‘-std=c++20’ or ‘-std=gnu++20’ [-Wc++20-extensions]
+         89 |   bool view_replay_enabled_ : 1 = false;
+            |                                 ^
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h:90:45: warning: default member initializers for bit-fields only available with ‘-std=c++20’ or ‘-std=gnu++20’ [-Wc++20-extensions]
+         90 |   bool grad_layout_enforcement_enabled_ : 1 = true;
+            |                                             ^
+      [6/6] /usr/local/cuda/bin/nvcc -MD -MF /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/p2b_moe.o.d -I/opt/vllm-exl3/csrc -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext -I/usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/quant -I/usr/local/lib/python3.12/dist-packages/torch/include -I/usr/local/lib/python3.12/dist-packages/torch/include/torch/csrc/api/include -I/usr/local/cuda/include -I/usr/include/python3.12 -c -c /opt/vllm-exl3/csrc/p2b_moe.cu -o /opt/vllm-exl3/build/temp.linux-aarch64-cpython-312/csrc/p2b_moe.o -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr --compiler-options ''"'"'-fPIC'"'"'' -O3 -std=c++17 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=vllm_exl3_c -gencode=arch=compute_121a,code=sm_121a
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(89): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool view_replay_enabled_ : 1 = false;
+                                        ^
+      
+      Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(90): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool grad_layout_enforcement_enabled_ : 1 = true;
+                                                    ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(12): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half4") that is explicitly defaulted on its first declaration
+            __attribute__((device)) half4() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(24): warning #20012-D: __device__ annotation is ignored on a non-virtual function("bfloat164") that is explicitly defaulted on its first declaration
+            __attribute__((device)) bfloat164() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(38): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half8") that is explicitly defaulted on its first declaration
+             __attribute__((device)) half8() = default;
+                            ^
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(89): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool view_replay_enabled_ : 1 = false;
+                                        ^
+      
+      Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h(90): warning #3306-D: a default bit-field initializer is a C++20 feature
+          bool grad_layout_enforcement_enabled_ : 1 = true;
+                                                    ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(12): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half4") that is explicitly defaulted on its first declaration
+            __attribute__((device)) half4() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(24): warning #20012-D: __device__ annotation is ignored on a non-virtual function("bfloat164") that is explicitly defaulted on its first declaration
+            __attribute__((device)) bfloat164() = default;
+                           ^
+      
+      /usr/local/lib/python3.12/dist-packages/exllamav3/exllamav3_ext/util.cuh(38): warning #20012-D: __device__ annotation is ignored on a non-virtual function("half8") that is explicitly defaulted on its first declaration
+             __attribute__((device)) half8() = default;
+                            ^
+      
+      /opt/vllm-exl3/csrc/p2b_moe.cu(630): warning #177-D: variable "x_row" was declared but never referenced
+                    const half* x_row = x + (size_t) row * hidden;
+                                ^
+                detected during instantiation of "void launch_moe_batched<BITS,CB>(const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, int, int, int, int, float) [with BITS=2, CB=1]" at line 1469
+      
+      /opt/vllm-exl3/csrc/p2b_moe.cu(670): warning #177-D: variable "x_row" was declared but never referenced
+                    const half* x_row = x + (size_t) row * hidden;
+                                ^
+                detected during instantiation of "void launch_moe_batched<BITS,CB>(const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, int, int, int, int, float) [with BITS=2, CB=1]" at line 1469
+      
+      /opt/vllm-exl3/csrc/p2b_moe.cu(734): warning #177-D: variable "x_row" was declared but never referenced
+                    const half* x_row = x + (size_t) row * hidden;
+                                ^
+                detected during instantiation of "void launch_moe_batched<BITS,CB>(const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, const at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, at::Tensor &, int, int, int, int, float) [with BITS=2, CB=1]" at line 1469
+      
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h:89:33: warning: default member initializers for bit-fields only available with ‘-std=c++20’ or ‘-std=gnu++20’ [-Wc++20-extensions]
+         89 |   bool view_replay_enabled_ : 1 = false;
+            |                                 ^
+      /usr/local/lib/python3.12/dist-packages/torch/include/c10/core/AutogradState.h:90:45: warning: default member initializers for bit-fields only available with ‘-std=c++20’ or ‘-std=gnu++20’ [-Wc++20-extensions]
+         90 |   bool grad_layout_enforcement_enabled_ : 1 = true;
+            |                                             ^
+      ninja: build stopped: subcommand failed.
+      Traceback (most recent call last):
+        File "/usr/local/lib/python3.12/dist-packages/torch/utils/cpp_extension.py", line 2893, in _run_ninja_build
+          subprocess.run(
+        File "/usr/lib/python3.12/subprocess.py", line 571, in run
+          raise CalledProcessError(retcode, process.args,
+      subprocess.CalledProcessError: Command '['ninja', '-v']' retu[0m[91mrned non-zero exit status 137.
+      
+      The above exception was the direct cause of the following exception:
+      
+      Traceback (most recent call last):
+        File "/usr/local/lib/python3.12/dist-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 389, in <module>
+          main()
+        File "/usr/local/lib/python3.12/dist-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 373, in main
+          json_out["return_val"] = hook(**hook_input["kwargs"])
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "/usr/local/lib/python3.12/dist-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 280, in build_wheel
+          return _build_backend().build_wheel(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/build_meta.py", line 439, in build_wheel
+          return _build(['bdist_wheel', '--dist-info-dir', str(metadata_directory)])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/build_meta.py", line 427, in _build
+          return self._build_with_temp_dir(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/build_meta.py", line 408, in _build_with_temp_dir
+          self.run_setup()
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/build_meta.py", line 317, in run_setup
+          exec(code, locals())
+        File "<string>", line 65, in <module>
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/__init__.py", line 117, in setup
+          return distutils.core.setup(**attrs)  # type: ignore[return-value]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/_distutils/core.py", line 186, in setup
+          return run_commands(dist)
+                 ^^^^^^^^^^^^^^^^^^
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/_distutils/core.py", line 202, in run_commands
+          dist.run_commands()
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/_distutils/dist.py", line 1002, in run_commands
+          self.run_command(cmd)
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/dist.py", line 1107, in run_command
+          super().run_command(command)
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/_distutils/dist.py", line 1021, in run_command
+          cmd_obj.run()
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/command/bdist_wheel.py", line 370, in run
+          self.run_command("build")
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/_distutils/cmd.py", line 357, in run_command
+          self.distribution.run_command(command)
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/dist.py", line 1107, in run_command
+          super().run_command(command)
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/_distutils/dist.py", line 1021, in run_command
+          cmd_obj.run()
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/_distutils/command/build.py", line 135, in run
+          self.run_command(cmd_name)
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/_distutils/cmd.py", line 357, in run_command
+          self.distribution.run_command(command)
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/dist.py", line 1107, in run_command
+          super().run_command(command)
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/_distutils/dist.py", line 1021, in run_command
+          cmd_obj.run()
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/command/build_ext.py", line 97, in run
+          _build_ext.run(self)
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/_distutils/command/build_ext.py", line 368, in run
+          self.build_extensions()
+        File "/usr/local/lib/python3.12/dist-packages/torch/utils/cpp_extension.py", line 1289, in build_extensions
+          super().build_extensions()
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/_distutils/command/build_ext.py", line 484, in build_extensions
+          self._build_extensions_serial()
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/_distutils/command/build_ext.py", line 510, in _build_extensions_serial
+          self.build_extension(ext)
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/command/build_ext.py", line 262, in build_extension
+          _build_ext.build_extension(self, ext)
+        File "/usr/local/lib/python3.12/dist-packages/setuptools/_distutils/command/build_ext.py", line 565, in build_extension
+          objects = self.compiler.compile(
+                    ^^^^^^^^^^^^^^^^^^^^^^
+        File "/usr/local/lib/python3.12/dist-packages/torch/utils/cpp_extension.py", line 1027, in unix_wrap_ninja_compile
+          _write_ninja_file_and_compile_objects(
+        File "/usr/local/lib/python3.12/dist-packages/torch/utils/cpp_extension.py", line 2475, in _write_ninja_file_and_compile_objects
+          _run_ninja_build(
+        File "/usr/local/lib/python3.12/dist-packages/torch/utils/cpp_extension.py", line 2910, in _run_ninja_build
+          raise RuntimeError(message) from e
+      RuntimeError: Error compiling objects for extension
+      [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+[0m[91m  ERROR: Failed building wheel for vllm-exl3
+[0mFailed to build vllm-exl3
+[91merror: failed-wheel-build-for-install
+
+× Failed to build installable wheels for some pyproject.toml based projects
+╰─> vllm-exl3
+[0mThe command '/bin/sh -c apt-get update  && apt-get install -y --no-install-recommends git  && git clone https://github.com/vcruz305/vllm-exl3.git /opt/vllm-exl3  && git -C /opt/vllm-exl3 checkout "$VLLM_EXL3_REF"  && python3 /opt/dsv41-patch/fix_vllm_exl3_setup.py /opt/vllm-exl3/setup.py  && python3 /opt/dsv41-patch/widen_p2b_shapes.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_mrow.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_cfg1.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_codebook.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_fshift.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_srcsort.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_coop.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_dataflow.py /opt/vllm-exl3  && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps --force-reinstall /opt/vllm-exl3  && python3 -c "import torch, vllm_exl3, vllm_exl3_c; so = open(vllm_exl3_c.__file__, 'rb').read(); assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); assert b'DSV41_P2B_SRC_SORT' in so and b'DSV41_P2B_COOP' in so and b'p2b coop dataflow kernel engaged' in so; print('vllm_exl3 coop+dataflow cuda ok')"  && rm -rf /opt/vllm-exl3 /var/lib/apt/lists/*' returned a non-zero code: 1
+Command exited with non-zero status 1
+	Command being timed: "env DOCKER_BUILDKIT=0 docker build --memory 12g --memory-swap 12g --cpuset-cpus 0-5 -f docker/Dockerfile.e14 -t dsv41-flash-exl3-sm121:review-e14 docker"
+	User time (seconds): 0.04
+	System time (seconds): 0.05
+	Percent of CPU this job got: 0%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:35.27
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 28776
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 3487
+	Voluntary context switches: 1806
+	Involuntary context switches: 9
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 208
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 1
+# build rc=1 2026-09-25T20:22:39+01:00

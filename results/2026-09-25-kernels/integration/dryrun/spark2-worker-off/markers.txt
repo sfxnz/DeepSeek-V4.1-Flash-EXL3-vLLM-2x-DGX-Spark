@@ -1,0 +1,5 @@
+== vllm/models/deepseek_v4_1/nvidia/vl_model.py (+24 lines)
++        # # --- g8-stream-feed --- drain-in-place: H2D copies pin each source
++        # Gate: DSV41_LOAD_PF_G8=1 or DSV41_STREAM_FEED=1.
++            _os.environ.get("DSV41_LOAD_PF_G8", "0") == "1"
++            or _os.environ.get("DSV41_STREAM_FEED", "0") == "1"

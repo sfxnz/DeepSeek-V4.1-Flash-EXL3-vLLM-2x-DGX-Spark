@@ -1,0 +1,41 @@
+{
+ "env": {
+  "TORCH_CUDA_ARCH_LIST": "12.1a",
+  "CUDA_HOME": ""
+ },
+ "gpu_devices": 0,
+ "dense_gemv": {
+  "ok": true,
+  "functions": [
+   "gemv",
+   "gemv_grouped",
+   "plan_grid"
+  ],
+  "so": "/tmp/dsv41-dense-gemv-b85dd9215a48/dsv41_dense_gemv_b85dd9215a48.so",
+  "so_bytes": 1069696,
+  "gemv_kernel_refs": 401,
+  "sm_121a": 1,
+  "seconds": 42.5
+ },
+ "mhc_det": {
+  "ok": true,
+  "kernels": {
+   "mhc_det_post": true,
+   "mhc_det_norm": true,
+   "mhc_det_norm_li": true,
+   "mhc_det_norm_coef": true,
+   "mhc_det_gemm_t8": true,
+   "mhc_det_gemm_t16": true
+  },
+  "cubin_bytes": 108928,
+  "log": "",
+  "seconds": 0.4
+ },
+ "engram_native": {
+  "ok": true,
+  "abi": 1,
+  "so": "engram_native-9ea3a54206c54719.so",
+  "cmd": "gcc -O3 -shared -fPIC -o engram_native-9ea3a54206c54719.so engram_native.c"
+ },
+ "pass": true
+}
