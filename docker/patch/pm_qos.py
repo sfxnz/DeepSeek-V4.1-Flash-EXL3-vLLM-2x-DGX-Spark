@@ -9,7 +9,9 @@ The request is host-wide: while the serve runs, no CPU enters an idle state whos
 exit latency exceeds N us.
 
 Why (k3 comm). GB10's cpuidle table has LPI-1/2/3 with 42/231/433 us exit latency
-(menu governor, LPI-3 is the most used state). A CUDA graph host node runs on a
+(menu governor, LPI-3 is the most used state; LPI-2 is never entered: its target
+residency equals LPI-3's 2542 us, and its usage is 0 on all 20 cores of both hosts since
+boot). A CUDA graph host node runs on a
 driver thread that the GPU wakes when it reaches the node; NCCL puts every captured
 network collective behind one (hostStreamPlanCallback uploads its proxy ops), then
 wakes its proxy thread (condition variable). After the host has been idle for a few
@@ -21,7 +23,8 @@ on spark2 (graph with a root host node, 20 ms of host idle between replays, same
 process, alternating): median host-node latency 657-725 us without a request, 14.8
 us with DSV41_PM_QOS_US=20; the first of 82 chained nodes 3-488 us vs 2.2 us.
 A 50 us request (LPI-1 still allowed) did not help (359-379 us), so the value must
-be below 42.
+be below 42: the waits are LPI-3 exits and LPI-1 exits, and an LPI-1 exit costs far more
+here than its advertised 42 us (not LPI-2, as the first write-up had it).
 
 Numerics: none (CPU power-state policy only). Cost: idle cores stay in WFI.
 Top-level imports are stdlib only.

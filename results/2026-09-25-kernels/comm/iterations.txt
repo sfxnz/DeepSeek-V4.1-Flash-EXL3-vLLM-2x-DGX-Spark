@@ -134,7 +134,8 @@ Two-node NCCL runs need both GPUs: they are prepared here and scheduled for the 
     only runs when the GPU reaches the graph. Target graph: launched 68 us before the GPU starts it,
     AR0 at 427 us into the graph, AR0 kernel 267 us (waiting for the late rank).
     cpuidle on both hosts (read-only): LPI-1/2/3 exit latency 42/231/433 us, menu governor, LPI-3 is
-    the most used state. /dev/cpu_dma_latency is root-only.
+    the most used state. /dev/cpu_dma_latency is root-only. [Fix pass: LPI-2 is never entered, so
+    the 235 us wait is not an LPI-2 exit; see #15.]
     kernel_study/comm/host_node_latency.py, spark2, graph with one root host node gating a kernel,
     host sleep between replays (the serve replays each graph once per ~63 ms):
       back-to-back replays: 7-16 us median;  5-20 ms gaps: 470-480 us;  60 ms gaps: 751 us.
@@ -287,3 +288,35 @@ Two-node NCCL runs need both GPUs: they are prepared here and scheduled for the 
     prefetch displaces its traffic and about half the requests do not land. Correctness: qkv_a / wq_b
     bitwise equal to none in every arm and m; p2b bitwise under one-hot routing weights (normalized
     weights: fp32 atomicAdd slot order varies; reported, not gated); graph replay == eager.
+
+#14 B hardening and the phase-A1 gate
+    nccl_eager_twin: install() reads the NCCL version through vLLM's NCCLLibrary and disarms unless it
+    is in VALIDATED_NCCL = ("2.30.7",); every stock communicator is re-checked when its group is
+    built; a group with >1 rank and no working PyNccl raises REFUSED instead of returning silently
+    (it would reach torch.distributed with mixing off and no twin). In-image check (b-hardening/):
+    e13 reports 2.30.7, a 2.31.0 reader disarms. NCCL 2.30.7 logs its graphUsageMode-0 capture
+    warning once per captured collective (434 lines per rank): expected, documented.
+    nccl_twin_check --device-check: every output lives in one flat buffer; after each step's last
+    collective a stream-ordered comparison against coef * seed + offset adds bad elements to a device
+    counter; no drain, host one step ahead as before. One GPU, two ranks (twin-devcheck/): keep /
+    twin / keep_qos / twin_qos 330/330 steps checked on both ranks, 0 bad; --inject-fault 37 flagged
+    exactly [37] on both ranks (the every-10th host check missed it). Phase A1 now gates B on it.
+
+#15 C: attribution corrected, GPU cost measured
+    cpuidle usage since boot (c-scope/cpuidle_usage.txt): LPI-2 = 0 on all 20 cores of both hosts
+    (its target residency equals LPI-3's 2542 us, so the menu governor never picks it). The waits
+    are LPI-3 and LPI-1 exits; a 50 us request (LPI-1 allowed) still waits 350-379 us, so LPI-1's
+    real exit cost here is far above 42 us. 20 us stays the value.
+    qos_gpu_cost.py (spark2, 1 GiB read + bf16 4096^3 GEMM, 4 x 3 s blocks per arm, alternating):
+    off / on read 4621 / 4610 us (232.3 / 232.9 GB/s), GEMM 1531.6 / 1527.7 us (89.7 / 90.0
+    TFLOPS), SM 2190 / 2190 MHz, 28.7 / 28.9 W. No GPU cost. A per-core resume-latency constraint
+    on the proxy / callback cores needs host sysfs writes that outlive the process: documented in
+    the serve plan, not run.
+
+#16 AR overhead above the wire floor: DMA-BUF GDR is not available here
+    ar_env_probe.py (c-cost-gdr/cumem0, cumem1; two ranks on one GB10, NCCL_DEBUG=INFO): with
+    NCCL_CUMEM_ENABLE=1 NCCL logs cuMemEnable 1 but cuMemGdrSupport 0, GDR 0, and "dmabuf_mr -
+    libmlx5.so: undefined symbol: mlx5dv_reg_dmabuf_mr". cuMem alone costs time: AR m=4 eager 35.6 ->
+    50.2 us, back to back in a graph 29.7 -> 34.5, after a 2x-L2 read 30.4 -> 37.8; m=8 62.3 -> 72.7 /
+    51.9 -> 54.0 / 54.0 -> 60.6 (rank 0). Rejected (flags.md).
+

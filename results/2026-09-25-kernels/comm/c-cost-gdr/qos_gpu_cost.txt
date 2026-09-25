@@ -1,0 +1,38 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip ar_l2_prefetch: DSV41_AR_L2_PREFETCH is not 1
+dsv41-patch skip pm_qos: DSV41_PM_QOS_US is not set
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+block 0 qos=off read 4670.0 us gemm 1544.0 us n=472
+block 1 qos=on read 4681.1 us gemm 1552.2 us n=470
+block 2 qos=off read 4656.6 us gemm 1544.0 us n=472
+block 3 qos=on read 4567.7 us gemm 1521.4 us n=478
+block 4 qos=off read 4580.8 us gemm 1523.5 us n=476
+block 5 qos=on read 4574.7 us gemm 1523.5 us n=477
+block 6 qos=off read 4569.9 us gemm 1521.5 us n=478
+block 7 qos=on read 4568.8 us gemm 1521.5 us n=477
+off {"blocks": 4, "read_us": {"median": 4621.296, "p10": 4556.32, "p90": 4860.864, "n": 1890}, "read_gbps": 232.3, "gemm_us": {"median": 1531.632, "p10": 1514.24, "p90": 1986.432, "n": 1890}, "gemm_tflops": 89.7, "sm_mhz": {"median": 2190.0, "p10": 2190.0, "p90": 2190.0, "n": 100}, "power_w": {"median": 28.72, "p10": 22.95, "p90": 29.04, "n": 100}}
+on {"blocks": 4, "read_us": {"median": 4609.888, "p10": 4553.472, "p90": 4843.328, "n": 1894}, "read_gbps": 232.9, "gemm_us": {"median": 1527.728, "p10": 1513.28, "p90": 1990.304, "n": 1894}, "gemm_tflops": 90.0, "sm_mhz": {"median": 2190.0, "p10": 2190.0, "p90": 2190.0, "n": 100}, "power_w": {"median": 28.94, "p10": 22.93, "p90": 29.13, "n": 100}}
