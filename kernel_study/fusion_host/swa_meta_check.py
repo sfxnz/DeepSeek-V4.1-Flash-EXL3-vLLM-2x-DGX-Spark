@@ -16,11 +16,14 @@ Runs in the serving image on a GPU (patch dir mounted at /opt/dsv41-patch).
 3. capture: the fused launch captured in a CUDA graph, replayed 20 times with
    new seq_lens / slot mappings / block tables, equal to the stock ops each time.
 4. timing, as in the serve: 15 builds (a target decode step's causal SWA
-   groups; each with its own token map, as stock) queued behind ~busy_us of
-   matmuls so the device runs them back to back (the host runs ~40 ms ahead in
-   the serve); CUDA events around the 15 builds; arms alternate; after every
-   iteration each fused builder's buffers must equal its stock twin's.
-Prints one JSON line; exit 1 on any mismatch.
+   groups; each with its own token map, as stock) queued behind a calibrated
+   torch.cuda._sleep of busy_us so the device runs them back to back (the host
+   runs ~40 ms ahead in the serve); CUDA events around the 15 builds; the host
+   enqueue time of every timed iteration must stay below busy_us (else the
+   events would time host launch speed and the run fails); arms alternate;
+   warm and cold L2 (a 128 MiB write before the sleep); after every iteration
+   each fused builder's buffers must equal its stock twin's.
+Prints one JSON line; exit 1 on any mismatch or host-bound sample.
 """
 from __future__ import annotations
 
@@ -96,7 +99,7 @@ def main() -> int:
     ap.add_argument("--iters", type=int, default=300)
     ap.add_argument("--warmup", type=int, default=20)
     ap.add_argument("--groups", type=int, default=15)
-    ap.add_argument("--busy-us", type=float, default=4000.0)
+    ap.add_argument("--busy-us", type=float, default=8000.0)
     args = ap.parse_args()
 
     from vllm.triton_utils import tl, triton
@@ -192,46 +195,61 @@ def main() -> int:
             bad.append(f"graph replay {rep}")
     out["graph_replays"] = 20
 
-    # 4. eager timing behind busy work, 15 builds per step
+    # 4. eager timing behind a calibrated GPU sleep, 15 builds per step
     smf._STATE.update(verify_left=0)
-    busy = torch.randn(2048, 2048, device=dev, dtype=torch.bfloat16)
-    for _ in range(3):
-        busy @ busy
+    torch.cuda._sleep(1000)
     torch.cuda.synchronize()
-    t0 = time.perf_counter()
-    for _ in range(10):
-        busy @ busy
+    c0, c1 = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+    c0.record()
+    torch.cuda._sleep(20_000_000)
+    c1.record()
     torch.cuda.synchronize()
-    n_mm = max(1, int(args.busy_us / ((time.perf_counter() - t0) / 10 * 1e6)))
-    out["n_mm"] = n_mm
+    cycles_per_us = 20_000_000 / (c0.elapsed_time(c1) * 1e3)
+    busy_cycles = int(args.busy_us * cycles_per_us)
+    out["cycles_per_us"] = round(cycles_per_us, 1)
+    flush = torch.empty(128 << 20, dtype=torch.uint8, device=dev)
     arms = {"stock": ([make_builder(mod, dev) for _ in range(args.groups)], stock_build),
             "fused": ([make_builder(mod, dev) for _ in range(args.groups)], fused_build)}
     tables = [torch.randint(0, 1 << 20, (2, 4096), generator=g, dtype=torch.int32).to(dev) for _ in range(args.groups)]
     timing = {}
-    for label, qsl, seq, ntok in (("c1_m4", [0, 4], [3000], 4), ("c2_m8", [0, 4, 8], [3000, 5000], 8)):
-        slot_rows = [torch.randint(0, 1 << 26, (ntok,), generator=g, dtype=torch.int64).to(dev) for _ in tables]
-        t = {"stock": [], "fused": []}
-        ev = {k: (torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)) for k in t}
-        for it in range(args.warmup + args.iters):
-            for name in (("stock", "fused") if it % 2 == 0 else ("fused", "stock")):
-                builders, fn = arms[name]
-                cms = [cam(qsl, seq, ntok, 4, tb[: len(seq)], sr) for tb, sr in zip(tables, slot_rows)]
-                for _ in range(n_mm):
-                    busy @ busy
-                ev[name][0].record()
-                for bb, cm in zip(builders, cms):
-                    fn(bb, 0, cm)
-                ev[name][1].record()
-            torch.cuda.synchronize()
-            for gi in range(args.groups):
-                if not all(torch.equal(a, c) for a, c in zip(
-                        written(arms["stock"][0][gi], ntok, ntok), written(arms["fused"][0][gi], ntok, ntok))):
-                    bad.append(f"timing {label} it={it} group={gi}")
-            if it >= args.warmup:
-                for name in t:
-                    t[name].append(ev[name][0].elapsed_time(ev[name][1]) * 1e3)
-        timing[label] = {k: summarize(v) for k, v in t.items()}
+    host_bound = 0
+    for l2 in ("warm", "cold"):
+        for label, qsl, seq, ntok in (("c1_m4", [0, 4], [3000], 4), ("c2_m8", [0, 4, 8], [3000, 5000], 8)):
+            slot_rows = [torch.randint(0, 1 << 26, (ntok,), generator=g, dtype=torch.int64).to(dev) for _ in tables]
+            t = {"stock": [], "fused": []}
+            host = {"stock": [], "fused": []}
+            ev = {k: (torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)) for k in t}
+            for it in range(args.warmup + args.iters):
+                for name in (("stock", "fused") if it % 2 == 0 else ("fused", "stock")):
+                    builders, fn = arms[name]
+                    cms = [cam(qsl, seq, ntok, 4, tb[: len(seq)], sr) for tb, sr in zip(tables, slot_rows)]
+                    if l2 == "cold":
+                        flush.fill_(it & 0xFF)
+                    torch.cuda.synchronize()
+                    torch.cuda._sleep(busy_cycles)
+                    h0 = time.perf_counter()
+                    ev[name][0].record()
+                    for bb, cm in zip(builders, cms):
+                        fn(bb, 0, cm)
+                    ev[name][1].record()
+                    h1 = time.perf_counter()
+                    if it >= args.warmup:
+                        host[name].append((h1 - h0) * 1e6)
+                        host_bound += (h1 - h0) * 1e6 >= args.busy_us
+                torch.cuda.synchronize()
+                for gi in range(args.groups):
+                    if not all(torch.equal(a, c) for a, c in zip(
+                            written(arms["stock"][0][gi], ntok, ntok), written(arms["fused"][0][gi], ntok, ntok))):
+                        bad.append(f"timing {label} it={it} group={gi}")
+                if it >= args.warmup:
+                    for name in t:
+                        t[name].append(ev[name][0].elapsed_time(ev[name][1]) * 1e3)
+            timing[f"{l2}_{label}"] = {k: summarize(v) for k, v in t.items()}
+            timing[f"{l2}_{label}"]["host_enqueue_us"] = {k: summarize(v) for k, v in host.items()}
     out["timing_15_builds_us"] = timing
+    out["host_bound_samples"] = host_bound
+    if host_bound:
+        bad.append(f"{host_bound} timed samples host-bound (enqueue >= busy)")
 
     counts = {}
     for name in ("stock", "fused"):

@@ -22,8 +22,15 @@ Runs in the serving image on a GPU (patch dir mounted at /opt/dsv41-patch):
    patterns: one cast to bf16 == through fp32.
 4. timing: each arm captured in a CUDA graph at m = 1, 3, 4, 6, 8 (the decode
    capture sizes), replayed >= 300 times, CUDA events per replay, arms
-   alternating; alone, and beside a 512 MiB device copy on another stream
-   (the shared expert's GEMM saturating DRAM in the serve).
+   alternating; alone (graph launch inside the events), warm and cold L2
+   (a ~90 us GPU sleep before the start event hides the graph launch, as
+   inside the serve's target graph; cold writes 128 MiB first, GB10 L2 is
+   24 MiB), and beside a 512 MiB device copy on another stream (the shared
+   expert's GEMM saturating DRAM in the serve). The p2b epilogue (fp16 ->
+   bf16) as 40 casts in one graph, launch hidden the same way.
+5. sabotage: a fused result with one wrong id; the per-call verify must
+   return the stock result and disarm (the next call is stock), and the
+   first-call self-test must disarm.
 Prints one JSON line; exit 1 on any mismatch.
 """
 from __future__ import annotations
@@ -205,6 +212,7 @@ def main() -> int:
     side = torch.cuda.Stream()
     big_src = torch.empty(512 << 20, dtype=torch.uint8, device=dev)
     big_dst = torch.empty_like(big_src)
+    flush = torch.empty(128 << 20, dtype=torch.uint8, device=dev)
     timing = {}
     for m in (1, 3, 4, 6, 8):
         ids, w, x = inputs(m, dev, g)
@@ -217,7 +225,7 @@ def main() -> int:
             with torch.cuda.graph(gr):
                 fn()
             graphs[name] = gr
-        for load in ("alone", "beside_copy"):
+        for load in ("alone", "warm", "cold", "beside_copy"):
             t = {"stock": [], "fused": []}
             for it in range(args.warmup + args.iters):
                 order = ("stock", "fused") if it % 2 == 0 else ("fused", "stock")
@@ -227,6 +235,10 @@ def main() -> int:
                         with torch.cuda.stream(side):
                             big_dst.copy_(big_src)
                         torch.cuda._sleep(20000)  # let the copy saturate DRAM first
+                    elif load in ("warm", "cold"):
+                        if load == "cold":
+                            flush.fill_(it & 0xFF)
+                        torch.cuda._sleep(200_000)  # ~90 us: the graph launch lands behind it
                     e0, e1 = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
                     e0.record()
                     graphs[name].replay()
@@ -252,6 +264,7 @@ def main() -> int:
         t = {"stock": [], "single": []}
         for it in range(args.warmup + args.iters):
             for name in (("stock", "single") if it % 2 == 0 else ("single", "stock")):
+                torch.cuda._sleep(200_000)  # the graph launch lands behind it
                 e0, e1 = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
                 e0.record()
                 graphs[name].replay()
@@ -268,6 +281,35 @@ def main() -> int:
             torch.cuda.synchronize()
         kernels[name] = sum(1 for e in prof.events() if e.device_type == torch.autograd.DeviceType.CUDA)
     out["gpu_ops_per_call"] = kernels
+
+    # 5. sabotage: a fused result with one wrong id. (a) per-call verify: the
+    # stock result is returned, the lever disarms, the next call is stock;
+    # (b) the first-call self-test disarms before any fused result is used.
+    class Sabotaged(mpf.MoePrep):
+        def fused(self, ids, weights, x2d, n_exp):
+            res = super().fused(ids, weights, x2d, n_exp)
+            res[0].view(-1)[:1].add_(1)
+            return res
+
+    sab_prep = Sabotaged(torch, prep.kernel, triton, exl3.map_topk_to_local)
+    ids, w, x = inputs(4, dev, g)
+    ref = prep.stock(ids, w, x, N_EXP, None)
+    mpf._STATE.update(armed=True, verify_left=2, engaged=True)
+    first = sab_prep(ids, w, x, N_EXP, None)
+    disarmed_a = not mpf._STATE["armed"]
+    second = sab_prep(ids, w, x, N_EXP, None)
+    mpf._STATE.update(armed=True, verify_left=2, engaged=False)
+    sab_prep.selftest_once(dev)
+    torch.cuda.synchronize()
+    out["sabotage"] = {
+        "verify_disarmed": disarmed_a,
+        "verify_returned_stock": same(first, ref),
+        "next_call_stock": same(second, ref),
+        "selftest_disarmed": not mpf._STATE["armed"] and not mpf._STATE["engaged"],
+    }
+    if not all(out["sabotage"].values()):
+        bad.append(f"sabotage {out['sabotage']}")
+    mpf._STATE.update(armed=True, verify_left=0, engaged=False)
     out["mismatches"] = bad
     print(json.dumps(out))
     return 1 if bad else 0

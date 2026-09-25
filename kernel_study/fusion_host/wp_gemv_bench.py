@@ -15,8 +15,12 @@ order: a first sweep over 9 configs matched it only by chance, 1-3 of 16 cases
 off per config, so the lever leaves M = 1 to cuBLAS); the serve wrapper
 (self-test, per-call verify, stock fallback at M 1/9/16, tuple return) and 20
 CUDA-graph replays of it, bitwise; then timing in CUDA graphs, cold L2 (a
-128 MiB write between replays; GB10 L2 is 24 MiB) and warm, alone and beside
-a DRAM-saturating copy on another stream, >= 300 replays, arms alternating.
+128 MiB write between replays; GB10 L2 is 24 MiB) and warm, both with a ~90 us
+GPU sleep before the start event so the graph launch is hidden (as inside the
+serve's target graph), and beside a DRAM-saturating copy on another stream,
+>= 300 replays, arms alternating. Last, a sabotage run: the GEMV followed by
+one flipped output bit; the per-call verify must return the stock output and
+disarm (the next call is stock), and the first-call self-test must disarm.
 Prints one JSON line.
 """
 from __future__ import annotations
@@ -164,6 +168,8 @@ def main() -> int:
                         with torch.cuda.stream(side):
                             big_dst.copy_(big_src)
                         torch.cuda._sleep(20000)
+                    else:
+                        torch.cuda._sleep(200_000)  # ~90 us: the graph launch lands behind it
                     e0, e1 = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
                     e0.record()
                     graphs[name].replay()
@@ -175,6 +181,42 @@ def main() -> int:
     out["timing_us"] = timing
     clk = torch.cuda.clock_rate() if hasattr(torch.cuda, "clock_rate") else None
     out["sm_clock_mhz"] = clk
+
+    # sabotage: the GEMV followed by one flipped output bit. (a) per-call
+    # verify: the stock output is returned, the lever disarms, the next call is
+    # stock; (b) the first-call self-test disarms.
+    class Corrupt:
+        def __init__(self, kernel):
+            self.kernel = kernel
+
+        def __getitem__(self, grid):
+            launch = self.kernel[grid]
+
+            def run(x, w, o, *a, **kw):
+                launch(x, w, o, *a, **kw)
+                o.view(torch.int16).view(-1)[:1].bitwise_xor_(1)
+
+            return run
+
+    w = ws[0]
+    layer = _types.SimpleNamespace(weight=w, bias=None, return_bias=True)
+    fwd = wpg.make_forward(torch, triton, Corrupt(kernel), lambda x, w=w: (torch.nn.functional.linear(x, w), None))
+    x = torch.randn(4, 5120, device=dev, generator=g).to(torch.bfloat16)
+    ref = torch.nn.functional.linear(x, w)
+    res = {}
+    wpg._STATE.update(armed=True, engaged=True, verify_left=2)
+    first, _ = fwd(layer, x)
+    res["verify_disarmed"] = not wpg._STATE["armed"]
+    second, _ = fwd(layer, x)
+    wpg._STATE.update(armed=True, engaged=False, verify_left=2)
+    third, _ = fwd(layer, x)
+    torch.cuda.synchronize()
+    res["selftest_disarmed"] = not wpg._STATE["armed"] and not wpg._STATE["engaged"]
+    for key, got in (("verify_returned_stock", first), ("next_call_stock", second), ("after_selftest_stock", third)):
+        res[key] = bool(torch.equal(got.view(torch.int16), ref.view(torch.int16)))
+    out["sabotage"] = res
+    if not all(res.values()):
+        out["bad"].append(f"sabotage {res}")
     print(json.dumps(out))
     return 1 if out["bad"] else 0
 

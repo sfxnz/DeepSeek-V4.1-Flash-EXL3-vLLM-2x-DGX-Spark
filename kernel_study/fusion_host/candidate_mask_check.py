@@ -20,8 +20,14 @@ Runs in the serving image on a GPU (patch dir mounted at /opt/dsv41-patch).
    replayed 20 times with new logits / row ends / candidates, vs the eager stock
    mask on the same inputs below each row's end.
 3. timing: each arm in a CUDA graph at the serve's width (max_model_len
-   1048576) and a 64k width, rows 4 and 8, typical decode ends; >= 300
-   replays, CUDA events, arms alternating.
+   1048576) and a 64k width, rows 4 and 8, typical decode ends (1.5k-20k),
+   and at 1M also ends near 32k and 128k; >= 300 replays, CUDA events, arms
+   alternating; warm and cold L2 (a 128 MiB write, GB10 L2 is 24 MiB, before
+   each replay); a ~90 us GPU sleep before the start event hides the graph
+   launch, as inside the serve's target graph.
+4. sabotage: the mask kernel followed by one flipped bit below a row's end;
+   the per-call verify must restore the stock result and disarm (the next call
+   is stock), and the first-call self-test must disarm.
 Prints one JSON line; exit 1 on any mismatch.
 """
 from __future__ import annotations
@@ -169,25 +175,34 @@ def main() -> int:
                 bad.append(f"graph replay {rep} row {r} end {e}")
         n_replay += 1
 
-    # 3. timing
+    # 3. timing: the serve's width (1M) and 64k, rows 4 / 8 (c=1 / c=2), typical
+    # decode row ends (1.5k-20k), and at 1M longer contexts (32k, 128k), where
+    # the bounded kernels' work grows with the end
     timing = {}
-    for width in (1 << 20, 65536):
-        for rows in (4, 8):
-            ends = torch.randint(1500, 20000, (rows,), generator=g)
-            ends_d = ends.to(torch.int32).to(dev)
-            cand = candidates(rows, ends, width, g, dev)
-            logits = torch.randn(rows, width, device=dev)
-            graphs = {}
-            for name, fn in (("stock", stock), ("bounded", bounded)):
+    flush = torch.empty(128 << 20, dtype=torch.uint8, device=dev)
+    spans = {"typ": (1500, 20000), "32k": (30000, 34000), "128k": (126000, 134000)}
+    cells = [(w, r, "typ") for w in (1 << 20, 65536) for r in (4, 8)]
+    cells += [(1 << 20, r, sp) for sp in ("32k", "128k") for r in (4, 8)]
+    for width, rows, span in cells:
+        ends = torch.randint(*spans[span], (rows,), generator=g)
+        ends_d = ends.to(torch.int32).to(dev)
+        cand = candidates(rows, ends, width, g, dev)
+        logits = torch.randn(rows, width, device=dev)
+        graphs = {}
+        for name, fn in (("stock", stock), ("bounded", bounded)):
+            fn(logits, None, ends_d, cand, BS, 1)
+            torch.cuda.synchronize()
+            gr = torch.cuda.CUDAGraph()
+            with torch.cuda.graph(gr):
                 fn(logits, None, ends_d, cand, BS, 1)
-                torch.cuda.synchronize()
-                gr = torch.cuda.CUDAGraph()
-                with torch.cuda.graph(gr):
-                    fn(logits, None, ends_d, cand, BS, 1)
-                graphs[name] = gr
+            graphs[name] = gr
+        for l2 in ("warm", "cold"):
             t = {"stock": [], "bounded": []}
             for it in range(args.warmup + args.iters):
                 for name in (("stock", "bounded") if it % 2 == 0 else ("bounded", "stock")):
+                    if l2 == "cold":
+                        flush.fill_(it & 0xFF)
+                    torch.cuda._sleep(200_000)  # ~90 us: the graph launch lands behind it
                     e0, e1 = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
                     e0.record()
                     graphs[name].replay()
@@ -195,12 +210,57 @@ def main() -> int:
                     torch.cuda.synchronize()
                     if it >= args.warmup:
                         t[name].append(e0.elapsed_time(e1) * 1e3)
-            timing[f"width{width}_rows{rows}"] = {k: summarize(v) for k, v in t.items()}
+            suffix = "" if span == "typ" else f"_end{span}"
+            timing[f"{l2}_width{width}_rows{rows}{suffix}"] = {k: summarize(v) for k, v in t.items()}
+    armed_after_timing = cmb._STATE["armed"]
+
+    # 4. sabotage: a bounded mask with one wrong bit below a row's end.
+    # (a) per-call verify: the stock result is restored, the lever disarms and
+    # the next call is stock; (b) the first-call self-test disarms.
+    class Corrupt:
+        """The mask kernel, then one flipped bit in logits[0, 0]."""
+
+        def __init__(self, kernel):
+            self.kernel = kernel
+
+        def __getitem__(self, grid):
+            launch = self.kernel[grid]
+
+            def run(logits, *a, **kw):
+                launch(logits, *a, **kw)
+                logits.view(torch.int32)[0, :1].bitwise_xor_(1)
+
+            return run
+
+    sab_apply = cmb.make_apply(torch, triton, stock, fk, Corrupt(mk))
+    width, rows = 65536, 4
+    ends = torch.tensor([5000, 17, 65536, 9000])
+    ends_d = ends.to(torch.int32).to(dev)
+    cand = candidates(rows, ends, width, g, dev)
+    base = torch.randn(rows, width, generator=g).to(dev)
+    ref = base.clone()
+    stock(ref, None, ends_d, cand, BS, 1)
+    res = {}
+    cmb._STATE.update(armed=True, engaged=True, verify_left=2)
+    first = base.clone()
+    sab_apply(first, None, ends_d, cand, BS, 1)
+    res["verify_disarmed"] = not cmb._STATE["armed"]
+    second = base.clone()
+    sab_apply(second, None, ends_d, cand, BS, 1)
+    cmb._STATE.update(armed=True, engaged=False, verify_left=2)
+    third = base.clone()
+    sab_apply(third, None, ends_d, cand, BS, 1)
+    torch.cuda.synchronize()
+    res["selftest_disarmed"] = not cmb._STATE["armed"] and not cmb._STATE["engaged"]
+    for key, got in (("verify_restored_stock", first), ("next_call_stock", second), ("after_selftest_stock", third)):
+        res[key] = bool(torch.equal(got.view(torch.int32), ref.view(torch.int32)))
+    if not all(res.values()):
+        bad.append(f"sabotage {res}")
     print(json.dumps({"torch": torch.__version__, "mask_cases": n_mask, "topk_cases": n_topk,
                       "stock_order_nondeterministic": n_nondet, "graph_replays": n_replay,
-                      "lever_state": dict(cmb._STATE),
-                      "timing_us": timing, "mismatches": bad}))
-    return 1 if bad or not cmb._STATE["armed"] else 0
+                      "lever_state_after_timing": {"armed": armed_after_timing},
+                      "sabotage": res, "timing_us": timing, "mismatches": bad}))
+    return 1 if bad or not armed_after_timing else 0
 
 
 if __name__ == "__main__":
