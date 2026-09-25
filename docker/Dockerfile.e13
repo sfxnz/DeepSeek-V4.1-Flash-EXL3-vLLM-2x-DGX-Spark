@@ -1,0 +1,36 @@
+# review-e13: canonical-e12 + the build-time stages perf/review-2026-09-24
+# adds to docker/Dockerfile, without rebuilding exllamav3 (unchanged pin):
+#   - vllm_exl3_c rebuilt from the same pin with widen_p2b_srcsort.py
+#     (DSV41_P2B_SRC_SORT, default off; the SORT=0 kernels are byte-identical,
+#     kernel_study/p2b_srcsort/sass_identity.sh)
+#   - o_proj.py woa-prepack stage (fix_o_proj_woa_fp8.py stage 2,
+#     DSV41_WOA_PREPACK, default off)
+#   - the branch patch dir and sitecustomize (run.sh still bind-mounts both)
+#   - the dsv41.recipe.patches label run.sh checks
+#   docker build -f docker/Dockerfile.e13 -t dsv41-flash-exl3-sm121:review-e13 docker
+FROM dsv41-flash-exl3-sm121:canonical-e12
+
+COPY patch /opt/dsv41-patch
+
+# Same pin as docker/Dockerfile (canonical-e12 chain)
+ARG VLLM_EXL3_REF=d3cfd394920360d69f820d2dc96f8292a9e10283
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git \
+ && git clone https://github.com/vcruz305/vllm-exl3.git /opt/vllm-exl3 \
+ && git -C /opt/vllm-exl3 checkout "$VLLM_EXL3_REF" \
+ && python3 /opt/dsv41-patch/fix_vllm_exl3_setup.py /opt/vllm-exl3/setup.py \
+ && python3 /opt/dsv41-patch/widen_p2b_shapes.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_mrow.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_cfg1.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_codebook.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_fshift.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_srcsort.py /opt/vllm-exl3 \
+ && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps --force-reinstall /opt/vllm-exl3 \
+ && python3 -c "import torch, vllm_exl3, vllm_exl3_c; assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); assert b'DSV41_P2B_SRC_SORT' in open(vllm_exl3_c.__file__, 'rb').read(); print('vllm_exl3 srcsort cuda ok')" \
+ && rm -rf /opt/vllm-exl3 /var/lib/apt/lists/*
+
+RUN python3 /opt/dsv41-patch/fix_o_proj_woa_fp8.py /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py \
+ && grep -q "_woa_prepacked_scale" /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py \
+ && cp /opt/dsv41-patch/sitecustomize.py /usr/lib/python3.12/sitecustomize.py \
+ && python3 -m py_compile /usr/lib/python3.12/sitecustomize.py /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+LABEL dsv41.recipe.patches="shapes,mrow,cfg1,codebook,fshift,srcsort,b12x_smalls,fix_o_proj_woa_fp8,woa_prepack"
