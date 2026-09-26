@@ -1,0 +1,40 @@
+==> role=head host=spark1
+==> Preflight spark1
+==> Ensuring image dsv41-flash-exl3-sm121:review-e14
+==> Using pinned snapshot /home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8
+==> Preflight spark2
+==> Ensuring image dsv41-flash-exl3-sm121:review-e14
+==> Using pinned snapshot /home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8
+==> Starting worker on spark2 first
+==> role=worker host=spark2
+==> Ensuring image dsv41-flash-exl3-sm121:review-e14
+==> Using pinned snapshot /home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8
+==> Starting dsv41-flash-exl3 rank=1 model=/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8 ctx=1048576 quant=exl3 engram_disk=1
+133b8311e2063c4321178edac44c52faa7daa59b224858d24ba427527259b84a
+==> Worker rank 1 is up. Head should start next.
+==> Worker is connecting to 10.100.8.1:29524. Starting head.
+==> Ensuring image dsv41-flash-exl3-sm121:review-e14
+==> Using pinned snapshot /home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8
+==> Starting dsv41-flash-exl3 rank=0 model=/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8 ctx=1048576 quant=exl3 engram_disk=1
+e465a2312b3f43647c1ec3dbfc29adf329fe5dfea5b2be2dc43a757c01590af8
+==> Waiting for http://127.0.0.1:8000/health and /v1/models
+==> still loading… (12×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (24×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (36×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (48×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (60×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (72×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (84×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (96×5s) — docker logs -f dsv41-flash-exl3
+==> Ready → http://127.0.0.1:8000/v1  (context=1048576)
+{"object":"list","data":[{"id":"deepseek-ai/DeepSeek-V4.1-Flash","object":"model","created":1790447020,"owned_by":"vllm","root":"/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8","parent":null,"max_model_len":1048576,"permission":[{"id":"modelperm-ad66d7ae5e6dcb70","object":"model_permission","created":1790447020,"allow_create_engine":false,"allow_sampling":true,"allow_logprobs":true,"allow_search_indices":false,"allow_view":true,"allow_fine_tuning":false,"organization":"*","group":null,"is_blocking":false}]}]}
+
+==> audit ok: every expected patch engaged on head, worker
+==> Warmup: greedy, t=0.7, ~3k/~1k/~300-token nonce prefills and a small image
+==> warmup greedy: 1.7s '323'
+==> warmup t=0.7: 1.5s 'A prime number above 100 is **101**.'
+==> warmup prefill: 6.5s 'The text describes a complex vLLM'
+==> warmup prefill-300: 1.8s 'Round 30 fixed two stacked lm_head'
+==> warmup prefill-1000: 15.1s 'The text summarizes a series of technica'
+==> warmup vision: 0.7s 'Red'
+==> Stop with: ./stop.sh
