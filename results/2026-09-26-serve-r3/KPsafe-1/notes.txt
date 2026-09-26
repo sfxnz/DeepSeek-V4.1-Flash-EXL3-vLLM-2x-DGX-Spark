@@ -1,0 +1,66 @@
+KPsafe-1 boot notes. ARMS-r3 section 8 (P5) KP safety boot: KP_ENV = the promoted K bundle (10 envs) plus the
+5 add-ons DSV41_MHC_DET_OVERLAP=1 DSV41_ENGRAM_WKV_TP=1 DSV41_PM_QOS_US=20 DSV41_NCCL_EAGER_TWIN=1 DSV41_AR_L2_PREFETCH=1,
+current pack 2.0bpw-mcg-lmhead-mxfp8, image review-e14. Not a counted boot. The P5 gate is K#3, KP#1, K#4, KP#2.
+- Command: command.txt (nohup, background, output in boot.txt). HEAD c02cbf6 at boot. docker/patch sha256 identical to
+  VIT-2/CUR-2 (61 files). First attempt counted: no fix, no retry, no add-on dropped. run.sh started 16:45:19Z, vLLM
+  server started 16:54:05Z (526 s), run.sh exited after warmup 16:54:43Z (564 s). Model loading 371.32 s (weights
+  296.16 + 20.73, 75.43 GiB; the K boots read 75.58 GiB, and WKV_TP is expected to free ~0.16 GiB per rank). Init
+  engine 60.00 s. Head loaded .../snapshots/2.0bpw-mcg-lmhead-mxfp8.
+- Prerequisite: P1 NCCL twin device check passed (p0-p1/nccl-twin/p1-gate.json gate_pass true, NCCL 2.30.7).
+- Preconditions (preconditions.txt, 16:41:55Z): requant DONE. No GPU container on either node. pmon spark1 empty,
+  spark2 Xorg/gnome-shell only. No microbench. MemAvailable 116/117 GiB. Image ID 3a002b55c9bc on both nodes. Tree
+  clean apart from this dir. unittest 798 OK (14 skipped) rc 0, render --check rc 0 (tests-render.txt). gpu_free_wait
+  GPUFREE at 16:45:06Z (gpufree-spark1.txt). /dev/cpu_dma_latency exists on both nodes.
+- spark2 lock: held from 16:41:49Z (LOCK_HELD before run.sh). After stop the remote flock/sleep pair
+  (4118922/4118923) outlived the killed local ssh; this session killed its own pair. LOCK_FREE 17:21:27Z.
+- Safety (s8): no hang. The WKV_TP self-check lines follow the armed lines on both ranks (the s8 hang window). Strict
+  audit ok on head and worker (boot.txt), and a strict re-run on the end-of-boot logs gave rc 0 (engagement.txt).
+  Add-ons, per rank:
+    MHC_OVERLAP  engaged: target + draft, 1x each (split path bitwise equal to stock, T 1/4/16).
+    WKV_TP       armed + self-check bit-exact for layers 1 and 14 (12800 of 25600 rows per rank, M 1/4/8/64).
+    PM_QOS       pm qos engaged (<= 20 us) in every serve process: 4 lines head, 3 worker.
+    EAGER_TWIN   engaged on tp:0, guard on ep:0, one routing line (84 captured calls on the graph comm, eager calls
+                 on the twin, 189 so far).
+    L2_PREFETCH  engaged: 37/40 layers, 9.02 MiB per MoE all-reduce window.
+  K lines as on CUR-2 (COOP=2, mhc det 81/6 fn, native stage, early hash, t2r dedup + census 9.50, moe prep, cand
+  mask, wp gemv, swa meta), lm_head mxfp8 / prefetch v3 / gather v2 1x per rank, woa fp8 43/43. 0 LOG_DISARMED hits
+  (27 markers). disarm_scan rc 0. Envs equal on both ranks except VLLM_HOST_IP. Image 3a002b55c9bc on both ranks.
+  Expected interaction (ARMS-r3 s12): the dense GEMV armed count is 8 per rank instead of 9. The engram_wkv
+  K6144xN25600 line is gone because WKV_TP's per-rank shape 6144x12800 has no dense-gemv config.
+  OPEN (EAGER_TWIN): s3 expects NCCL's "graphUsageMode is set to 0 but the user is capturing graphs" line 434x per
+  rank. It appears 0x in both ranks' logs, with NCCL_DEBUG=WARN. The P1 twin runs (same image, NCCL_DEBUG=WARN) also
+  show 0 such lines, and P1 passed. The string is in the image's libnccl.so.2, but its log level is not established.
+  Logs alone cannot prove that mixing is off on the graph comm. The KP_p mechanism check (s8) settles it.
+- Smokes: chat 323, vision Red. Both are byte-identical to CUR-2 (the K config), as s8 requires for greedy output.
+  Correctness 8/8 rc 0. The outputs equal CUR-2's except prose_sanity, which is sampled (CUR-1 and CUR-2 also
+  differ there). MemAvailable after smoke 22/24 GiB (floor 8).
+- L.A.I.L x10 (fresh, before any c=2): median 45.114 tok/s (39.231-47.378), 47.007 ms/step (46.677-50.981),
+  acceptance 2.1313 (1.9845-2.2261), finish length. Run 2 read 50.98 ms/step (39.23 tok/s). The other 9 read
+  46.68-47.82. Both guards were clean. Kept as measured.
+- bench_decode x9: prose c=1 54.102 tok/s at 46.958 ms/step (acc 2.5641). prose c=2 agg 84.173 at 57.652.
+  structured c=1 86.754 at 45.655 (acc 3.9608). structured c=2 agg 141.297 at 55.851.
+- four_numbers: prose c=1 54.49 tok/s at 46.064 ms/step (median run acc 2.5). prose_long c=1 45.303 tok/s at 47.1
+  ms/step (acc 2.1277, range 2.1053-2.1978, n=5, finish length, post-EOS 0). prose_long c=2 agg 68.541 at 59.576
+  ms/step. pp_warm 8k/32k 739.4/772.9 (runs 739.4/688.8/781.9, 772.9/765.9/788.1). pp_novel 8k/32k 811.0/820.9 (runs
+  822.0/811.0/809.1, 823.1/807.9/820.9). L.A.I.L 3x after c=2 47.76 (48.27/47.76/45.1). Warm prefix 1.0.
+  ranks_match true. disarmed false. MemAvailable after micro 21.16/23.33 GiB.
+- e2e rc 0, 3/3 (useful_tok_s 6.23).
+- Quality quick: PASS (one run, rc 0, 314 s). nll 0.244703, dlp 0.01015, gen_nll_prefill 0.28066, golden 0.01656, aa
+  0.01653 (limit 0.03206; 4/12 identical), tools json 22/22, exact_args 21/22 (t09, at the limit), no_call 8/8,
+  needle 6/6, c2, vision.
+- C2-STRESS (the round-34 script, copied as c2_stress.py.txt): 6 rounds x 2 concurrent requests, 12/12 ok, all
+  non-empty, round walls 6.02-9.11 s. Post-stress L.A.I.L x3: 46.639/43.941/45.898, median 45.898 tok/s at 47.069
+  ms/step, acc 2.1603.
+- gpu_guard rc=0, 0 FOREIGN. spark1 733 samples at 2 s (16:54:52Z-17:20:39Z), only VLLM::Worker_TP. spark2 143 at 10 s
+  (VLLM::Worker_TP, Xorg, gnome-shell). Not VOID. The guards started after run.sh exited and before the smokes.
+- Order: smokes, mem, correctness, L.A.I.L x10, bench_decode x9, four_numbers, e2e, quality quick, C2-STRESS,
+  L.A.I.L x3, disarm_scan, engagement + strict audit re-run, gpu_guard --check, mem-end, ./stop.sh (17:21:13Z).
+- Single-boot context against the four K-config boots (K-1, K-2, CUR-1, CUR-2). This is not a verdict:
+  four prose c=1 ms/step K 47.156/48.245/47.753/47.715 (median 47.734), KPsafe 46.064.
+  prose_long c=1 ms/step K 49.01/48.702/49.101/48.675 (median 48.856), KPsafe 47.1.
+  L.A.I.L ms/step K 48.328/48.909/49.371/48.638 (median 48.773), KPsafe 47.007.
+  prose_long c=2 ms/step K median 61.069 (60.197-62.2), KPsafe 59.576.
+  Acceptance is inside the K range on L.A.I.L and prose_long. Four-numbers prose acc 2.5 sits below K's 2.5316-2.6184.
+  pp_warm_8k 739.4 is below all 4 K boots (743.1-784.4), and its own runs span 688.8-781.9.
+  s11 expected the add-ons to give -2.4..-7.1 ms/step at c=1. This one boot reads -1.7 to -1.8 against the K median.
+  The ABAB decides.

@@ -1,0 +1,568 @@
+{
+ "arm": "KPsafe-1",
+ "phase": "ARMS-r3 section 8 (P5) KP safety boot: all 5 add-ons on top of the promoted K bundle. Not counted; the P5 gate needs K#3, KP#1, K#4, KP#2.",
+ "env": "AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e14 DSV41_P2B_COOP=2 DSV41_DENSE_GEMV=1 DSV41_MHC_DET_SPLITS=16 DSV41_ENGRAM_NATIVE_STAGE=1 DSV41_ENGRAM_EARLY_HASH=1 DSV41_ATTN_T2R_DEDUP=1 DSV41_SWA_META_FUSED=1 DSV41_MOE_PREP_FUSED=1 DSV41_CANDIDATE_MASK_BOUNDED=1 DSV41_INDEXER_WP_GEMV=1 DSV41_MHC_DET_OVERLAP=1 DSV41_ENGRAM_WKV_TP=1 DSV41_PM_QOS_US=20 DSV41_NCCL_EAGER_TWIN=1 DSV41_AR_L2_PREFETCH=1 ./run.sh (KP_ENV; round-34 defaults; SNAPSHOT_SHA default 2.0bpw-mcg-lmhead-mxfp8)",
+ "head_at_boot": "c02cbf6d8e28f5fdbce8826b05894f775957b89c",
+ "patch_sha256": "identical to VIT-2 / CUR-2 (61 files)",
+ "snapshot": "2.0bpw-mcg-lmhead-mxfp8; head loaded .../snapshots/2.0bpw-mcg-lmhead-mxfp8",
+ "attempts": {
+  "1": "first attempt counted; no fix, no retry, no add-on dropped"
+ },
+ "p1_prerequisite": "P1 NCCL twin device check passed (p0-p1/nccl-twin/p1-gate.json gate_pass true, NCCL 2.30.7 on both ranks)",
+ "safety_checks": {
+  "boot": "no hang: run.sh 16:45:19Z -> vLLM server 16:54:05Z; WKV_TP self-check lines appear on both ranks after the armed lines (the hang window named in s8)",
+  "strict_audit": "boot.txt: audit ok: every expected patch engaged on head, worker; strict re-run on end-of-boot logs rc 0",
+  "add_on_engagement": {
+   "DSV41_MHC_DET_OVERLAP": "engaged: target + draft, 1x each per rank (split path bitwise equal to stock, T 1/4/16)",
+   "DSV41_ENGRAM_WKV_TP": "armed + self-check bit-exact for layers 1 and 14 on each rank (12800 of 25600 rows per rank, M 1/4/8/64); model loading 75.43 GiB vs 75.58 GiB on the K boots",
+   "DSV41_PM_QOS_US": "pm qos engaged (/dev/cpu_dma_latency <= 20 us) in every serve process: 4 lines head, 3 worker",
+   "DSV41_NCCL_EAGER_TWIN": "engaged on tp:0 + guard on ep:0 + one routing line per rank (84 captured calls on the graph comm, eager calls on the twin, 189 so far); NCCL 2.30.7. OPEN: the NCCL \"Comm config graphUsageMode is set to 0 but the user is capturing graphs\" line that s3 expects 434x per rank appears 0x in both ranks' docker logs (containers run NCCL_DEBUG=WARN). The P1 twin runs (same image, NCCL_DEBUG=WARN, twin routing 82 captured calls) also show 0 such lines, and P1 passed its device check. The string is present in the image's libnccl.so.2 (2.30.7); its log level is not established here. The lever's own line reports NCCL_GRAPH_MIXING_SUPPORT=0 in-process and no DISARMED/REFUSED line appeared. Whether graph mixing is actually off on the graph comm is not provable from logs; the s8 EAGER_TWIN mechanism check in KP_p (gap before in-graph ARs 5.7 -> ~3 us) settles it",
+   "DSV41_AR_L2_PREFETCH": "engaged: 37/40 layers, 9.02 MiB per MoE all-reduce window, both ranks"
+  },
+  "lever_disarm": "0 LOG_DISARMED hits (27 known markers); disarm_scan rc 0; four_numbers lever_disarmed false",
+  "interaction_seen": "DENSE_GEMV armed lines 8 per rank instead of 9: the engram_wkv (K6144xN25600) GEMV line is absent, because WKV_TP makes the per-rank shape 6144x12800, which has no dense-gemv config (ARMS-r3 s12, expected)",
+  "greedy_smokes": "smoke_chat and smoke_vision output byte-identical to CUR-2 (K config): 323 / Red",
+  "correctness": "8/8 rc 0; outputs equal to CUR-2 except the sampled prose_sanity line (which also differs between CUR-1 and CUR-2)",
+  "c2": "bench_decode c=2 prose + structured (9 runs each), prose_long c=2 (n=10), C2-STRESS 6 rounds x 2 concurrent (12/12 ok, all non-empty, round walls 6.0-9.1 s), quality c2: all passed with hard timeouts, no hang",
+  "e2e": "rc 0, 3/3 (useful_tok_s 6.23)",
+  "post_stress_lail3": {
+   "tok_s_runs": [
+    46.639,
+    43.941,
+    45.898
+   ],
+   "tok_s": 45.898,
+   "ms_step": 47.069,
+   "acc": 2.1653
+  }
+ },
+ "lail_fresh": {
+  "n": 10,
+  "tok_s_runs": [
+   45.514,
+   39.231,
+   42.398,
+   47.378,
+   44.431,
+   46.927,
+   47.059,
+   43.14,
+   44.724,
+   45.505
+  ],
+  "tok_s": 45.114,
+  "ms_step_runs": [
+   46.677,
+   50.981,
+   46.806,
+   46.985,
+   47.815,
+   47.028,
+   46.897,
+   47.664,
+   46.918,
+   47.077
+  ],
+  "ms_step": 47.007,
+  "acc": 2.1313,
+  "acc_range": [
+   1.9922,
+   2.2402
+  ],
+  "ttft_s": 0.3438,
+  "finish": [
+   "length"
+  ]
+ },
+ "bench_decode_n9": {
+  "prose_c1": {
+   "tok_s": 54.102,
+   "agg_tok_s": 54.096,
+   "ms_step": 46.958,
+   "acc": 2.5641,
+   "acc_range": [
+    2.314,
+    2.8429
+   ],
+   "ttft_p50_s": 0.239,
+   "natural_finish": "stop",
+   "post_eos_fraction": 0.57
+  },
+  "prose_c2": {
+   "tok_s": 43.026,
+   "agg_tok_s": 84.173,
+   "ms_step": 57.652,
+   "acc": 2.463,
+   "acc_range": [
+    2.3869,
+    2.7027
+   ],
+   "ttft_p50_s": 0.264,
+   "natural_finish": "stop",
+   "post_eos_fraction": 0.57
+  },
+  "structured_c1": {
+   "tok_s": 86.754,
+   "agg_tok_s": 86.739,
+   "ms_step": 45.655,
+   "acc": 3.9608,
+   "acc_range": [
+    3.9608,
+    3.9608
+   ],
+   "ttft_p50_s": 0.184,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  },
+  "structured_c2": {
+   "tok_s": 70.924,
+   "agg_tok_s": 141.297,
+   "ms_step": 55.851,
+   "acc": 3.9608,
+   "acc_range": [
+    3.9608,
+    3.9608
+   ],
+   "ttft_p50_s": 0.341,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  }
+ },
+ "four_numbers": {
+  "prose_c1_median_tok_s": 54.49,
+  "prose_runs": [
+   56.62,
+   55.35,
+   54.17,
+   54.49,
+   49.57,
+   55.41,
+   54.92,
+   50.23,
+   48.87
+  ],
+  "prose_c1_ms_step": 46.064,
+  "prose_acc": 2.5,
+  "prose_acc_range": [
+   2.2614,
+   2.6234
+  ],
+  "prose_post_eos_fraction": 0.57,
+  "prose_long_c1": {
+   "tok_s": 45.303,
+   "ms_step": 47.1,
+   "acc": 2.1277,
+   "acc_range": [
+    2.1053,
+    2.1978
+   ],
+   "n": 5,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  },
+  "prose_long_c2": {
+   "agg_tok_s": 68.541,
+   "per_stream_tok_s": 35.082,
+   "ms_step": 59.576,
+   "acc": 2.0947,
+   "n": 10,
+   "natural_finish": "length"
+  },
+  "pp_warm_8k": 739.4,
+  "pp_warm_8k_runs": [
+   739.4,
+   688.8,
+   781.9
+  ],
+  "pp_warm_32k": 772.9,
+  "pp_warm_32k_runs": [
+   772.9,
+   765.9,
+   788.1
+  ],
+  "pp_novel_8k": 811.0,
+  "pp_novel_8k_runs": [
+   822.0,
+   811.0,
+   809.1
+  ],
+  "pp_novel_32k": 820.9,
+  "pp_novel_32k_runs": [
+   823.1,
+   807.9,
+   820.9
+  ],
+  "lail_after_c2_3x_median": 47.76,
+  "lail_after_c2_runs": [
+   48.27,
+   47.76,
+   45.1
+  ],
+  "memavail_after_micro_gib": {
+   "spark1": 21.16,
+   "spark2": 23.33
+  },
+  "warm_prefix_hit_fraction": 1.0,
+  "warm_prefix_ttft_cold_warm_s": [
+   2.814,
+   0.308
+  ],
+  "serve_env_ranks_match": true,
+  "lever_disarmed": false
+ },
+ "quality_quick": {
+  "pass_": true,
+  "rc": 0,
+  "elapsed_s": 314.0,
+  "tools_exact_miss_ids": [
+   "t09"
+  ],
+  "note": "single run, PASS on every component. nll 0.244703 (<=0.25316), decode median dlp 0.01015 (<=0.06794), gen_nll_prefill 0.28066 (<=0.50932), golden_hazard 0.01656 and aa_hazard 0.01653 (both <=0.03206; 4/12 identical), tools json 22/22, exact_args 21/22 = 0.9545 (t09; at the limit, as A-2/K-1/KC-1/CUR-1), no_call 8/8, needle 6/6, c2, vision Red."
+ },
+ "memavail_gib": {
+  "before_boot": {
+   "spark1": "116Gi",
+   "spark2": "117Gi"
+  },
+  "after_smoke": {
+   "spark1": "22Gi",
+   "spark2": "24Gi"
+  },
+  "after_micro": {
+   "spark1": 21.16,
+   "spark2": 23.33
+  },
+  "end_serve_up": {
+   "spark1": "20Gi",
+   "spark2": "23Gi"
+  },
+  "note": "floor 8 GiB after smoke held. No separate after-warmup reading: the smokes ran 7 s after the guards started. Swap used spark1 3.2 -> 7.4 GiB, spark2 1.6 -> 5.1 GiB across the boot (same pattern as the K boots)."
+ },
+ "load": {
+  "run_sh_start": "16:45:19Z",
+  "weights_s": "296.16 + 20.73",
+  "model_loading_s": 371.32,
+  "model_loading_gib": 75.43,
+  "init_engine_s": 60.0,
+  "api_server_start": "16:54:05Z",
+  "wall_to_api_s": 526,
+  "run_sh_exit_after_warmup": "16:54:43Z",
+  "wall_incl_warmup_s": 564
+ },
+ "gpu_guard": "rc=0, 0 FOREIGN. spark1 733 samples at 2 s (16:54:52Z-17:20:39Z), only VLLM::Worker_TP. spark2 143 samples at 10 s (16:54:52Z-17:20:29Z): VLLM::Worker_TP, Xorg, gnome-shell. Not VOID.",
+ "spark2_lock": "held from 16:41:49Z (LOCK_HELD before run.sh). After stop the remote flock/sleep pair (pids 4118922/4118923, started 16:41:46Z) outlived the killed local ssh; this session killed its own pair. LOCK_FREE confirmed 17:21:27Z.",
+ "stop": "./stop.sh 17:21:13Z, both nodes; no dsv41 container left",
+ "single_boot_context_vs_K_config_not_a_verdict": {
+  "note": "K boots = K-1, K-2, CUR-1, CUR-2 (same K env, image, patch sha, pack). KPsafe-1 is one uncounted safety boot; the P5 gate is K#3, KP#1, K#4, KP#2 with the noise rule.",
+  "cells": {
+   "lail_tok_s": {
+    "K_boots": [
+     43.566,
+     42.532,
+     42.928,
+     43.123
+    ],
+    "K_median": 43.025,
+    "K_range": [
+     42.532,
+     43.566
+    ],
+    "KPsafe1": 45.114
+   },
+   "lail_ms_step": {
+    "K_boots": [
+     48.328,
+     48.909,
+     49.371,
+     48.638
+    ],
+    "K_median": 48.773,
+    "K_range": [
+     48.328,
+     49.371
+    ],
+    "KPsafe1": 47.007
+   },
+   "lail_acc": {
+    "K_boots": [
+     2.1071,
+     2.1048,
+     2.1181,
+     2.1225
+    ],
+    "K_median": 2.113,
+    "K_range": [
+     2.1048,
+     2.1225
+    ],
+    "KPsafe1": 2.1313
+   },
+   "four_prose_c1_tok_s": {
+    "K_boots": [
+     54.42,
+     53.43,
+     54.11,
+     53.34
+    ],
+    "K_median": 53.77,
+    "K_range": [
+     53.34,
+     54.42
+    ],
+    "KPsafe1": 54.49
+   },
+   "four_prose_c1_ms_step": {
+    "K_boots": [
+     47.156,
+     48.245,
+     47.753,
+     47.715
+    ],
+    "K_median": 47.734,
+    "K_range": [
+     47.156,
+     48.245
+    ],
+    "KPsafe1": 46.064
+   },
+   "four_prose_c1_acc": {
+    "K_boots": [
+     2.557,
+     2.5316,
+     2.6184,
+     2.5443
+    ],
+    "K_median": 2.551,
+    "K_range": [
+     2.5316,
+     2.6184
+    ],
+    "KPsafe1": 2.5
+   },
+   "prose_long_c1_tok_s": {
+    "K_boots": [
+     43.688,
+     43.923,
+     44.893,
+     43.395
+    ],
+    "K_median": 43.806,
+    "K_range": [
+     43.395,
+     44.893
+    ],
+    "KPsafe1": 45.303
+   },
+   "prose_long_c1_ms_step": {
+    "K_boots": [
+     49.01,
+     48.702,
+     49.101,
+     48.675
+    ],
+    "K_median": 48.856,
+    "K_range": [
+     48.675,
+     49.101
+    ],
+    "KPsafe1": 47.1
+   },
+   "prose_long_c1_acc": {
+    "K_boots": [
+     2.117,
+     2.1505,
+     2.2222,
+     2.117
+    ],
+    "K_median": 2.134,
+    "K_range": [
+     2.117,
+     2.2222
+    ],
+    "KPsafe1": 2.1277
+   },
+   "prose_long_c2_agg": {
+    "K_boots": [
+     68.063,
+     68.259,
+     70.089,
+     66.093
+    ],
+    "K_median": 68.161,
+    "K_range": [
+     66.093,
+     70.089
+    ],
+    "KPsafe1": 68.541
+   },
+   "prose_long_c2_ms_step": {
+    "K_boots": [
+     60.724,
+     61.415,
+     60.197,
+     62.2
+    ],
+    "K_median": 61.069,
+    "K_range": [
+     60.197,
+     62.2
+    ],
+    "KPsafe1": 59.576
+   },
+   "bench_prose_c1_ms_step": {
+    "K_boots": [
+     48.244,
+     48.764,
+     48.28,
+     48.355
+    ],
+    "K_median": 48.317,
+    "K_range": [
+     48.244,
+     48.764
+    ],
+    "KPsafe1": 46.958
+   },
+   "bench_prose_c2_ms_step": {
+    "K_boots": [
+     57.836,
+     59.209,
+     60.666,
+     59.17
+    ],
+    "K_median": 59.19,
+    "K_range": [
+     57.836,
+     60.666
+    ],
+    "KPsafe1": 57.652
+   },
+   "structured_c1_ms_step": {
+    "K_boots": [
+     46.877,
+     47.196,
+     46.992,
+     47.313
+    ],
+    "K_median": 47.094,
+    "K_range": [
+     46.877,
+     47.313
+    ],
+    "KPsafe1": 45.655
+   },
+   "structured_c2_ms_step": {
+    "K_boots": [
+     55.768,
+     57.277,
+     56.38,
+     56.18
+    ],
+    "K_median": 56.28,
+    "K_range": [
+     55.768,
+     57.277
+    ],
+    "KPsafe1": 55.851
+   },
+   "structured_c2_agg": {
+    "K_boots": [
+     139.836,
+     139.038,
+     138.839,
+     139.219
+    ],
+    "K_median": 139.129,
+    "K_range": [
+     138.839,
+     139.836
+    ],
+    "KPsafe1": 141.297
+   },
+   "pp_warm_8k": {
+    "K_boots": [
+     758.1,
+     784.4,
+     762.5,
+     743.1
+    ],
+    "K_median": 760.3,
+    "K_range": [
+     743.1,
+     784.4
+    ],
+    "KPsafe1": 739.4
+   },
+   "pp_warm_32k": {
+    "K_boots": [
+     769.7,
+     758.9,
+     763.0,
+     772.0
+    ],
+    "K_median": 766.35,
+    "K_range": [
+     758.9,
+     772.0
+    ],
+    "KPsafe1": 772.9
+   },
+   "pp_novel_8k": {
+    "K_boots": [
+     804.0,
+     825.6,
+     809.7,
+     810.2
+    ],
+    "K_median": 809.95,
+    "K_range": [
+     804.0,
+     825.6
+    ],
+    "KPsafe1": 811.0
+   },
+   "pp_novel_32k": {
+    "K_boots": [
+     799.5,
+     811.4,
+     811.7,
+     821.0
+    ],
+    "K_median": 811.55,
+    "K_range": [
+     799.5,
+     821.0
+    ],
+    "KPsafe1": 820.9
+   },
+   "lail_after_c2": {
+    "K_boots": [
+     41.79,
+     44.23,
+     41.17,
+     43.66
+    ],
+    "K_median": 42.725,
+    "K_range": [
+     41.17,
+     44.23
+    ],
+    "KPsafe1": 47.76
+   },
+   "warm_prefix": {
+    "K_boots": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "K_median": 1.0,
+    "K_range": [
+     1.0,
+     1.0
+    ],
+    "KPsafe1": 1.0
+   }
+  }
+ }
+}
