@@ -1,0 +1,2917 @@
+{
+ "what": "ARMS-r3 section 6 (P3): per-lever attribution by kernel and by critical path, A_p (round-34 defaults) vs K_p (defaults + the 10 promoted envs), both ranks, c=1 L.A.I.L window and c=2 pair window",
+ "boots": {
+  "A_p-1": "results/2026-09-26-serve-r3/P3/A_p-1 (HEAD 54ad48e, review-e14, gpu_guard rc 0)",
+  "K_p-1": "results/2026-09-26-serve-r3/P3/K_p-1 (HEAD 66d5960, same docker/patch sha256, review-e14, gpu_guard rc 0)"
+ },
+ "units": "ms per decode step unless named; every value is [rank0, rank1]",
+ "windows": {
+  "c1": {
+   "A_steps": 98,
+   "K_steps": 105,
+   "A_graph": 620,
+   "K_graph": 644
+  },
+  "c2": {
+   "A_steps": 30,
+   "K_steps": 34,
+   "A_graph": 617,
+   "K_graph": 641
+  }
+ },
+ "step_level_profiled": {
+  "c1": {
+   "step_wall_ms": {
+    "A": [
+     63.47,
+     63.446
+    ],
+    "K": [
+     49.149,
+     49.311
+    ],
+    "K_minus_A": [
+     -14.321,
+     -14.135
+    ]
+   },
+   "device_busy_ms": {
+    "A": [
+     58.329,
+     57.985
+    ],
+    "K": [
+     46.519,
+     46.269
+    ],
+    "K_minus_A": [
+     -11.81,
+     -11.716
+    ]
+   },
+   "device_idle_ms": {
+    "A": [
+     5.245,
+     5.486
+    ],
+    "K": [
+     2.587,
+     2.897
+    ],
+    "K_minus_A": [
+     -2.658,
+     -2.589
+    ]
+   },
+   "device_ops_per_step": {
+    "A": [
+     2569.0,
+     2569.0
+    ],
+    "K": [
+     1612,
+     1612
+    ],
+    "K_minus_A": [
+     -957.0,
+     -957.0
+    ]
+   },
+   "phase target_graph_ms": {
+    "A": [
+     51.35,
+     51.472
+    ],
+    "K": [
+     40.289,
+     40.018
+    ],
+    "K_minus_A": [
+     -11.061,
+     -11.454
+    ]
+   },
+   "phase draft_graph_ms": {
+    "A": [
+     5.411,
+     5.436
+    ],
+    "K": [
+     4.974,
+     5.016
+    ],
+    "K_minus_A": [
+     -0.437,
+     -0.42
+    ]
+   },
+   "phase eager_after_target_ms": {
+    "A": [
+     2.467,
+     2.492
+    ],
+    "K": [
+     2.348,
+     2.351
+    ],
+    "K_minus_A": [
+     -0.119,
+     -0.141
+    ]
+   },
+   "phase eager_before_next_target_ms": {
+    "A": [
+     4.176,
+     4.039
+    ],
+    "K": [
+     1.587,
+     1.788
+    ],
+    "K_minus_A": [
+     -2.589,
+     -2.251
+    ]
+   },
+   "segment A attn block: prev MoE AR end -> attn AR start": {
+    "A": [
+     19.979,
+     19.921
+    ],
+    "K": [
+     17.501,
+     17.374
+    ],
+    "K_minus_A": [
+     -2.478,
+     -2.547
+    ]
+   },
+   "segment B attn AR": {
+    "A": [
+     1.649,
+     1.901
+    ],
+    "K": [
+     1.672,
+     1.61
+    ],
+    "K_minus_A": [
+     0.023,
+     -0.291
+    ]
+   },
+   "segment C ffn prologue: attn AR end -> routed start": {
+    "A": [
+     6.114,
+     6.062
+    ],
+    "K": [
+     3.588,
+     3.589
+    ],
+    "K_minus_A": [
+     -2.526,
+     -2.473
+    ]
+   },
+   "segment D routed MoE": {
+    "A": [
+     22.067,
+     21.718
+    ],
+    "K": [
+     15.958,
+     15.809
+    ],
+    "K_minus_A": [
+     -6.109,
+     -5.909
+    ]
+   },
+   "segment E epilogue: routed end -> MoE AR start": {
+    "A": [
+     0.438,
+     0.428
+    ],
+    "K": [
+     0.408,
+     0.389
+    ],
+    "K_minus_A": [
+     -0.03,
+     -0.039
+    ]
+   },
+   "segment F MoE AR": {
+    "A": [
+     1.369,
+     1.768
+    ],
+    "K": [
+     1.281,
+     1.447
+    ],
+    "K_minus_A": [
+     -0.088,
+     -0.321
+    ]
+   }
+  },
+  "c2": {
+   "step_wall_ms": {
+    "A": [
+     89.668,
+     89.12
+    ],
+    "K": [
+     61.87,
+     61.735
+    ],
+    "K_minus_A": [
+     -27.798,
+     -27.385
+    ]
+   },
+   "device_busy_ms": {
+    "A": [
+     82.169,
+     81.681
+    ],
+    "K": [
+     59.09,
+     59.063
+    ],
+    "K_minus_A": [
+     -23.079,
+     -22.618
+    ]
+   },
+   "device_idle_ms": {
+    "A": [
+     7.423,
+     7.365
+    ],
+    "K": [
+     2.673,
+     2.638
+    ],
+    "K_minus_A": [
+     -4.75,
+     -4.727
+    ]
+   },
+   "device_ops_per_step": {
+    "A": [
+     2572.0,
+     2572.0
+    ],
+    "K": [
+     1616.0,
+     1616.0
+    ],
+    "K_minus_A": [
+     -956.0,
+     -956.0
+    ]
+   },
+   "phase target_graph_ms": {
+    "A": [
+     74.352,
+     74.367
+    ],
+    "K": [
+     51.999,
+     52.079
+    ],
+    "K_minus_A": [
+     -22.353,
+     -22.288
+    ]
+   },
+   "phase draft_graph_ms": {
+    "A": [
+     5.641,
+     5.678
+    ],
+    "K": [
+     5.542,
+     5.532
+    ],
+    "K_minus_A": [
+     -0.099,
+     -0.146
+    ]
+   },
+   "phase eager_after_target_ms": {
+    "A": [
+     2.568,
+     2.598
+    ],
+    "K": [
+     2.473,
+     2.483
+    ],
+    "K_minus_A": [
+     -0.095,
+     -0.115
+    ]
+   },
+   "phase eager_before_next_target_ms": {
+    "A": [
+     6.547,
+     6.378
+    ],
+    "K": [
+     1.659,
+     1.519
+    ],
+    "K_minus_A": [
+     -4.888,
+     -4.859
+    ]
+   },
+   "segment A attn block: prev MoE AR end -> attn AR start": {
+    "A": [
+     21.32,
+     21.156
+    ],
+    "K": [
+     18.547,
+     18.351
+    ],
+    "K_minus_A": [
+     -2.773,
+     -2.805
+    ]
+   },
+   "segment B attn AR": {
+    "A": [
+     2.167,
+     2.197
+    ],
+    "K": [
+     2.177,
+     2.488
+    ],
+    "K_minus_A": [
+     0.01,
+     0.291
+    ]
+   },
+   "segment C ffn prologue: attn AR end -> routed start": {
+    "A": [
+     6.265,
+     6.188
+    ],
+    "K": [
+     3.613,
+     3.64
+    ],
+    "K_minus_A": [
+     -2.652,
+     -2.548
+    ]
+   },
+   "segment D routed MoE": {
+    "A": [
+     42.344,
+     42.038
+    ],
+    "K": [
+     25.836,
+     25.632
+    ],
+    "K_minus_A": [
+     -16.508,
+     -16.406
+    ]
+   },
+   "segment E epilogue: routed end -> MoE AR start": {
+    "A": [
+     0.449,
+     0.432
+    ],
+    "K": [
+     0.41,
+     0.404
+    ],
+    "K_minus_A": [
+     -0.039,
+     -0.028
+    ]
+   },
+   "segment F MoE AR": {
+    "A": [
+     2.179,
+     2.568
+    ],
+    "K": [
+     1.898,
+     2.074
+    ],
+    "K_minus_A": [
+     -0.281,
+     -0.494
+    ]
+   }
+  }
+ },
+ "step_level_note": "Phases and segments are medians/means of different sets and do not add exactly. Segments A-F are per-layer means x 40 inside the target graph.",
+ "device_ms_per_step_by_category": {
+  "c1": {
+   "dense_gemv [DENSE_GEMV]": {
+    "A": [
+     0.0,
+     0.0
+    ],
+    "K": [
+     22.223,
+     22.081
+    ],
+    "K_minus_A": [
+     22.223,
+     22.081
+    ],
+    "launches_A_r0": 0,
+    "launches_K_r0": 266.0
+   },
+   "routed_moe [COOP]": {
+    "A": [
+     22.067,
+     21.718
+    ],
+    "K": [
+     15.958,
+     15.809
+    ],
+    "K_minus_A": [
+     -6.109,
+     -5.909
+    ],
+    "launches_A_r0": 40.0,
+    "launches_K_r0": 40.0
+   },
+   "dense_b12x": {
+    "A": [
+     20.566,
+     20.433
+    ],
+    "K": [
+     0.226,
+     0.223
+    ],
+    "K_minus_A": [
+     -20.34,
+     -20.21
+    ],
+    "launches_A_r0": 231.0,
+    "launches_K_r0": 8.0
+   },
+   "nccl_allreduce": {
+    "A": [
+     3.751,
+     4.118
+    ],
+    "K": [
+     3.481,
+     3.532
+    ],
+    "K_minus_A": [
+     -0.27,
+     -0.586
+    ],
+    "launches_A_r0": 88.0,
+    "launches_K_r0": 88.0
+   },
+   "woa_einsum": {
+    "A": [
+     3.573,
+     3.554
+    ],
+    "K": [
+     0.0,
+     0.0
+    ],
+    "K_minus_A": [
+     -3.573,
+     -3.554
+    ],
+    "launches_A_r0": 43.0,
+    "launches_K_r0": 0
+   },
+   "mhc [MHC_DET]": {
+    "A": [
+     2.75,
+     2.665
+    ],
+    "K": [
+     2.067,
+     2.021
+    ],
+    "K_minus_A": [
+     -0.683,
+     -0.644
+    ],
+    "launches_A_r0": 261.0,
+    "launches_K_r0": 261.0
+   },
+   "router_gate_bf16 (+splitK)": {
+    "A": [
+     1.815,
+     1.757
+    ],
+    "K": [
+     2.619,
+     2.631
+    ],
+    "K_minus_A": [
+     0.804,
+     0.874
+    ],
+    "launches_A_r0": 88.0,
+    "launches_K_r0": 88.0
+   },
+   "torch_eltwise": {
+    "A": [
+     2.004,
+     1.89
+    ],
+    "K": [
+     0.496,
+     0.475
+    ],
+    "K_minus_A": [
+     -1.508,
+     -1.415
+    ],
+    "launches_A_r0": 794.0,
+    "launches_K_r0": 224.0
+   },
+   "sparse_mla": {
+    "A": [
+     1.166,
+     1.144
+    ],
+    "K": [
+     1.17,
+     1.152
+    ],
+    "K_minus_A": [
+     0.004,
+     0.008
+    ],
+    "launches_A_r0": 86.0,
+    "launches_K_r0": 86.0
+   },
+   "router_topk": {
+    "A": [
+     0.932,
+     0.903
+    ],
+    "K": [
+     0.32,
+     0.308
+    ],
+    "K_minus_A": [
+     -0.612,
+     -0.595
+    ],
+    "launches_A_r0": 43.0,
+    "launches_K_r0": 43.0
+   },
+   "deepgemm_fp8fp4_other": {
+    "A": [
+     0.82,
+     0.8
+    ],
+    "K": [
+     0.865,
+     0.825
+    ],
+    "K_minus_A": [
+     0.045,
+     0.025
+    ],
+    "launches_A_r0": 6.0,
+    "launches_K_r0": 6.0
+   },
+   "compare_scalar<long>": {
+    "A": [
+     0.722,
+     0.856
+    ],
+    "K": [
+     0.004,
+     0.004
+    ],
+    "K_minus_A": [
+     -0.718,
+     -0.852
+    ],
+    "launches_A_r0": 178.0,
+    "launches_K_r0": 3.0
+   },
+   "wp_gemm [WP_GEMV]": {
+    "A": [
+     0.704,
+     0.697
+    ],
+    "K": [
+     0.341,
+     0.336
+    ],
+    "K_minus_A": [
+     -0.363,
+     -0.361
+    ],
+    "launches_A_r0": 8.0,
+    "launches_K_r0": 8.0
+   },
+   "act_quant": {
+    "A": [
+     0.566,
+     0.546
+    ],
+    "K": [
+     0.084,
+     0.085
+    ],
+    "K_minus_A": [
+     -0.482,
+     -0.461
+    ],
+    "launches_A_r0": 226.0,
+    "launches_K_r0": 46.0
+   },
+   "cutlass_bf16_gemm": {
+    "A": [
+     0.353,
+     0.349
+    ],
+    "K": [
+     0.348,
+     0.335
+    ],
+    "K_minus_A": [
+     -0.005,
+     -0.014
+    ],
+    "launches_A_r0": 10.0,
+    "launches_K_r0": 10.0
+   },
+   "other": {
+    "A": [
+     0.306,
+     0.298
+    ],
+    "K": [
+     0.344,
+     0.335
+    ],
+    "K_minus_A": [
+     0.038,
+     0.037
+    ],
+    "launches_A_r0": 115.0,
+    "launches_K_r0": 115.0
+   },
+   "indexer": {
+    "A": [
+     0.325,
+     0.32
+    ],
+    "K": [
+     0.33,
+     0.326
+    ],
+    "K_minus_A": [
+     0.005,
+     0.006
+    ],
+    "launches_A_r0": 64.0,
+    "launches_K_r0": 64.0
+   },
+   "triton": {
+    "A": [
+     0.316,
+     0.306
+    ],
+    "K": [
+     0.326,
+     0.32
+    ],
+    "K_minus_A": [
+     0.01,
+     0.014
+    ],
+    "launches_A_r0": 104.06,
+    "launches_K_r0": 104.06
+   },
+   "cand_mask [CAND_MASK]": {
+    "A": [
+     0.322,
+     0.32
+    ],
+    "K": [
+     0.022,
+     0.024
+    ],
+    "K_minus_A": [
+     -0.3,
+     -0.296
+    ],
+    "launches_A_r0": 8.0,
+    "launches_K_r0": 8.0
+   },
+   "rope_kv_cache": {
+    "A": [
+     0.239,
+     0.256
+    ],
+    "K": [
+     0.099,
+     0.097
+    ],
+    "K_minus_A": [
+     -0.14,
+     -0.159
+    ],
+    "launches_A_r0": 9.0,
+    "launches_K_r0": 9.0
+   },
+   "nccl_allgather": {
+    "A": [
+     0.136,
+     0.223
+    ],
+    "K": [
+     0.149,
+     0.231
+    ],
+    "K_minus_A": [
+     0.013,
+     0.008
+    ],
+    "launches_A_r0": 4.0,
+    "launches_K_r0": 4.0
+   },
+   "sampler_argmax": {
+    "A": [
+     0.1,
+     0.097
+    ],
+    "K": [
+     0.097,
+     0.097
+    ],
+    "K_minus_A": [
+     -0.003,
+     0.0
+    ],
+    "launches_A_r0": 9.0,
+    "launches_K_r0": 9.0
+   },
+   "memcpy": {
+    "A": [
+     0.082,
+     0.083
+    ],
+    "K": [
+     0.07,
+     0.069
+    ],
+    "K_minus_A": [
+     -0.012,
+     -0.014
+    ],
+    "launches_A_r0": 63.06,
+    "launches_K_r0": 48.06
+   },
+   "t2r_scan_map [T2R_DEDUP]": {
+    "A": [
+     0.08,
+     0.077
+    ],
+    "K": [
+     0.01,
+     0.009
+    ],
+    "K_minus_A": [
+     -0.07,
+     -0.068
+    ],
+    "launches_A_r0": 63.0,
+    "launches_K_r0": 6.0
+   },
+   "moe_prep_kernel [MOE_PREP]": {
+    "A": [
+     0.0,
+     0.0
+    ],
+    "K": [
+     0.056,
+     0.055
+    ],
+    "K_minus_A": [
+     0.056,
+     0.055
+    ],
+    "launches_A_r0": 0,
+    "launches_K_r0": 40.0
+   },
+   "swa_meta_kernel [SWA_META]": {
+    "A": [
+     0.035,
+     0.035
+    ],
+    "K": [
+     0.034,
+     0.039
+    ],
+    "K_minus_A": [
+     -0.001,
+     0.004
+    ],
+    "launches_A_r0": 15.0,
+    "launches_K_r0": 15.0
+   },
+   "norm": {
+    "A": [
+     0.019,
+     0.018
+    ],
+    "K": [
+     0.018,
+     0.017
+    ],
+    "K_minus_A": [
+     -0.001,
+     -0.001
+    ],
+    "launches_A_r0": 6.0,
+    "launches_K_r0": 6.0
+   },
+   "woa_pack": {
+    "A": [
+     0.005,
+     0.005
+    ],
+    "K": [
+     0.005,
+     0.005
+    ],
+    "K_minus_A": [
+     0.0,
+     0.0
+    ],
+    "launches_A_r0": 3.0,
+    "launches_K_r0": 3.0
+   },
+   "memset": {
+    "A": [
+     0.003,
+     0.002
+    ],
+    "K": [
+     0.003,
+     0.003
+    ],
+    "K_minus_A": [
+     0.0,
+     0.001
+    ],
+    "launches_A_r0": 4.0,
+    "launches_K_r0": 4.0
+   }
+  },
+  "c2": {
+   "routed_moe [COOP]": {
+    "A": [
+     42.344,
+     42.038
+    ],
+    "K": [
+     25.836,
+     25.632
+    ],
+    "K_minus_A": [
+     -16.508,
+     -16.406
+    ],
+    "launches_A_r0": 40.0,
+    "launches_K_r0": 40.0
+   },
+   "dense_gemv [DENSE_GEMV]": {
+    "A": [
+     0.0,
+     0.0
+    ],
+    "K": [
+     22.481,
+     22.33
+    ],
+    "K_minus_A": [
+     22.481,
+     22.33
+    ],
+    "launches_A_r0": 0,
+    "launches_K_r0": 265.0
+   },
+   "dense_b12x": {
+    "A": [
+     21.247,
+     21.118
+    ],
+    "K": [
+     0.649,
+     0.65
+    ],
+    "K_minus_A": [
+     -20.598,
+     -20.468
+    ],
+    "launches_A_r0": 231.0,
+    "launches_K_r0": 9.0
+   },
+   "nccl_allreduce": {
+    "A": [
+     5.025,
+     5.252
+    ],
+    "K": [
+     4.651,
+     5.037
+    ],
+    "K_minus_A": [
+     -0.374,
+     -0.215
+    ],
+    "launches_A_r0": 88.0,
+    "launches_K_r0": 88.0
+   },
+   "woa_einsum": {
+    "A": [
+     3.6,
+     3.599
+    ],
+    "K": [
+     0.0,
+     0.0
+    ],
+    "K_minus_A": [
+     -3.6,
+     -3.599
+    ],
+    "launches_A_r0": 43.0,
+    "launches_K_r0": 0
+   },
+   "mhc [MHC_DET]": {
+    "A": [
+     2.874,
+     2.84
+    ],
+    "K": [
+     2.192,
+     2.2
+    ],
+    "K_minus_A": [
+     -0.682,
+     -0.64
+    ],
+    "launches_A_r0": 261.0,
+    "launches_K_r0": 261.0
+   },
+   "router_gate_bf16 (+splitK)": {
+    "A": [
+     2.083,
+     1.964
+    ],
+    "K": [
+     2.788,
+     2.802
+    ],
+    "K_minus_A": [
+     0.705,
+     0.838
+    ],
+    "launches_A_r0": 94.0,
+    "launches_K_r0": 94.0
+   },
+   "torch_eltwise": {
+    "A": [
+     2.121,
+     2.051
+    ],
+    "K": [
+     0.607,
+     0.588
+    ],
+    "K_minus_A": [
+     -1.514,
+     -1.463
+    ],
+    "launches_A_r0": 797.0,
+    "launches_K_r0": 227.0
+   },
+   "sparse_mla": {
+    "A": [
+     1.537,
+     1.517
+    ],
+    "K": [
+     1.577,
+     1.536
+    ],
+    "K_minus_A": [
+     0.04,
+     0.019
+    ],
+    "launches_A_r0": 86.0,
+    "launches_K_r0": 86.0
+   },
+   "deepgemm_fp8fp4_other": {
+    "A": [
+     1.332,
+     1.317
+    ],
+    "K": [
+     1.316,
+     1.279
+    ],
+    "K_minus_A": [
+     -0.016,
+     -0.038
+    ],
+    "launches_A_r0": 6.0,
+    "launches_K_r0": 6.0
+   },
+   "router_topk": {
+    "A": [
+     1.033,
+     1.0
+    ],
+    "K": [
+     0.409,
+     0.401
+    ],
+    "K_minus_A": [
+     -0.624,
+     -0.599
+    ],
+    "launches_A_r0": 43.0,
+    "launches_K_r0": 43.0
+   },
+   "compare_scalar<long>": {
+    "A": [
+     0.741,
+     0.771
+    ],
+    "K": [
+     0.005,
+     0.004
+    ],
+    "K_minus_A": [
+     -0.736,
+     -0.767
+    ],
+    "launches_A_r0": 178.0,
+    "launches_K_r0": 3.0
+   },
+   "wp_gemm [WP_GEMV]": {
+    "A": [
+     0.74,
+     0.717
+    ],
+    "K": [
+     0.383,
+     0.38
+    ],
+    "K_minus_A": [
+     -0.357,
+     -0.337
+    ],
+    "launches_A_r0": 8.0,
+    "launches_K_r0": 8.0
+   },
+   "cand_mask [CAND_MASK]": {
+    "A": [
+     0.689,
+     0.679
+    ],
+    "K": [
+     0.035,
+     0.033
+    ],
+    "K_minus_A": [
+     -0.654,
+     -0.646
+    ],
+    "launches_A_r0": 8.0,
+    "launches_K_r0": 8.0
+   },
+   "act_quant": {
+    "A": [
+     0.612,
+     0.606
+    ],
+    "K": [
+     0.105,
+     0.1
+    ],
+    "K_minus_A": [
+     -0.507,
+     -0.506
+    ],
+    "launches_A_r0": 226.0,
+    "launches_K_r0": 47.0
+   },
+   "triton": {
+    "A": [
+     0.378,
+     0.367
+    ],
+    "K": [
+     0.385,
+     0.369
+    ],
+    "K_minus_A": [
+     0.007,
+     0.002
+    ],
+    "launches_A_r0": 104.07,
+    "launches_K_r0": 104.12
+   },
+   "other": {
+    "A": [
+     0.325,
+     0.32
+    ],
+    "K": [
+     0.385,
+     0.381
+    ],
+    "K_minus_A": [
+     0.06,
+     0.061
+    ],
+    "launches_A_r0": 114.0,
+    "launches_K_r0": 114.0
+   },
+   "indexer": {
+    "A": [
+     0.353,
+     0.35
+    ],
+    "K": [
+     0.349,
+     0.344
+    ],
+    "K_minus_A": [
+     -0.004,
+     -0.006
+    ],
+    "launches_A_r0": 64.0,
+    "launches_K_r0": 64.0
+   },
+   "rope_kv_cache": {
+    "A": [
+     0.294,
+     0.279
+    ],
+    "K": [
+     0.116,
+     0.116
+    ],
+    "K_minus_A": [
+     -0.178,
+     -0.163
+    ],
+    "launches_A_r0": 9.0,
+    "launches_K_r0": 9.0
+   },
+   "nccl_allgather": {
+    "A": [
+     0.232,
+     0.308
+    ],
+    "K": [
+     0.233,
+     0.298
+    ],
+    "K_minus_A": [
+     0.001,
+     -0.01
+    ],
+    "launches_A_r0": 4.0,
+    "launches_K_r0": 4.0
+   },
+   "sampler_argmax": {
+    "A": [
+     0.103,
+     0.1
+    ],
+    "K": [
+     0.099,
+     0.097
+    ],
+    "K_minus_A": [
+     -0.004,
+     -0.003
+    ],
+    "launches_A_r0": 9.0,
+    "launches_K_r0": 9.0
+   },
+   "memcpy": {
+    "A": [
+     0.096,
+     0.096
+    ],
+    "K": [
+     0.078,
+     0.071
+    ],
+    "K_minus_A": [
+     -0.018,
+     -0.025
+    ],
+    "launches_A_r0": 63.07,
+    "launches_K_r0": 48.12
+   },
+   "t2r_scan_map [T2R_DEDUP]": {
+    "A": [
+     0.081,
+     0.077
+    ],
+    "K": [
+     0.009,
+     0.008
+    ],
+    "K_minus_A": [
+     -0.072,
+     -0.069
+    ],
+    "launches_A_r0": 63.0,
+    "launches_K_r0": 6.0
+   },
+   "moe_prep_kernel [MOE_PREP]": {
+    "A": [
+     0.0,
+     0.0
+    ],
+    "K": [
+     0.063,
+     0.06
+    ],
+    "K_minus_A": [
+     0.063,
+     0.06
+    ],
+    "launches_A_r0": 0,
+    "launches_K_r0": 40.0
+   },
+   "cutlass_bf16_gemm": {
+    "A": [
+     0.034,
+     0.028
+    ],
+    "K": [
+     0.03,
+     0.032
+    ],
+    "K_minus_A": [
+     -0.004,
+     0.004
+    ],
+    "launches_A_r0": 7.0,
+    "launches_K_r0": 7.0
+   },
+   "swa_meta_kernel [SWA_META]": {
+    "A": [
+     0.034,
+     0.033
+    ],
+    "K": [
+     0.031,
+     0.028
+    ],
+    "K_minus_A": [
+     -0.003,
+     -0.005
+    ],
+    "launches_A_r0": 15.0,
+    "launches_K_r0": 15.0
+   },
+   "norm": {
+    "A": [
+     0.018,
+     0.019
+    ],
+    "K": [
+     0.016,
+     0.017
+    ],
+    "K_minus_A": [
+     -0.002,
+     -0.002
+    ],
+    "launches_A_r0": 6.0,
+    "launches_K_r0": 6.0
+   },
+   "woa_pack": {
+    "A": [
+     0.009,
+     0.011
+    ],
+    "K": [
+     0.005,
+     0.005
+    ],
+    "K_minus_A": [
+     -0.004,
+     -0.006
+    ],
+    "launches_A_r0": 3.0,
+    "launches_K_r0": 3.0
+   },
+   "memset": {
+    "A": [
+     0.001,
+     0.002
+    ],
+    "K": [
+     0.002,
+     0.001
+    ],
+    "K_minus_A": [
+     0.001,
+     -0.001
+    ],
+    "launches_A_r0": 2.0,
+    "launches_K_r0": 2.0
+   }
+  }
+ },
+ "category_note": "Kernel time summed over all streams in counted decode steps (side streams included, so it is not the critical path). [LEVER] marks the round-3 categories; the rest are decode_timeline's stock CATEGORIES. dense_gemv = dsv41_gemv::gemv_kernel; wp_gemm = _wp_gemv_kernel or the cuBLAS 128x1 bf16 kernel at grid (2,1,1); compare_scalar<long> is split out of torch_eltwise.",
+ "dense_gemm_roles": {
+  "c1": {
+   "qkv_a": {
+    "us_median_A": [
+     46.5,
+     46.56
+    ],
+    "us_median_K": [
+     43.8,
+     44.1
+    ],
+    "ms_per_step_A": [
+     2.137,
+     2.131
+    ],
+    "ms_per_step_K": [
+     1.957,
+     1.948
+    ],
+    "K_minus_A": [
+     -0.18,
+     -0.183
+    ],
+    "roofline_us_250GBps": 37.8
+   },
+   "wq_b": {
+    "us_median_A": [
+     112.51,
+     112.67
+    ],
+    "us_median_K": [
+     99.9,
+     99.8
+    ],
+    "ms_per_step_A": [
+     4.822,
+     4.812
+    ],
+    "ms_per_step_K": [
+     4.343,
+     4.329
+    ],
+    "K_minus_A": [
+     -0.479,
+     -0.483
+    ],
+    "roofline_us_250GBps": 86.5
+   },
+   "wo_a": {
+    "us_median_A": [
+     79.62,
+     79.46
+    ],
+    "us_median_K": [
+     75.5,
+     74.5
+    ],
+    "ms_per_step_A": [
+     3.573,
+     3.554
+    ],
+    "ms_per_step_K": [
+     3.255,
+     3.217
+    ],
+    "K_minus_A": [
+     -0.318,
+     -0.337
+    ],
+    "roofline_us_250GBps": 69.2
+   },
+   "wo_b": {
+    "us_median_A": [
+     102.62,
+     102.64
+    ],
+    "us_median_K": [
+     94.8,
+     95.2
+    ],
+    "ms_per_step_A": [
+     4.477,
+     4.472
+    ],
+    "ms_per_step_K": [
+     4.115,
+     4.11
+    ],
+    "K_minus_A": [
+     -0.362,
+     -0.362
+    ],
+    "roofline_us_250GBps": 86.5
+   },
+   "shared_gate_up": {
+    "us_median_A": [
+     57.73,
+     57.63
+    ],
+    "us_median_K": [
+     56.8,
+     57.0
+    ],
+    "ms_per_step_A": [
+     2.529,
+     2.503
+    ],
+    "ms_per_step_K": [
+     2.496,
+     2.49
+    ],
+    "K_minus_A": [
+     -0.033,
+     -0.013
+    ],
+    "roofline_us_250GBps": 48.7
+   },
+   "shared_down": {
+    "us_median_A": [
+     29.41,
+     29.73
+    ],
+    "us_median_K": [
+     28.3,
+     28.4
+    ],
+    "ms_per_step_A": [
+     1.296,
+     1.293
+    ],
+    "ms_per_step_K": [
+     1.25,
+     1.25
+    ],
+    "K_minus_A": [
+     -0.046,
+     -0.043
+    ],
+    "roofline_us_250GBps": 24.3
+   },
+   "lm_head": {
+    "us_median_A": [
+     1507.99,
+     1489.33
+    ],
+    "us_median_K": [
+     1450.2,
+     1436.9
+    ],
+    "ms_per_step_A": [
+     3.037,
+     2.985
+    ],
+    "ms_per_step_K": [
+     2.933,
+     2.884
+    ],
+    "K_minus_A": [
+     -0.104,
+     -0.101
+    ],
+    "roofline_us_250GBps": 1365.2
+   },
+   "engram_wkv": {
+    "us_median_A": [
+     748.67,
+     739.5
+    ],
+    "us_median_K": [
+     679.9,
+     676.5
+    ],
+    "ms_per_step_A": [
+     1.509,
+     1.483
+    ],
+    "ms_per_step_K": [
+     1.361,
+     1.355
+    ],
+    "K_minus_A": [
+     -0.148,
+     -0.128
+    ],
+    "roofline_us_250GBps": 648.8
+   },
+   "main_proj": {
+    "us_median_A": [
+     384.24,
+     391.97
+    ],
+    "us_median_K": [
+     364.1,
+     364.4
+    ],
+    "ms_per_step_A": [
+     0.389,
+     0.393
+    ],
+    "ms_per_step_K": [
+     0.37,
+     0.364
+    ],
+    "K_minus_A": [
+     -0.019,
+     -0.029
+    ],
+    "roofline_us_250GBps": 324.4
+   },
+   "draft_ctx_kv": {
+    "us_median_A": [
+     45.73,
+     46.46
+    ],
+    "us_median_K": [
+     45.4,
+     44.4
+    ],
+    "ms_per_step_A": [
+     0.145,
+     0.142
+    ],
+    "ms_per_step_K": [
+     0.143,
+     0.135
+    ],
+    "K_minus_A": [
+     -0.002,
+     -0.007
+    ],
+    "roofline_us_250GBps": 37.8
+   }
+  },
+  "c2": {
+   "qkv_a": {
+    "us_median_A": [
+     47.39,
+     47.33
+    ],
+    "us_median_K": [
+     46.7,
+     47.9
+    ],
+    "ms_per_step_A": [
+     2.196,
+     2.206
+    ],
+    "ms_per_step_K": [
+     2.086,
+     2.106
+    ],
+    "K_minus_A": [
+     -0.11,
+     -0.1
+    ],
+    "roofline_us_250GBps": 37.8
+   },
+   "wq_b": {
+    "us_median_A": [
+     118.3,
+     118.85
+    ],
+    "us_median_K": [
+     104.9,
+     103.5
+    ],
+    "ms_per_step_A": [
+     5.066,
+     5.062
+    ],
+    "ms_per_step_K": [
+     4.556,
+     4.477
+    ],
+    "K_minus_A": [
+     -0.51,
+     -0.585
+    ],
+    "roofline_us_250GBps": 86.5
+   },
+   "wo_a": {
+    "us_median_A": [
+     79.94,
+     80.03
+    ],
+    "us_median_K": [
+     75.6,
+     74.9
+    ],
+    "ms_per_step_A": [
+     3.6,
+     3.599
+    ],
+    "ms_per_step_K": [
+     3.282,
+     3.25
+    ],
+    "K_minus_A": [
+     -0.318,
+     -0.349
+    ],
+    "roofline_us_250GBps": 69.2
+   },
+   "wo_b": {
+    "us_median_A": [
+     105.28,
+     104.78
+    ],
+    "us_median_K": [
+     98.0,
+     98.0
+    ],
+    "ms_per_step_A": [
+     4.59,
+     4.572
+    ],
+    "ms_per_step_K": [
+     4.263,
+     4.265
+    ],
+    "K_minus_A": [
+     -0.327,
+     -0.307
+    ],
+    "roofline_us_250GBps": 86.5
+   },
+   "shared_gate_up": {
+    "us_median_A": [
+     57.7,
+     57.79
+    ],
+    "us_median_K": [
+     57.7,
+     58.1
+    ],
+    "ms_per_step_A": [
+     2.566,
+     2.529
+    ],
+    "ms_per_step_K": [
+     2.548,
+     2.559
+    ],
+    "K_minus_A": [
+     -0.018,
+     0.03
+    ],
+    "roofline_us_250GBps": 48.7
+   },
+   "shared_down": {
+    "us_median_A": [
+     30.37,
+     30.46
+    ],
+    "us_median_K": [
+     28.9,
+     28.8
+    ],
+    "ms_per_step_A": [
+     1.453,
+     1.434
+    ],
+    "ms_per_step_K": [
+     1.277,
+     1.279
+    ],
+    "K_minus_A": [
+     -0.176,
+     -0.155
+    ],
+    "roofline_us_250GBps": 24.3
+   },
+   "lm_head": {
+    "us_median_A": [
+     1524.49,
+     1507.28
+    ],
+    "us_median_K": [
+     1456.6,
+     1445.9
+    ],
+    "ms_per_step_A": [
+     3.065,
+     3.02
+    ],
+    "ms_per_step_K": [
+     2.934,
+     2.896
+    ],
+    "K_minus_A": [
+     -0.131,
+     -0.124
+    ],
+    "roofline_us_250GBps": 1365.2
+   },
+   "engram_wkv": {
+    "us_median_A": [
+     757.53,
+     747.47
+    ],
+    "us_median_K": [
+     689.7,
+     682.5
+    ],
+    "ms_per_step_A": [
+     1.529,
+     1.507
+    ],
+    "ms_per_step_K": [
+     1.388,
+     1.359
+    ],
+    "K_minus_A": [
+     -0.141,
+     -0.148
+    ],
+    "roofline_us_250GBps": 648.8
+   },
+   "main_proj": {
+    "note": "not on the GEMV at this M"
+   },
+   "draft_ctx_kv": {
+    "us_median_A": [
+     45.5,
+     46.69
+    ],
+    "us_median_K": [
+     48.5,
+     45.8
+    ],
+    "ms_per_step_A": [
+     0.137,
+     0.146
+    ],
+    "ms_per_step_K": [
+     0.145,
+     0.139
+    ],
+    "K_minus_A": [
+     0.008,
+     -0.007
+    ],
+    "roofline_us_250GBps": 37.8
+   }
+  }
+ },
+ "dense_gemv_roofline_K": {
+  "c1": {
+   "qkv_a": [
+    {
+     "GBps": 216.0,
+     "pct_of_250": 86.4,
+     "gap_to_roofline_ms_per_step": 0.256
+    },
+    {
+     "GBps": 214.6,
+     "pct_of_250": 85.8,
+     "gap_to_roofline_ms_per_step": 0.269
+    }
+   ],
+   "wq_b": [
+    {
+     "GBps": 216.5,
+     "pct_of_250": 86.6,
+     "gap_to_roofline_ms_per_step": 0.576
+    },
+    {
+     "GBps": 216.7,
+     "pct_of_250": 86.7,
+     "gap_to_roofline_ms_per_step": 0.572
+    }
+   ],
+   "wo_a": [
+    {
+     "GBps": 229.2,
+     "pct_of_250": 91.7,
+     "gap_to_roofline_ms_per_step": 0.271
+    },
+    {
+     "GBps": 232.2,
+     "pct_of_250": 92.9,
+     "gap_to_roofline_ms_per_step": 0.228
+    }
+   ],
+   "wo_b": [
+    {
+     "GBps": 228.1,
+     "pct_of_250": 91.3,
+     "gap_to_roofline_ms_per_step": 0.357
+    },
+    {
+     "GBps": 227.2,
+     "pct_of_250": 90.9,
+     "gap_to_roofline_ms_per_step": 0.374
+    }
+   ],
+   "shared_gate_up": [
+    {
+     "GBps": 214.2,
+     "pct_of_250": 85.7,
+     "gap_to_roofline_ms_per_step": 0.35
+    },
+    {
+     "GBps": 213.4,
+     "pct_of_250": 85.4,
+     "gap_to_roofline_ms_per_step": 0.359
+    }
+   ],
+   "shared_down": [
+    {
+     "GBps": 214.9,
+     "pct_of_250": 86.0,
+     "gap_to_roofline_ms_per_step": 0.171
+    },
+    {
+     "GBps": 214.2,
+     "pct_of_250": 85.7,
+     "gap_to_roofline_ms_per_step": 0.175
+    }
+   ],
+   "lm_head": [
+    {
+     "GBps": 235.3,
+     "pct_of_250": 94.1,
+     "gap_to_roofline_ms_per_step": 0.17
+    },
+    {
+     "GBps": 237.5,
+     "pct_of_250": 95.0,
+     "gap_to_roofline_ms_per_step": 0.143
+    }
+   ],
+   "engram_wkv": [
+    {
+     "GBps": 238.6,
+     "pct_of_250": 95.4,
+     "gap_to_roofline_ms_per_step": 0.062
+    },
+    {
+     "GBps": 239.8,
+     "pct_of_250": 95.9,
+     "gap_to_roofline_ms_per_step": 0.056
+    }
+   ],
+   "main_proj": [
+    {
+     "GBps": 222.7,
+     "pct_of_250": 89.1,
+     "gap_to_roofline_ms_per_step": 0.04
+    },
+    {
+     "GBps": 222.6,
+     "pct_of_250": 89.0,
+     "gap_to_roofline_ms_per_step": 0.04
+    }
+   ],
+   "sum_gap_ms_per_step": [
+    2.252,
+    2.214
+   ]
+  },
+  "c2": {
+   "qkv_a": [
+    {
+     "GBps": 202.6,
+     "pct_of_250": 81.0,
+     "gap_to_roofline_ms_per_step": 0.381
+    },
+    {
+     "GBps": 197.5,
+     "pct_of_250": 79.0,
+     "gap_to_roofline_ms_per_step": 0.432
+    }
+   ],
+   "wq_b": [
+    {
+     "GBps": 206.2,
+     "pct_of_250": 82.5,
+     "gap_to_roofline_ms_per_step": 0.791
+    },
+    {
+     "GBps": 209.0,
+     "pct_of_250": 83.6,
+     "gap_to_roofline_ms_per_step": 0.731
+    }
+   ],
+   "wo_a": [
+    {
+     "GBps": 228.9,
+     "pct_of_250": 91.5,
+     "gap_to_roofline_ms_per_step": 0.275
+    },
+    {
+     "GBps": 231.0,
+     "pct_of_250": 92.4,
+     "gap_to_roofline_ms_per_step": 0.245
+    }
+   ],
+   "wo_b": [
+    {
+     "GBps": 220.7,
+     "pct_of_250": 88.3,
+     "gap_to_roofline_ms_per_step": 0.494
+    },
+    {
+     "GBps": 220.7,
+     "pct_of_250": 88.3,
+     "gap_to_roofline_ms_per_step": 0.494
+    }
+   ],
+   "shared_gate_up": [
+    {
+     "GBps": 210.8,
+     "pct_of_250": 84.3,
+     "gap_to_roofline_ms_per_step": 0.389
+    },
+    {
+     "GBps": 209.4,
+     "pct_of_250": 83.8,
+     "gap_to_roofline_ms_per_step": 0.406
+    }
+   ],
+   "shared_down": [
+    {
+     "GBps": 210.5,
+     "pct_of_250": 84.2,
+     "gap_to_roofline_ms_per_step": 0.196
+    },
+    {
+     "GBps": 211.2,
+     "pct_of_250": 84.5,
+     "gap_to_roofline_ms_per_step": 0.192
+    }
+   ],
+   "lm_head": [
+    {
+     "GBps": 234.3,
+     "pct_of_250": 93.7,
+     "gap_to_roofline_ms_per_step": 0.183
+    },
+    {
+     "GBps": 236.0,
+     "pct_of_250": 94.4,
+     "gap_to_roofline_ms_per_step": 0.161
+    }
+   ],
+   "engram_wkv": [
+    {
+     "GBps": 235.2,
+     "pct_of_250": 94.1,
+     "gap_to_roofline_ms_per_step": 0.082
+    },
+    {
+     "GBps": 237.7,
+     "pct_of_250": 95.1,
+     "gap_to_roofline_ms_per_step": 0.067
+    }
+   ],
+   "sum_gap_ms_per_step": [
+    2.79,
+    2.729
+   ]
+  }
+ },
+ "levers": [
+  {
+   "env": "DSV41_P2B_COOP=2",
+   "expected_in_profile (ARMS-r3 s6)": "p2b_moe_batched_kernel<2,1,0> (~23.2 ms/step) -> p2b_coop_df_kernel<2,1> grid 144 at ~16.4 ms/step",
+   "projected_ms_per_step": {
+    "c1": [
+     -6.76,
+     -6.81
+    ],
+    "c2": [
+     -15.17,
+     -15.34
+    ],
+    "basis": "coop-moe/summary.json census_all x40, cold"
+   },
+   "metric": "segment D (routed MoE kernel), per-layer mean x 40",
+   "c1": {
+    "A": [
+     22.067,
+     21.718
+    ],
+    "K": [
+     15.958,
+     15.809
+    ],
+    "K_minus_A": [
+     -6.109,
+     -5.909
+    ]
+   },
+   "c2": {
+    "A": [
+     42.344,
+     42.038
+    ],
+    "K": [
+     25.836,
+     25.632
+    ],
+    "K_minus_A": [
+     -16.508,
+     -16.406
+    ]
+   },
+   "on_critical_path": "yes: the routed kernel is the whole of segment D",
+   "verdict": "DELIVERED (c=1 87-90% of projection, c=2 107-109%)",
+   "why": "Kernel swapped on every layer (40/step, grid 144). The K absolute (15.8-16.0 c=1) is below the plan's 16.4. The c=1 delta is smaller because the coop kernel pays a larger serving tax than p2b: per call mean serve vs census bench A 551.7/543.0 vs 523.2 us (+4-5%), K 398.9/395.2 vs 353.0 us (+12-13%). At c=2: A 1058.6/1051.0 vs 1016.0 (+3-4%), K 645.9/640.8 vs 632.5 (+1-2%). In K_p the shared expert's act_and_mul + shared_down wait behind the coop grid on 100% of layers: shared_down ends 384-388 us (c=1) / 625-627 us (c=2) after the routed kernel starts, inside its tail. It is a candidate for the tax; P3 cannot isolate it.",
+   "per_call_us_mean": {
+    "c1": {
+     "A": [
+      551.675,
+      542.962
+     ],
+     "K": [
+      398.958,
+      395.216
+     ]
+    },
+    "c2": {
+     "A": [
+      1058.61,
+      1050.958
+     ],
+     "K": [
+      645.912,
+      640.788
+     ]
+    }
+   },
+   "per_call_us_median": {
+    "c1": {
+     "A": [
+      539.183,
+      536.544
+     ],
+     "K": [
+      394.928,
+      392.767
+     ]
+    },
+    "c2": {
+     "A": [
+      1036.399,
+      1032.882
+     ],
+     "K": [
+      637.25,
+      636.479
+     ]
+    }
+   },
+   "bench_per_call_us_mean": {
+    "c1_m4": {
+     "p2b": 523.2,
+     "coop": 353.0
+    },
+    "c2_m8": {
+     "p2b": 1016.0,
+     "coop": 632.5
+    }
+   },
+   "P2_leave_one_out_K_minus_KC_unprofiled": {
+    "four_prose_c1": -8.483,
+    "prose_long_c1": -8.175,
+    "lail_c1": -7.659,
+    "prose_long_c2": -19.409,
+    "bench_prose_c2": -21.559,
+    "structured_c2": -22.765
+   }
+  },
+  {
+   "env": "DSV41_DENSE_GEMV=1",
+   "expected_in_profile (ARMS-r3 s6)": "b12x GEMMs at M<=8 (qkv_a, wq_b, wo_b, shared gate_up/down, main_proj M<=4, lm_head, engram wkv, wo_a) -> gemv_kernel, -1.6 ms/step in total",
+   "projected_ms_per_step": {
+    "c1": -1.6,
+    "c2": -1.58,
+    "basis": "dense-gemv/projection-m4.json / -m8.json corrected_ms_per_step (GEMM only)"
+   },
+   "metric": "dense MXFP8 GEMM kernel time: A dense_b12x + woa_einsum, K dsv41_gemv + remaining b12x (indexer_wq_b; main_proj at M=8)",
+   "c1": {
+    "A": [
+     24.139,
+     23.987
+    ],
+    "K": [
+     22.449,
+     22.304
+    ],
+    "K_minus_A": [
+     -1.69,
+     -1.683
+    ]
+   },
+   "c2": {
+    "A": [
+     24.847,
+     24.717
+    ],
+    "K": [
+     23.13,
+     22.98
+    ],
+    "K_minus_A": [
+     -1.717,
+     -1.737
+    ]
+   },
+   "on_critical_path": "mostly: qkv_a, wq_b, wo_a and wo_b are on the attention-block main stream; the shared expert is not (it overlaps the router path and, in K, the coop kernel)",
+   "verdict": "DELIVERED on the kernel (105-110% of projection), plus -0.46..-0.51 ms/step of MXFP8 activation-quant kernels removed. The router-gate interaction below gives +0.93..+1.14 ms/step back on the FFN-prologue critical path.",
+   "why": "All 9 armed shapes run the GEMV (counts in dense_gemm_roles); indexer_wq_b stays on b12x (not armed), and so does main_proj at M=8. Per call, wq_b gains most (112.5 -> 99.9 us; b12x wq_b paid the largest serving tax in r3) and shared_gate_up least (57.7 -> 56.8). act_quant launches fall 226 -> 46 per step. Interaction: the GEMV shared gate_up co-schedules with the side-stream bf16 router gate. b12x never did (b12x gate_up started when the router gate ended, overlap 0). The router gate goes from 19.6/19.7 to 47.0/48.1 us (c=1), overlapped 34/35 us, and it is on the FFN-prologue critical path: +1.10/+1.14 ms/step (c=1), +0.93/+0.96 (c=2).",
+   "act_quant_ms_per_step": {
+    "c1": {
+     "A": [
+      0.566,
+      0.546
+     ],
+     "K": [
+      0.084,
+      0.085
+     ],
+     "K_minus_A": [
+      -0.482,
+      -0.461
+     ]
+    },
+    "c2": {
+     "A": [
+      0.612,
+      0.606
+     ],
+     "K": [
+      0.105,
+      0.1
+     ],
+     "K_minus_A": [
+      -0.507,
+      -0.506
+     ]
+    }
+   },
+   "router_gate_interaction_us_per_layer": {
+    "c1": {
+     "A": [
+      19.6,
+      19.7
+     ],
+     "K": [
+      47.0,
+      48.1
+     ],
+     "K_minus_A_ms_per_step_x40": [
+      1.096,
+      1.136
+     ],
+     "overlap_with_gate_up_us_K": [
+      34.1,
+      35.2
+     ]
+    },
+    "c2": {
+     "A": [
+      19.9,
+      20.0
+     ],
+     "K": [
+      43.1,
+      44.1
+     ],
+     "K_minus_A_ms_per_step_x40": [
+      0.928,
+      0.964
+     ],
+     "overlap_with_gate_up_us_K": [
+      28.9,
+      30.2
+     ]
+    }
+   }
+  },
+  {
+   "env": "DSV41_MHC_DET_SPLITS=16",
+   "expected_in_profile (ARMS-r3 s6)": "mhc_prenorm_gemm + mhc_pre_fuse + mhc_post 2.92 -> ~1.1-1.5 ms/step; 86 mhc_det_gemm_t8, 86 mhc_det_norm, ~89 mhc_det_post; no stock mHC kernels in the decode graphs",
+   "projected_ms_per_step": {
+    "c1": [
+     -1.0,
+     -1.4
+    ],
+    "c2": -1.0,
+    "basis": "ARMS-r3 s11; mhc-det/path_time_final.json T=4 2141 -> 1110 us/pass, T=8 2011 -> 1034"
+   },
+   "metric": "elapsed mHC chain per layer (attention half + ffn half, first mHC kernel start -> last end) x 40",
+   "c1": {
+    "A": [
+     2.16,
+     2.144
+    ],
+    "K": [
+     1.176,
+     1.168
+    ],
+    "K_minus_A": [
+     -0.984,
+     -0.976
+    ]
+   },
+   "c2": {
+    "A": [
+     2.216,
+     2.204
+    ],
+    "K": [
+     1.232,
+     1.228
+    ],
+    "K_minus_A": [
+     -0.984,
+     -0.976
+    ]
+   },
+   "on_critical_path": "yes: both halves are on the main stream between the all-reduce and the next GEMM",
+   "verdict": "DELIVERED at the low end of the projection (-0.98 ms/step elapsed vs -1.0..-1.4)",
+   "why": "Counts match the plan: 80 target + 6 draft mhc_det_gemm_t8 and mhc_det_norm, 83 + 6 mhc_det_post per step, and 0 stock mHC kernels in the decode graphs (the few left run in prefill). The kernel-time sum falls only 2.75/2.67 -> 2.07/2.02 ms/step, above the projected 1.1-1.5 absolute: in the serve the det kernels take about 24 us per sublayer against 12.9 in the bench. gemm_t8 and norm overlap each other, so the elapsed chain gains more than the kernel sum (28.6 -> 15.6 us attention half, 25.4 -> 13.8 ffn half, c=1 rank 0).",
+   "kernel_sum_ms_per_step": {
+    "c1": {
+     "A": [
+      2.75,
+      2.665
+     ],
+     "K": [
+      2.067,
+      2.021
+     ]
+    },
+    "c2": {
+     "A": [
+      2.874,
+      2.84
+     ],
+     "K": [
+      2.192,
+      2.2
+     ]
+    }
+   }
+  },
+  {
+   "env": "DSV41_ENGRAM_NATIVE_STAGE=1",
+   "expected_in_profile (ARMS-r3 s6)": "DtoH(hash) -> HtoD(rows) gap 3.06 -> ~0.2-0.35 ms; [native-census] us/call ~150-300",
+   "projected_ms_per_step": {
+    "c1": [
+     -1.22,
+     -1.57
+    ],
+    "c2": [
+     -1.94,
+     -2.13
+    ],
+    "basis": "fusion-host iterations.txt 10.4 (unprofiled bench)"
+   },
+   "metric": "Engram stage span on the GPU timeline: hash DtoH end -> first rows HtoD start (median)",
+   "c1": {
+    "A": [
+     2.875,
+     2.719
+    ],
+    "K": [
+     1.368,
+     1.558
+    ],
+    "K_minus_A": [
+     -1.507,
+     -1.161
+    ]
+   },
+   "c2": {
+    "A": [
+     5.262,
+     5.152
+    ],
+    "K": [
+     1.143,
+     1.286
+    ],
+    "K_minus_A": [
+     -4.119,
+     -3.866
+    ]
+   },
+   "on_critical_path": "yes: the GPU is idle for the stage except for the chain the early hash moved under it",
+   "verdict": "PARTIAL: the span halves, but it stays at 1.1-1.6 ms against the expected 0.2-0.35",
+   "why": "The native gather runs in the page-cache-miss regime ([native-census], 32-call windows over the whole K_p boot). The bench measured 142 us prefetched, 274 hot and 849 cold (a prefetch miss). All 27 n=4 census windows per rank (96 rows/call): rank 0 miss/call 28.0-47.8 (median 34.4), us/call 838-1467 (median 919); rank 1 miss 42.0-50.8 (median 46.1), us/call 910-1442 (median 1018). These windows mix unprofiled and profiled calls. Prefetch v3's WILLNEED is not landing before the (now earlier) gather. buff/cache is only 3-5 GiB on both nodes while serving. The A_p span is also profiler-inflated (the host stage runs ~1.7x slower under the profiler), so the unprofiled delta is smaller than the profiled one.",
+   "census_rank0_K_p": "results/2026-09-26-serve-r3/P3/K_p-1/census.txt"
+  },
+  {
+   "env": "DSV41_ENGRAM_EARLY_HASH=1",
+   "expected_in_profile (ARMS-r3 s6)": "the hash DtoH sits before the SWA/compressor metadata chain",
+   "projected_ms_per_step": {
+    "c1": -0.18,
+    "c2": -0.2,
+    "basis": "fusion-host 10.4, ALL chain (77 ops) hiding a ~0.2 ms native gather"
+   },
+   "metric": "eager chain before the hash (on the critical path in A, moved under the stage in K), median span",
+   "c1": {
+    "A": [
+     1.098,
+     1.082
+    ],
+    "K": [
+     0.08,
+     0.081
+    ],
+    "K_minus_A": [
+     -1.018,
+     -1.001
+    ]
+   },
+   "c2": {
+    "A": [
+     1.121,
+     1.099
+    ],
+    "K": [
+     0.081,
+     0.08
+    ],
+    "K_minus_A": [
+     -1.04,
+     -1.019
+    ]
+   },
+   "on_critical_path": "yes",
+   "verdict": "DELIVERED, above projection: -1.0 ms/step vs -0.18",
+   "why": "The hash now runs 0.08 ms after the draft graph instead of after the ~1.1 ms metadata chain. The 75-op chain (0.35 ms of GPU span) runs under the host gather. The projection assumed a ~0.2 ms native gather that could hide only ~0.18 ms of chain. Because the gather is 1.1-1.6 ms, the whole chain hides. That is also why T2R and SWA_META show nothing on the step.",
+   "ops_moved_under_stage_K": {
+    "c1": [
+     75,
+     75
+    ],
+    "c2": [
+     75.0,
+     75.0
+    ]
+   },
+   "gpu_work_under_stage_ms_K": {
+    "c1": [
+     0.351,
+     0.338
+    ],
+    "c2": [
+     0.355,
+     0.348
+    ]
+   }
+  },
+  {
+   "env": "DSV41_ATTN_T2R_DEDUP=1",
+   "expected_in_profile (ARMS-r3 s6)": "DeviceScan / compute_cuda_kernel (token map) 21 -> 2 per step, 168 -> 35 GPU ops",
+   "projected_ms_per_step": {
+    "c1": [
+     -0.41,
+     -0.43
+    ],
+    "c2": [
+     -0.41,
+     -0.43
+    ],
+    "basis": "fusion-host 10.4, GPU-bound bench"
+   },
+   "metric": "t2r scan/map kernel time (DeviceScanInit + DeviceScan<long> + compute_cuda_kernel)",
+   "c1": {
+    "A": [
+     0.08,
+     0.077
+    ],
+    "K": [
+     0.01,
+     0.009
+    ],
+    "K_minus_A": [
+     -0.07,
+     -0.068
+    ]
+   },
+   "c2": {
+    "A": [
+     0.081,
+     0.077
+    ],
+    "K": [
+     0.009,
+     0.008
+    ],
+    "K_minus_A": [
+     -0.072,
+     -0.069
+    ]
+   },
+   "on_critical_path": "no longer: EARLY_HASH moved the whole eager metadata chain under the Engram stage",
+   "verdict": "MECHANISM DELIVERED, STEP GAIN MASKED (0 on the critical path in this bundle)",
+   "why": "Per step each of DeviceScanInit, DeviceScan and compute_cuda_kernel goes from 21 to 2, and indexSelectSmallIndex and arange do the same (eager). The eager chain shrinks from 269 to 106 ops per step, with SWA_META. All of it now runs inside the 1.1-1.6 ms host stage span. It pays only once the stage drops below the chain (~0.35 ms).",
+   "eager_ops_per_step": {
+    "c1": {
+     "A": [
+      269.0,
+      269.0
+     ],
+     "K": [
+      106,
+      106
+     ]
+    },
+    "c2": {
+     "A": [
+      269.0,
+      269.0
+     ],
+     "K": [
+      106.0,
+      106.0
+     ]
+    }
+   }
+  },
+  {
+   "env": "DSV41_SWA_META_FUSED=1",
+   "expected_in_profile (ARMS-r3 s6)": "_swa_decode_fused_kernel x15 instead of _compute_swa_indices_and_lens_kernel x15; no compare_scalar / DtoD / Fill<int> of the causal builds",
+   "projected_ms_per_step": {
+    "c1": [
+     -0.09,
+     -0.16
+    ],
+    "c2": [
+     -0.09,
+     -0.16
+    ],
+    "basis": "fusion-host 10.4"
+   },
+   "metric": "SWA metadata kernel time (15/step both arms)",
+   "c1": {
+    "A": [
+     0.035,
+     0.035
+    ],
+    "K": [
+     0.034,
+     0.039
+    ],
+    "K_minus_A": [
+     -0.001,
+     0.004
+    ]
+   },
+   "c2": {
+    "A": [
+     0.034,
+     0.033
+    ],
+    "K": [
+     0.031,
+     0.028
+    ],
+    "K_minus_A": [
+     -0.003,
+     -0.005
+    ]
+   },
+   "on_critical_path": "no longer (same as T2R_DEDUP)",
+   "verdict": "MECHANISM DELIVERED, STEP GAIN MASKED",
+   "why": "The kernel swap is exact: 15 fused per step, 0 stock. In the eager region compare_scalar<long> goes 18 -> 3 per step, Fill<int> 21 -> 6 and DtoD 48 -> 33 (kernel-diff-r0.json). The 15 causal builds repeat every ~49 us in A and every ~8 us in K (step 50, rank 0), and in K all of them run under the Engram stage."
+  },
+  {
+   "env": "DSV41_MOE_PREP_FUSED=1",
+   "expected_in_profile (ARMS-r3 s6)": "one _moe_prep_kernel per MoE layer instead of ~14 single-block kernels; one fp16->bf16 cast after p2b",
+   "projected_ms_per_step": {
+    "c1": [
+     -0.19,
+     -0.34
+    ],
+    "c2": [
+     -0.19,
+     -0.34
+    ],
+    "basis": "fusion-host 10.4: -0.15..-0.30 prep + -0.04 cast"
+   },
+   "metric": "FFN prologue after the router gate: router gate end -> routed start (splitK reduce, topk, prep), median x 40",
+   "c1": {
+    "A": [
+     3.932,
+     3.96
+    ],
+    "K": [
+     0.988,
+     0.96
+    ],
+    "K_minus_A": [
+     -2.944,
+     -3.0
+    ]
+   },
+   "c2": {
+    "A": [
+     3.984,
+     3.984
+    ],
+    "K": [
+     1.176,
+     1.152
+    ],
+    "K_minus_A": [
+     -2.808,
+     -2.832
+    ]
+   },
+   "on_critical_path": "yes: in A the router stream (gate -> topk -> 14 prep kernels) gated p2b; the shared expert finished 6-7 us before p2b started",
+   "verdict": "DELIVERED, about 10x the projection (-2.8..-3.0 ms/step)",
+   "why": "The r3 profile counted this glue as 0.15 ms/step 'exposed' because the shared-expert GEMMs (anchors) ran alongside it. But the routed kernel waits for the router stream, so the whole chain was on the critical path (98-100 us per layer). K runs one _moe_prep_kernel (40/step). Target-graph compare_scalar<long> goes 160 -> 0, and kernels launched in the prologue drop from 26.1 to 9.1-9.4 per layer. Part of the gain is scheduling: topk falls from ~23 to ~7.8 us per call and the splitK reduce shrinks too (router_topk -0.61, router_gate splitK -0.24 ms/step). Both ran beside the b12x shared GEMMs in A. The epilogue loses one cast: 3 -> 2 kernels per layer, routed end -> MoE AR 10.2 -> 9.4 us median.",
+   "prologue_kernels_per_layer": {
+    "c1": {
+     "A": [
+      26.12,
+      26.12
+     ],
+     "K": [
+      9.34,
+      9.41
+     ]
+    },
+    "c2": {
+     "A": [
+      26.12,
+      26.12
+     ],
+     "K": [
+      9.11,
+      9.14
+     ]
+    }
+   }
+  },
+  {
+   "env": "DSV41_CANDIDATE_MASK_BOUNDED=1",
+   "expected_in_profile (ARMS-r3 s6)": "_mask_candidates + _candidate_flags ~77.7 -> ~8-10 us per layer",
+   "projected_ms_per_step": {
+    "c1": [
+     -0.27,
+     -0.43
+    ],
+    "c2": [
+     -0.7,
+     -0.77
+    ],
+    "basis": "fusion-host 10.4"
+   },
+   "metric": "candidate mask + flags kernel time (4 indexer layers x 2 kernels per step)",
+   "c1": {
+    "A": [
+     0.322,
+     0.32
+    ],
+    "K": [
+     0.022,
+     0.024
+    ],
+    "K_minus_A": [
+     -0.3,
+     -0.296
+    ]
+   },
+   "c2": {
+    "A": [
+     0.689,
+     0.679
+    ],
+    "K": [
+     0.035,
+     0.033
+    ],
+    "K_minus_A": [
+     -0.654,
+     -0.646
+    ]
+   },
+   "on_critical_path": "yes: indexer chain on the attention-block main stream",
+   "verdict": "DELIVERED (c=1 inside the projection, c=2 at 84-93% of it)",
+   "why": "c=1 rank 0: 80.5 -> 5.5 us per layer (the plan expected ~8-10)."
+  },
+  {
+   "env": "DSV41_INDEXER_WP_GEMV=1",
+   "expected_in_profile (ARMS-r3 s6)": "_wp_gemv_kernel (8 per step, m 2..8) instead of cutlass_80_wmma ... bf16 16x16",
+   "projected_ms_per_step": {
+    "c1": [
+     -0.1,
+     -0.17
+    ],
+    "c2": [
+     -0.1,
+     -0.17
+    ],
+    "basis": "fusion-host 10.4 (r3 join waits)"
+   },
+   "metric": "qkv join wait on the 8 weights_proj layers: qkv_a end -> _q_kv_norm_quant_kernel start, per step",
+   "c1": {
+    "A": [
+     0.227,
+     0.218
+    ],
+    "K": [
+     0.104,
+     0.096
+    ],
+    "K_minus_A": [
+     -0.123,
+     -0.122
+    ]
+   },
+   "c2": {
+    "A": [
+     0.25,
+     0.226
+    ],
+    "K": [
+     0.112,
+     0.104
+    ],
+    "K_minus_A": [
+     -0.138,
+     -0.122
+    ]
+   },
+   "on_critical_path": "yes: the join gates wq_b",
+   "verdict": "DELIVERED (inside the projection)",
+   "why": "The join median on the 8 wp layers falls from 24.2/25.2 to 0.6/0.5 us (c=1). The mean stays 12-13 us: in the comp+wp layers the compressor is now the last branch. wp kernel 88 -> 42.6 us per call (it runs beside the qkv_a GEMV; the bench measured 10-12 us alone). Side effect: _fused_save_compress_norm_kernel, which runs in the same fan-out, goes from 0.225 to 0.085 ms/step (c=1 rank 0).",
+   "wp_kernel_ms_per_step": {
+    "c1": {
+     "A": [
+      0.704,
+      0.697
+     ],
+     "K": [
+      0.341,
+      0.336
+     ]
+    },
+    "c2": {
+     "A": [
+      0.74,
+      0.717
+     ],
+     "K": [
+      0.383,
+      0.38
+     ]
+    }
+   }
+  }
+ ],
+ "reconciliation_K_minus_A_ms_per_step": {
+  "c1": {
+   "rank0": {
+    "COOP: routed MoE (segment D)": -6.109,
+    "MOE_PREP (+topk/splitK scheduling): router gate end -> routed start": -2.944,
+    "DENSE_GEMV x router gate interaction: router gate kernel on the prologue path": 1.096,
+    "MHC_DET ffn half: attn AR end -> last mhc end": -0.64,
+    "attention block (segment A: DENSE_GEMV qkv_a/wq_b/wo_a/wo_b + act quant, MHC_DET attn half, CAND_MASK, WP_GEMV)": -2.478,
+    "all-reduces + epilogue (segments B, E, F)": -0.095,
+    "NATIVE_STAGE: Engram stage span": -1.507,
+    "EARLY_HASH: eager chain before the hash": -1.018,
+    "draft graph (DENSE_GEMV, MHC_DET in the 3 draft layers; draft AR startup)": -0.437,
+    "eager after target (lm_head / main_proj GEMV, draft prep)": -0.119,
+    "sum of the rows": -14.251,
+    "measured profiled step wall (median)": -14.321
+   },
+   "rank1": {
+    "COOP: routed MoE (segment D)": -5.909,
+    "MOE_PREP (+topk/splitK scheduling): router gate end -> routed start": -3.0,
+    "DENSE_GEMV x router gate interaction: router gate kernel on the prologue path": 1.136,
+    "MHC_DET ffn half: attn AR end -> last mhc end": -0.644,
+    "attention block (segment A: DENSE_GEMV qkv_a/wq_b/wo_a/wo_b + act quant, MHC_DET attn half, CAND_MASK, WP_GEMV)": -2.547,
+    "all-reduces + epilogue (segments B, E, F)": -0.651,
+    "NATIVE_STAGE: Engram stage span": -1.161,
+    "EARLY_HASH: eager chain before the hash": -1.001,
+    "draft graph (DENSE_GEMV, MHC_DET in the 3 draft layers; draft AR startup)": -0.42,
+    "eager after target (lm_head / main_proj GEMV, draft prep)": -0.141,
+    "sum of the rows": -14.338,
+    "measured profiled step wall (median)": -14.135
+   }
+  },
+  "c2": {
+   "rank0": {
+    "COOP: routed MoE (segment D)": -16.508,
+    "MOE_PREP (+topk/splitK scheduling): router gate end -> routed start": -2.808,
+    "DENSE_GEMV x router gate interaction: router gate kernel on the prologue path": 0.928,
+    "MHC_DET ffn half: attn AR end -> last mhc end": -0.624,
+    "attention block (segment A: DENSE_GEMV qkv_a/wq_b/wo_a/wo_b + act quant, MHC_DET attn half, CAND_MASK, WP_GEMV)": -2.773,
+    "all-reduces + epilogue (segments B, E, F)": -0.31,
+    "NATIVE_STAGE: Engram stage span": -4.119,
+    "EARLY_HASH: eager chain before the hash": -1.04,
+    "draft graph (DENSE_GEMV, MHC_DET in the 3 draft layers; draft AR startup)": -0.099,
+    "eager after target (lm_head / main_proj GEMV, draft prep)": -0.095,
+    "sum of the rows": -27.448,
+    "measured profiled step wall (median)": -27.798
+   },
+   "rank1": {
+    "COOP: routed MoE (segment D)": -16.406,
+    "MOE_PREP (+topk/splitK scheduling): router gate end -> routed start": -2.832,
+    "DENSE_GEMV x router gate interaction: router gate kernel on the prologue path": 0.964,
+    "MHC_DET ffn half: attn AR end -> last mhc end": -0.616,
+    "attention block (segment A: DENSE_GEMV qkv_a/wq_b/wo_a/wo_b + act quant, MHC_DET attn half, CAND_MASK, WP_GEMV)": -2.805,
+    "all-reduces + epilogue (segments B, E, F)": -0.231,
+    "NATIVE_STAGE: Engram stage span": -3.866,
+    "EARLY_HASH: eager chain before the hash": -1.019,
+    "draft graph (DENSE_GEMV, MHC_DET in the 3 draft layers; draft AR startup)": -0.146,
+    "eager after target (lm_head / main_proj GEMV, draft prep)": -0.115,
+    "sum of the rows": -27.072,
+    "measured profiled step wall (median)": -27.385
+   }
+  }
+ },
+ "reconciliation_note": "Rows mix per-layer medians x 40, per-layer means x 40 and per-step medians, so they add to the measured wall only approximately. MOE_PREP and MHC_DET-ffn come from the FFN prologue medians; segment C mean delta is the other view of the same layer span.",
+ "top3_remaining_K_p": [
+  {
+   "rank": 1,
+   "item": "Routed MoE (coop) kernel",
+   "size": {
+    "c1": {
+     "routed_moe_ms_per_step_K": [
+      15.958,
+      15.809
+     ],
+     "per_call_mean_us_K": [
+      398.958,
+      395.216
+     ],
+     "unique_expert_bytes_MB": 68.5,
+     "floor_us_at_231GBps_flat_read": 296.3,
+     "above_floor_ms_per_step": [
+      4.1,
+      3.95
+     ]
+    },
+    "c2": {
+     "routed_moe_ms_per_step_K": [
+      25.836,
+      25.632
+     ],
+     "per_call_mean_us_K": [
+      645.912,
+      640.788
+     ],
+     "unique_expert_bytes_MB": 130.6,
+     "floor_us_at_231GBps_flat_read": 565.4,
+     "above_floor_ms_per_step": [
+      3.22,
+      3.02
+     ]
+    }
+   },
+   "floor_note": "unique experts per call from coop-moe summary phases_v2 (layer-20 census, m4 15.475 / m8 29.525), not from the serve's own routing",
+   "share_of_step": {
+    "c1": [
+     0.325,
+     0.321
+    ],
+    "c2": [
+     0.418,
+     0.415
+    ]
+   },
+   "why_left": "Still the largest block: 32% of the c=1 step and 42% of the c=2 step. It runs 12-13% over the census bench at c=1 (398.9/395.2 vs 353.0 us). The shared expert tail waits behind its grid on every layer. It sits ~100 us/call (c=1) and ~75-80 us/call (c=2) above a unique-expert stream at the 231 GB/s flat-read ceiling.",
+   "next": "Take the shared expert off the coop kernel's tail: launch act_and_mul + shared_down ahead of the routed kernel, or fold them into the coop epilogue. Then close the gap to the flat-read ceiling (coop-moe round-4 list)."
+  },
+  {
+   "rank": 2,
+   "item": "Engram host stage (native gather, page-cache misses)",
+   "size": {
+    "c1": {
+     "stage_span_ms_K": [
+      1.368,
+      1.558
+     ],
+     "gpu_work_under_it_ms": [
+      0.351,
+      0.338
+     ],
+     "device_idle_ms_per_step_K": [
+      2.587,
+      2.897
+     ]
+    },
+    "c2": {
+     "stage_span_ms_K": [
+      1.143,
+      1.286
+     ],
+     "gpu_work_under_it_ms": [
+      0.355,
+      0.348
+     ],
+     "device_idle_ms_per_step_K": [
+      2.673,
+      2.638
+     ]
+    }
+   },
+   "why_left": "28-51 of the 96 rows per call miss the page cache (prefetch v3 misses). us/call median 919 (rank 0) / 1018 (rank 1) over the boot's n=4 census windows, vs the bench's 142 prefetched. It is the largest GPU-idle block left, and it masks T2R_DEDUP and SWA_META (0.35 ms of chain under it).",
+   "next": "Make prefetch v3's WILLNEED land before the early-hash gather: issue it earlier, or keep hot rows resident. Recoverable ~1.0 ms/step (c=1) down to the 0.35 ms chain, and that also un-masks T2R and SWA_META."
+  },
+  {
+   "rank": 3,
+   "item": "Router gate slowed by the shared gate_up GEMV, on the FFN-prologue critical path",
+   "size": {
+    "c1": {
+     "router_gate_us_per_layer_A": [
+      19.6,
+      19.7
+     ],
+     "router_gate_us_per_layer_K": [
+      47.0,
+      48.1
+     ],
+     "recoverable_ms_per_step_to_A_speed": [
+      1.1,
+      1.14
+     ]
+    },
+    "c2": {
+     "router_gate_us_per_layer_A": [
+      19.9,
+      20.0
+     ],
+     "router_gate_us_per_layer_K": [
+      43.1,
+      44.1
+     ],
+     "recoverable_ms_per_step_to_A_speed": [
+      0.93,
+      0.96
+     ]
+    }
+   },
+   "why_left": "New in the bundle. DENSE_GEMV's shared gate_up co-schedules with the cuBLAS router gate, which b12x never did, so the gate runs 2.4x slower. After MOE_PREP_FUSED the router stream is the prologue's critical path.",
+   "next": "A bf16 GEMV for the router gate ([384, 5120], 3.9 MB, ~16 us at 250 GB/s) that holds its speed next to the shared gate_up. Delaying gate_up behind the router gate is not free: act_and_mul + shared_down already wait for the coop kernel's tail, and gate_up would join them. Up to ~0.9-1.1 ms/step."
+  }
+ ],
+ "also_measured_not_top3": {
+  "dense GEMV to roofline": "9 shapes at 85-96% of 250 GB/s (c=1) and 79-95% (c=2). Summed gaps to the roofline are 2.25/2.21 ms/step (c=1) and 2.79/2.73 (c=2), spread thin (dense_gemv_roofline_K). DSV41_ENGRAM_WKV_TP (KP) halves engram_wkv (1.36 ms/step on the GEMV now).",
+  "NCCL": "target AR 80/step at 23.5/24.1 us median in both arms (c=1). AR ms/step 3.02/3.67 -> 2.95/3.06. cudaGraphLaunch host time for the target graph 3277/3397 -> 2457/2626 us. The KP comm levers (EAGER_TWIN, PM_QOS, L2_PREFETCH) target the remaining AR and startup time.",
+  "mHC": "elapsed 29.4 us/layer (1.18 ms/step) with det; kernel sum 2.07 ms/step against a 1.11 ms bench pass; MHC_DET_OVERLAP (KP) targets it."
+ },
+ "unexplained_interaction": "P2 leave-one-out gave K vs KC (COOP alone, unprofiled) -7.66..-8.48 ms/step at c=1, while the COOP kernel delta here is -5.91..-6.11. P2 KC vs A was -6.31..-7.29, and the non-COOP share of this K_p - A_p delta is ~-8.2. So about 2 ms/step at c=1 is an interaction that P3's two arms cannot place. One candidate: without COOP, p2b_moe_batched (grid 192) meets the early-started shared expert differently than the coop kernel does. A KC_p profile boot would settle it. The bundle verdict is unaffected: it rests on P2's counted boots.",
+ "caveats": [
+  "One profiled window per arm and concurrency. Kernel medians rest on 98-105 c=1 and 30-34 c=2 steps x 40 layers; step-level numbers are single-window readings, not boot-to-boot noise-gated values.",
+  "Profiled step walls (A 63.47/63.45, K 49.15/49.31 ms at c=1) sit 0.3-1.4 ms above the same boots' unprofiled L.A.I.L x3 (A 62.11, K 48.84 ms/step). Host spans (the Engram stage) are inflated the most.",
+  "K_p worker traces (all 4) had NUL bytes at exactly the 4096-byte-page-final byte after every newline (4705 / 4278 / 3739 / 2853), JSON indentation only. A_p traces and the K_p API-server trace had none. They were parsed after a lossless NUL->space rewrite (*.nul2space.pt.trace.json.gz next to the originals). The cause is in K_p's worker processes and is not identified.",
+  "c=2 windows are 2 x 80 tokens (rule fixed before the window: MemAvailable after the c=1 window was 11 GiB). The tail steps after the shorter stream ended (m=4) are excluded.",
+  "Projections are from isolated microbenches (the workstreams' unprofiled numbers). A lever's kernel can hit its projection while its step gain is masked or amplified by what runs next to it; both are reported."
+ ]
+}

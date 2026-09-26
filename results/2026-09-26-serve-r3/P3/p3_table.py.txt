@@ -1,0 +1,447 @@
+#!/usr/bin/env python3
+"""Build the P3 per-lever attribution table from attribution-raw.json (p3_attribution.py.txt),
+the stock analyzer's c1/ c2/ output (tools/decode_timeline.py) and the workstream projections.
+
+  cd results/2026-09-26-serve-r3/P3 && python3 p3_table.py.txt   -> attribution.json
+
+Every measured value is [rank0, rank1] from one profiled window per arm (A_p-1, K_p-1). The
+windows are c=1: one L.A.I.L request, 200 tokens (A 98 / K 105 decode steps at m=4), and c=2:
+one pair of 80-token streams (A 30 / K 34 steps at m=8). Profiled steps run slower than
+unprofiled ones, and host-side spans are inflated the most (fusion-host iterations.txt 0: about
+1.7x on the stock Engram stage).
+"""
+import json
+import statistics as st
+
+R = json.load(open("attribution-raw.json"))
+W = ("c1", "c2")
+
+
+def g(arm, w, r):
+    return R[f"{arm}_{w}_r{r}"]
+
+
+def pair(fn, w):
+    return [round(fn(w, r), 3) for r in (0, 1)]
+
+
+def d(fa, fk, w):
+    return [round(fk(w, r) - fa(w, r), 3) for r in (0, 1)]
+
+
+def cat(arm, name):
+    return lambda w, r: g(arm, w, r)["categories"].get(name, {"ms_per_step": 0.0})["ms_per_step"]
+
+
+def seg(arm, name):
+    return lambda w, r: g(arm, w, r)["layer_segments"][name]["ms_per_step_mean_x40"]
+
+
+def ffn(arm, name, key="median_us"):
+    return lambda w, r: g(arm, w, r)["ffn_prologue_and_mhc"][name][key]
+
+
+def eb(arm, name, key="median"):
+    return lambda w, r: g(arm, w, r)["eager_before_next_target"][name][key]
+
+
+def roles_A(w, r):
+    j = json.load(open(f"A_p-1/{w}/{w}-rank{r}.json"))
+    grp = max(j["groups"].values(), key=lambda x: x["steps"])
+    return {x["role"]: x for x in grp["gemm_roles"]}
+
+
+def x40(f):
+    return lambda w, r: f(w, r) * 40 / 1e3
+
+
+out = {"what": "ARMS-r3 section 6 (P3): per-lever attribution by kernel and by critical path, A_p (round-34 "
+               "defaults) vs K_p (defaults + the 10 promoted envs), both ranks, c=1 L.A.I.L window and c=2 pair window",
+       "boots": {"A_p-1": "results/2026-09-26-serve-r3/P3/A_p-1 (HEAD 54ad48e, review-e14, gpu_guard rc 0)",
+                 "K_p-1": "results/2026-09-26-serve-r3/P3/K_p-1 (HEAD 66d5960, same docker/patch sha256, review-e14, gpu_guard rc 0)"},
+       "units": "ms per decode step unless named; every value is [rank0, rank1]",
+       "windows": {w: {"A_steps": g("A", w, 0)["steps"], "K_steps": g("K", w, 0)["steps"],
+                       "A_graph": g("A", w, 0)["target_graph_id"], "K_graph": g("K", w, 0)["target_graph_id"]} for w in W}}
+
+# ---- step level ------------------------------------------------------------------------------------
+step = {}
+for w in W:
+    s = {}
+    for k in ("step_wall_ms", "device_busy_ms", "device_idle_ms", "device_ops_per_step"):
+        s[k] = {"A": pair(lambda w, r: g("A", w, r)[k]["median"], w), "K": pair(lambda w, r: g("K", w, r)[k]["median"], w)}
+        s[k]["K_minus_A"] = [round(b - a, 3) for a, b in zip(s[k]["A"], s[k]["K"])]
+    for k in ("target_graph_ms", "draft_graph_ms", "eager_after_target_ms", "eager_before_next_target_ms"):
+        f = lambda arm: (lambda w, r: g(arm, w, r)["phases_ms"][k]["median"])
+        s["phase " + k] = {"A": pair(f("A"), w), "K": pair(f("K"), w), "K_minus_A": d(f("A"), f("K"), w)}
+    for k in ("A attn block: prev MoE AR end -> attn AR start", "B attn AR", "C ffn prologue: attn AR end -> routed start",
+              "D routed MoE", "E epilogue: routed end -> MoE AR start", "F MoE AR"):
+        s["segment " + k] = {"A": pair(seg("A", k), w), "K": pair(seg("K", k), w), "K_minus_A": d(seg("A", k), seg("K", k), w)}
+    step[w] = s
+out["step_level_profiled"] = step
+out["step_level_note"] = ("Phases and segments are medians/means of different sets and do not add exactly. Segments "
+                          "A-F are per-layer means x 40 inside the target graph.")
+
+# ---- device ms/step per kernel category --------------------------------------------------------------
+cats = {}
+for w in W:
+    names = set()
+    for arm in "AK":
+        for r in (0, 1):
+            names |= set(g(arm, w, r)["categories"])
+    rows = {}
+    for c in names:
+        a, k = cat("A", c), cat("K", c)
+        rows[c] = {"A": pair(a, w), "K": pair(k, w), "K_minus_A": d(a, k, w),
+                   "launches_A_r0": g("A", w, 0)["categories"].get(c, {}).get("launches_per_step", 0),
+                   "launches_K_r0": g("K", w, 0)["categories"].get(c, {}).get("launches_per_step", 0)}
+    cats[w] = dict(sorted(rows.items(), key=lambda kv: -max(kv[1]["A"][0], kv[1]["K"][0])))
+out["device_ms_per_step_by_category"] = cats
+out["category_note"] = ("Kernel time summed over all streams in counted decode steps (side streams included, so it is "
+                        "not the critical path). [LEVER] marks the round-3 categories; the rest are decode_timeline's "
+                        "stock CATEGORIES. dense_gemv = dsv41_gemv::gemv_kernel; wp_gemm = _wp_gemv_kernel or the "
+                        "cuBLAS 128x1 bf16 kernel at grid (2,1,1); compare_scalar<long> is split out of torch_eltwise.")
+
+# ---- dense roles -------------------------------------------------------------------------------------
+roles = {}
+for w in W:
+    rr = {}
+    for role in ("qkv_a", "wq_b", "wo_a", "wo_b", "shared_gate_up", "shared_down", "lm_head", "engram_wkv", "main_proj", "draft_ctx_kv"):
+        A = [roles_A(w, r).get(role) for r in (0, 1)]
+        K = [g("K", w, r)["gemv_roles"].get(role) for r in (0, 1)]
+        if not all(A) or not all(K):
+            rr[role] = {"note": "not on the GEMV at this M" if all(A) else "absent"}
+            continue
+        rr[role] = {"us_median_A": [x["us"]["median"] for x in A], "us_median_K": [x["us_median"] for x in K],
+                    "ms_per_step_A": [x["ms_per_step"] for x in A], "ms_per_step_K": [x["ms_per_step"] for x in K],
+                    "K_minus_A": [round(k["ms_per_step"] - a["ms_per_step"], 3) for a, k in zip(A, K)],
+                    "roofline_us_250GBps": A[0].get("roofline_us")}
+    roles[w] = rr
+out["dense_gemm_roles"] = roles
+import sys
+sys.path.insert(0, "/home/sfxnz/projects/ai-lab/recipes/.worktrees/kernels-r3/tools")
+import decode_timeline as dt  # WEIGHTS: streamed bytes per call at small m, per rank
+roof = {}
+for w in W:
+    rr, tot = {}, [0.0, 0.0]
+    for role in ("qkv_a", "wq_b", "wo_a", "wo_b", "shared_gate_up", "shared_down", "lm_head", "engram_wkv", "main_proj"):
+        wb = dt.WEIGHTS[role][0]
+        vals = []
+        for r in (0, 1):
+            x = g("K", w, r)["gemv_roles"].get(role)
+            if not x:
+                continue
+            gap = max(0.0, x["us_median"] - wb / 250e9 * 1e6) * x["calls_per_step"] / 1e3
+            tot[r] += gap
+            vals.append({"GBps": round(wb / (x["us_median"] * 1e-6) / 1e9, 1),
+                         "pct_of_250": round(100 * wb / (x["us_median"] * 1e-6) / 250e9, 1),
+                         "gap_to_roofline_ms_per_step": round(gap, 3)})
+        if vals:
+            rr[role] = vals
+    rr["sum_gap_ms_per_step"] = [round(t, 3) for t in tot]
+    roof[w] = rr
+out["dense_gemv_roofline_K"] = roof
+
+# ---- levers ------------------------------------------------------------------------------------------
+def dense_total(arm):
+    return lambda w, r: sum(cat(arm, c)(w, r) for c in ("dense_b12x", "woa_einsum", "dense_gemv [DENSE_GEMV]"))
+
+
+def mhc_elapsed(arm):
+    return lambda w, r: (ffn(arm, "mhc elapsed, attention half (first start -> last end)")(w, r)
+                         + ffn(arm, "mhc elapsed, ffn half (first start -> last end)")(w, r)) * 40 / 1e3
+
+
+def join(arm):
+    return lambda w, r: g(arm, w, r)["layer_segments"]["qkv_join_wait_us"]["wp layers"]["per_step_ms"]
+
+
+def routed_call(arm, key):
+    return lambda w, r: g(arm, w, r)["layer_segments"]["routed_call_us"][key]
+
+
+L = []
+
+
+def lever(env, expected, projected, metric, fa, fk, critical, verdict, why, extra=None):
+    row = {"env": env, "expected_in_profile (ARMS-r3 s6)": expected, "projected_ms_per_step": projected,
+           "metric": metric}
+    for w in W:
+        row[w] = {"A": pair(fa, w), "K": pair(fk, w), "K_minus_A": d(fa, fk, w)}
+    row["on_critical_path"] = critical
+    row["verdict"] = verdict
+    row["why"] = why
+    if extra:
+        row.update(extra)
+    L.append(row)
+
+
+lever("DSV41_P2B_COOP=2",
+      "p2b_moe_batched_kernel<2,1,0> (~23.2 ms/step) -> p2b_coop_df_kernel<2,1> grid 144 at ~16.4 ms/step",
+      {"c1": [-6.76, -6.81], "c2": [-15.17, -15.34], "basis": "coop-moe/summary.json census_all x40, cold"},
+      "segment D (routed MoE kernel), per-layer mean x 40",
+      seg("A", "D routed MoE"), seg("K", "D routed MoE"),
+      "yes: the routed kernel is the whole of segment D",
+      "DELIVERED (c=1 87-90% of projection, c=2 107-109%)",
+      "Kernel swapped on every layer (40/step, grid 144). The K absolute (15.8-16.0 c=1) is below the plan's 16.4. "
+      "The c=1 delta is smaller because the coop kernel pays a larger serving tax than p2b: per call mean serve vs "
+      "census bench A 551.7/543.0 vs 523.2 us (+4-5%), K 398.9/395.2 vs 353.0 us (+12-13%). At c=2: A 1058.6/1051.0 vs "
+      "1016.0 (+3-4%), K 645.9/640.8 vs 632.5 (+1-2%). In K_p the shared expert's act_and_mul + shared_down wait "
+      "behind the coop grid on 100% of layers: shared_down ends 384-388 us (c=1) / 625-627 us (c=2) after the routed "
+      "kernel starts, inside its tail. It is a candidate for the tax; P3 cannot isolate it.",
+      {"per_call_us_mean": {w: {"A": pair(routed_call("A", "mean"), w), "K": pair(routed_call("K", "mean"), w)} for w in W},
+       "per_call_us_median": {w: {"A": pair(routed_call("A", "median"), w), "K": pair(routed_call("K", "median"), w)} for w in W},
+       "bench_per_call_us_mean": {"c1_m4": {"p2b": 523.2, "coop": 353.0}, "c2_m8": {"p2b": 1016.0, "coop": 632.5}},
+       "P2_leave_one_out_K_minus_KC_unprofiled": {"four_prose_c1": -8.483, "prose_long_c1": -8.175, "lail_c1": -7.659,
+                                                  "prose_long_c2": -19.409, "bench_prose_c2": -21.559, "structured_c2": -22.765}})
+
+lever("DSV41_DENSE_GEMV=1",
+      "b12x GEMMs at M<=8 (qkv_a, wq_b, wo_b, shared gate_up/down, main_proj M<=4, lm_head, engram wkv, wo_a) -> "
+      "gemv_kernel, -1.6 ms/step in total",
+      {"c1": -1.60, "c2": -1.58, "basis": "dense-gemv/projection-m4.json / -m8.json corrected_ms_per_step (GEMM only)"},
+      "dense MXFP8 GEMM kernel time: A dense_b12x + woa_einsum, K dsv41_gemv + remaining b12x (indexer_wq_b; main_proj at M=8)",
+      dense_total("A"), dense_total("K"),
+      "mostly: qkv_a, wq_b, wo_a and wo_b are on the attention-block main stream; the shared expert is not (it "
+      "overlaps the router path and, in K, the coop kernel)",
+      "DELIVERED on the kernel (105-110% of projection), plus -0.46..-0.51 ms/step of MXFP8 activation-quant kernels "
+      "removed. The router-gate interaction below gives +0.93..+1.14 ms/step back on the FFN-prologue critical path.",
+      "All 9 armed shapes run the GEMV (counts in dense_gemm_roles); indexer_wq_b stays on b12x (not armed), and so "
+      "does main_proj at M=8. Per call, wq_b gains most (112.5 -> 99.9 us; b12x wq_b paid the largest serving tax in "
+      "r3) and shared_gate_up least (57.7 -> 56.8). act_quant launches fall 226 -> 46 per step. Interaction: the GEMV "
+      "shared gate_up co-schedules with the side-stream bf16 router gate. b12x never did (b12x gate_up started when "
+      "the router gate ended, overlap 0). The router gate goes from 19.6/19.7 to 47.0/48.1 us (c=1), overlapped 34/35 "
+      "us, and it is on the FFN-prologue critical path: +1.10/+1.14 ms/step (c=1), +0.93/+0.96 (c=2).",
+      {"act_quant_ms_per_step": {w: {"A": pair(cat("A", "act_quant"), w), "K": pair(cat("K", "act_quant"), w),
+                                     "K_minus_A": d(cat("A", "act_quant"), cat("K", "act_quant"), w)} for w in W},
+       "router_gate_interaction_us_per_layer": {w: {"A": pair(ffn("A", "C2 router gate kernel (bf16 cuBLAS, side stream)"), w),
+                                                    "K": pair(ffn("K", "C2 router gate kernel (bf16 cuBLAS, side stream)"), w),
+                                                    "K_minus_A_ms_per_step_x40": [round(x * 40 / 1e3, 3) for x in d(
+                                                        ffn("A", "C2 router gate kernel (bf16 cuBLAS, side stream)"),
+                                                        ffn("K", "C2 router gate kernel (bf16 cuBLAS, side stream)"), w)],
+                                                    "overlap_with_gate_up_us_K": pair(ffn("K", "router gate overlapped by shared gate_up (us)"), w)}
+                                                for w in W}})
+
+lever("DSV41_MHC_DET_SPLITS=16",
+      "mhc_prenorm_gemm + mhc_pre_fuse + mhc_post 2.92 -> ~1.1-1.5 ms/step; 86 mhc_det_gemm_t8, 86 mhc_det_norm, "
+      "~89 mhc_det_post; no stock mHC kernels in the decode graphs",
+      {"c1": [-1.0, -1.4], "c2": -1.0, "basis": "ARMS-r3 s11; mhc-det/path_time_final.json T=4 2141 -> 1110 us/pass, "
+                                              "T=8 2011 -> 1034"},
+      "elapsed mHC chain per layer (attention half + ffn half, first mHC kernel start -> last end) x 40",
+      mhc_elapsed("A"), mhc_elapsed("K"),
+      "yes: both halves are on the main stream between the all-reduce and the next GEMM",
+      "DELIVERED at the low end of the projection (-0.98 ms/step elapsed vs -1.0..-1.4)",
+      "Counts match the plan: 80 target + 6 draft mhc_det_gemm_t8 and mhc_det_norm, 83 + 6 mhc_det_post per step, "
+      "and 0 stock mHC kernels in the decode graphs (the few left run in prefill). The kernel-time sum falls only "
+      "2.75/2.67 -> 2.07/2.02 ms/step, above the projected 1.1-1.5 absolute: in the serve the det kernels take about 24 "
+      "us per sublayer against 12.9 in the bench. gemm_t8 and norm overlap each other, so the elapsed chain gains more "
+      "than the kernel sum (28.6 -> 15.6 us attention half, 25.4 -> 13.8 ffn half, c=1 rank 0).",
+      {"kernel_sum_ms_per_step": {w: {"A": pair(cat("A", "mhc [MHC_DET]"), w), "K": pair(cat("K", "mhc [MHC_DET]"), w)} for w in W}})
+
+lever("DSV41_ENGRAM_NATIVE_STAGE=1",
+      "DtoH(hash) -> HtoD(rows) gap 3.06 -> ~0.2-0.35 ms; [native-census] us/call ~150-300",
+      {"c1": [-1.22, -1.57], "c2": [-1.94, -2.13], "basis": "fusion-host iterations.txt 10.4 (unprofiled bench)"},
+      "Engram stage span on the GPU timeline: hash DtoH end -> first rows HtoD start (median)",
+      eb("A", "stage_span_hash_dtoh_end_to_rows_htod_ms"), eb("K", "stage_span_hash_dtoh_end_to_rows_htod_ms"),
+      "yes: the GPU is idle for the stage except for the chain the early hash moved under it",
+      "PARTIAL: the span halves, but it stays at 1.1-1.6 ms against the expected 0.2-0.35",
+      "The native gather runs in the page-cache-miss regime ([native-census], 32-call windows over the whole K_p boot). "
+      "The bench measured 142 us prefetched, 274 hot and 849 cold (a prefetch miss). All 27 n=4 census windows per rank (96 rows/call): rank 0 miss/call 28.0-47.8 (median "
+      "34.4), us/call 838-1467 (median 919); rank 1 miss 42.0-50.8 (median 46.1), us/call 910-1442 (median 1018). "
+      "These windows mix unprofiled and profiled calls. Prefetch v3's WILLNEED is not landing before the (now earlier) gather. buff/cache is only "
+      "3-5 GiB on both nodes while serving. The A_p span is also profiler-inflated (the host stage runs ~1.7x slower "
+      "under the profiler), so the unprofiled delta is smaller than the profiled one.",
+      {"census_rank0_K_p": "results/2026-09-26-serve-r3/P3/K_p-1/census.txt"})
+
+lever("DSV41_ENGRAM_EARLY_HASH=1",
+      "the hash DtoH sits before the SWA/compressor metadata chain",
+      {"c1": -0.18, "c2": -0.20, "basis": "fusion-host 10.4, ALL chain (77 ops) hiding a ~0.2 ms native gather"},
+      "eager chain before the hash (on the critical path in A, moved under the stage in K), median span",
+      eb("A", "chain_before_hash_ms"), eb("K", "chain_before_hash_ms"),
+      "yes",
+      "DELIVERED, above projection: -1.0 ms/step vs -0.18",
+      "The hash now runs 0.08 ms after the draft graph instead of after the ~1.1 ms metadata chain. The 75-op chain "
+      "(0.35 ms of GPU span) runs under the host gather. The projection assumed a ~0.2 ms native gather that could "
+      "hide only ~0.18 ms of chain. Because the gather is 1.1-1.6 ms, the whole chain hides. That is also why T2R and "
+      "SWA_META show nothing on the step.",
+      {"ops_moved_under_stage_K": {w: pair(eb("K", "ops_between_hash_and_rows"), w) for w in W},
+       "gpu_work_under_stage_ms_K": {w: pair(eb("K", "gpu_work_span_under_stage_ms"), w) for w in W}})
+
+lever("DSV41_ATTN_T2R_DEDUP=1",
+      "DeviceScan / compute_cuda_kernel (token map) 21 -> 2 per step, 168 -> 35 GPU ops",
+      {"c1": [-0.41, -0.43], "c2": [-0.41, -0.43], "basis": "fusion-host 10.4, GPU-bound bench"},
+      "t2r scan/map kernel time (DeviceScanInit + DeviceScan<long> + compute_cuda_kernel)",
+      cat("A", "t2r_scan_map [T2R_DEDUP]"), cat("K", "t2r_scan_map [T2R_DEDUP]"),
+      "no longer: EARLY_HASH moved the whole eager metadata chain under the Engram stage",
+      "MECHANISM DELIVERED, STEP GAIN MASKED (0 on the critical path in this bundle)",
+      "Per step each of DeviceScanInit, DeviceScan and compute_cuda_kernel goes from 21 to 2, and indexSelectSmallIndex "
+      "and arange do the same (eager). The eager chain shrinks from 269 to 106 ops per step, with SWA_META. All of it "
+      "now runs inside the 1.1-1.6 ms host stage span. It pays only once the stage drops below the chain (~0.35 ms).",
+      {"eager_ops_per_step": {w: {"A": pair(eb("A", "device_ops"), w), "K": pair(eb("K", "device_ops"), w)} for w in W}})
+
+lever("DSV41_SWA_META_FUSED=1",
+      "_swa_decode_fused_kernel x15 instead of _compute_swa_indices_and_lens_kernel x15; no compare_scalar / DtoD / "
+      "Fill<int> of the causal builds",
+      {"c1": [-0.09, -0.16], "c2": [-0.09, -0.16], "basis": "fusion-host 10.4"},
+      "SWA metadata kernel time (15/step both arms)",
+      cat("A", "swa_meta_kernel [SWA_META]"), cat("K", "swa_meta_kernel [SWA_META]"),
+      "no longer (same as T2R_DEDUP)",
+      "MECHANISM DELIVERED, STEP GAIN MASKED",
+      "The kernel swap is exact: 15 fused per step, 0 stock. In the eager region compare_scalar<long> goes 18 -> 3 per "
+      "step, Fill<int> 21 -> 6 and DtoD 48 -> 33 (kernel-diff-r0.json). The 15 causal builds repeat every ~49 us "
+      "in A and every ~8 us in K (step 50, rank 0), and in K all of them run under the Engram stage.")
+
+lever("DSV41_MOE_PREP_FUSED=1",
+      "one _moe_prep_kernel per MoE layer instead of ~14 single-block kernels; one fp16->bf16 cast after p2b",
+      {"c1": [-0.19, -0.34], "c2": [-0.19, -0.34], "basis": "fusion-host 10.4: -0.15..-0.30 prep + -0.04 cast"},
+      "FFN prologue after the router gate: router gate end -> routed start (splitK reduce, topk, prep), median x 40",
+      x40(ffn("A", "C3 router gate end -> routed start (splitK, topk, prep)")),
+      x40(ffn("K", "C3 router gate end -> routed start (splitK, topk, prep)")),
+      "yes: in A the router stream (gate -> topk -> 14 prep kernels) gated p2b; the shared expert finished 6-7 us "
+      "before p2b started",
+      "DELIVERED, about 10x the projection (-2.8..-3.0 ms/step)",
+      "The r3 profile counted this glue as 0.15 ms/step 'exposed' because the shared-expert GEMMs (anchors) ran "
+      "alongside it. But the routed kernel waits for the router stream, so the whole chain was on the critical path "
+      "(98-100 us per layer). K runs one _moe_prep_kernel (40/step). Target-graph compare_scalar<long> goes 160 -> 0, "
+      "and kernels launched in the prologue drop from 26.1 to 9.1-9.4 per layer. Part of the gain is scheduling: topk "
+      "falls from ~23 to ~7.8 us per call and the splitK reduce shrinks too (router_topk -0.61, router_gate splitK "
+      "-0.24 ms/step). Both ran beside the b12x shared GEMMs in A. The epilogue loses one cast: 3 -> 2 kernels per "
+      "layer, routed end -> MoE AR 10.2 -> 9.4 us median.",
+      {"prologue_kernels_per_layer": {w: {"A": pair(lambda w, r: g("A", w, r)["layer_segments"]["kernels_launched_per_layer"]["C kernels launched"], w),
+                                          "K": pair(lambda w, r: g("K", w, r)["layer_segments"]["kernels_launched_per_layer"]["C kernels launched"], w)} for w in W}})
+
+lever("DSV41_CANDIDATE_MASK_BOUNDED=1",
+      "_mask_candidates + _candidate_flags ~77.7 -> ~8-10 us per layer",
+      {"c1": [-0.27, -0.43], "c2": [-0.70, -0.77], "basis": "fusion-host 10.4"},
+      "candidate mask + flags kernel time (4 indexer layers x 2 kernels per step)",
+      cat("A", "cand_mask [CAND_MASK]"), cat("K", "cand_mask [CAND_MASK]"),
+      "yes: indexer chain on the attention-block main stream",
+      "DELIVERED (c=1 inside the projection, c=2 at 84-93% of it)",
+      "c=1 rank 0: 80.5 -> 5.5 us per layer (the plan expected ~8-10).")
+
+lever("DSV41_INDEXER_WP_GEMV=1",
+      "_wp_gemv_kernel (8 per step, m 2..8) instead of cutlass_80_wmma ... bf16 16x16",
+      {"c1": [-0.10, -0.17], "c2": [-0.10, -0.17], "basis": "fusion-host 10.4 (r3 join waits)"},
+      "qkv join wait on the 8 weights_proj layers: qkv_a end -> _q_kv_norm_quant_kernel start, per step",
+      join("A"), join("K"),
+      "yes: the join gates wq_b",
+      "DELIVERED (inside the projection)",
+      "The join median on the 8 wp layers falls from 24.2/25.2 to 0.6/0.5 us (c=1). The mean stays 12-13 us: in the "
+      "comp+wp layers the compressor is now the last branch. wp kernel 88 -> 42.6 us per call (it runs beside the "
+      "qkv_a GEMV; the bench measured 10-12 us alone). Side effect: _fused_save_compress_norm_kernel, which runs in "
+      "the same fan-out, goes from 0.225 to 0.085 ms/step (c=1 rank 0).",
+      {"wp_kernel_ms_per_step": {w: {"A": pair(cat("A", "wp_gemm [WP_GEMV]"), w), "K": pair(cat("K", "wp_gemm [WP_GEMV]"), w)} for w in W}})
+
+out["levers"] = L
+
+# ---- reconciliation (c=1 and c=2): where the step went --------------------------------------------------
+def rec(w):
+    r = {}
+    for rk in (0, 1):
+        A, K = (lambda k: g("A", w, rk)), (lambda k: g("K", w, rk))
+        segA, segK = g("A", w, rk)["layer_segments"], g("K", w, rk)["layer_segments"]
+        fA, fK = g("A", w, rk)["ffn_prologue_and_mhc"], g("K", w, rk)["ffn_prologue_and_mhc"]
+        eA, eK = g("A", w, rk)["eager_before_next_target"], g("K", w, rk)["eager_before_next_target"]
+        m = lambda a, b, key="median_us": round((b[key] - a[key]) * 40 / 1e3, 3)
+        items = {
+            "COOP: routed MoE (segment D)": round(segK["D routed MoE"]["ms_per_step_mean_x40"] - segA["D routed MoE"]["ms_per_step_mean_x40"], 3),
+            "MOE_PREP (+topk/splitK scheduling): router gate end -> routed start": m(fA["C3 router gate end -> routed start (splitK, topk, prep)"], fK["C3 router gate end -> routed start (splitK, topk, prep)"]),
+            "DENSE_GEMV x router gate interaction: router gate kernel on the prologue path": m(fA["C2 router gate kernel (bf16 cuBLAS, side stream)"], fK["C2 router gate kernel (bf16 cuBLAS, side stream)"]),
+            "MHC_DET ffn half: attn AR end -> last mhc end": m(fA["C1 attn AR end -> last ffn mhc end"], fK["C1 attn AR end -> last ffn mhc end"]),
+            "attention block (segment A: DENSE_GEMV qkv_a/wq_b/wo_a/wo_b + act quant, MHC_DET attn half, CAND_MASK, WP_GEMV)": round(segK["A attn block: prev MoE AR end -> attn AR start"]["ms_per_step_mean_x40"] - segA["A attn block: prev MoE AR end -> attn AR start"]["ms_per_step_mean_x40"], 3),
+            "all-reduces + epilogue (segments B, E, F)": round(sum(segK[k]["ms_per_step_mean_x40"] - segA[k]["ms_per_step_mean_x40"] for k in ("B attn AR", "E epilogue: routed end -> MoE AR start", "F MoE AR")), 3),
+            "NATIVE_STAGE: Engram stage span": round(eK["stage_span_hash_dtoh_end_to_rows_htod_ms"]["median"] - eA["stage_span_hash_dtoh_end_to_rows_htod_ms"]["median"], 3),
+            "EARLY_HASH: eager chain before the hash": round(eK["chain_before_hash_ms"]["median"] - eA["chain_before_hash_ms"]["median"], 3),
+            "draft graph (DENSE_GEMV, MHC_DET in the 3 draft layers; draft AR startup)": round(g("K", w, rk)["phases_ms"]["draft_graph_ms"]["median"] - g("A", w, rk)["phases_ms"]["draft_graph_ms"]["median"], 3),
+            "eager after target (lm_head / main_proj GEMV, draft prep)": round(g("K", w, rk)["phases_ms"]["eager_after_target_ms"]["median"] - g("A", w, rk)["phases_ms"]["eager_after_target_ms"]["median"], 3),
+        }
+        items["sum of the rows"] = round(sum(items.values()), 3)
+        items["measured profiled step wall (median)"] = round(g("K", w, rk)["step_wall_ms"]["median"] - g("A", w, rk)["step_wall_ms"]["median"], 3)
+        r[f"rank{rk}"] = items
+    return r
+
+
+out["reconciliation_K_minus_A_ms_per_step"] = {w: rec(w) for w in W}
+out["reconciliation_note"] = ("Rows mix per-layer medians x 40, per-layer means x 40 and per-step medians, so they add "
+                              "to the measured wall only approximately. MOE_PREP and MHC_DET-ffn come from the FFN "
+                              "prologue medians; segment C mean delta is the other view of the same layer span.")
+
+# ---- K_p: what is left (top 3) -----------------------------------------------------------------------
+EXP_B = 3 * 5120 * 1152 * 2 / 8  # EXL3 2.0 bpw gate+up+down per expert per rank
+uniq = {"c1": 15.475, "c2": 29.525}  # coop-moe summary phases_v2 unique_mean (layer 20, census) m4 / m8
+top = []
+for w in W:
+    pc = pair(routed_call("K", "mean"), w)
+    floor = uniq[w] * EXP_B / 231e9 * 1e6
+    top_w = {"routed_moe_ms_per_step_K": pair(cat("K", "routed_moe [COOP]"), w),
+             "per_call_mean_us_K": pc,
+             "unique_expert_bytes_MB": round(uniq[w] * EXP_B / 1e6, 1),
+             "floor_us_at_231GBps_flat_read": round(floor, 1),
+             "above_floor_ms_per_step": [round((x - floor) * 40 / 1e3, 2) for x in pc]}
+    top.append((w, top_w))
+out["top3_remaining_K_p"] = [
+    {"rank": 1, "item": "Routed MoE (coop) kernel",
+     "size": {w: v for w, v in top},
+     "floor_note": "unique experts per call from coop-moe summary phases_v2 (layer-20 census, m4 15.475 / m8 29.525), not from the serve's own routing",
+     "share_of_step": {w: [round(a / b, 3) for a, b in zip(pair(cat("K", "routed_moe [COOP]"), w), pair(lambda w, r: g("K", w, r)["step_wall_ms"]["median"], w))] for w in W},
+     "why_left": "Still the largest block: 32% of the c=1 step and 42% of the c=2 step. It runs 12-13% over the census "
+                 "bench at c=1 (398.9/395.2 vs 353.0 us). The shared expert tail waits behind its grid on every layer. "
+                 "It sits ~100 us/call (c=1) and ~75-80 us/call (c=2) above a unique-expert stream at the 231 GB/s "
+                 "flat-read ceiling.",
+     "next": "Take the shared expert off the coop kernel's tail: launch act_and_mul + shared_down ahead of the routed "
+             "kernel, or fold them into the coop epilogue. Then close the gap to the flat-read ceiling (coop-moe round-4 "
+             "list)."},
+    {"rank": 2, "item": "Engram host stage (native gather, page-cache misses)",
+     "size": {w: {"stage_span_ms_K": pair(eb("K", "stage_span_hash_dtoh_end_to_rows_htod_ms"), w),
+                  "gpu_work_under_it_ms": pair(eb("K", "gpu_work_span_under_stage_ms"), w),
+                  "device_idle_ms_per_step_K": pair(lambda w, r: g("K", w, r)["device_idle_ms"]["median"], w)} for w in W},
+     "why_left": "28-51 of the 96 rows per call miss the page cache (prefetch v3 misses). us/call median 919 (rank 0) / "
+                 "1018 (rank 1) over the boot's n=4 census windows, vs the bench's 142 prefetched. It is the largest GPU-idle block left, and it masks T2R_DEDUP "
+                 "and SWA_META (0.35 ms of chain under it).",
+     "next": "Make prefetch v3's WILLNEED land before the early-hash gather: issue it earlier, or keep hot rows resident. "
+             "Recoverable ~1.0 ms/step (c=1) down to the 0.35 ms chain, and that also un-masks T2R and SWA_META."},
+    {"rank": 3, "item": "Router gate slowed by the shared gate_up GEMV, on the FFN-prologue critical path",
+     "size": {w: {"router_gate_us_per_layer_A": pair(ffn("A", "C2 router gate kernel (bf16 cuBLAS, side stream)"), w),
+                  "router_gate_us_per_layer_K": pair(ffn("K", "C2 router gate kernel (bf16 cuBLAS, side stream)"), w),
+                  "recoverable_ms_per_step_to_A_speed": [round(x * 40 / 1e3, 2) for x in d(
+                      ffn("A", "C2 router gate kernel (bf16 cuBLAS, side stream)"), ffn("K", "C2 router gate kernel (bf16 cuBLAS, side stream)"), w)]}
+              for w in W},
+     "why_left": "New in the bundle. DENSE_GEMV's shared gate_up co-schedules with the cuBLAS router gate, which b12x "
+                 "never did, so the gate runs 2.4x slower. After MOE_PREP_FUSED the router stream is the prologue's "
+                 "critical path.",
+     "next": "A bf16 GEMV for the router gate ([384, 5120], 3.9 MB, ~16 us at 250 GB/s) that holds its speed next to "
+             "the shared gate_up. Delaying gate_up behind the router gate is not free: act_and_mul + shared_down already "
+             "wait for the coop kernel's tail, and gate_up would join them. Up to ~0.9-1.1 ms/step."},
+]
+out["also_measured_not_top3"] = {
+    "dense GEMV to roofline": "9 shapes at 85-96% of 250 GB/s (c=1) and 79-95% (c=2). Summed gaps to the roofline are "
+                              "2.25/2.21 ms/step (c=1) and 2.79/2.73 (c=2), spread thin (dense_gemv_roofline_K). "
+                              "DSV41_ENGRAM_WKV_TP (KP) halves engram_wkv (1.36 ms/step on the GEMV now).",
+    "NCCL": "target AR 80/step at 23.5/24.1 us median in both arms (c=1). AR ms/step 3.02/3.67 -> 2.95/3.06. "
+            "cudaGraphLaunch host time for the target graph 3277/3397 -> 2457/2626 us. The KP comm levers "
+            "(EAGER_TWIN, PM_QOS, L2_PREFETCH) target the remaining AR and startup time.",
+    "mHC": "elapsed 29.4 us/layer (1.18 ms/step) with det; kernel sum 2.07 ms/step against a 1.11 ms bench pass; "
+           "MHC_DET_OVERLAP (KP) targets it.",
+}
+
+out["unexplained_interaction"] = (
+    "P2 leave-one-out gave K vs KC (COOP alone, unprofiled) -7.66..-8.48 ms/step at c=1, while the COOP kernel delta here "
+    "is -5.91..-6.11. P2 KC vs A was -6.31..-7.29, and the non-COOP share of this K_p - A_p delta is ~-8.2. So about 2 "
+    "ms/step at c=1 is an interaction that P3's two arms cannot place. One candidate: without COOP, p2b_moe_batched "
+    "(grid 192) meets the early-started shared expert differently than the coop kernel does. A KC_p profile boot would "
+    "settle it. The bundle verdict is unaffected: it rests on P2's counted boots.")
+
+out["caveats"] = [
+    "One profiled window per arm and concurrency. Kernel medians rest on 98-105 c=1 and 30-34 c=2 steps x 40 layers; "
+    "step-level numbers are single-window readings, not boot-to-boot noise-gated values.",
+    "Profiled step walls (A 63.47/63.45, K 49.15/49.31 ms at c=1) sit 0.3-1.4 ms above the same boots' unprofiled "
+    "L.A.I.L x3 (A 62.11, K 48.84 ms/step). Host spans (the Engram stage) are inflated the most.",
+    "K_p worker traces (all 4) had NUL bytes at exactly the 4096-byte-page-final byte after every newline (4705 / 4278 "
+    "/ 3739 / 2853), JSON indentation only. A_p traces and the K_p API-server trace had none. They were parsed after "
+    "a lossless NUL->space rewrite (*.nul2space.pt.trace.json.gz next to the originals). The cause is in K_p's worker "
+    "processes and is not identified.",
+    "c=2 windows are 2 x 80 tokens (rule fixed before the window: MemAvailable after the c=1 window was 11 GiB). "
+    "The tail steps after the shorter stream ended (m=4) are excluded.",
+    "Projections are from isolated microbenches (the workstreams' unprofiled numbers). A lever's kernel can hit its "
+    "projection while its step gain is masked or amplified by what runs next to it; both are reported.",
+]
+json.dump(out, open("attribution.json", "w"), indent=1)
+print("wrote attribution.json")
