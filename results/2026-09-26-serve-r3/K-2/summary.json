@@ -1,0 +1,697 @@
+{
+ "arm": "K-2",
+ "env": "AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e14 DSV41_P2B_COOP=2 DSV41_DENSE_GEMV=1 DSV41_MHC_DET_SPLITS=16 DSV41_ENGRAM_NATIVE_STAGE=1 DSV41_ENGRAM_EARLY_HASH=1 DSV41_ATTN_T2R_DEDUP=1 DSV41_SWA_META_FUSED=1 DSV41_MOE_PREP_FUSED=1 DSV41_CANDIDATE_MASK_BOUNDED=1 DSV41_INDEXER_WP_GEMV=1 (K_ENV on round-34 defaults)",
+ "head_at_boot": "f03792b5f424d75900abd720651fc684cd3778b0",
+ "snapshot": "2.0bpw-mcg-lmhead-mxfp8",
+ "attempts": {
+  "1": "first attempt counted; no fix, no retry"
+ },
+ "lail_fresh_median": 42.531,
+ "lail_fresh_n": 10,
+ "lail_fresh_runs": [
+  42.904,
+  44.149,
+  39.037,
+  40.144,
+  36.021,
+  42.159,
+  44.203,
+  40.093,
+  47.034,
+  46.319
+ ],
+ "lail_fresh_range": [
+  36.021,
+  47.034
+ ],
+ "lail_ms_step": 48.909,
+ "lail_ms_step_range": [
+  48.384,
+  55.961
+ ],
+ "lail_acc": 2.1048,
+ "lail_acc_range": [
+  1.929,
+  2.3
+ ],
+ "lail_ttft_median_s": 0.3183,
+ "lail_natural_finish": "length",
+ "lail_post_eos_fraction": 0.0,
+ "lail_note": "runs 4 and 5 read 52.49 and 55.96 ms/step (40.14 and 36.02 tok/s, run 5 TTFT 0.463 s); the other 8 runs read 48.38-49.50 ms/step. gpu_guard shows only VLLM::Worker_TP on spark1 and Worker/Xorg/gnome-shell on spark2 for that window (09:05-09:07Z); no cause found in the head log. Reported as measured, not excluded.",
+ "bench_decode_n9": {
+  "prose_c1": {
+   "tok_s": 53.531,
+   "agg_tok_s": 53.522,
+   "ms_step": 48.764,
+   "acc": 2.5897,
+   "acc_range": [
+    2.261,
+    2.716
+   ],
+   "ttft_p50_s": 0.2062,
+   "natural_finish": "stop",
+   "post_eos_fraction": 0.61
+  },
+  "prose_c2": {
+   "tok_s": 43.032,
+   "agg_tok_s": 85.457,
+   "ms_step": 59.209,
+   "acc": 2.5125,
+   "acc_range": [
+    2.41,
+    2.735
+   ],
+   "ttft_p50_s": 0.2496,
+   "natural_finish": "stop",
+   "post_eos_fraction": 0.61
+  },
+  "structured_c1": {
+   "tok_s": 83.923,
+   "agg_tok_s": 83.899,
+   "ms_step": 47.196,
+   "acc": 3.9608,
+   "acc_range": [
+    3.961,
+    3.961
+   ],
+   "ttft_p50_s": 0.1779,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  },
+  "structured_c2": {
+   "tok_s": 69.151,
+   "agg_tok_s": 139.038,
+   "ms_step": 57.277,
+   "acc": 3.9608,
+   "acc_range": [
+    3.961,
+    3.961
+   ],
+   "ttft_p50_s": 0.2741,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  }
+ },
+ "four_numbers": {
+  "prose_c1_median_tok_s": 53.43,
+  "prose_runs": [
+   51.1,
+   53.43,
+   51.73,
+   53.74,
+   48.15,
+   60.59,
+   53.6,
+   54.27,
+   49.96
+  ],
+  "prose_c1_ms_step": 48.245,
+  "prose_acc": 2.5316,
+  "prose_acc_range": [
+   2.3256,
+   2.8986
+  ],
+  "prose_post_eos_fraction": 0.57,
+  "prose_long_c1": {
+   "tok_s": 43.923,
+   "ms_step": 48.702,
+   "acc": 2.1505,
+   "acc_range": [
+    2.1053,
+    2.2472
+   ],
+   "n": 5,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  },
+  "prose_long_c2": {
+   "agg_tok_s": 68.259,
+   "per_stream_tok_s": 34.809,
+   "ms_step": 61.415,
+   "acc": 2.1277,
+   "n": 10,
+   "natural_finish": "length"
+  },
+  "pp_warm_8k": 784.4,
+  "pp_warm_8k_runs": [
+   734.2,
+   784.9,
+   784.4
+  ],
+  "pp_warm_32k": 758.9,
+  "pp_warm_32k_runs": [
+   744.4,
+   774.6,
+   758.9
+  ],
+  "pp_novel_8k": 825.6,
+  "pp_novel_8k_runs": [
+   838.5,
+   825.6,
+   809.5
+  ],
+  "pp_novel_32k": 811.4,
+  "pp_novel_32k_runs": [
+   811.4,
+   807.7,
+   824.6
+  ],
+  "lail_after_c2_3x_median": 44.23,
+  "lail_after_c2_runs": [
+   44.23,
+   39.78,
+   44.33
+  ],
+  "memavail_after_micro_gib": {
+   "spark1": 21.03,
+   "spark2": 23.24
+  },
+  "warm_prefix_hit_fraction": 1.0,
+  "warm_prefix_ttft_cold_warm_s": [
+   2.834,
+   0.299
+  ],
+  "serve_env_ranks_match": true,
+  "lever_disarmed": false
+ },
+ "correctness": "8/8",
+ "e2e": "rc=0, pass_rate 3/3 (useful_tok_s 5.98)",
+ "disarm_scan": "rc=0, no lines",
+ "audit": "strict ok on head and worker (boot.txt; re-run on saved logs with the containers' env rc=0)",
+ "engagement": "every section-3 line for the K env 1x per rank (COOP=2, mhc det target 81 fn / draft 6 fn, native stage, early hash, t2r dedup + census 9.50 reuses/compute, moe prep, candidate mask, wp gemv, swa meta); dense GEMV armed 9 lines per rank (8 shapes + wo_a); lm_head mxfp8, prefetch v3, gather v2 1x per rank; woa fp8 43/43; KP add-ons 0; 0 LOG_DISARMED hits (18 known markers); round-3 envs identical on both ranks; running image 3a002b55c9bc on both ranks",
+ "gpu_guard": "rc=0, 0 FOREIGN (spark1 1337 samples @2s, spark2 260 @10s, 09:04:39Z-09:51:43Z; only VLLM::Worker_TP / Xorg / gnome-shell)",
+ "spark2_lock": "not held: the lock-holder command (ssh spark2 flock ... sleep) was refused by the session permission layer (as in A-1/K-1/KC-1); LOCK_FREE at precheck; spark2 guard clean",
+ "quality_quick": {
+  "pass_": true,
+  "tools_exact_miss_ids": [
+   "t01",
+   "t09"
+  ],
+  "note": "single run, PASS on every component. nll 0.242911, decode median dlp 0.00965, gen_nll_prefill 0.30345, aa_hazard 0.01627, golden 0.01415 (limit 0.03206; 3/12 identical), tools json 22/22, exact_args 20/22 = 0.9091 (t01 get_weather and t09 called with {}; limit 0.9545 passes by the gate's one-item Wilson slack; A-2/K-1/KC-1 read 21/22 with t09 only), no_call 8/8, needle 6/6, c2, vision"
+ },
+ "quality_full": {
+  "pass_": true,
+  "tools_exact_miss_ids": [
+   "t09",
+   "t17"
+  ],
+  "note": "single run (section 10: required on K#2), PASS on every component. nll 0.242805 (passes 0.242805/0.242064, repeat delta 0.000741; limit 0.2531), decode median dlp 0.01647 (<=0.07242), gen_nll_prefill 0.34277 (<=0.51987), aa_hazard 0.02059, golden 0.02317 (limit 0.04348; 3/12 identical), tools json 22/22, exact_args 20/22 (t09, t17; limit 0.9545 via one-item slack), no_call 8/8, needle 9/9 (incl 128k), gsm8k 94/100 (baseline 94/100), gsm8k_think 39/40 (baseline 38/40), mmlu 199/228 = 0.8728 (baseline 197/228), c2, vision; elapsed 1359.2 s. Baseline full.json is the 09-24 canonical-e12 serve, not an A boot of this sequence."
+ },
+ "memavail_gib": {
+  "before_boot": {
+   "spark1": "116Gi",
+   "spark2": "117Gi"
+  },
+  "after_smoke": {
+   "spark1": "23Gi",
+   "spark2": "24Gi"
+  },
+  "after_micro": {
+   "spark1": 21.03,
+   "spark2": 23.24
+  },
+  "end_serve_up": {
+   "spark1": "21Gi",
+   "spark2": "23Gi"
+  }
+ },
+ "load": {
+  "run_sh_start": "08:53:41Z",
+  "weights_s": "351.91 + 22.45",
+  "model_loading_s": 430.67,
+  "init_engine_s": 59.07,
+  "api_server_start": "09:03:44Z",
+  "wall_to_api_s": 603,
+  "ready_models": "09:03:57Z",
+  "run_sh_exit_after_warmup": "09:04:26Z",
+  "wall_incl_warmup_s": 645
+ },
+ "stop": "./stop.sh 09:51:52Z, both nodes; no dsv41 container left",
+ "ms_step_table_A1_A2_K1_KC1_K2": {
+  "A-1": {
+   "lail_ms_step": 63.013,
+   "lail_tok_s": 33.692,
+   "four_prose_c1_ms_step": 63.866,
+   "four_prose_c1_acc": 2.544,
+   "four_prose_c1_acc_range": [
+    2.261,
+    2.899
+   ],
+   "four_prose_c1_tok_s": 39.07,
+   "prose_long_c1_ms_step": 63.47,
+   "prose_long_c1_tok_s": 32.884,
+   "prose_long_c1_acc": 2.151,
+   "prose_long_c1_acc_range": [
+    2.0,
+    2.247
+   ],
+   "prose_long_c2_ms_step": 88.735,
+   "prose_long_c2_agg": 47.182,
+   "bench_prose_c1_ms_step": 63.995,
+   "bench_prose_c2_ms_step": 88.747,
+   "structured_c1_ms_step": 64.275,
+   "structured_c2_ms_step": 89.5,
+   "pp_warm_8k": 758.1,
+   "pp_warm_32k": 765.9,
+   "pp_novel_8k": 819.5,
+   "pp_novel_32k": 808.5,
+   "warm_prefix_hit": 1.0,
+   "ranks_match": true,
+   "lever_disarmed": false,
+   "pl_c1_finish": "length"
+  },
+  "A-2": {
+   "lail_ms_step": 62.568,
+   "lail_tok_s": 34.208,
+   "four_prose_c1_ms_step": 63.083,
+   "four_prose_c1_acc": 2.457,
+   "four_prose_c1_acc_range": [
+    2.284,
+    2.577
+   ],
+   "four_prose_c1_tok_s": 39.24,
+   "prose_long_c1_ms_step": 63.216,
+   "prose_long_c1_tok_s": 33.119,
+   "prose_long_c1_acc": 2.073,
+   "prose_long_c1_acc_range": [
+    2.031,
+    2.151
+   ],
+   "prose_long_c2_ms_step": 87.214,
+   "prose_long_c2_agg": 47.625,
+   "bench_prose_c1_ms_step": 63.774,
+   "bench_prose_c2_ms_step": 86.959,
+   "structured_c1_ms_step": 63.112,
+   "structured_c2_ms_step": 86.96,
+   "pp_warm_8k": 756.6,
+   "pp_warm_32k": 763.8,
+   "pp_novel_8k": 818.9,
+   "pp_novel_32k": 817.4,
+   "warm_prefix_hit": 1.0,
+   "ranks_match": true,
+   "lever_disarmed": false,
+   "pl_c1_finish": "length"
+  },
+  "K-1": {
+   "lail_ms_step": 48.328,
+   "lail_tok_s": 43.567,
+   "four_prose_c1_ms_step": 47.156,
+   "four_prose_c1_acc": 2.557,
+   "four_prose_c1_acc_range": [
+    2.314,
+    3.061
+   ],
+   "four_prose_c1_tok_s": 54.42,
+   "prose_long_c1_ms_step": 49.01,
+   "prose_long_c1_tok_s": 43.688,
+   "prose_long_c1_acc": 2.117,
+   "prose_long_c1_acc_range": [
+    2.0,
+    2.247
+   ],
+   "prose_long_c2_ms_step": 60.724,
+   "prose_long_c2_agg": 68.063,
+   "bench_prose_c1_ms_step": 48.244,
+   "bench_prose_c2_ms_step": 57.836,
+   "structured_c1_ms_step": 46.877,
+   "structured_c2_ms_step": 55.768,
+   "pp_warm_8k": 758.1,
+   "pp_warm_32k": 769.7,
+   "pp_novel_8k": 804.0,
+   "pp_novel_32k": 799.5,
+   "warm_prefix_hit": 1.0,
+   "ranks_match": true,
+   "lever_disarmed": false,
+   "pl_c1_finish": "length"
+  },
+  "KC-1": {
+   "lail_ms_step": 56.205,
+   "lail_tok_s": 37.562,
+   "four_prose_c1_ms_step": 56.154,
+   "four_prose_c1_acc": 2.584,
+   "four_prose_c1_acc_range": [
+    2.469,
+    2.928
+   ],
+   "four_prose_c1_tok_s": 47.12,
+   "prose_long_c1_ms_step": 56.9,
+   "prose_long_c1_tok_s": 36.038,
+   "prose_long_c1_acc": 2.051,
+   "prose_long_c1_acc_range": [
+    1.971,
+    2.095
+   ],
+   "prose_long_c2_ms_step": 80.357,
+   "prose_long_c2_agg": 52.312,
+   "bench_prose_c1_ms_step": 56.352,
+   "bench_prose_c2_ms_step": 80.013,
+   "structured_c1_ms_step": 55.888,
+   "structured_c2_ms_step": 79.231,
+   "pp_warm_8k": 763.5,
+   "pp_warm_32k": 772.0,
+   "pp_novel_8k": 804.8,
+   "pp_novel_32k": 815.6,
+   "warm_prefix_hit": 1.0,
+   "ranks_match": true,
+   "lever_disarmed": false,
+   "pl_c1_finish": "length"
+  },
+  "K-2": {
+   "lail_ms_step": 48.909,
+   "lail_tok_s": 42.531,
+   "four_prose_c1_ms_step": 48.245,
+   "four_prose_c1_acc": 2.532,
+   "four_prose_c1_acc_range": [
+    2.326,
+    2.899
+   ],
+   "four_prose_c1_tok_s": 53.43,
+   "prose_long_c1_ms_step": 48.702,
+   "prose_long_c1_tok_s": 43.923,
+   "prose_long_c1_acc": 2.151,
+   "prose_long_c1_acc_range": [
+    2.105,
+    2.247
+   ],
+   "prose_long_c2_ms_step": 61.415,
+   "prose_long_c2_agg": 68.259,
+   "bench_prose_c1_ms_step": 48.764,
+   "bench_prose_c2_ms_step": 59.209,
+   "structured_c1_ms_step": 47.196,
+   "structured_c2_ms_step": 57.277,
+   "pp_warm_8k": 784.4,
+   "pp_warm_32k": 758.9,
+   "pp_novel_8k": 825.6,
+   "pp_novel_32k": 811.4,
+   "warm_prefix_hit": 1.0,
+   "ranks_match": true,
+   "lever_disarmed": false,
+   "pl_c1_finish": "length"
+  }
+ },
+ "K_vs_A_gate_readings_2x2": {
+  "primary": {
+   "four_prose_c1_ms_step": {
+    "A": [
+     63.866,
+     63.083
+    ],
+    "K": [
+     47.156,
+     48.245
+    ],
+    "A_median": 63.474,
+    "K_median": 47.7,
+    "A_spread": 0.783,
+    "K_spread": 1.089,
+    "noise": 1.089,
+    "improvement": 15.774,
+    "improvement_exceeds_noise": true,
+    "every_K_beats_A_median": true
+   },
+   "prose_long_c1_ms_step": {
+    "A": [
+     63.47,
+     63.216
+    ],
+    "K": [
+     49.01,
+     48.702
+    ],
+    "A_median": 63.343,
+    "K_median": 48.856,
+    "A_spread": 0.254,
+    "K_spread": 0.308,
+    "noise": 0.308,
+    "improvement": 14.487,
+    "improvement_exceeds_noise": true,
+    "every_K_beats_A_median": true
+   }
+  },
+  "secondary": {
+   "lail_ms_step": {
+    "A": [
+     63.013,
+     62.568
+    ],
+    "K": [
+     48.328,
+     48.909
+    ],
+    "A_median": 62.79,
+    "K_median": 48.618,
+    "A_spread": 0.445,
+    "K_spread": 0.581,
+    "noise": 0.581,
+    "improvement": 14.172,
+    "improvement_exceeds_noise": true,
+    "every_K_beats_A_median": true
+   },
+   "bench_prose_c1_ms_step": {
+    "A": [
+     63.995,
+     63.774
+    ],
+    "K": [
+     48.244,
+     48.764
+    ],
+    "A_median": 63.885,
+    "K_median": 48.504,
+    "A_spread": 0.221,
+    "K_spread": 0.52,
+    "noise": 0.52,
+    "improvement": 15.38,
+    "improvement_exceeds_noise": true,
+    "every_K_beats_A_median": true
+   },
+   "structured_c1_ms_step": {
+    "A": [
+     64.275,
+     63.112
+    ],
+    "K": [
+     46.877,
+     47.196
+    ],
+    "A_median": 63.694,
+    "K_median": 47.037,
+    "A_spread": 1.163,
+    "K_spread": 0.319,
+    "noise": 1.163,
+    "improvement": 16.657,
+    "improvement_exceeds_noise": true,
+    "every_K_beats_A_median": true
+   },
+   "prose_long_c1_tok_s": {
+    "A": [
+     32.884,
+     33.119
+    ],
+    "K": [
+     43.688,
+     43.923
+    ],
+    "A_median": 33.002,
+    "K_median": 43.806,
+    "A_spread": 0.235,
+    "K_spread": 0.235,
+    "noise": 0.235,
+    "improvement": 10.804,
+    "improvement_exceeds_noise": true,
+    "every_K_beats_A_median": true
+   },
+   "lail_tok_s": {
+    "A": [
+     33.692,
+     34.208
+    ],
+    "K": [
+     43.567,
+     42.531
+    ],
+    "A_median": 33.95,
+    "K_median": 43.049,
+    "A_spread": 0.516,
+    "K_spread": 1.036,
+    "noise": 1.036,
+    "improvement": 9.099,
+    "improvement_exceeds_noise": true,
+    "every_K_beats_A_median": true
+   },
+   "prose_long_c2_ms_step": {
+    "A": [
+     88.735,
+     87.214
+    ],
+    "K": [
+     60.724,
+     61.415
+    ],
+    "A_median": 87.975,
+    "K_median": 61.069,
+    "A_spread": 1.521,
+    "K_spread": 0.691,
+    "noise": 1.521,
+    "improvement": 26.905,
+    "improvement_exceeds_noise": true,
+    "every_K_beats_A_median": true
+   },
+   "bench_prose_c2_ms_step": {
+    "A": [
+     88.747,
+     86.959
+    ],
+    "K": [
+     57.836,
+     59.209
+    ],
+    "A_median": 87.853,
+    "K_median": 58.523,
+    "A_spread": 1.788,
+    "K_spread": 1.373,
+    "noise": 1.788,
+    "improvement": 29.331,
+    "improvement_exceeds_noise": true,
+    "every_K_beats_A_median": true
+   },
+   "structured_c2_ms_step": {
+    "A": [
+     89.5,
+     86.96
+    ],
+    "K": [
+     55.768,
+     57.277
+    ],
+    "A_median": 88.23,
+    "K_median": 56.523,
+    "A_spread": 2.54,
+    "K_spread": 1.509,
+    "noise": 2.54,
+    "improvement": 31.707,
+    "improvement_exceeds_noise": true,
+    "every_K_beats_A_median": true
+   }
+  },
+  "non_inferiority": {
+   "pp_warm_8k": {
+    "A": [
+     758.1,
+     756.6
+    ],
+    "K": [
+     758.1,
+     784.4
+    ],
+    "A_median": 757.35,
+    "K_median": 771.25,
+    "K_spread": 26.3,
+    "K_minus_A": 13.9,
+    "ok": true
+   },
+   "pp_warm_32k": {
+    "A": [
+     765.9,
+     763.8
+    ],
+    "K": [
+     769.7,
+     758.9
+    ],
+    "A_median": 764.85,
+    "K_median": 764.3,
+    "K_spread": 10.8,
+    "K_minus_A": -0.55,
+    "ok": true
+   },
+   "pp_novel_8k": {
+    "A": [
+     819.5,
+     818.9
+    ],
+    "K": [
+     804.0,
+     825.6
+    ],
+    "A_median": 819.2,
+    "K_median": 814.8,
+    "K_spread": 21.6,
+    "K_minus_A": -4.4,
+    "ok": true
+   },
+   "pp_novel_32k": {
+    "A": [
+     808.5,
+     817.4
+    ],
+    "K": [
+     799.5,
+     811.4
+    ],
+    "A_median": 812.95,
+    "K_median": 805.45,
+    "K_spread": 11.9,
+    "K_minus_A": -7.5,
+    "ok": true
+   },
+   "prose_long_c2_agg": {
+    "A": [
+     47.182,
+     47.625
+    ],
+    "K": [
+     68.063,
+     68.259
+    ],
+    "A_median": 47.404,
+    "K_median": 68.161,
+    "K_spread": 0.196,
+    "K_minus_A": 20.758,
+    "ok": true
+   },
+   "warm_prefix_hit": {
+    "A": [
+     1.0,
+     1.0
+    ],
+    "K": [
+     1.0,
+     1.0
+    ],
+    "A_median": 1.0,
+    "K_median": 1.0,
+    "K_spread": 0.0,
+    "K_minus_A": 0.0,
+    "ok": true
+   }
+  },
+  "acceptance_overlap": {
+   "four_prose_c1_median_run_acc": {
+    "A-1": 2.544,
+    "A-2": 2.457,
+    "K-1": 2.557,
+    "K-2": 2.532
+   },
+   "prose_long_c1_acc_range": {
+    "A-1": [
+     2.0,
+     2.247
+    ],
+    "A-2": [
+     2.031,
+     2.151
+    ],
+    "K-1": [
+     2.0,
+     2.247
+    ],
+    "K-2": [
+     2.105,
+     2.247
+    ]
+   }
+  }
+ },
+ "K_vs_A_note": "ARMS.md step 6 / ARMS-r3 section 5 readings on A-1, A-2, K-1, K-2 (medians of 2 boots, noise = larger boot-to-boot spread). Every perf, acceptance-overlap, non-inferiority and honesty condition reads true; quality quick passed on both K boots and full on K-2. pp_novel_8k: K-1 804.0 is below both A boots (819.5/818.9) while K-2 825.6 is above; the K-A median delta -4.4 is inside K's spread 21.6 but not inside A's spread 0.6. pp_novel_32k -7.5 is inside both spreads (K 11.9, A 8.9). KC-2 has not run: K vs KC (COOP) and KC vs A have one KC boot only, so no promotion verdict is written here."
+}
