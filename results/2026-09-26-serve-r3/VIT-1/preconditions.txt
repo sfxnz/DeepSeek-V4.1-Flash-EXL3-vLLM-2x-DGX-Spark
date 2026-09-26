@@ -1,0 +1,52 @@
+# ARMS-r3 section 1 preconditions (+ section 7 P4), VIT-1, 2026-09-26T13:08:27Z
+## requant DONE
+DONE present
+## containers spark1 (all)
+magical_blackwell vllm/vllm-openai Created
+dsv41-exl3-nfs dsv41-exl3-nfs:local Exited (137) 4 days ago
+conduit matrixconduit/matrix-conduit:latest Up 6 days
+## containers spark2 (all)
+## spark2 GPU lock
+LOCK_HELD
+## pmon spark1
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0          -     -      -      -      -      -      -      -    -              
+## pmon spark2
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+## microbench processes spark1/spark2
+none
+none
+## memory spark1
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       4.8Gi        95Gi       8.9Mi        22Gi       116Gi
+Swap:           15Gi       3.2Gi        12Gi
+## memory spark2
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       4.3Gi        87Gi       220Ki        30Gi       117Gi
+Swap:           15Gi       1.6Gi        14Gi
+## image IDs
+want sha256:3a002b55c9bc8086d6e63e3947cd0c6aaa092d415ec7d0305461078240eee675
+spark1 sha256:3a002b55c9bc8086d6e63e3947cd0c6aaa092d415ec7d0305461078240eee675
+spark2 sha256:3a002b55c9bc8086d6e63e3947cd0c6aaa092d415ec7d0305461078240eee675
+## Viterbi snapshot on both nodes (section 7)
+local 60
+local /home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8/model.safetensors.index.json
+local /home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8/requant-viterbi-manifest.json
+spark2 60
+spark2 /home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8/model.safetensors.index.json
+spark2 /home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8/requant-viterbi-manifest.json
+  assembly + verify: results/2026-09-26-serve-r3/p0-p1 (assemble rc 0 both nodes; pack-verify rc 0 both, 40/40 sha)
+## Viterbi kernel pre-check (section 7): results/2026-09-25-kernels/integration/viterbi-precheck (commit 8bf97c5), pass=True l20 --ref and l33 r1
+## tree
+HEAD 8bf97c5f645ba56ba849cab3f098c6489d382a1a branch perf/kernels-r3
+porcelain lines: 1
+?? results/2026-09-26-serve-r3/VIT-1/
+## tests/render: see tests-render.txt
+Ran 798 tests in 30.176s
+OK (skipped=14)
+unittest rc=0
+render_check rc=0

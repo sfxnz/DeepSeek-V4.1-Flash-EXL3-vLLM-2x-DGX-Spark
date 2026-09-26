@@ -1,0 +1,384 @@
+{
+ "arm": "VIT-1",
+ "phase": "P4 (Viterbi pack arm), boot 2 of CUR#1, VIT#1, CUR#2, VIT#2",
+ "env": "AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e14 DSV41_P2B_COOP=2 DSV41_DENSE_GEMV=1 DSV41_MHC_DET_SPLITS=16 DSV41_ENGRAM_NATIVE_STAGE=1 DSV41_ENGRAM_EARLY_HASH=1 DSV41_ATTN_T2R_DEDUP=1 DSV41_SWA_META_FUSED=1 DSV41_MOE_PREP_FUSED=1 DSV41_CANDIDATE_MASK_BOUNDED=1 DSV41_INDEXER_WP_GEMV=1 SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8 (promoted config = the 10 K envs on round-34 defaults, same as CUR-1, on the Viterbi pack)",
+ "head_at_boot": "8bf97c5f645ba56ba849cab3f098c6489d382a1a",
+ "patch_sha256": "identical to CUR-1 / K-2 / KC-2 (61 files)",
+ "snapshot": "2.0bpw-mcg-viterbi-lmhead-mxfp8 on both ranks (boot.txt model= lines, worker docker Cmd)",
+ "attempts": "first attempt counted; no fix, no retry",
+ "viterbi_kernel_precheck": "results/2026-09-25-kernels/integration/viterbi-precheck (commit 8bf97c5): l20 --ref and l33 tp-rank 1, 24/24 checks each, onehot bitexact, COOP=2 == v1 bitwise, full max_rel <= 4.13e-4, 1 ulp, capture 10/10, pass=True",
+ "lail_fresh_median": 41.829,
+ "lail_fresh_n": 10,
+ "lail_fresh_runs": [
+  41.409,
+  43.939,
+  40.392,
+  42.882,
+  41.628,
+  42.029,
+  39.647,
+  43.129,
+  42.615,
+  41.007
+ ],
+ "lail_fresh_range": [
+  39.647,
+  43.939
+ ],
+ "lail_ms_step": 48.685,
+ "lail_ms_step_range": [
+  48.299,
+  48.963
+ ],
+ "lail_ms_step_runs": [
+  48.3,
+  48.35,
+  48.75,
+  48.54,
+  48.81,
+  48.73,
+  48.92,
+  48.45,
+  48.64,
+  48.96
+ ],
+ "lail_acc": 2.044,
+ "lail_acc_range": [
+  1.951,
+  2.138
+ ],
+ "lail_ttft_median_s": 0.3065,
+ "lail_natural_finish": "length (post-EOS 0.0)",
+ "bench_decode_n9": {
+  "prose_c1": {
+   "tok_s": 49.363,
+   "agg_tok_s": 49.354,
+   "ms_step": 47.992,
+   "acc": 2.3912,
+   "median_run_acc": 2.3765,
+   "run_acc_range": [
+    2.258,
+    2.73
+   ],
+   "ttft_p50": 0.231,
+   "natural_finish": "stop",
+   "post_eos": 0.64
+  },
+  "prose_c2": {
+   "tok_s": 40.528,
+   "agg_tok_s": 78.315,
+   "ms_step": 60.662,
+   "acc": 2.4739,
+   "median_run_acc": 2.4663,
+   "run_acc_range": [
+    2.398,
+    2.669
+   ],
+   "ttft_p50": 0.258,
+   "natural_finish": "stop",
+   "post_eos": 0.64
+  },
+  "structured_c1": {
+   "tok_s": 84.091,
+   "agg_tok_s": 84.058,
+   "ms_step": 47.568,
+   "acc": 4.0,
+   "median_run_acc": 4.0,
+   "run_acc_range": [
+    4.0,
+    4.0
+   ],
+   "ttft_p50": 0.209,
+   "natural_finish": "length",
+   "post_eos": 0.0
+  },
+  "structured_c2": {
+   "tok_s": 78.685,
+   "agg_tok_s": 157.32,
+   "ms_step": 50.836,
+   "acc": 4.0,
+   "median_run_acc": 4.0,
+   "run_acc_range": [
+    4.0,
+    4.0
+   ],
+   "ttft_p50": 0.229,
+   "natural_finish": "length",
+   "post_eos": 0.0
+  }
+ },
+ "four_numbers": {
+  "prose_c1": 50.79,
+  "prose_c1_runs": [
+   57.42,
+   52.88,
+   49.16,
+   49.83,
+   47.25,
+   51.15,
+   50.79,
+   47.78,
+   51.03
+  ],
+  "prose_c1_ms_step": 47.558,
+  "prose_c1_median_run_acc": 2.3976,
+  "prose_c1_run_acc": [
+   2.7534,
+   2.5844,
+   2.3765,
+   2.3412,
+   2.2472,
+   2.439,
+   2.3976,
+   2.236,
+   2.3976
+  ],
+  "prose_long_c1": 45.875,
+  "prose_long_c1_ms_step": 48.985,
+  "prose_long_c1_median_run_acc": 2.2472,
+  "prose_long_c1_run_acc": [
+   2.2472,
+   2.051,
+   2.4096,
+   2.2472,
+   2.236
+  ],
+  "prose_long_c1_n": 5,
+  "prose_long_natural_finish": "length",
+  "prose_long_post_eos": 0.0,
+  "prose_long_c2_agg": 68.184,
+  "prose_long_c2_ms_step": 60.4,
+  "prose_long_c2_median_run_acc": 2.133,
+  "lail_after_c2": 42.26,
+  "lail_after_c2_runs": [
+   45.88,
+   40.41,
+   42.26
+  ],
+  "pp_warm_8k": 762.2,
+  "pp_warm_8k_runs": [
+   754.1,
+   776.8,
+   762.2
+  ],
+  "pp_warm_32k": 768.0,
+  "pp_warm_32k_runs": [
+   768.0,
+   769.1,
+   759.8
+  ],
+  "pp_novel_8k": 826.7,
+  "pp_novel_8k_runs": [
+   806.4,
+   826.7,
+   833.2
+  ],
+  "pp_novel_32k": 818.2,
+  "pp_novel_32k_runs": [
+   796.8,
+   818.2,
+   820.6
+  ],
+  "warm_prefix_hit_fraction": 1.0,
+  "warm_prefix_ttft_cold_warm_s": [
+   2.831,
+   0.309
+  ],
+  "serve_env_ranks_match": true,
+  "lever_disarmed": false,
+  "partial": false,
+  "memavail_after_micro_gib": [
+   21.06,
+   23.68
+  ]
+ },
+ "correctness": "8/8 rc=0 (correctness.txt); --full 9/9 rc=0 incl. recall_64k in a 62803-token doc (correctness_full.txt)",
+ "e2e": "rc=0, 3/3, useful_tok_s 6.1 (e2e.txt)",
+ "disarm_scan": "rc=0, no disarm line on either rank",
+ "audit": "boot: 'audit ok: every expected patch engaged on head, worker'; strict re-run on the end-of-boot logs: audit rc=0 (engagement.txt)",
+ "engagement": "every section-3 line for K 1x per rank (COOP=2, mhc det target 81 fn / draft 6 fn, native stage, early hash, t2r dedup + census 9.50 reuses/compute, moe prep, candidate mask, wp gemv, swa meta); dense GEMV 9 armed lines per rank; lm_head mxfp8 1x per rank (same as CUR-1); prefetch v3 / gather v2 1x per rank; woa fp8 43/43; KP add-ons 0; 0 LOG_DISARMED; envs equal on both ranks apart from VLLM_HOST_IP; running image 3a002b55c9bc on both ranks",
+ "gpu_guard": "rc=0, 0 FOREIGN. spark1 1370 samples at 2 s (13:21:21Z-14:09:34Z, only VLLM::Worker_TP); spark2 266 at 10 s (13:21:40Z-14:09:35Z, VLLM::Worker_TP / Xorg / gnome-shell). Not VOID.",
+ "spark2_lock": "held by this stage from 13:03:48Z (pre-check + boot); released after stop, LOCK_FREE 14:09:53Z",
+ "memavail_gib": {
+  "before_boot": [
+   116,
+   117
+  ],
+  "after_boot_warmup": "see mem-after-boot.txt",
+  "after_smoke": [
+   23,
+   25
+  ],
+  "after_micro": [
+   21.06,
+   23.68
+  ],
+  "end_serve_up": [
+   21,
+   23
+  ],
+  "swap_used_gib": "spark1 3.2 -> 7.1, spark2 1.6 -> 4.8"
+ },
+ "load": "run.sh start 13:10:53Z to vLLM server start 13:20:29Z = 576 s; run.sh exit after warmup 13:21:12Z = 619 s. Model loading 422.36 s (weights 345.63 + 20.92), 75.58 GiB. Init engine 60.69 s.",
+ "stop": "./stop.sh 14:09:52Z, both nodes",
+ "vs_CUR1_single_boots_not_a_verdict": {
+  "note": "CUR-1 and VIT-1 are one boot each, same env/image/patch sha, different pack. Single-boot readings, not a verdict: the P4 gate needs CUR#2 and VIT#2.",
+  "lail_tok_s": {
+   "CUR1": 42.927,
+   "VIT1": 41.829,
+   "VIT_minus_CUR": -1.098
+  },
+  "lail_ms_step": {
+   "CUR1": 49.371,
+   "VIT1": 48.685,
+   "VIT_minus_CUR": -0.686
+  },
+  "lail_acc": {
+   "CUR1": 2.118,
+   "VIT1": 2.044,
+   "VIT_minus_CUR": -0.074
+  },
+  "lail_acc_range": {
+   "CUR1": [
+    2.008,
+    2.291
+   ],
+   "VIT1": [
+    1.951,
+    2.138
+   ]
+  },
+  "prose_long_c1_tok_s": {
+   "CUR1": 44.893,
+   "VIT1": 45.875,
+   "VIT_minus_CUR": 0.982
+  },
+  "prose_long_c1_ms_step": {
+   "CUR1": 49.101,
+   "VIT1": 48.985,
+   "VIT_minus_CUR": -0.116
+  },
+  "prose_long_c1_median_run_acc": {
+   "CUR1": 2.2222,
+   "VIT1": 2.2472,
+   "VIT_minus_CUR": 0.025
+  },
+  "prose_long_c1_run_acc": {
+   "CUR1": [
+    2.0619,
+    2.2222,
+    2.2472,
+    2.0825,
+    2.2472
+   ],
+   "VIT1": [
+    2.2472,
+    2.051,
+    2.4096,
+    2.2472,
+    2.236
+   ]
+  },
+  "four_prose_c1_tok_s": {
+   "CUR1": 54.11,
+   "VIT1": 50.79,
+   "VIT_minus_CUR": -3.32
+  },
+  "four_prose_c1_ms_step": {
+   "CUR1": 47.753,
+   "VIT1": 47.558,
+   "VIT_minus_CUR": -0.195
+  },
+  "four_prose_c1_median_run_acc": {
+   "CUR1": 2.6184,
+   "VIT1": 2.3976,
+   "VIT_minus_CUR": -0.221
+  },
+  "bench_prose_c1_ms_step": {
+   "CUR1": 48.28,
+   "VIT1": 47.992,
+   "VIT_minus_CUR": -0.288
+  },
+  "bench_prose_c1_median_run_acc": {
+   "CUR1": 2.5844,
+   "VIT1": 2.3765,
+   "VIT_minus_CUR": -0.208
+  },
+  "structured_c1_ms_step": {
+   "CUR1": 46.992,
+   "VIT1": 47.568,
+   "VIT_minus_CUR": 0.576
+  },
+  "structured_c1_acc": {
+   "CUR1": 3.9608,
+   "VIT1": 4.0,
+   "VIT_minus_CUR": 0.039
+  },
+  "structured_c2_agg": {
+   "CUR1": 138.839,
+   "VIT1": 157.32,
+   "VIT_minus_CUR": 18.481
+  },
+  "structured_c2_ms_step": {
+   "CUR1": 56.38,
+   "VIT1": 50.836,
+   "VIT_minus_CUR": -5.544
+  },
+  "prose_c2_agg": {
+   "CUR1": 81.626,
+   "VIT1": 78.315,
+   "VIT_minus_CUR": -3.311
+  },
+  "prose_long_c2_agg": {
+   "CUR1": 70.089,
+   "VIT1": 68.184,
+   "VIT_minus_CUR": -1.905
+  },
+  "prose_long_c2_ms_step": {
+   "CUR1": 60.197,
+   "VIT1": 60.4,
+   "VIT_minus_CUR": 0.203
+  },
+  "pp_warm_8k": {
+   "CUR1": 762.5,
+   "VIT1": 762.2,
+   "VIT_minus_CUR": -0.3
+  },
+  "pp_warm_32k": {
+   "CUR1": 763.0,
+   "VIT1": 768.0,
+   "VIT_minus_CUR": 5.0
+  },
+  "pp_novel_8k": {
+   "CUR1": 809.7,
+   "VIT1": 826.7,
+   "VIT_minus_CUR": 17.0
+  },
+  "pp_novel_32k": {
+   "CUR1": 811.7,
+   "VIT1": 818.2,
+   "VIT_minus_CUR": 6.5
+  },
+  "lail_after_c2": {
+   "CUR1": 41.17,
+   "VIT1": 42.26,
+   "VIT_minus_CUR": 1.09
+  }
+ },
+ "quality_quick": {
+  "pass": false,
+  "rc": 1,
+  "elapsed_s": 316.2,
+  "failed": "selfcons.golden_hazard 0.09756 > limit 0.03206 (20/24 pairs diverge from the 09-24 baseline goldens; first_div [0,9,7,None,1,None,0,1,5,20,0,0, 0,1,7,None,1,None,0,1,5,3,0,0])",
+  "passed": "nll 0.137498 (<=0.25316; CUR-1 0.24387), decode median dlp 0.00203 (<=0.06794), gen_nll_prefill 0.25038 (<=0.50932), aa_hazard 0.01609 (<=0.03206; 7/12 diverged, 5/12 identical), tools json 22/22, exact_args 22/22, no_call 8/8, needle 6/6, c2, vision"
+ },
+ "quality_full": {
+  "pass": false,
+  "rc": 1,
+  "elapsed_s": 1284.3,
+  "failed": "selfcons.golden_hazard 0.0939 > limit 0.04348 (20/24 pairs diverge from the baseline goldens, most within 0-9 tokens)",
+  "passed": "nll 0.1386 (two passes 0.1386/0.139243, repeat delta 0.000642; limit 0.2531; CUR-1 0.243424), decode median dlp 0.00631 (<=0.07242), gen_nll_prefill 0.30782 (<=0.51987), aa_hazard 0.00843 (<=0.04348; 7/12 identical), tools json 22/22, exact_args 22/22, no_call 8/8, needle 9/9 incl. 128k, gsm8k 97/100 (limit 0.94; CUR-1 95/100, K-2 94/100), gsm8k_think 39/40 (limit 0.95; CUR-1 39/40), mmlu 206/228 = 0.9035 (limit 0.864; CUR-1 196/228, K-2 199/228, baseline 197/228), c2, vision"
+ },
+ "golden_hazard_reading": "The golden set is greedy text generated on the current pack (09-24 canonical-e12 baseline). The gate rule 'golden hazard <= 2 * max(base aa_hazard, 0.005)' tests for same-numerics levers. The Viterbi pack changes the weights by design, so its greedy text leaves the old pack's text within 0-9 tokens on most prompts. VIT's own A/A hazard is inside the band (quick 0.01609, full 0.00843). As written, ARMS-r3 section 7 says both gates must pass with no component outside its band. That did not happen: quick and full both exit 1. Whether golden_hazard should gate a pack change is a protocol decision this stage does not make.",
+ "smoke_vision_main_checkout_jpeg": "The main checkout's smoke_vision.py (a minimal 1x1 JPEG; its pass rule is no HTTP 400) was run by accident at 13:21Z and returned 'Gray'. Two read-only reruns at 14:09Z also returned 'Gray' (smoke_vision_mainjpeg.txt). The worktree smoke, correctness vision and quality vision (64x64 red PNG) all read 'Red'. No CUR reading of the JPEG smoke exists to compare against."
+}

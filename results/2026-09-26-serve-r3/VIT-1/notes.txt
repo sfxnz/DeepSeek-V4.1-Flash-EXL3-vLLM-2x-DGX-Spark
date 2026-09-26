@@ -1,0 +1,73 @@
+VIT-1 boot notes. Arm VIT is the promoted config (the 10 K envs on the round-34 defaults, same env as CUR-1) on the Viterbi
+pack 2.0bpw-mcg-viterbi-lmhead-mxfp8, image review-e14. This is P4 boot 2 of the order CUR#1, VIT#1, CUR#2, VIT#2.
+- Command: command.txt (nohup, background, output in boot.txt). HEAD 8bf97c5 at boot. docker/patch sha256 is identical to
+  CUR-1 (61 files). The first attempt is the counted one: no fix, no retry. run.sh started 13:10:53Z, the vLLM server
+  started 13:20:29Z (576 s), and run.sh exited after warmup at 13:21:12Z (619 s). Model loading took 422.36 s (weights
+  345.63 + 20.92, 75.58 GiB) and init engine 60.69 s. Both ranks loaded .../snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8.
+- Section-7 kernel pre-check, run before the boot (results/2026-09-25-kernels/integration/viterbi-precheck, commit 8bf97c5).
+  It ran on the spark2 GPU with the Viterbi snapshot mounted, checked by inode: l20 --ref and l33 tp-rank 1. Each had 24/24
+  checks: onehot bitexact vs p2b, COOP=2 bitwise equal to v1, repeat bitexact, full max_rel <= 4.13e-4 (gate 1e-3) at 1 ulp,
+  and graph capture replay == eager 10/10. pass=True on both.
+- Preconditions (preconditions.txt, 13:08:27Z): requant DONE. No GPU container on either node. pmon on spark1 was empty;
+  spark2 showed only Xorg and gnome-shell. No microbench running. MemAvailable 116/117 GiB. Image ID 3a002b55c9bc on both
+  nodes. Viterbi snapshot present on both nodes (60 entries). The tree was clean apart from this dir. unittest 798 OK
+  (14 skipped), render --check rc 0, gpu_free_wait GPUFREE. The spark2 lock was held from 13:03:48Z and released after
+  stop (LOCK_FREE 14:09:53Z).
+- Audit: boot.txt has "audit ok: every expected patch engaged on head, worker", and a strict re-run on the end-of-boot logs
+  also passed. engagement.txt shows the same pattern as CUR-1:
+    - every section-3 line for K appears once per rank;
+    - COOP=2 and lm_head mxfp8 are each engaged once per rank, as in CUR;
+    - 9 dense GEMV lines per rank;
+    - KP add-ons 0 and LOG_DISARMED 0;
+    - the envs are equal on both ranks, apart from VLLM_HOST_IP.
+  disarm_scan rc 0.
+- gpu_guard rc=0 (0 FOREIGN). spark1 had 1370 samples at 2 s (13:21:21Z-14:09:34Z), all VLLM::Worker_TP. spark2 had 266 at
+  10 s. Not VOID.
+- L.A.I.L x10: median 41.829 tok/s (39.647-43.939), 48.685 ms/step (48.299-48.963), acc 2.044 (1.951-2.138).
+  CUR-1 read 42.927 tok/s, 49.371 ms/step and acc 2.118.
+- bench_decode x9:
+    - prose c=1: 49.363 tok/s at 47.992 ms/step, median run acc 2.3765. CUR-1: 53.688 at 48.28, acc 2.5844.
+    - structured c=1: 84.091 at 47.568 ms/step, acc 4.0 (CUR-1 3.9608).
+    - structured c=2 aggregate: 157.32 at 50.836 ms/step. CUR-1: 138.839 at 56.38.
+    - prose c=2 aggregate: 78.315 at 60.662 ms/step.
+- four_numbers:
+    - prose c=1: 50.79 tok/s at 47.558 ms/step, median run acc 2.398 (CUR-1 2.618).
+    - prose_long c=1: 45.875 tok/s at 48.985 ms/step, acc 2.247 (range 2.051-2.410, n=5), finish length, post-EOS 0.
+      CUR-1: 44.893 at 49.101, acc 2.222.
+    - prose_long c=2 aggregate: 68.184 at 60.4 ms/step.
+    - pp_warm 8k/32k 762.2/768.0; pp_novel 8k/32k 826.7/818.2.
+    - L.A.I.L 3x after c=2: 42.26. Warm prefix 1.0. ranks_match true, disarmed false.
+- ms/step at matched kernels: CUR-1 and VIT-1 read the same within single-boot noise on the c=1 cells (four prose -0.195,
+  prose_long -0.116, L.A.I.L -0.686). The exception is structured c=2, which is 5.5 ms/step lower on VIT. It coincides
+  with structured acceptance reading 4.0 on every run (CUR 3.9608); the cause is not established. Acceptance moved in
+  both directions:
+    - prose c=1 median run acc is lower on VIT (2.38/2.40 vs 2.58/2.62);
+    - prose_long c=1 is equal or higher (2.247 vs 2.222);
+    - structured rose to 4.0.
+  These are single boots, not a verdict. The P4 gate needs CUR#2 and VIT#2.
+- e2e: rc=0, 3/3 (useful_tok_s 6.1). correctness 8/8. correctness --full 9/9 (recall_64k in a 62803-token doc).
+- Quality quick FAIL (rc=1, 316.2 s). The only failing component is selfcons.golden_hazard: 0.09756 against a limit of
+  0.03206, with 20/24 pairs diverging from the 09-24 baseline goldens, most within 0-9 tokens. Everything else passed:
+    - nll 0.137498 (CUR-1 0.24387);
+    - dlp 0.00203, gen_nll 0.25038;
+    - aa_hazard 0.01609 (within band);
+    - tools 22/22 json and 22/22 exact_args, no_call 8/8;
+    - needle 6/6, c2, vision.
+- Quality full FAIL (rc=1, 1284.3 s). Again the only failing component is golden_hazard: 0.0939 against a limit of 0.04348.
+  The rest passed:
+    - nll 0.1386 (repeat 0.139243, delta 0.000642; CUR-1 0.243424);
+    - dlp 0.00631, gen_nll 0.30782;
+    - aa 0.00843 (7/12 identical);
+    - tools 22/22 / 22/22 / 8/8, needle 9/9 including 128k;
+    - gsm8k 97/100 (CUR-1 95), gsm8k_think 39/40 (CUR-1 39);
+    - mmlu 206/228 = 0.9035 (CUR-1 196, K-2 199, baseline 197);
+    - c2, vision.
+  Reading: the golden set is greedy text from the old pack, and the gate rule is written for same-numerics levers. A new pack
+  diverges from that text by design. VIT's own A/A hazard is in band. ARMS-r3 section 7 says both gates must pass with no
+  component outside its band, so this boot does NOT meet the section-7 quality condition as written. The serve pin does not
+  change.
+- Side observation: the main checkout's smoke_vision.py (a 1x1 JPEG; its pass rule is no HTTP 400) was run by accident from
+  the main checkout cwd at 13:21Z (a client call, nothing written) and answered "Gray". Two read-only reruns also answered
+  "Gray" (smoke_vision_mainjpeg.txt). The worktree smoke, correctness and quality vision (red PNG) read "Red".
+- Order followed: smokes, mem, correctness 8/8, L.A.I.L x10, bench_decode x9, four_numbers, e2e, quality quick, quality
+  full, correctness --full, disarm_scan, engagement + strict audit re-run, gpu_guard --check, mem-end, ./stop.sh (14:09:52Z).
