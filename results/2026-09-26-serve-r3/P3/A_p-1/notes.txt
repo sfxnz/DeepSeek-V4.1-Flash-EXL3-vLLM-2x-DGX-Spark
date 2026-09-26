@@ -1,0 +1,37 @@
+A_p-1 boot notes (ARMS-r3 section 6, P3 profile boot A_p: round-34 defaults, every round-3 lever off; image review-e14)
+- Not a counted boot. Its numbers are for attribution by kernel only and are not pooled with P2.
+- Command: see command.txt (nohup, background; boot.txt). HEAD 54ad48e at boot. docker/patch sha256 (61 files) is identical
+  to KC-2. First attempt counted: no fix and no retry. run.sh started 10:54:26Z, "Torch profiler enabled" (API up) at
+  11:03:36Z, and run.sh exited after warmup at about 11:04:25Z. Model loading 376.10 s; init engine 81.33 s.
+  Profiler config as vLLM printed it: torch, /tmp/dsv41-traces, with_stack=True, record_shapes=False, gzip.
+- Preconditions (preconditions.txt, 10:50:52Z): requant DONE. No GPU container on either node. pmon spark1 empty; spark2
+  Xorg/gnome-shell only. No microbench. MemAvailable 116/117 GiB. Image ID 3a002b55c9bc on both nodes. Tree clean apart
+  from P3/. unittest 798 OK (14 skipped), rc 0; render --check rc 0 (tests-render.txt). gpu_free_wait printed GPUFREE
+  (gpufree-spark1.txt). The spark2 GPU lock was HELD for the P3 window (flock holder started at 10:53Z; LOCK_HELD
+  confirmed before run.sh).
+- Audit: "audit ok: every expected patch engaged on head, worker" (boot.txt). engagement.txt: all 13 round-3 K lines are
+  0 on both ranks. Default-on lines are present 1x per rank (lm_head mxfp8, prefetch v3, gather v2, woa fp8 43/43,
+  Breakable CUDA graph). KP add-ons 0. 0 LOG_DISARMED hits.
+- Section 2 items run: smokes (chat 323 rc 0, vision "Red" rc 0), mem-after-smoke (MemAvailable 23/25 GiB, floor 8),
+  correctness 8/8, disarm_scan rc 0, gpu_guard --check rc 0. The counted benches (lail10, bench_decode, four_numbers,
+  e2e, quality) were not run: section 6 is the recipe for profile boots.
+- gpu_guard: rc 0, 0 FOREIGN. spark1 sampled every 1 s (the section 6 rate), 462 samples; spark2 every 10 s, 47 samples;
+  11:05:20Z-11:13:42Z. Only VLLM::Worker_TP / Xorg / gnome-shell appear. Not VOID.
+- Warm, profiler idle: L.A.I.L x3 (lail3.txt). 34.74 / 33.14 / 30.99 tok/s. ms/step (decode_s/chunks) 62.19 / 62.05 /
+  62.11, median 62.11. Acceptance median 2.060. In family with A-1 63.013 and A-2 62.568 (same computation on their
+  lail10).
+- Window c=1 (profile-window-c1.txt): CONCURRENCY=1 MAX_TOKENS=200. 200 tokens, 100 content chunks, wall 6.64 s. Stop
+  and export took about 2.5 min. MemAvailable went from 21/23 GiB (after lail3) to 11/16 GiB (spark1/spark2): the
+  profiler keeps about 100 MB of host memory per profiled step on spark1.
+- c=2 warm (c2-warm-bench.txt): bench_decode --concurrency 2 --runs 1 --phase prose. 89.28 ms/step at acceptance 2.693,
+  in family with A-1 88.747 and A-2 86.959.
+- Window c=2 (profile-window-c2.txt): CONCURRENCY=2 MAX_TOKENS=80. Chunks 41/34, wall 3.99 s. The per-stream token count
+  follows a rule set before the window: 200 if MemAvailable after c=1 >= 20 GiB, 120 if >= 14, else 80. The reading
+  was 11 GiB, so 80. K_p uses the same 80 so the windows compare. MemAvailable stayed at 12/16 GiB (the profiler reused
+  the c=1 allocation).
+- Traces: /home/sfxnz/projects/data/dsv41-traces/p3-A_p-c1-20260926-110737 and p3-A_p-c2-20260926-111110 (rank0 on spark1;
+  rank1 copied from spark2 after stop, sha256 equal). They were extracted on spark1 with the serve down, one at a time.
+  Analyzer: tools/decode_timeline.py (analyze + skew), stock categories, in c1/ and c2/.
+  c=1: 98 steps on both ranks (target graph m=4). Profiled step wall median 63.47 (rank 0) / 63.45 (rank 1) ms.
+  c=2: 30 steps at m=8 (graph 617, wall median 89.67 / 89.12 ms), plus 9 m=4 tail steps after the shorter stream ended.
+- End: disarm_scan rc 0; mem-end.txt; ./stop.sh at 11:13:59Z on both nodes (stop-end.txt).

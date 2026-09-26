@@ -1,0 +1,48 @@
+== warmup (profiler off) ==
+warmup completion tokens: 200
+== start profile ==
+
+== profiled request(s) (stream, 200 tok, concurrency 1) ==
+profiled req usage: {'prompt_tokens': 61, 'total_tokens': 261, 'completion_tokens': 200, 'completion_tokens_details': {'reasoning_tokens': 0}} content chunks (~steps): 100
+wall s: 6.64
+== stop profile ==
+
+Sat Sep 26 12:10:12 BST 2026
+== trace files: rank 0 (head) ==
+total 56056
+drwxr-xr-x 2 root root     4096 Sep 26 11:07 .
+drwxrwxrwt 1 root root     4096 Sep 26 11:08 ..
+-rw-r--r-- 1 root root 52754399 Sep 26 11:08 dp0_pp0_tp0_dcp0_ep0_rank0.1790420877089350712.pt.trace.json.gz
+-rw-r--r-- 1 root root    20653 Sep 26 11:10 profiler_out_0.txt
+-rw-r--r-- 1 root root  4611170 Sep 26 11:07 spark1_1.async_llm.1790420872167806309.pt.trace.json.gz
+== trace files: rank 1 (spark2) ==
+total 48040
+drwxr-xr-x 2 root root     4096 Sep 26 11:09 .
+drwxrwxrwt 1 root root     4096 Sep 26 11:08 ..
+-rw-r--r-- 1 root root 49158359 Sep 26 11:08 dp0_pp0_tp1_dcp0_ep1_rank1.1790420876730277928.pt.trace.json.gz
+-rw-r--r-- 1 root root    20653 Sep 26 11:09 profiler_out_0.txt
+== MemAvail before cp ==
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       109Gi       9.3Gi       258Mi       4.3Gi        11Gi
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       105Gi        11Gi       253Mi       5.6Gi        16Gi
+== docker cp BEFORE stop: rank 0 -> spark1:/home/sfxnz/projects/data/dsv41-traces/p3-A_p-c1-20260926-110737/rank0 ==
+total 56056
+drwxr-xr-x 2 sfxnz sfxnz     4096 Sep 26 12:07 .
+drwxr-xr-x 3 sfxnz sfxnz     4096 Sep 26 12:10 ..
+-rw-r--r-- 1 sfxnz sfxnz 52754399 Sep 26 12:08 dp0_pp0_tp0_dcp0_ep0_rank0.1790420877089350712.pt.trace.json.gz
+-rw-r--r-- 1 sfxnz sfxnz    20653 Sep 26 12:10 profiler_out_0.txt
+-rw-r--r-- 1 sfxnz sfxnz  4611170 Sep 26 12:07 spark1_1.async_llm.1790420872167806309.pt.trace.json.gz
+== docker cp BEFORE stop: rank 1 -> spark2:/home/sfxnz/projects/data/dsv41-traces/p3-A_p-c1-20260926-110737/rank1 ==
+total 48040
+drwxr-xr-x 2 sfxnz sfxnz     4096 Sep 26 12:09 .
+drwxrwxr-x 3 sfxnz sfxnz     4096 Sep 26 12:10 ..
+-rw-r--r-- 1 sfxnz sfxnz 49158359 Sep 26 12:08 dp0_pp0_tp1_dcp0_ep1_rank1.1790420876730277928.pt.trace.json.gz
+-rw-r--r-- 1 sfxnz sfxnz    20653 Sep 26 12:09 profiler_out_0.txt
+== MemAvail after cp ==
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       109Gi       9.3Gi       258Mi       4.4Gi        11Gi
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       105Gi        11Gi       253Mi       5.6Gi        16Gi
+Traces saved. Now ./stop.sh, then parse each rank on its own idle host.
+rc=0
