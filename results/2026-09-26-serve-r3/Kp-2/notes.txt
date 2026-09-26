@@ -1,0 +1,56 @@
+Kp-2 boot notes. ARMS-r3 section 8 (P5), boot K#4 of the ABAB K#3, KP#1, K#4, KP#2. Arm Kp = the promoted K bundle
+(the 10 K envs on the round-34 defaults), KP add-ons off, current pack 2.0bpw-mcg-lmhead-mxfp8, image review-e14.
+Same env, image, patch sha and pack as K-1/K-2/CUR-1/CUR-2/Kp-1.
+- Command: command.txt (nohup, background, output in boot.txt). HEAD 71dccac at boot. docker/patch sha256 identical to
+  Kp-1/KP-1 (61 files). First attempt counted: no fix, no retry, no lever dropped. run.sh started 18:55:53Z, vLLM
+  server started 19:05:43Z (590 s), /v1/models 19:05:58Z, run.sh exited after warmup 19:06:26Z (633 s). Model loading
+  433.74 s (weights 352.82 + 25.43, 75.58 GiB), init engine 61.30 s. Both ranks loaded
+  .../snapshots/2.0bpw-mcg-lmhead-mxfp8 (head boot.txt and model path; worker container args).
+- Preconditions (preconditions.txt, 18:52:11Z): requant DONE. No GPU container on either node (magical_blackwell is
+  Created, not running). pmon spark1 empty, spark2 Xorg/gnome-shell only. No microbench. MemAvailable 116/117 GiB.
+  Image ID 3a002b55c9bc on both nodes. Tree clean apart from this dir. unittest 798 OK (14 skipped) rc 0, render
+  --check rc 0 (tests-render.txt). gpu_free_wait GPUFREE at 18:55:42Z (gpufree-spark1.txt).
+- spark2 lock: held from 18:52:28Z (remote flock pid 396083, LOCK_HELD before run.sh). After stop the remote
+  flock/sleep pair outlived the killed local ssh; this session killed its own pair (396083/396084). LOCK_FREE 19:31:00Z.
+- Audit: boot.txt has "audit ok: every expected patch engaged on head, worker" (AUDIT=strict); a strict re-run on the
+  end-of-boot logs also passed (rc 0). engagement.txt: every section-3 line for K 1x per rank (COOP=2, mhc det target
+  81 fn / draft 6 fn, native stage, early hash, t2r dedup + census 9.50 reuses/compute, moe prep, candidate mask, wp
+  gemv, swa meta), dense GEMV armed 9 per rank (incl. engram_wkv), lm_head mxfp8 / prefetch v3 / gather v2 1x per rank,
+  woa fp8 43/43; KP add-on lines 0; 0 of 27 known disarm markers; envs equal on both ranks (only VLLM_HOST_IP differs);
+  KP add-on envs 0/unset on both ranks; running image 3a002b55c9bc on both ranks. disarm_scan rc 0.
+- gpu_guard rc=0 (0 FOREIGN). spark1 682 samples at 2 s (19:06:37Z-19:30:38Z), only VLLM::Worker_TP. spark2 133 at
+  10 s (VLLM::Worker_TP, Xorg, gnome-shell). The guards started right after run.sh exited, before the smokes. Not VOID.
+- Smokes: chat 323, vision Red, byte-identical to Kp-1. Correctness 8/8 rc 0 (equal to Kp-1 except the sampled
+  prose_sanity line). MemAvailable after smoke 22/24 GiB (floor 8).
+- L.A.I.L x10 (fresh, before any c=2): median 41.899 tok/s (36.739-44.991), 48.541 ms/step (48.254-55.522), acc
+  2.0728 (1.973-2.2121), finish length. Runs 2, 3 and 5 read 55.52/52.88/53.26 ms/step (36.74/41.74/38.61 tok/s);
+  the other 7 read 48.25-48.63. Guards clean. Kept as measured. The tok/s median is below the prior K range
+  (42.532-43.566) and so is the median-run acceptance (2.0728 vs 2.1048-2.1269); the ms/step median is inside it.
+- bench_decode x9: prose c=1 52.106 tok/s at 48.49 ms/step (median run acc 2.5125); prose c=2 agg 85.357 at 59.417;
+  structured c=1 84.326 at 46.97 (acc 3.9608); structured c=2 agg 138.998 at 56.087.
+- four_numbers: prose c=1 54.85 tok/s at 47.522 ms/step (median run acc 2.5844, range 2.3412-2.7534); prose_long c=1
+  43.695 tok/s at 48.924 ms/step (acc 2.117, range 1.9802-2.2697, n=5, finish length, post-EOS 0); prose_long c=2
+  agg 68.529 at 61.647 ms/step; pp_warm 8k/32k 774.5/768.7 (runs 788.1/774.5/765.4, 768.5/768.7/778.7); pp_novel
+  8k/32k 813.1/804.7 (runs 800.1/823.7/813.1, 804.7/793.5/806.9); L.A.I.L 3x after c=2 44.19 (44.19/44.47/43.50);
+  warm prefix 1.0 (TTFT cold/warm 2.797/0.302 s); ranks_match true; disarmed false. MemAvailable after micro
+  21.11/23.12 GiB.
+- e2e rc 0, 3/3 (useful_tok_s 6.73).
+- Quality quick: PASS (one run, rc 0, 321.1 s). nll 0.242387 (<=0.25316), dlp 0.01963 (<=0.06794), gen_nll_prefill
+  0.32727 (<=0.50932), golden 0.01792 and aa 0.02128 (both <=0.03206; 4/12 identical), tools json 22/22, exact_args
+  20/22 = 0.9091 (t01 get_weather and t09 calculate_loan_payment called with {}; passes the 0.9545 limit by the
+  gate's one-item slack, as on K-2/KC-2/CUR-2/Kp-1/KP-1 quick), no_call 8/8, needle 6/6, c2, vision Red.
+- Order: smokes, mem, correctness, L.A.I.L x10, bench_decode x9, four_numbers, e2e, quality quick, disarm_scan,
+  engagement + strict audit re-run, gpu_guard --check, mem-end, ./stop.sh (19:30:47Z). MemAvailable end (serve up)
+  21/23 GiB. Swap used spark1 3.3 -> 7.3 GiB, spark2 1.6 -> 4.8 GiB.
+- Single-boot context against the five prior K-config boots (K-1, K-2, CUR-1, CUR-2, Kp-1). Not a verdict; the P5
+  gate needs KP#2.
+  four prose c=1 ms/step K 47.156/48.245/47.753/47.715/48.083, Kp-2 47.522 (inside). KP-1 46.496.
+  prose_long c=1 ms/step K 49.01/48.702/49.101/48.675/48.744, Kp-2 48.924 (inside). KP-1 46.858.
+  L.A.I.L ms/step K 48.328/48.909/49.371/48.638/48.547, Kp-2 48.541 (inside). KP-1 46.772.
+  prose_long c=2 ms/step K 60.197-62.2, Kp-2 61.647 (inside). KP-1 59.393.
+  L.A.I.L tok/s K 43.566/42.532/42.928/43.123/43.493, Kp-2 41.899 (below; acceptance 2.0728 below K 2.1048-2.1269).
+  four prose c=1 tok/s K 53.34-54.52, Kp-2 54.85 (above). prose_long c=1 tok/s K 43.395-44.893, Kp-2 43.695 (inside).
+  prose_long c=2 agg K 66.093-70.089, Kp-2 68.529 (inside).
+  pp_warm_8k K 743.1-784.4, Kp-2 774.5 (runs 765.4-788.1; the lowest single run on the KP boots was below 690).
+  P5 ms/step pairs so far: K [Kp-1, Kp-2] four prose [48.083, 47.522], prose_long c=1 [48.744, 48.924], L.A.I.L
+  [48.547, 48.541]; KP [KP-1] 46.496 / 46.858 / 46.772. KP#2 decides.
