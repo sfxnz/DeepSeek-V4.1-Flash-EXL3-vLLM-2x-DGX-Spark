@@ -1,0 +1,286 @@
+{
+ "arm": "A-2",
+ "env": "AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e14 (arm A: round-34 defaults, all round-3 levers unset/0)",
+ "head_at_boot": "5a45ed13d57ba9758ce9190be87b9a8ab86c0022",
+ "snapshot": "2.0bpw-mcg-lmhead-mxfp8",
+ "attempts": {
+  "1": "HEAD 5a45ed1: audit ok on both ranks on the first attempt; no retry, no fix."
+ },
+ "lail_fresh_median": 34.208,
+ "lail_fresh_n": 10,
+ "lail_fresh_range": [
+  31.888,
+  37.635
+ ],
+ "lail_ms_step": 62.568,
+ "lail_ms_step_range": [
+  62.234,
+  63.707
+ ],
+ "lail_acc": 2.1563,
+ "lail_acc_range": [
+  1.988,
+  2.366
+ ],
+ "lail_ttft_median_s": 0.3437,
+ "lail_natural_finish": "length",
+ "lail_post_eos_fraction": 0.0,
+ "bench_decode_n9": {
+  "prose_c1": {
+   "tok_s": 39.29,
+   "agg_tok_s": 39.286,
+   "ms_step": 63.774,
+   "acc": 2.4815,
+   "acc_range": [
+    2.261,
+    2.597
+   ],
+   "ttft_p50_s": 0.2547,
+   "natural_finish": "stop",
+   "post_eos_fraction": 0.61
+  },
+  "prose_c2": {
+   "tok_s": 29.465,
+   "agg_tok_s": 57.947,
+   "ms_step": 86.959,
+   "acc": 2.5478,
+   "acc_range": [
+    2.404,
+    2.74
+   ],
+   "ttft_p50_s": 0.2735,
+   "natural_finish": "stop",
+   "post_eos_fraction": 0.61
+  },
+  "structured_c1": {
+   "tok_s": 62.758,
+   "agg_tok_s": 62.748,
+   "ms_step": 63.112,
+   "acc": 3.9608,
+   "acc_range": [
+    3.961,
+    3.961
+   ],
+   "ttft_p50_s": 0.1839,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  },
+  "structured_c2": {
+   "tok_s": 45.554,
+   "agg_tok_s": 89.732,
+   "ms_step": 86.96,
+   "acc": 3.9608,
+   "acc_range": [
+    3.961,
+    3.961
+   ],
+   "ttft_p50_s": 0.3094,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  }
+ },
+ "four_numbers": {
+  "prose_c1_median_tok_s": 39.24,
+  "prose_runs": [
+   40.29,
+   37.32,
+   37.12,
+   40.92,
+   38.86,
+   35.92,
+   39.72,
+   40.43,
+   39.24
+  ],
+  "prose_c1_ms_step": 63.083,
+  "prose_acc": 2.4568,
+  "prose_acc_range": [
+   2.2841,
+   2.5769
+  ],
+  "prose_ttft_p50_s": 0.2502,
+  "prose_post_eos_fraction": 0.6,
+  "prose_long_c1": {
+   "tok_s": 33.119,
+   "ms_step": 63.216,
+   "acc": 2.0729,
+   "acc_range": [
+    2.0306,
+    2.1505
+   ],
+   "n": 5,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  },
+  "prose_long_c2": {
+   "agg_tok_s": 47.625,
+   "per_stream_tok_s": 24.043,
+   "ms_step": 87.214,
+   "acc": 2.1058,
+   "n": 10,
+   "natural_finish": "length"
+  },
+  "pp_warm_8k": 756.6,
+  "pp_warm_8k_runs": [
+   728.0,
+   770.2,
+   756.6
+  ],
+  "pp_warm_32k": 763.8,
+  "pp_warm_32k_runs": [
+   763.8,
+   774.3,
+   759.6
+  ],
+  "pp_novel_8k": 818.9,
+  "pp_novel_8k_runs": [
+   812.2,
+   818.9,
+   839.6
+  ],
+  "pp_novel_32k": 817.4,
+  "pp_novel_32k_runs": [
+   803.6,
+   817.4,
+   819.4
+  ],
+  "lail_after_c2_3x_median": 33.38,
+  "lail_after_c2_runs": [
+   38.32,
+   32.19,
+   33.38
+  ],
+  "memavail_after_micro_gib": {
+   "spark1": 20.67,
+   "spark2": 22.54
+  },
+  "warm_prefix_hit_fraction": 1.0,
+  "warm_prefix_ttft_cold_warm_s": [
+   2.818,
+   0.304
+  ],
+  "serve_env_ranks_match": true,
+  "lever_disarmed": false
+ },
+ "correctness": "8/8",
+ "e2e": "rc=0, pass_rate 3/3 (useful_tok_s 5.38)",
+ "disarm_scan": "rc=0, no lines",
+ "audit": "strict ok on head and worker (boot.txt; re-run on saved logs rc=0, engagement.txt)",
+ "engagement": "default-on round-34 markers 1x per rank (lm_head mxfp8, engram prefetch v3, engram gather v2), woa fp8 einsum 43/43, drop page cache 2/2, breakable CUDA graph 1/1; every round-3 lever marker 0 on both ranks; round-3 envs 0/unset identically on both ranks; 0 LOG_DISARMED; running image 3a002b55c9bc on both",
+ "gpu_guard": "rc=0, 0 FOREIGN (spark1 761 samples @2s 08:19:21Z-08:46:09Z, spark2 149 samples @10s; only VLLM::Worker_TP / Xorg / gnome-shell)",
+ "spark2_lock": "held for this boot (08:08Z-08:46Z) by ssh spark2 flock ... sleep 7200; released after stop",
+ "quality_quick": {
+  "summary": {
+   "nll": 0.242723,
+   "decode_median_dlp": 0.01112,
+   "decode_gen_nll": 0.29075,
+   "tools_exact": 0.9545,
+   "tools_json": 1.0,
+   "tools_nocall": 1.0,
+   "needle": 6,
+   "selfcons_identical": 5,
+   "selfcons_aa_hazard": 0.01663,
+   "selfcons_golden_hazard": 0.01926,
+   "c2": true,
+   "vision": true
+  },
+  "limit_aa_and_golden_hazard": 0.03206,
+  "note": "single run; aa_hazard 0.01663, golden 0.01926; selfcons 5/12 identical; tools.exact_args 0.9545 = its limit (as A-1 rep2, K-1, KC-1)",
+  "pass": true
+ },
+ "memavail_gib": {
+  "before_boot": {
+   "spark1": "116Gi",
+   "spark2": "117Gi"
+  },
+  "after_smoke": {
+   "spark1": "23Gi",
+   "spark2": "25Gi"
+  },
+  "after_micro": {
+   "spark1": 20.67,
+   "spark2": 22.54
+  },
+  "end_serve_up": {
+   "spark1": "20Gi",
+   "spark2": "23Gi"
+  }
+ },
+ "load": {
+  "run_sh_start": "08:09:22Z",
+  "weights_s": "312.07 + 23.72",
+  "model_loading_s": 373.62,
+  "init_engine_s": 80.62,
+  "api_route_up": "08:18:37Z",
+  "wall_to_api_s": 555,
+  "run_sh_exit_after_warmup": "08:19:09Z",
+  "wall_incl_warmup_s": 587
+ },
+ "ms_step_table_A1_A2_K1_KC1": {
+  "lail_ms_step": {
+   "A1": 63.013,
+   "A2": 62.568,
+   "A_AA_spread": 0.445,
+   "A_median": 62.79,
+   "K1": 48.328,
+   "KC1": 56.205
+  },
+  "bench_prose_c1_ms_step": {
+   "A1": 63.995,
+   "A2": 63.774,
+   "A_AA_spread": 0.221,
+   "A_median": 63.885,
+   "K1": 48.244,
+   "KC1": 56.352
+  },
+  "four_prose_c1_ms_step": {
+   "A1": 63.866,
+   "A2": 63.083,
+   "A_AA_spread": 0.783,
+   "A_median": 63.474,
+   "K1": 47.156,
+   "KC1": 56.154
+  },
+  "prose_long_c1_ms_step": {
+   "A1": 63.47,
+   "A2": 63.216,
+   "A_AA_spread": 0.254,
+   "A_median": 63.343,
+   "K1": 49.01,
+   "KC1": 56.9
+  },
+  "prose_long_c2_ms_step": {
+   "A1": 88.735,
+   "A2": 87.214,
+   "A_AA_spread": 1.521,
+   "A_median": 87.975,
+   "K1": 60.724,
+   "KC1": 80.357
+  },
+  "structured_c1_ms_step": {
+   "A1": 64.275,
+   "A2": 63.112,
+   "A_AA_spread": 1.163,
+   "A_median": 63.694,
+   "K1": 46.877,
+   "KC1": 55.888
+  },
+  "bench_prose_c2_ms_step": {
+   "A1": 88.747,
+   "A2": 86.959,
+   "A_AA_spread": 1.788,
+   "A_median": 87.853,
+   "K1": 57.836,
+   "KC1": 80.013
+  },
+  "structured_c2_ms_step": {
+   "A1": 89.5,
+   "A2": 86.96,
+   "A_AA_spread": 2.54,
+   "A_median": 88.23,
+   "K1": 55.768,
+   "KC1": 79.231
+  }
+ },
+ "note": "A-2 completes the A pair. K#2 and KC#2 are still to run; the promote rule needs both boots of each arm (noise = larger boot-to-boot spread of the compared arms)."
+}
