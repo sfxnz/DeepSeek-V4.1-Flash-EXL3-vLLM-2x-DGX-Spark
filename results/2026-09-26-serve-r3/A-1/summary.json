@@ -1,0 +1,170 @@
+{
+ "arm": "A-1",
+ "env": "AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e14 (round-34 defaults, round-3 levers unset)",
+ "snapshot": "2.0bpw-mcg-lmhead-mxfp8",
+ "lail_fresh_median": 33.692,
+ "lail_fresh_n": 10,
+ "lail_fresh_range": [
+  31.046,
+  37.58
+ ],
+ "lail_ms_step": 63.013,
+ "lail_ms_step_range": [
+  62.67,
+  64.219
+ ],
+ "lail_acc": 2.1203,
+ "lail_acc_range": [
+  1.988,
+  2.408
+ ],
+ "lail_ttft_median_s": 0.3575,
+ "lail_natural_finish": "length",
+ "lail_post_eos_fraction": 0.0,
+ "bench_decode_n9": {
+  "prose_c1": {
+   "tok_s": 38.106,
+   "agg_tok_s": 38.101,
+   "ms_step": 63.995,
+   "acc": 2.5316,
+   "acc_range": [
+    2.287,
+    2.653
+   ],
+   "ttft_p50_s": 0.2557,
+   "natural_finish": "stop",
+   "post_eos_fraction": 0.57
+  },
+  "prose_c2": {
+   "tok_s": 28.359,
+   "agg_tok_s": 55.443,
+   "ms_step": 88.747,
+   "acc": 2.5125,
+   "acc_range": [
+    2.422,
+    2.728
+   ],
+   "ttft_p50_s": 0.2751,
+   "natural_finish": "stop",
+   "post_eos_fraction": 0.57
+  },
+  "structured_c1": {
+   "tok_s": 61.622,
+   "agg_tok_s": 61.611,
+   "ms_step": 64.275,
+   "acc": 3.9608,
+   "acc_range": [
+    3.961,
+    3.961
+   ],
+   "ttft_p50_s": 0.1843,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  },
+  "structured_c2": {
+   "tok_s": 44.254,
+   "agg_tok_s": 88.348,
+   "ms_step": 89.5,
+   "acc": 3.9608,
+   "acc_range": [
+    3.961,
+    3.961
+   ],
+   "ttft_p50_s": 0.2829,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  }
+ },
+ "four_numbers": {
+  "prose_c1_median_tok_s": 39.07,
+  "prose_runs": [
+   40.08,
+   35.68,
+   41.2,
+   39.02,
+   36.48,
+   38.57,
+   45.17,
+   39.07,
+   41.25
+  ],
+  "prose_c1_ms_step": 63.866,
+  "prose_acc": 2.5443,
+  "prose_long_c1": {
+   "tok_s": 32.884,
+   "ms_step": 63.47,
+   "acc": 2.1505,
+   "acc_range": [
+    2.0,
+    2.247
+   ],
+   "n": 5,
+   "natural_finish": "length"
+  },
+  "prose_long_c2": {
+   "agg_tok_s": 47.182,
+   "per_stream_tok_s": 24.07,
+   "ms_step": 88.735,
+   "acc": 2.139,
+   "n": 10,
+   "natural_finish": "length"
+  },
+  "pp_warm_8k": 758.1,
+  "pp_warm_32k": 765.9,
+  "pp_novel_8k": 819.5,
+  "pp_novel_32k": 808.5,
+  "lail_after_c2_3x_median": 32.85,
+  "lail_after_c2_runs": [
+   32.85,
+   30.78,
+   32.86
+  ],
+  "memavail_after_micro_gib": {
+   "spark1": 20.46,
+   "spark2": 22.82
+  },
+  "warm_prefix_hit_fraction": 1.0,
+  "warm_prefix_ttft_cold_warm_s": [
+   2.795,
+   0.307
+  ],
+  "serve_env_ranks_match": true,
+  "lever_disarmed": false
+ },
+ "correctness": "8/8",
+ "e2e": "rc=0, pass_rate 3/3",
+ "disarm_scan": "rc=0, no lines",
+ "gpu_guard": "rc=0, 0 FOREIGN (spark1 940 samples @2s, spark2 549 @10s, 05:27:18Z-06:00:23Z)",
+ "quality_quick": {
+  "rep1": {
+   "pass": false,
+   "summary": "{\"mode\": \"quick\", \"pass\": false, \"elapsed_s\": 352.7, \"nll\": 0.24453, \"decode_median_dlp\": 0.02183, \"decode_gen_nll\": 0.36981, \"tools_exact\": 1.0, \"tools_json\": 1.0, \"tools_nocall\": 1.0, \"needle\": 6, \"selfcons_identical\": 3, \"selfcons_aa_hazard\": 0.03516, \"selfcons_golden_hazard\": 0.02026, \"c2\": true, \"vision\": true}"
+  },
+  "rep2": {
+   "pass": true,
+   "summary": "{\"mode\": \"quick\", \"pass\": true, \"elapsed_s\": 341.7, \"nll\": 0.24388, \"decode_median_dlp\": 0.01373, \"decode_gen_nll\": 0.33774, \"tools_exact\": 0.9545, \"tools_json\": 1.0, \"tools_nocall\": 1.0, \"needle\": 6, \"selfcons_identical\": 4, \"selfcons_aa_hazard\": 0.01923, \"selfcons_golden_hazard\": 0.01463, \"c2\": true, \"vision\": true}"
+  },
+  "limit_aa_and_golden_hazard": 0.03206,
+  "note": "rep1 FAIL only on selfcons.aa_hazard 0.03516 (9/12 pairs diverged) > 0.03206; rep2 (extra replicate on the same boot, run after rep1, not a substitute) PASS aa 0.01923 (8/12). Prior A/A controls: baseline 0.01603 (8/12), s12 0.02273 (9/12)."
+ },
+ "memavail_gib": {
+  "at_boot_after_warmup": {
+   "spark1": "22Gi",
+   "spark2": "24Gi"
+  },
+  "after_smoke": {
+   "spark1": "22Gi",
+   "spark2": "24Gi"
+  }
+ },
+ "load": {
+  "run_sh_start": "05:17:19Z",
+  "model_loading_s": 348.24,
+  "weights_s": "294.45 + 24.36",
+  "init_engine_s": 81.18,
+  "api_server_start": "05:26:26Z",
+  "run_sh_exit_after_warmup": "05:27:05Z",
+  "wall_to_api_s": 547,
+  "wall_incl_warmup_s": 586
+ }
+}

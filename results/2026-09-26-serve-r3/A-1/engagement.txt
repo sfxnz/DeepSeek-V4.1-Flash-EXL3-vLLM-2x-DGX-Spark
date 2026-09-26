@@ -1,0 +1,44 @@
+# A-1 engagement check (docker logs of both ranks at 2026-09-26T05:55:09Z )
+# expected LOG_ENGAGED markers under the serve env (engagement_audit.expectations):
+lmhead_mxfp8.py              'dsv41: lm_head mxfp8 enabled'                                         head(spark1)=1  worker(spark2)=1
+engram_prefetch_v3.py        'dsv41: engram prefetch v3 armed'                                      head(spark1)=1  worker(spark2)=1
+engram_gather_v2.py          'dsv41: engram gather v2 self-check bit-exact'                         head(spark1)=1  worker(spark2)=1
+fix_o_proj_woa_fp8.py        '[woa-requant] fp8 einsum engaged'                                     head(spark1)=43  worker(spark2)=43
+drop_page_cache.py           'dropped page cache of'                                                head(spark1)=2  worker(spark2)=2
+vllm                         'Breakable CUDA graph enabled'                                         head(spark1)=1  worker(spark2)=1
+# LOG_DISARMED markers seen (any):
+disarm_hits_total 0
+# round-3 lever markers (must be absent: levers unset in arm A):
+engram_native_stage.py       'dsv41: engram native stage self-check bit-exact'                      head(spark1)=0  worker(spark2)=0
+engram_early_hash.py         'dsv41: engram early hash matches the stock hash'                      head(spark1)=0  worker(spark2)=0
+moe_prep_fused.py            'dsv41: moe prep fused self-check bit-exact'                           head(spark1)=0  worker(spark2)=0
+candidate_mask_bounded.py    'dsv41: candidate mask bounded self-check bit-exact'                   head(spark1)=0  worker(spark2)=0
+indexer_wp_gemv.py           'dsv41: indexer weights_proj GEMV self-check bit-exact'                head(spark1)=0  worker(spark2)=0
+swa_meta_fused.py            'dsv41: swa metadata fused self-check bit-exact'                       head(spark1)=0  worker(spark2)=0
+attn_t2r_dedup.py            'dsv41: attention t2r dedup reuse bit-exact'                           head(spark1)=0  worker(spark2)=0
+engram_wkv_tp.py             'dsv41: engram wkv column-parallel self-check bit-exact'               head(spark1)=0  worker(spark2)=0
+nccl_eager_twin.py           'dsv41: nccl eager twin engaged'                                       head(spark1)=0  worker(spark2)=0
+pm_qos.py                    'dsv41: pm qos engaged'                                                head(spark1)=0  worker(spark2)=0
+ar_l2_prefetch.py            'dsv41: ar l2 prefetch engaged'                                        head(spark1)=0  worker(spark2)=0
+widen_p2b_dataflow.py        'dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)'           head(spark1)=0  worker(spark2)=0
+dense_gemv.py                'dense GEMV armed'                                                     head(spark1)=0  worker(spark2)=0
+mhc_det.py                   'dsv41: mhc det engaged'                                               head(spark1)=0  worker(spark2)=0
+mhc_det_overlap.py           'dsv41: mhc det overlap engaged'                                       head(spark1)=0  worker(spark2)=0
+# audit (strict) re-run on these logs:
+problems 0
+# round-3 envs on both ranks:
+DSV41_P2B_COOP spark1= <unset> spark2= <unset>
+DSV41_DENSE_GEMV spark1= 0 spark2= 0
+DSV41_MHC_DET_SPLITS spark1= 0 spark2= 0
+DSV41_ENGRAM_NATIVE_STAGE spark1= 0 spark2= 0
+DSV41_ENGRAM_EARLY_HASH spark1= 0 spark2= 0
+DSV41_ATTN_T2R_DEDUP spark1= 0 spark2= 0
+DSV41_SWA_META_FUSED spark1= 0 spark2= 0
+DSV41_MOE_PREP_FUSED spark1= 0 spark2= 0
+DSV41_CANDIDATE_MASK_BOUNDED spark1= 0 spark2= 0
+DSV41_INDEXER_WP_GEMV spark1= 0 spark2= 0
+DSV41_MHC_DET_OVERLAP spark1= 0 spark2= 0
+DSV41_ENGRAM_WKV_TP spark1= 0 spark2= 0
+DSV41_PM_QOS_US spark1= <unset> spark2= <unset>
+DSV41_NCCL_EAGER_TWIN spark1= 0 spark2= 0
+DSV41_AR_L2_PREFETCH spark1= 0 spark2= 0

@@ -1,0 +1,16 @@
+A-1 boot notes (arm A = round-34 defaults on review-e14, round-3 levers unset)
+- Command: env AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e14 ./run.sh (nohup, background; boot.txt).
+  Strict audit: "audit ok: every expected patch engaged on head, worker" (engagement.txt re-checks both ranks).
+- Deviation from ARMS-r3 section 1: the spark2 GPU lock (ssh spark2 flock ... sleep 86400) was NOT held for
+  this boot. The session's permission layer refused to start the long-lived lock holder. The lock was FREE
+  (not held by anyone) at precheck. The spark2 gpu_guard sampled every 10 s during all measurement and saw
+  only VLLM::Worker_TP / Xorg / gnome-shell (0 FOREIGN samples).
+- Quality quick (section 10) rep1 FAILED on one component: selfcons.aa_hazard 0.03516 (9/12 pairs diverged)
+  > limit 0.03206 (2 x baseline A/A 0.01603). Every other component passed, incl. the golden hazard 0.02026.
+  This is the serve's own run-to-run (A/A) nondeterminism on the baseline arm. No lever is armed in A.
+  One extra replicate (rep2) ran on the same boot right after rep1, not in place of it: PASS, aa 0.01923 (8/12),
+  golden 0.01463, tools.exact_args 0.9545 (at its limit). Both are reported. Prior A/A readings: baseline
+  quick.json 0.01603 (8/12), s12 lmhead AB 0.02273 (9/12). With 12 pairs the A/A hazard is noisy. A 9/12
+  reading with early divergences crosses the 2x floor.
+- gpu_guard: rc=0 on both nodes (spark1 940 samples at 2 s, spark2 549 at 10 s, 05:27:18Z-06:00:23Z).
+- Serve stopped at the end of the stage (./stop.sh, both nodes).
