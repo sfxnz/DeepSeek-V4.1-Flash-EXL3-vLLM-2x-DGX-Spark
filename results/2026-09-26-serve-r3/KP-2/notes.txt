@@ -1,0 +1,76 @@
+KP-2 boot notes. ARMS-r3 section 8 (P5), boot KP#2 of the ABAB K#3 (Kp-1), KP#1 (KP-1), K#4 (Kp-2), KP#2 (KP-2). Arm KP =
+the promoted K bundle (10 envs) + the 5 add-ons (MHC_DET_OVERLAP, ENGRAM_WKV_TP, PM_QOS_US=20, NCCL_EAGER_TWIN, AR_L2_PREFETCH),
+current pack 2.0bpw-mcg-lmhead-mxfp8, image review-e14. Same env, image, patch sha and pack as KP-1 / KPsafe-1.
+- Command: command.txt (nohup, background, output in boot.txt). HEAD ba6b1e8 at boot. docker/patch sha256 identical to
+  Kp-2/KP-1/Kp-1 (61 files). First attempt counted: no fix, no retry, no lever dropped. run.sh started 19:38:17Z, vLLM
+  server started 19:47:24Z (547 s), run.sh exited after warmup between 19:47:59Z and 19:48:09Z (10 s poll; 582-592 s).
+  Model loading 369.76 s (weights 297.37 + 18.08, 75.43 GiB, as KPsafe-1/KP-1; the K boots read 75.58 GiB), init engine
+  59.52 s. Both ranks loaded .../snapshots/2.0bpw-mcg-lmhead-mxfp8.
+- Preconditions (preconditions.txt, 19:34:28Z): requant DONE. No GPU container on either node (magical_blackwell is
+  Created, not running). pmon spark1 empty, spark2 Xorg/gnome-shell only. No microbench. MemAvailable 116/117 GiB. Image
+  ID 3a002b55c9bc on both nodes. /dev/cpu_dma_latency present on both nodes. P1 twin gate_pass true. Tree clean apart
+  from this dir. unittest 798 OK (14 skipped) rc 0, render --check rc 0 (tests-render.txt). gpu_free_wait GPUFREE at
+  19:38:06Z (gpufree-spark1.txt).
+- spark2 lock: held from 19:34:13Z (remote flock 554905 / sleep 554906, LOCK_HELD before run.sh). After stop the remote
+  pair outlived the killed local ssh; this session killed its own pair. LOCK_FREE 20:12:33Z.
+- Audit: boot.txt "audit ok: every expected patch engaged on head, worker" (AUDIT=strict); strict re-run on the end-of-boot
+  logs rc 0. engagement.txt: every s3 K line 1x per rank; dense GEMV armed 8 per rank (engram_wkv config absent under
+  WKV_TP, s12, as on KPsafe-1/KP-1); add-ons: mhc det overlap engaged target + draft, engram wkv column-parallel armed 2 +
+  self-check bit-exact 2 per rank (self-check after armed on both ranks: no s8 hang), pm qos engaged (head 4 / worker 3
+  processes), nccl eager twin engaged + guard + routing (84 captured calls on the graph comm, eager on the twin), ar l2
+  prefetch engaged 37/40 layers at 9.02 MiB per window. NCCL "graphUsageMode ... capturing graphs" line 0 per rank (s3
+  expects 434): same as KPsafe-1/KP-1 under NCCL_DEBUG=WARN; still open. 0 of 27 known disarm markers. Add-on envs equal
+  on both ranks. Running image 3a002b55c9bc on both ranks. disarm_scan rc 0.
+- gpu_guard rc=0 (0 FOREIGN). spark1 680 samples at 2 s (19:48:15Z-20:12:09Z), only VLLM::Worker_TP. spark2 132 at 10 s
+  (19:48:27Z-20:12:05Z; VLLM::Worker_TP, Xorg, gnome-shell). Started right after run.sh exited, before the smokes. Not VOID.
+- Smokes: chat 323, vision Red, byte-identical to KP-1 and Kp-2. Correctness 8/8 rc 0 (outputs equal to KP-1 except the
+  sampled prose_sanity line). MemAvailable after smoke 23/25 GiB (floor 8).
+- L.A.I.L x10 (fresh, before any c=2): median 44.217 tok/s (36.915-46.707), 46.853 ms/step (46.678-58.77), acc 2.1179
+  (2.0-2.2314), finish length, TTFT median 0.3195 s. Run 5 read 58.77 ms/step (36.92 tok/s); runs 2/7/8 read
+  48.98/48.58/49.44; the other 6 read 46.68-46.86. Guards clean (spark1 SM 94%, only VLLM::Worker_TP, during run 5).
+  Kept as measured.
+- bench_decode x9: prose c=1 51.938 tok/s at 46.68 ms/step (median run acc 2.439, 2.287-2.884); prose c=2 agg 82.762 at
+  59.428; structured c=1 86.811 at 45.625 (acc 3.9608); structured c=2 agg 142.008 at 55.105.
+- four_numbers: prose c=1 55.24 tok/s at 46.46 ms/step (median run acc 2.5769, 2.5125-2.7297); runs
+  55.24/54.03/58.76/55.48/53.75/53.79/54.83/57.0/56.96. prose_long c=1 43.816 tok/s at 47.19 ms/step (acc 2.0938,
+  2.0515-2.1277, n=5, finish length, post-EOS 0); prose_long c=2 agg 69.826 at 59.885 ms/step (n=10, length). pp_warm
+  8k/32k 758.0/780.0 (runs 776.2/758.0/746.9, 784.1/780.0/764.9); pp_novel 8k/32k 826.9/815.9 (runs 830.1/826.9/820.7,
+  812.0/826.0/815.9). L.A.I.L 3x after c=2 46.57 (43.1/46.57/46.89). Warm prefix 1.0 (TTFT cold/warm 2.405/0.374 s).
+  ranks_match true, disarmed false, partial false. MemAvailable after micro 21.01/22.96 GiB.
+- e2e rc 0, 3/3 (useful_tok_s 6.05).
+- Quality quick: PASS (one run, rc 0, 315.0 s). nll 0.241712 (<=0.25316), dlp 0.0178 (<=0.06794), gen_nll_prefill 0.36381
+  (<=0.50932), golden 0.02236 and aa 0.02041 (both <=0.03206; 3/12 identical), tools json 22/22, exact_args 21/22 =
+  0.9545 (t09 calculate_loan_payment called with {}; exactly at the limit), no_call 8/8, needle 6/6, c2, vision Red.
+  Full not run (s8/s10: quick only on P5 KP boots).
+- Order: smokes, mem, correctness, L.A.I.L x10, bench_decode x9, four_numbers, e2e, quality quick, disarm_scan,
+  engagement + strict audit re-run, gpu_guard --check, mem-end, ./stop.sh (20:12:19Z). MemAvailable end (serve up)
+  20/23 GiB. Swap used spark1 3.3 -> 7.4 GiB, spark2 1.6 -> 4.8 GiB.
+
+P5 2x2 readings (K=[Kp-1,Kp-2], KP=[KP-1,KP-2]; noise = larger boot-to-boot spread). Not a written verdict.
+  cell                    K                  KP                 median delta  noise   every KP better than K median
+  four prose c=1 ms/step  48.083 / 47.522    46.496 / 46.46     -1.324        0.561   yes
+  prose_long c=1 ms/step  48.744 / 48.924    46.858 / 47.19     -1.81         0.332   yes
+  L.A.I.L ms/step         48.547 / 48.541    46.772 / 46.853    -1.731        0.081   yes
+  bench prose c=1 ms/step 48.214 / 48.49     46.28 / 46.68      -1.872        0.4     yes
+  structured c=1 ms/step  47.139 / 46.97     45.358 / 45.625    -1.563        0.267   yes
+  prose_long c=2 ms/step  61.316 / 61.647    59.393 / 59.885    -1.843        0.492   yes
+  bench prose c=2 ms/step 58.332 / 59.417    58.028 / 59.428    -0.147        1.4     no
+  structured c=2 ms/step  54.848 / 56.087    56.064 / 55.105    +0.117        1.239   no
+  prose_long c=1 tok/s    44.259 / 43.695    44.534 / 43.816    +0.198        0.718   no (KP-2 < K median 43.977)
+  L.A.I.L tok/s           43.493 / 41.899    44.094 / 44.217    +1.46         1.594   yes
+  four prose c=1 tok/s    54.52 / 54.85      54.28 / 55.24      +0.075        0.96    no
+  prose_long c=2 agg      68.323 / 68.529    69.64 / 69.826     +1.307        0.206   yes
+  structured c=2 agg      138.909 / 138.998  142.327 / 142.008  +3.214        0.319   yes
+  pp_warm 8k / 32k        752.0,774.5 / 765.4,768.7   723.2,758.0 / 764.7,780.0   -22.65 (34.8) / +5.3 (15.3)
+  pp_novel 8k / 32k       803.7,813.1 / 811.1,804.7   821.5,826.9 / 812.8,815.9   +15.8 (9.4) / +6.45 (6.4)
+  warm prefix             1.0 on all four
+  Acceptance (per-boot median_run_acceptance_len): four prose K 2.5897/2.5844 vs KP 2.525/2.5769 and prose_long c=1
+  K 2.1505/2.117 vs KP 2.0729/2.0938 do not overlap; L.A.I.L K 2.1269/2.0728 vs KP 2.1136/2.1179 overlaps. The add-ons
+  are bit-exact (greedy smokes byte-identical) and the benches sample at t>0.
+  Reading: ms/step is lower beyond the noise on every c=1 cell and on prose_long c=2, with every KP boot below the K
+  median. Because acceptance does not overlap on the two primary cells, ARMS.md step 6 as written falls back to
+  prose_long c=1 tok/s, which is +0.198 against a noise of 0.718 with KP-2 below the K median: the fallback is not met.
+  Non-inferiority holds on every row (no row worse beyond its spread; KP-2 pp_warm_8k runs 746.9-776.2, no run below 690
+  this time). Quality quick PASS on both KP boots; honest cells, disarm_scan and gpu_guard clean on all four counted
+  boots. Measured add-on effect -1.3..-1.9 ms/step at c=1 against the s11 projection -2.4..-7.1. The verdict (ms/step
+  primary vs tok/s fallback for bit-exact levers) belongs to the protocol owner.
