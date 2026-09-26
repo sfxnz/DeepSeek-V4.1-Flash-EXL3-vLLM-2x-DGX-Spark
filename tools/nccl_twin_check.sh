@@ -47,7 +47,7 @@ docker_args() {  # $1 = arm env (KEY=VAL lines), $2 = repo-like dir, $3 = out di
   local who=(--user "$(id -u):$(id -g)")
   # PM QoS arms: root in the container opens /dev/cpu_dma_latency (host-wide while the run lasts)
   if grep -q '^DSV41_PM_QOS_US=' <<<"$1"; then who=(--device /dev/cpu_dma_latency); fi
-  local a=(--rm --name "$4" --gpus all --network host --ipc host --device /dev/infiniband
+  local a=(--rm --init --name "$4" --gpus all --network host --ipc host --device /dev/infiniband
     --cap-add IPC_LOCK --ulimit memlock=-1:-1 --entrypoint python3
     "${who[@]}" -e HOME=/tmp
     -e PYTHONPATH=/usr/local/lib/python3.12/dist-packages
@@ -79,11 +79,11 @@ for ((rep = 1; rep <= REPS; rep++)); do
     smi0=$!
     ssh -o BatchMode=yes "$WORKER_HOST" "$(smi) > $RDIR/out/smi.csv 2>/dev/null & echo \$! > $RDIR/smi.pid" || true
     wcmd="docker run $(docker_args "$env_kv" "$RDIR" "$RDIR/out" nccl-twin-r1) $IMAGE -S /bench/tools/nccl_twin_check.py run --rank 1 --master $HEAD_IP:$port --arm $arm --steps $STEPS $ROWS $CHECK --json /out/rep$rep.rank1.json"
-    timeout "$TIMEOUT_S" ssh -o BatchMode=yes "$WORKER_HOST" "$wcmd" >"$d/rep$rep.rank1.txt" 2>&1 &
+    timeout -k 10 "$TIMEOUT_S" ssh -o BatchMode=yes "$WORKER_HOST" "$wcmd" >"$d/rep$rep.rank1.txt" 2>&1 &
     wpid=$!
     rc0=0
     # shellcheck disable=SC2046,SC2086
-    eval timeout "$TIMEOUT_S" docker run $(docker_args "$env_kv" "$ROOT" "$d" nccl-twin-r0) "$IMAGE" \
+    eval timeout -k 10 "$TIMEOUT_S" docker run $(docker_args "$env_kv" "$ROOT" "$d" nccl-twin-r0) "$IMAGE" \
       -S /bench/tools/nccl_twin_check.py run --rank 0 --master "$HEAD_IP:$port" --arm "$arm" \
       --steps "$STEPS" $ROWS $CHECK --json "/out/rep$rep.rank0.json" >"$d/rep$rep.rank0.txt" 2>&1 || rc0=$?
     rc1=0

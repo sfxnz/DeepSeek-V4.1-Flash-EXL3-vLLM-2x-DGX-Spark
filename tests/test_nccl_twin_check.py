@@ -105,6 +105,9 @@ class ArmTests(unittest.TestCase):
         self.assertIn('"$ROOT/docker/patch/pm_qos.py"', sh)
         # PM QoS arms need root and the device; every other arm runs as the caller
         self.assertIn("then who=(--device /dev/cpu_dma_latency); fi", sh)
+        # hard stop on a hang: SIGKILL 10 s after the timeout, tini forwards the TERM to python
+        self.assertEqual(sh.count('timeout -k 10 "$TIMEOUT_S"'), 2)
+        self.assertIn("local a=(--rm --init ", sh)
 
 
 class CompareTests(unittest.TestCase):
