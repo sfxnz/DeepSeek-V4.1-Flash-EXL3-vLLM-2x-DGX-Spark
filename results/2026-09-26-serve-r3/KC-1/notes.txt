@@ -1,0 +1,23 @@
+KC-1 boot notes (arm KC = K_ENV without DSV41_P2B_COOP, leave-one-out for COOP; round-34 defaults; image review-e14)
+- Command: see command.txt (nohup, background; boot.txt). HEAD 1e3a7c7 at boot, first attempt counted (no fix, no retry).
+- Preconditions (preconditions.txt, 07:17:31Z): requant DONE; no GPU container on either node; spark2 lock FREE;
+  pmon spark1 empty, spark2 Xorg/gnome-shell only; no microbench; MemAvailable 116/117 GiB; image ID 3a002b55c9bc
+  on both nodes; tree clean apart from this dir; unittest 798 OK (14 skipped) rc 0; render --check rc 0;
+  gpu_free_wait GPUFREE (24 x 5 s, gpufree-spark1.txt).
+- Audit: "audit ok: every expected patch engaged on head, worker" (boot.txt), strict re-run on the saved logs rc 0.
+  engagement.txt: dense GEMV (8 shapes + wo_a per rank), mhc det target 81 fn / draft 6 fn, native stage, early hash,
+  t2r dedup (census 9.50 reuses/compute), moe prep, candidate mask, wp gemv, swa meta, lm_head mxfp8 all 1x per rank;
+  the COOP line is absent on both ranks and DSV41_P2B_COOP is unset in both containers; KP add-ons absent;
+  0 LOG_DISARMED hits; KC envs equal on both ranks (docker inspect).
+- Deviation from ARMS-r3 section 1 (same as A-1 and K-1): the spark2 lock holder (ssh spark2 flock ... sleep 86400)
+  was not taken; the lock was FREE at precheck and the spark2 gpu_guard (10 s) saw only VLLM::Worker_TP / Xorg /
+  gnome-shell during all measurement.
+- Idle gap: run.sh finished warmup at 07:30:56Z; my poll loop's pgrep matched its own command line, so the smokes
+  started at 07:37:25Z (about 6.5 min idle; K-1 had about 5.5 min). No load ran in that gap.
+- gpu_guard rc=0 (0 FOREIGN; spark1 698 samples @2 s 07:37:25Z-08:02:00Z, spark2 136 @10 s). Not VOID.
+- Quality quick (section 10): PASS, single run. nll 0.245195, decode median dlp 0.01124, gen_nll_prefill 0.28112,
+  aa_hazard 0.01911, golden 0.01912 (limit 0.03206; 3/12 identical), tools json 22/22, exact_args 0.9545 (= its limit,
+  as in A-1 rep2 and K-1), no_call 8/8, needle 6/6, c2, vision.
+- Order followed: smokes, mem, correctness 8/8, L.A.I.L x10, bench_decode x9, four_numbers, e2e (rc 0, 3/3),
+  quality quick, disarm_scan (rc 0), gpu_guard --check (rc 0), ./stop.sh (08:02:47Z, both nodes).
+- One boot each of A, K and KC so far: the deltas in summary.json are single boots, not a promotion verdict.
