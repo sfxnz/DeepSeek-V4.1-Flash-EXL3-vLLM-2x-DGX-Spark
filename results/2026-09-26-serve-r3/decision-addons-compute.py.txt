@@ -1,0 +1,535 @@
+#!/usr/bin/env python3
+# ARMS-r3 section 8 (P5) KP add-on decision: ARMS.md step 6 applied to the counted ABAB
+# Kp-1 (K#3), KP-1 (KP#1), Kp-2 (K#4), KP-2 (KP#2). KPsafe-1 (the uncounted s8 safety boot) and the
+# earlier same-config K boots (K-1, K-2, CUR-1, CUR-2) are context only, never pooled into the gate.
+# Reads only raw per-boot evidence in this directory through the per-boot readers of
+# decision-bundle-compute.py.txt (lail10.txt, bench_decode.txt, four/four_numbers.json,
+# four/02-micro.log, quality_quick.json, gate files), plus four/serve_env_spark{1,2}.json,
+# four/serve_cmd.json, engagement.txt, patch.sha256, mem-at-boot.txt, smoke_*.txt, correctness.txt
+# and the quality selfcons token ids. The per-rank "Model loading took" lines come from the
+# gitignored ../../.run-state/audit-{head,worker}-*.log of each boot (mapped by time, BST = UTC+1)
+# and are quoted as read. Stdlib only, deterministic. Run from this directory:
+#   python3 decision-addons-compute.py.txt decision-addons.json
+import hashlib, importlib.util, itertools, json, math, os, re, statistics as st, subprocess, sys
+from importlib.machinery import SourceFileLoader
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+os.chdir(HERE)
+W = os.path.abspath(os.path.join(HERE, "..", ".."))
+_ld = SourceFileLoader("bundle_compute", "decision-bundle-compute.py.txt")
+_sp = importlib.util.spec_from_loader(_ld.name, _ld)
+BC = importlib.util.module_from_spec(_sp)
+_ld.exec_module(BC)
+r = BC.r
+
+K, KP = ["Kp-1", "Kp-2"], ["KP-1", "KP-2"]
+ORDER = ["Kp-1", "KP-1", "Kp-2", "KP-2"]
+SAFE = "KPsafe-1"
+KCFG = ["K-1", "K-2", "CUR-1", "CUR-2", "Kp-1", "Kp-2"]  # every boot of the promoted K config on the current pack
+BC.ARMS = {"K": K, "KP": KP}
+K_ENV = {"DSV41_P2B_COOP": "2", "DSV41_DENSE_GEMV": "1", "DSV41_MHC_DET_SPLITS": "16", "DSV41_ENGRAM_NATIVE_STAGE": "1",
+         "DSV41_ENGRAM_EARLY_HASH": "1", "DSV41_ATTN_T2R_DEDUP": "1", "DSV41_SWA_META_FUSED": "1",
+         "DSV41_MOE_PREP_FUSED": "1", "DSV41_CANDIDATE_MASK_BOUNDED": "1", "DSV41_INDEXER_WP_GEMV": "1"}
+ADDONS = {"DSV41_MHC_DET_OVERLAP": "1", "DSV41_ENGRAM_WKV_TP": "1", "DSV41_PM_QOS_US": "20",
+          "DSV41_NCCL_EAGER_TWIN": "1", "DSV41_AR_L2_PREFETCH": "1"}
+ADDON_LINES = {
+    "DSV41_MHC_DET_OVERLAP": ["dsv41: mhc det overlap engaged: target:", "dsv41: mhc det overlap engaged: draft:"],
+    "DSV41_ENGRAM_WKV_TP": ["dsv41: engram wkv column-parallel armed", "dsv41: engram wkv column-parallel self-check bit-exact"],
+    "DSV41_PM_QOS_US": ["dsv41: pm qos engaged"],
+    "DSV41_NCCL_EAGER_TWIN": ["dsv41: nccl eager twin engaged", "dsv41: nccl eager twin guard", "dsv41: nccl eager twin routing on tp:0"],
+    "DSV41_AR_L2_PREFETCH": ["dsv41: ar l2 prefetch engaged: 37/40 layers"],
+}
+AUDIT_TS = {"CUR-1": "131212", "CUR-2": "152713", "KPsafe-1": "175414", "Kp-1": "184001", "KP-1": "192340",
+            "Kp-2": "200558", "KP-2": "204737"}
+
+
+# ------------------------------------------------------------------ statistics (stdlib)
+def avg_ranks(vals):
+    s = sorted(vals)
+    rk, i = {}, 0
+    while i < len(s):
+        j = i
+        while j + 1 < len(s) and s[j + 1] == s[i]:
+            j += 1
+        rk[s[i]] = (i + 1 + j + 1) / 2
+        i = j + 1
+    return rk
+
+
+def mwu(x, y):
+    """Mann-Whitney U of y vs x, normal approximation with tie and continuity correction."""
+    n1, n2 = len(x), len(y)
+    rk = avg_ranks(x + y)
+    u2 = sum(rk[v] for v in y) - n2 * (n2 + 1) / 2
+    mu, N = n1 * n2 / 2, n1 + n2
+    tie = sum(t ** 3 - t for t in [sum(1 for v in x + y if v == u) for u in set(x + y)])
+    var = n1 * n2 / 12 * ((N + 1) - tie / (N * (N - 1)))
+    z = 0.0 if u2 == mu else (u2 - mu - math.copysign(0.5, u2 - mu)) / math.sqrt(var)
+    return dict(n_x=n1, n_y=n2, U_y=u2, z=r(z, 3), p_two_sided_normal=r(math.erfc(abs(z) / math.sqrt(2)), 5),
+                hodges_lehmann_y_minus_x=r(st.median([b - a for a in x for b in y]), 4))
+
+
+def exact_rank_sum_low(pop, sub):
+    """Exact one-sided p that `sub` (a set of labels in pop) has a rank sum this low or lower among all
+    same-size subsets of pop (average ranks for ties)."""
+    vals = list(pop.values())
+    rk = avg_ranks(vals)
+    rsum = sum(rk[pop[k]] for k in sub)
+    keys = list(pop)
+    combos = list(itertools.combinations(keys, len(sub)))
+    le = sum(1 for c in combos if sum(rk[pop[k]] for k in c) <= rsum + 1e-9)
+    return dict(n_pop=len(pop), n_sub=len(sub), rank_sum=rsum, p_one_sided_low=r(le / len(combos), 4),
+                subsets=len(combos))
+
+
+def first_div(a, b):
+    for i, (x, y) in enumerate(zip(a, b)):
+        if x != y:
+            return i
+    return None if len(a) == len(b) else min(len(a), len(b))
+
+
+def hazard(pairs):
+    ev, risk = 0, 0
+    for a, b in pairs:
+        d = first_div(a, b)
+        if d is None:
+            risk += len(a)
+        else:
+            ev += 1
+            risk += d + 1
+    return dict(hazard=r(ev / risk, 5) if risk else 0.0, diverged=ev, pairs=len(pairs))
+
+
+# ------------------------------------------------------------------ per-boot readers (in addition to BC.boot)
+def env_of(b, node):
+    return dict(x.split("=", 1) for x in json.load(open(f"{b}/four/serve_env_spark{node}.json")) if "=" in x)
+
+
+def engagement(b):
+    out = {}
+    for line in open(f"{b}/engagement.txt"):
+        m = re.match(r"^(.+?)\s+'([^']*)'\s+head\(spark1\)=(\d+)\s+worker\(spark2\)=(\d+)", line)
+        if m:
+            out[m.group(2)] = [int(m.group(3)), int(m.group(4))]
+    return out
+
+
+def mem_avail(path):
+    return [line.split()[6] for line in open(path) if line.startswith("Mem:")]
+
+
+def model_loading(b):
+    ts = AUDIT_TS.get(b)
+    out = {}
+    for role in ("head", "worker"):
+        p = os.path.join(W, ".run-state", f"audit-{role}-20260926-{ts}.log") if ts else None
+        if p and os.path.exists(p):
+            m = re.search(r"Model loading took ([\d.]+) GiB memory and ([\d.]+) seconds", open(p, errors="replace").read())
+            out[role] = dict(file=os.path.relpath(p, W), GiB=float(m.group(1)), s=r(float(m.group(2)), 2)) if m else None
+    return out
+
+
+def lail_acc_runs(b):
+    return [json.loads(m.group(1))["acceptance_len"]
+            for m in (re.match(r"run=\d+ (\{.*\})$", l.strip()) for l in open(f"{b}/lail10.txt")) if m]
+
+
+def bench_runs(b, phase, conc):
+    out = []
+    for l in open(f"{b}/bench_decode.txt"):
+        m = re.match(rf"phase={phase} c={conc} run=\d+ .* per_stream=\[([^\]]*)\] ttft=\[([^\]]*)\] acc=([\d.]+) ms_step=\[([^\]]*)\]", l)
+        if m:
+            out.append(dict(tok_s=[float(x) for x in m.group(1).split(",")], acc=float(m.group(3)),
+                            ms_step=[float(x) for x in m.group(4).split(",")]))
+    return out
+
+
+def correctness_outputs(b):
+    rows = {}
+    for l in open(f"{b}/correctness.txt"):
+        m = re.match(r"^(PASS|FAIL) (\S+) \([\d.]+s\) (.*)$", l.strip())
+        if m:
+            rows[m.group(2)] = (m.group(1), m.group(3))
+    return rows
+
+
+def selfcons_runs(b):
+    return json.load(open(f"{b}/quality_quick.json"))["components"]["selfcons"]["runs"]
+
+
+def main():
+    ALL = sorted(set(ORDER + [SAFE] + KCFG), key=lambda b: (b not in ORDER + [SAFE], b))
+    D = {b: BC.boot(b) for b in ALL}
+
+    # -------------------------------------------------------------- validity
+    val = {}
+    for b in ORDER + [SAFE]:
+        arm = "K" if b in K else "KP"
+        envs = {n: env_of(b, n) for n in (1, 2)}
+        k_ok = all(envs[n].get(k) == v for n in (1, 2) for k, v in K_ENV.items())
+        if arm == "KP":
+            add_state = {k: [envs[1].get(k), envs[2].get(k)] for k in ADDONS}
+            add_ok = all(envs[n].get(k) == v for n in (1, 2) for k, v in ADDONS.items())
+        else:
+            add_state = {k: [envs[1].get(k), envs[2].get(k)] for k in ADDONS}
+            add_ok = all(envs[n].get(k) in (None, "", "0") for n in (1, 2) for k in ADDONS)
+        eng = engagement(b)
+        add_eng = {k: {ln: eng.get(ln) for ln in lines} for k, lines in ADDON_LINES.items()}
+        eng_ok = all((c is not None and c[0] >= 1 and c[1] >= 1) if arm == "KP" else (c is None or c == [0, 0])
+                     for k in add_eng for c in add_eng[k].values())
+        snap = [a for a in json.load(open(f"{b}/four/serve_cmd.json")) if "/snapshots/" in a]
+        P = D[b]
+        val[b] = dict(
+            arm=arm + (" (uncounted safety boot)" if b == SAFE else ""),
+            commit=P["commit"][:12],
+            patch_sha256_list_digest=hashlib.sha256(open(f"{b}/patch.sha256", "rb").read()).hexdigest()[:16],
+            snapshot=[s.split("/snapshots/")[1] for s in snap],
+            k_envs_both_ranks_as_promoted=k_ok,
+            addon_envs_both_ranks=add_state, addon_envs_as_arm=add_ok,
+            addon_engagement_head_worker=add_eng, addon_engagement_as_arm=eng_ok,
+            dense_gemv_armed_head_worker=eng.get("dense GEMV armed"),
+            nccl_graphUsageMode_line_head_worker=eng.get("graphUsageMode is set to 0 but the user is capturing graphs"),
+            prose_long_c1=f"{P['prose_long_c1_finish']}, post-EOS {P['prose_long_c1_post_eos']}",
+            prose_long_c2=f"{P['prose_long_c2_finish']}, post-EOS {P['prose_long_c2_post_eos']}",
+            lail_finish=P["lail_finish"], serve_env_ranks_match=P["serve_env_ranks_match"],
+            lever_disarmed=P["lever_disarmed"], disarm_scan_rc=P["disarm_scan_rc"], gpu_guard_rc=P["gpu_guard_rc"],
+            contaminated=P["contaminated"], e2e_rc=P["e2e_rc"], correctness=P["correctness"],
+            memavail_at_boot_spark1_spark2=mem_avail(f"{b}/mem-at-boot.txt"),
+            memavail_after_smoke_spark1_spark2=P["memavail_after_smoke_gib"],
+            model_loading_per_rank=model_loading(b),
+        )
+    counted_valid = {b: (v["k_envs_both_ranks_as_promoted"] and v["addon_envs_as_arm"] and v["addon_engagement_as_arm"]
+                         and v["prose_long_c1"] == "length, post-EOS 0.0" and v["prose_long_c2"].startswith("length")
+                         and v["serve_env_ranks_match"] and not v["lever_disarmed"] and v["disarm_scan_rc"] == [0]
+                         and v["gpu_guard_rc"] == [0] and not v["contaminated"] and v["e2e_rc"] == [0]
+                         and v["correctness"] == "8/8" and v["snapshot"] == ["2.0bpw-mcg-lmhead-mxfp8"]
+                         and all(int(x.rstrip("Gi")) >= 12 for x in v["memavail_at_boot_spark1_spark2"])
+                         and all(int(x.rstrip("Gi")) >= 8 for x in v["memavail_after_smoke_spark1_spark2"]))
+                     for b, v in val.items()}
+    patch_same = len({val[b]["patch_sha256_list_digest"] for b in ORDER + [SAFE]}) == 1
+    code_diff = subprocess.run(["git", "-C", W, "diff", "--stat", D["Kp-1"]["commit"], D["KP-2"]["commit"], "--", ".", ":!results"],
+                               capture_output=True, text=True, check=True).stdout.strip()
+    smokes = {b: [hashlib.sha256(open(f"{b}/smoke_{s}.txt", "rb").read()).hexdigest()[:12] for s in ("chat", "vision")]
+              for b in ORDER + [SAFE]}
+    corr = {b: correctness_outputs(b) for b in ORDER + [SAFE]}
+    corr_diff = {b: sorted(k for k in corr["Kp-1"] if corr[b].get(k) != corr["Kp-1"][k]) for b in ORDER + [SAFE]}
+
+    # -------------------------------------------------------------- speed: ARMS.md step 6 on K vs KP
+    ms_keys = ["four_prose_c1_ms_step", "prose_long_c1_ms_step", "lail_ms_step", "bench_prose_c1_ms_step",
+               "structured_c1_ms_step", "prose_long_c2_ms_step", "bench_prose_c2_ms_step", "structured_c2_ms_step"]
+    tok_keys = ["prose_long_c1_tok_s", "lail_tok_s", "four_prose_c1_tok_s", "bench_prose_c1_tok_s", "structured_c1_tok_s",
+                "prose_long_c2_agg_tok_s", "bench_prose_c2_agg_tok_s", "structured_c2_agg_tok_s", "lail_after_c2_3x_tok_s"]
+    ni_keys = ["pp_warm_8k", "pp_warm_32k", "pp_novel_8k", "pp_novel_32k", "prose_long_c2_agg_tok_s",
+               "warm_prefix_hit_fraction"]
+    ms = {k: BC.cmp(D, "K", "KP", k, True) for k in ms_keys}
+    tok = {k: BC.cmp(D, "K", "KP", k, False) for k in tok_keys}
+    ni = {k: BC.noninf(D, "K", "KP", k) for k in ni_keys}
+    for k in ms:
+        ms[k]["delta_KP_minus_K"] = r(-ms[k]["improvement"])
+    acc = dict(
+        four_prose_c1=BC.acc_overlap(D, "K", "KP", "acc_four_prose_c1", "acc_four_prose_c1_runs"),
+        prose_long_c1=BC.acc_overlap(D, "K", "KP", "acc_prose_long_c1", "acc_prose_long_c1_runs"),
+        lail=BC.acc_overlap(D, "K", "KP", "acc_lail", "acc_lail_range"),
+    )
+    acc["lail"]["note"] = "run ranges from lail10.txt; per-boot value = median of 10 runs at t=0.2"
+    for key, runs_of in (("four_prose_c1", lambda b: D[b]["acc_four_prose_c1_runs"]),
+                         ("prose_long_c1", lambda b: D[b]["acc_prose_long_c1_runs"]),
+                         ("lail", lail_acc_runs)):
+        acc[key]["mwu_runs_KP_vs_K"] = mwu([v for b in K for v in runs_of(b)], [v for b in KP for v in runs_of(b)])
+        acc[key]["mwu_runs_KP3_vs_Kcfg6_context"] = mwu([v for b in KCFG for v in runs_of(b)],
+                                                        [v for b in KP + [SAFE] for v in runs_of(b)])
+    bpr = {b: bench_runs(b, "prose", 1) for b in ALL}
+    acc["bench_prose_c1"] = dict(
+        K_per_boot=[r(D[b]["acc_bench_prose_c1"], 4) for b in K], KP_per_boot=[r(D[b]["acc_bench_prose_c1"], 4) for b in KP],
+        mwu_runs_KP_vs_K=mwu([x["acc"] for b in K for x in bpr[b]], [x["acc"] for b in KP for x in bpr[b]]))
+    pa, pb = acc["bench_prose_c1"]["K_per_boot"], acc["bench_prose_c1"]["KP_per_boot"]
+    acc["bench_prose_c1"]["per_boot_interval_overlap"] = max(min(pa), min(pb)) <= min(max(pa), max(pb))
+
+    # structured c=1: acceptance identical on every run of every boot (exactly matched)
+    sr = {b: bench_runs(b, "structured", 1) for b in ALL}
+    s_acc = sorted({x["acc"] for b in ALL for x in sr[b]})
+    s_ms = {b: [x["ms_step"][0] for x in sr[b]] for b in ALL}
+    structured = dict(
+        acceptance_values_on_every_run_of_all_boots=s_acc,
+        ms_step_runs=s_ms,
+        K_runs_min_max=[min(v for b in K for v in s_ms[b]), max(v for b in K for v in s_ms[b])],
+        KP_runs_min_max=[min(v for b in KP for v in s_ms[b]), max(v for b in KP for v in s_ms[b])],
+        Kcfg6_runs_min=min(v for b in KCFG for v in s_ms[b]),
+        KP_runs_below_every_Kcfg6_run=f"{sum(1 for b in KP for v in s_ms[b] if v < min(w for c in KCFG for w in s_ms[c]))}/{sum(len(s_ms[b]) for b in KP)}",
+        mwu_runs_KP_vs_K=mwu([v for b in K for v in s_ms[b]], [v for b in KP for v in s_ms[b]]),
+        gate_ms_step=ms["structured_c1_ms_step"], gate_tok_s=tok["structured_c1_tok_s"],
+        note="bench_decode.py structured c=1, temperature 0, 9 runs per boot. Acceptance is the same value on all runs of both arms, so this cell is at exactly matched acceptance by observation. It is not a step-6 primary cell.")
+
+    # acceptance of every boot of the K config on this pack vs the KP boots (context, not the gate)
+    pop = {}
+    for key in ("acc_four_prose_c1", "acc_prose_long_c1", "acc_lail"):
+        vals = {b: D[b][key] for b in KCFG}
+        kp_vals = {b: D[b][key] for b in KP + [SAFE]}
+        pop[key] = dict(Kcfg6={b: r(v, 4) for b, v in vals.items()}, Kcfg6_range=[r(min(vals.values()), 4), r(max(vals.values()), 4)],
+                        KP={b: r(v, 4) for b, v in kp_vals.items()},
+                        KP_counted_inside_Kcfg6_range=[min(vals.values()) <= kp_vals[b] <= max(vals.values()) for b in KP],
+                        exact_rank_sum_KP2_among_8=exact_rank_sum_low({**vals, **{b: kp_vals[b] for b in KP}}, KP),
+                        exact_rank_sum_KP3_among_9=exact_rank_sum_low({**vals, **kp_vals}, KP + [SAFE]))
+
+    kr = [v for b in KCFG for v in D[b]["pp_runs"]["pp_warm_8k"]]
+    pr = {b: D[b]["pp_runs"]["pp_warm_8k"] for b in KP + [SAFE]}
+    ppw8 = dict(Kcfg6_runs_min_max=[min(kr), max(kr)], Kcfg6_n_runs=len(kr), KP_runs=pr,
+                KP_runs_below_Kcfg6_min=f"{sum(1 for v in pr.values() for x in v if x < min(kr))}/{sum(len(v) for v in pr.values())}",
+                mwu_runs_KP3_vs_Kcfg6=mwu(kr, [x for v in pr.values() for x in v]),
+                note="context for the pp_warm_8k non-inferiority row (four/02-micro.log, 3 runs per boot)")
+
+    # -------------------------------------------------------------- quality
+    qual = {b: D[b]["quality"]["quick"] for b in ORDER + [SAFE]}
+    sc = {b: selfcons_runs(b) for b in ALL}
+
+    def pool(pairs_boots):
+        pairs = []
+        for x, y in pairs_boots:
+            for rx in sc[x]:
+                for ry in sc[y]:
+                    pairs += list(zip(rx, ry))
+        return hazard(pairs)
+    greedy = dict(
+        note="quality_quick selfcons: 12 greedy prompts x 128 tokens, 2 runs per boot. Hazard = divergences per token at risk (first-divergence events / tokens up to and including the first divergence), pooled over every run pair of the named boots. If the add-ons changed greedy numerics, KP-vs-K would diverge more than K-vs-K across boots.",
+        within_boot_aa={b: hazard(list(zip(sc[b][0], sc[b][1]))) for b in ORDER + [SAFE]},
+        K_x_K_cross_boot_Kcfg6=pool(list(itertools.combinations(KCFG, 2))),
+        KP_x_K_cross_arm_KP3_x_Kcfg6=pool([(a, c) for a in KP + [SAFE] for c in KCFG]),
+        KP_x_KP_cross_boot_KP3=pool(list(itertools.combinations(KP + [SAFE], 2))),
+        counted_only=dict(K_x_K=pool([("Kp-1", "Kp-2")]), KP_x_KP=pool([("KP-1", "KP-2")]),
+                          KP_x_K=pool([(a, c) for a in KP for c in K])),
+    )
+
+    # -------------------------------------------------------------- the step-6 rule as written
+    prim = {"four_prose_c1_ms_step": "four_prose_c1", "prose_long_c1_ms_step": "prose_long_c1"}
+    matched = {k: acc[a]["per_boot_interval_overlap"] for k, a in prim.items()}
+    ms_gate = {k: ms[k]["gate_pass"] for k in prim}
+    fallback = {"prose_long_c1_tok_s (ARMS.md step 6)": tok["prose_long_c1_tok_s"]["gate_pass"],
+                "lail_tok_s (ARMS-r3 s5, same gates in s8)": tok["lail_tok_s"]["gate_pass"]}
+    speed_gate = all(ms_gate.values()) if all(matched.values()) else all(fallback.values())
+    ni_ok = {k: v["ok_vs_larger_spread"] for k, v in ni.items()}
+    honest_ok = all(counted_valid[b] for b in ORDER)
+    q_ok = all(qual[b]["passed"] for b in KP)
+    promote_set = speed_gate and all(ni_ok.values()) and honest_ok and q_ok and patch_same and not code_diff
+
+    return dict(D=D, val=val, ppw8=ppw8, counted_valid=counted_valid, patch_same=patch_same, code_diff=code_diff, smokes=smokes,
+                corr_diff=corr_diff, ms=ms, tok=tok, ni=ni, acc=acc, structured=structured, pop=pop, qual=qual,
+                greedy=greedy, matched=matched, ms_gate=ms_gate, fallback=fallback, speed_gate=speed_gate,
+                ni_ok=ni_ok, honest_ok=honest_ok, q_ok=q_ok, promote_set=promote_set)
+
+
+def compose(c):
+    ms, tok, ni, acc, val, D = c["ms"], c["tok"], c["ni"], c["acc"], c["val"], c["D"]
+
+    def pair(k, grp):
+        v = (ms if grp == "ms" else tok)[k]
+        return f"K {v['base']} (median {v['base_median']}), KP {v['cand']} (median {v['cand_median']})"
+
+    c1 = ["four_prose_c1_ms_step", "prose_long_c1_ms_step", "lail_ms_step", "bench_prose_c1_ms_step", "structured_c1_ms_step"]
+    proj = dict(source="ARMS-r3 s11: KP add-ons -2.4..-7.1 ms/step at c=1 (MHC_OVERLAP -0.6..-0.75, WKV_TP -0.55..-0.59 with DENSE_GEMV on, PM_QOS -0.7..-2.0, EAGER_TWIN -0.5..-3.1, L2_PREFETCH -0.07..-0.63); microbench, first order, serve-untested",
+                projected_c1=[-7.1, -2.4],
+                measured_c1_delta_KP_minus_K={k: ms[k]["delta_KP_minus_K"] for k in c1},
+                measured_c2_delta_KP_minus_K={k: ms[k]["delta_KP_minus_K"] for k in ("prose_long_c2_ms_step", "bench_prose_c2_ms_step", "structured_c2_ms_step")},
+                reading="Every c=1 cell sits above the projected range (a smaller saving than the low end, -2.4). The c=2 cells range from a saving (prose_long c=2) to no change (bench prose / structured c=2, inside their noise).")
+    ml = {b: val[b]["model_loading_per_rank"] for b in val}
+
+    addon = {}
+    for env, why in [
+        ("DSV41_MHC_DET_OVERLAP", dict(
+            mechanism_evidence="Engaged on target and draft on both ranks, with the load-time self-check 'split path bitwise equal to stock (fork and in place, T 1/4/16)'. The s8 mechanism check was not run: 86 mhc_det_gemm_t8 + 86 mhc_det_norm_coef on a second stream inside each AllReduce, with the ncclDevKernel_AllReduce median not rising by more than ~7 us. It needs a KP_p profile boot.",
+            projection_c1="-0.6..-0.75")),
+        ("DSV41_ENGRAM_WKV_TP", dict(
+            mechanism_evidence="Armed and self-check bit-exact for layers 1 and 14 on both ranks (M 1/4/8/64). The self-check lines follow the armed lines, so there was no s8 hang on any of the 3 KP boots. Memory side confirmed: 'Model loading took' reads 75.43 GiB per rank on all 3 KP boots, against 75.58 GiB on both P5 K boots (and on CUR-1/CUR-2, the same config earlier in the day). That is -0.15 GiB per rank, against s8's expected ~0.16. The s12 interaction also shows: dense GEMV armed 8 per rank on KP against 9 on K, because the engram_wkv (6144, 25600) dense-gemv config has no (6144, 12800) twin, so that GEMM stays on b12x. Timing side (engram_wkv 2 per step at ~375-445 us against 758, plus 2 all-gathers) was not measured; it needs KP_p.",
+            projection_c1="-0.55..-0.59 with DENSE_GEMV on")),
+        ("DSV41_PM_QOS_US", dict(
+            mechanism_evidence="'pm qos engaged: /dev/cpu_dma_latency <= 20 us' in every serve process (4 head, 3 worker) on all 3 KP boots, 0 on K. The s8 mechanism check (draft AR0 idle-before 235/427 us -> tens of us; SM clock and power against K) was not run; it needs KP_p.",
+            projection_c1="-0.7..-2.0")),
+        ("DSV41_NCCL_EAGER_TWIN", dict(
+            mechanism_evidence="Engaged on tp:0 with the guard on ep:0 and one routing line per rank ('84 captured calls on the graph comm, eager calls on the twin (189 so far)') on all 3 KP boots. The P1 device check passed (0 bad steps, 0 host mismatches, NCCL 2.30.7 on both ranks). OPEN since KPsafe-1: ARMS-r3 s3 expects NCCL's 'graphUsageMode is set to 0 but the user is capturing graphs' 434 times per rank, and engagement.txt counts 0 per rank on every KP boot under NCCL_DEBUG=WARN. The P1 runs also show 0 lines. The logs cannot show whether mixing is off on the graph comm. The s8 KP_p check (gap before in-graph ARs 5.7 -> ~3 us, AR median 22.8 -> ~20-21 us, cudaGraphLaunch host time) was not run.",
+            projection_c1="-0.5..-3.1")),
+        ("DSV41_AR_L2_PREFETCH", dict(
+            mechanism_evidence="'ar l2 prefetch engaged: 37/40 layers, 9.02 MiB per MoE all-reduce window' on both ranks on all 3 KP boots. The s8 mechanism check (qkv_a 47.6 -> ~16-19 us, MoE-AR-start -> qkv_a-end span shorter than K's by more than the spread, the AR not slowed by as much as qkv_a saves, else retry with DSV41_AR_L2_PREFETCH_MIB=5.5) was not run; it needs KP_p.",
+            projection_c1="-0.07..-0.63")),
+    ]:
+        addon[f"{env}={ADDONS[env]}"] = dict(
+            engaged_both_ranks_on_every_KP_boot=all(val[b]["addon_engagement_as_arm"] for b in KP + [SAFE]),
+            absent_on_both_K_boots=all(val[b]["addon_engagement_as_arm"] for b in K),
+            engagement_counts_head_worker={b: val[b]["addon_engagement_head_worker"][env] for b in ORDER + [SAFE]},
+            serve_attribution="none. The s8 KP_p profile boot against K_p was not run, so this add-on's share of the measured KP-vs-K ms/step delta is unknown.",
+            **why,
+            verdict="NOT PROMOTED. KP did not pass the P5 gate as a set (step 6 as written, see decision), and no evidence isolates this add-on, so it cannot be promoted alone. It is not shown harmful: it engaged cleanly, the set passed quality quick and non-inferiority, and the set lowered ms/step. It stays env-gated and off by default.",
+        )
+
+    def pct(delta, base):
+        return r(100.0 * delta / base, 2)
+    pl_ms, fp_ms, st_ms = ms["prose_long_c1_ms_step"], ms["four_prose_c1_ms_step"], ms["structured_c1_ms_step"]
+    pl_tok, fp_tok, st_tok = tok["prose_long_c1_tok_s"], tok["four_prose_c1_tok_s"], tok["structured_c1_tok_s"]
+    pl_acc_k, pl_acc_kp = st.median(acc["prose_long_c1"]["base_per_boot"]), st.median(acc["prose_long_c1"]["cand_per_boot"])
+    pop_pl, pop_fp = c["pop"]["acc_prose_long_c1"], c["pop"]["acc_four_prose_c1"]
+    g = c["greedy"]
+    sx = c["structured"]
+    why = [
+        ("The fallback exists for arms that trade acceptance for step time, where lower ms/step does not mean faster output. "
+         "On the two primary cells that is the pattern measured here. "
+         f"prose_long c=1: ms/step {pl_ms['delta_KP_minus_K']} ({pct(pl_ms['delta_KP_minus_K'], pl_ms['base_median'])}%), "
+         f"per-boot acceptance {r(pl_acc_kp - pl_acc_k, 4)} ({pct(pl_acc_kp - pl_acc_k, pl_acc_k)}%; K median {r(pl_acc_k, 4)}, KP median {r(pl_acc_kp, 4)}), "
+         f"tok/s {pl_tok['improvement']:+} ({pl_tok['improvement_pct']:+}%). "
+         f"Four prose c=1: ms/step {fp_ms['delta_KP_minus_K']} ({pct(fp_ms['delta_KP_minus_K'], fp_ms['base_median'])}%), tok/s {fp_tok['improvement']:+} ({fp_tok['improvement_pct']:+}%)."),
+        ("The evidence on whether the acceptance gap is noise or a drafting change is mixed, and it is not the rule's test. "
+         f"(1) Per run, the gap is not significant. Mann-Whitney on the counted boots: four prose p {acc['four_prose_c1']['mwu_runs_KP_vs_K']['p_two_sided_normal']}, "
+         f"prose_long c=1 p {acc['prose_long_c1']['mwu_runs_KP_vs_K']['p_two_sided_normal']}. All three KP boots against all six boots of the K config on this pack: "
+         f"p {acc['four_prose_c1']['mwu_runs_KP3_vs_Kcfg6_context']['p_two_sided_normal']} and {acc['prose_long_c1']['mwu_runs_KP3_vs_Kcfg6_context']['p_two_sided_normal']}. "
+         f"(2) Per boot, against those six K-config boots, prose_long c=1 KP-1 and KP-2 are the two lowest of 8 "
+         f"(exact one-sided rank-sum p {pop_pl['exact_rank_sum_KP2_among_8']['p_one_sided_low']}; with KPsafe-1, 3 of 9, p {pop_pl['exact_rank_sum_KP3_among_9']['p_one_sided_low']}). "
+         f"Four prose gives p {pop_fp['exact_rank_sum_KP2_among_8']['p_one_sided_low']}. No correction for testing three cells is applied. "
+         f"(3) Greedy KP-vs-K divergence hazard is {g['KP_x_K_cross_arm_KP3_x_Kcfg6']['hazard']}, against K-vs-K {g['K_x_K_cross_boot_Kcfg6']['hazard']} and KP-vs-KP {g['KP_x_KP_cross_boot_KP3']['hazard']} across boots. "
+         f"(4) structured c=1 is at exactly matched acceptance ({sx['acceptance_values_on_every_run_of_all_boots']} on every run of every boot). There ms/step moves {st_ms['delta_KP_minus_K']} (noise {st_ms['noise']}; "
+         f"{sx['KP_runs_below_every_Kcfg6_run']} KP runs below every K-config run) and tok/s moves {st_tok['improvement']:+} (noise {st_tok['noise']}), both beyond the noise. "
+         "(1), (3) and (4) point to noise, and (2) is borderline on prose_long. None of them is the step-6 test. Choosing a different test after seeing the result is what the fixed rule is there to prevent. "
+         "Changing the rule is for the protocol owner, not for this decision."),
+        ("Correction to the KP-2 stage note: the four prose and prose_long cells are not sampled. bench_decode.py sends temperature 0; only L.A.I.L runs at t=0.2. "
+         "Their run-to-run acceptance spread comes from the serve's own nondeterminism at temperature 0: the within-boot greedy A/A hazard is non-zero on every boot of both arms."),
+    ]
+    w8, pw = ni["pp_warm_8k"], c["ppw8"]
+    bc2 = tok["bench_prose_c2_agg_tok_s"]
+    observations = [
+        (f"pp_warm_8k passes non-inferiority against the larger spread (delta {w8['delta']}, noise {w8['noise']}). It fails the reading against K's own spread "
+         f"({w8['base_spread']}) by {r(-w8['delta'] - w8['base_spread'])}. KP's spread comes from KP-1's low median. Per run, {pw['KP_runs_below_Kcfg6_min']} KP-arm runs "
+         f"(KP-1, KP-2, KPsafe-1) fall below the lowest of the {pw['Kcfg6_n_runs']} K-config runs ({pw['Kcfg6_runs_min_max'][0]}): KP-1 {pw['KP_runs']['KP-1']}, KPsafe-1 {pw['KP_runs']['KPsafe-1']}. "
+         f"KP-2 {pw['KP_runs']['KP-2']} has none. Mann-Whitney p {pw['mwu_runs_KP3_vs_Kcfg6']['p_two_sided_normal']}. Recorded, not a gate failure; a KP_p boot or the s8 split would show whether an add-on touches warm-prefix prefill."),
+        (f"bench prose c=2 aggregate tok/s: K {bc2['base']}, KP {bc2['cand']}, delta {bc2['improvement']} against noise {bc2['noise']}, so inside the noise. Both KP boots are below the K median. "
+         f"bench prose c=2 ms/step is {ms['bench_prose_c2_ms_step']['delta_KP_minus_K']} (noise {ms['bench_prose_c2_ms_step']['noise']}) and structured c=2 ms/step is {ms['structured_c2_ms_step']['delta_KP_minus_K']} (noise {ms['structured_c2_ms_step']['noise']}). "
+         f"Only prose_long c=2 ms/step ({ms['prose_long_c2_ms_step']['delta_KP_minus_K']}, noise {ms['prose_long_c2_ms_step']['noise']}) shows the c=1 pattern at c=2. structured c=2 aggregate tok/s +{tok['structured_c2_agg_tok_s']['improvement']} (noise {tok['structured_c2_agg_tok_s']['noise']}) and prose_long c=2 aggregate +{tok['prose_long_c2_agg_tok_s']['improvement']} (noise {tok['prose_long_c2_agg_tok_s']['noise']}) pass the noise rule."),
+        (f"L.A.I.L runs at t=0.2 and its per-boot acceptance overlaps (K {acc['lail']['base_per_boot']}, KP {acc['lail']['cand_per_boot']}). Its ms/step moves {ms['lail_ms_step']['delta_KP_minus_K']} against noise {ms['lail_ms_step']['noise']}, "
+         f"but L.A.I.L is not a step-6 primary cell. Its tok/s gate misses: +{tok['lail_tok_s']['improvement']} against noise {tok['lail_tok_s']['noise']}, a noise set by Kp-2's three slow runs (per-boot {tok['lail_tok_s']['base']})."),
+    ]
+    mlk = {b: val[b]["model_loading_per_rank"] for b in val}
+    load_note = ("Model loading per rank [head, worker], quoted from the gitignored .run-state audit logs. "
+                 + "; ".join(f"{b} ({val[b]['arm'].split()[0]}): {mlk[b]['head']['GiB']}/{mlk[b]['worker']['GiB']} GiB, "
+                             f"{mlk[b]['head']['s']}/{mlk[b]['worker']['s']} s" for b in ORDER + [SAFE])
+                 + ". KP loads the same time on both ranks. That is consistent with WKV_TP's post-load collective self-check making the ranks wait for each other, which is not verified. "
+                 "Why the head loads ~60 s faster under KP is not established. run.sh start to vLLM start, from the notes.txt of each boot: KPsafe-1 526 s, KP-1 539 s, KP-2 547 s; Kp-1 584 s, Kp-2 590 s. Not a gate metric.")
+
+    out = {
+        "what": "ARMS-r3 section 8 (P5) KP add-on decision: ARMS.md step 6 applied to the counted ABAB Kp-1 (K#3), KP-1 (KP#1), Kp-2 (K#4), KP-2 (KP#2) in results/2026-09-26-serve-r3/. KPsafe-1 (the uncounted s8 safety boot) and the earlier boots of the same K config (K-1, K-2, CUR-1, CUR-2) appear only as labelled context. Computed by decision-addons-compute.py.txt from the raw per-boot files through the per-boot readers of decision-bundle-compute.py.txt; stdlib only.",
+        "date": "2026-09-26",
+        "inputs": {
+            "image": "dsv41-flash-exl3-sm121:review-e14 = sha256:3a002b55c9bc... on both ranks, every boot",
+            "snapshot": "2.0bpw-mcg-lmhead-mxfp8 (serve pin) on every boot (four/serve_cmd.json)",
+            "arms": {"K": "AUDIT=strict + round-34 defaults + the 10 promoted K envs (DSV41_P2B_COOP=2 ... DSV41_INDEXER_WP_GEMV=1); add-ons MHC_DET_OVERLAP/ENGRAM_WKV_TP/NCCL_EAGER_TWIN/AR_L2_PREFETCH=0, PM_QOS_US unset",
+                     "KP": "K + DSV41_MHC_DET_OVERLAP=1 DSV41_ENGRAM_WKV_TP=1 DSV41_PM_QOS_US=20 DSV41_NCCL_EAGER_TWIN=1 DSV41_AR_L2_PREFETCH=1 (DSV41_AR_L2_PREFETCH_MIB unset, default)"},
+            "order": "KPsafe-1 (uncounted), then Kp-1, KP-1, Kp-2, KP-2 (s8 order K#3, KP#1, K#4, KP#2). Each counted boot is its first attempt, with no fix, no retry and no add-on dropped.",
+            "commits_at_boot": {b: val[b]["commit"] for b in ORDER + [SAFE]},
+            "code_between_counted_boots": f"git diff --stat {D['Kp-1']['commit'][:12]}..{D['KP-2']['commit'][:12]} outside results/: " + (c["code_diff"] or "empty"),
+            "docker_patch": f"sha256 list digest {val['Kp-1']['patch_sha256_list_digest']} on all five P5 boots: {c['patch_same']}",
+            "prerequisite": "P1 NCCL twin device check gate_pass true (p0-p1/nccl-twin)",
+        },
+        "rule": {
+            "sources": ["ARMS-r3 section 8 (P5): 'K#3, KP#1, K#4, KP#2 (K = the promoted bundle), same gates as P2. Quality quick on both KP boots.' 'If KP fails the gate, split it: K+{PM_QOS, WKV_TP} against K first ..., then the rest one at a time.'",
+                        "ARMS-r3 section 5 (the P2 gates) and section 10 (quality)",
+                        "ARMS.md step 6"],
+            "primary_metric": "prose_median_ms_per_step (four_numbers prose cell, 9 runs) and prose_long c=1 median_ms_per_step (5 runs), per boot; arm value = median of its 2 boots. Both cells are bench_decode.py at temperature 0.",
+            "matched_acceptance": "ARMS.md: 'the A and B per-boot median_run_acceptance_len must overlap. If they do not, the arm changed drafting; gate on prose_long c=1 tok/s instead with the same noise rule.' ARMS-r3 s5 adds L.A.I.L tok/s to that fallback.",
+            "noise": "the larger boot-to-boot spread (max-min of the per-boot values) of the two arms; pass = median improvement > noise AND every KP boot beats the K median",
+            "also_required": ["non-inferiority: pp_warm/pp_novel 8k/32k, prose_long c=2 aggregate, warm-prefix not worse than K by more than the larger spread (the P2 decision's reading; the K-spread-only reading is also recorded)",
+                              "honest cells, disarm_scan and gpu_guard clean, e2e rc 0, boot floors, on every counted boot",
+                              "quality quick passes on both KP boots"],
+        },
+        "validity": {
+            "all_four_counted_boots_valid": all(c["counted_valid"][b] for b in ORDER),
+            "per_boot_valid": c["counted_valid"],
+            "per_boot": val,
+            "greedy_smoke_sha256_chat_vision": c["smokes"],
+            "correctness_outputs_differing_from_Kp1": c["corr_diff"],
+            "notes": [
+                "No boot is VOID: gpu_guard --check rc 0 (0 FOREIGN) and no CONTAMINATED marker on all five P5 boots.",
+                "The spark2 GPU lock holder was refused by the permission layer on Kp-1 and KP-1 (the lock was free at precheck and after stop, and the spark2 guard was clean). It was held on KPsafe-1, Kp-2 and KP-2.",
+                "Slow L.A.I.L runs inside clean boots were kept as measured: Kp-1 run 5 (53.73 ms/step), KP-1 run 10 (50.99), Kp-2 runs 2/3/5 (55.52/52.88/53.26), KP-2 run 5 (58.77). The per-boot medians are the gate values.",
+                "Greedy smokes (smoke_chat '323', smoke_vision 'Red') are byte-identical on all five boots. The only correctness output that differs from Kp-1 is prose_sanity, which is sampled and also differs between Kp-1 and Kp-2.",
+                load_note,
+            ],
+        },
+        "speed": {
+            "ms_step": ms, "tok_s": tok, "non_inferiority": ni, "acceptance": acc,
+            "structured_c1_exactly_matched_acceptance": c["structured"],
+            "pp_warm_8k_runs_context": c["ppw8"],
+            "acceptance_context_all_boots_of_the_K_config": c["pop"],
+            "projection_vs_measured": proj,
+        },
+        "quality": {
+            "quick_pass": {b: c["qual"][b]["passed"] for b in ORDER + [SAFE]},
+            "per_boot": c["qual"],
+            "greedy_cross_arm_divergence": c["greedy"],
+            "reading": [
+                "Quality quick passes on every component on both KP boots (and on KPsafe-1 and both K boots).",
+                "tools.exact_args reads 20/22 on KP-1, Kp-1 and Kp-2 (t01 and t09 called with {}) and 21/22 on KP-2 and KPsafe-1 (t09). The 20/22 readings pass the 0.9545 limit only by the gate's one-item Wilson slack. The same pattern shows on both arms, so it is not an add-on effect.",
+                "Greedy numerics: the KP-vs-K cross-arm divergence hazard equals the K-vs-K cross-boot hazard (the serve is not deterministic at temperature 0 from boot to boot or run to run; every boot's own A/A hazard is non-zero). This is consistent with the add-ons being bit-exact in the serve, at the resolution the serve's own nondeterminism allows.",
+            ],
+        },
+        "decision": {
+            "checks": {
+                "validity_all_four_counted_boots": all(c["counted_valid"][b] for b in ORDER),
+                "acceptance_matched_per_boot_primary_cells": c["matched"],
+                "ms_step_gate_primary_cells_if_matched": c["ms_gate"],
+                "fallback_tok_s_gate_since_not_matched": c["fallback"],
+                "speed_gate_as_written": c["speed_gate"],
+                "non_inferiority_ok": c["ni_ok"],
+                "honest_cells_and_guards": c["honest_ok"],
+                "quality_quick_both_KP_boots": c["q_ok"],
+                "patch_identical_and_no_code_change": c["patch_same"] and not c["code_diff"],
+            },
+            "promote_KP_add_on_set": c["promote_set"],
+            "promote": [],
+            "not_promoted": [f"{k}={v}" for k, v in ADDONS.items()],
+            "promoted_config_unchanged": [f"{k}={v}" for k, v in K_ENV.items()],
+            "verdict": (
+                "NOT PROMOTED: none of the five add-ons joins the defaults. The promoted config stays the 10 K envs. "
+                "ms/step: KP is lower than K beyond the noise on every c=1 cell and on prose_long c=2, and every KP boot beats the K median. "
+                f"Four prose c=1 {ms['four_prose_c1_ms_step']['delta_KP_minus_K']} (noise {ms['four_prose_c1_ms_step']['noise']}), "
+                f"prose_long c=1 {ms['prose_long_c1_ms_step']['delta_KP_minus_K']} (noise {ms['prose_long_c1_ms_step']['noise']}). "
+                "ARMS.md step 6 uses that ms/step as primary only at matched acceptance, and the per-boot median_run_acceptance_len intervals do not overlap on either primary cell. "
+                f"Four prose: K {acc['four_prose_c1']['base_per_boot']}, KP {acc['four_prose_c1']['cand_per_boot']}. Prose_long c=1: K {acc['prose_long_c1']['base_per_boot']}, KP {acc['prose_long_c1']['cand_per_boot']}. "
+                "So the rule gates on tok/s. "
+                f"prose_long c=1 tok/s improves {tok['prose_long_c1_tok_s']['improvement']} against noise {tok['prose_long_c1_tok_s']['noise']}, and KP-2 ({tok['prose_long_c1_tok_s']['cand'][1]}) is below the K median ({tok['prose_long_c1_tok_s']['base_median']}). "
+                f"L.A.I.L tok/s improves {tok['lail_tok_s']['improvement']} against noise {tok['lail_tok_s']['noise']}. "
+                "Both fallback gates fail. Non-inferiority, honest cells, guards and quality quick all pass. The speed gate is the only check that fails."),
+            "why_the_rule_is_applied_as_written": why,
+            "context_observations": observations,
+            "per_add_on": addon,
+            "next_steps_per_s8": [
+                "s8 says that if KP fails the gate, it is split: an ABAB of K+{PM_QOS, WKV_TP} against K first (the two highest-confidence add-ons), then the other three one at a time, as in comm/serve_arm_plan.txt and mhc-det/serve_validation_plan.txt.",
+                "The s8 KP_p profile boot against K_p is still owed. It gives the per-add-on attribution that no counted boot provides. It also settles the EAGER_TWIN graphUsageMode question and whether L2_PREFETCH or MHC_OVERLAP slows the all-reduce (s12). If it does, s8 says to retry with DSV41_AR_L2_PREFETCH_MIB=5.5.",
+                "For the protocol owner: for levers that are bit-exact by construction, should matched acceptance be judged on the pooled per-run distribution, or on a cell whose acceptance is fixed (structured c=1), instead of on 2 per-boot medians? Measured here: KP is -1.3..-1.9 ms/step at c=1, beyond the noise. Under the current rule it does not promote. That rule change does not happen in this decision.",
+            ],
+        },
+        "serve_state_at_decision": "down on both nodes (2026-09-26T20:19:31Z: docker ps on spark1 shows only the unrelated conduit container; spark2 shows no container). This stage booted nothing.",
+        "per_boot_raw": {b: {k: v for k, v in D[b].items() if k != "quality"} for b in ORDER + [SAFE]},
+    }
+    return out
+
+
+if __name__ == "__main__":
+    c = main()
+    out = compose(c)
+    json.dump(out, open(sys.argv[1], "w"), indent=1, default=str)
+    print(json.dumps(out["decision"]["checks"], indent=1))
+    print("promote_KP_add_on_set", out["decision"]["promote_KP_add_on_set"])
+    for k in ("four_prose_c1_ms_step", "prose_long_c1_ms_step", "lail_ms_step", "bench_prose_c1_ms_step", "structured_c1_ms_step",
+              "prose_long_c2_ms_step", "bench_prose_c2_ms_step", "structured_c2_ms_step"):
+        v = c["ms"][k]
+        print(f"MS  {k:24s} K {v['base']} KP {v['cand']} delta {v['delta_KP_minus_K']} noise {v['noise']} beats {v['every_cand_boot_beats_base_median']} pass {v['gate_pass']}")
+    for k, v in c["tok"].items():
+        print(f"TOK {k:24s} K {v['base']} KP {v['cand']} imp {v['improvement']} ({v['improvement_pct']}%) noise {v['noise']} beats {v['every_cand_boot_beats_base_median']} pass {v['gate_pass']}")
+    for k, v in c["ni"].items():
+        print(f"NI  {k:24s} K {v['base']} KP {v['cand']} delta {v['delta']} noise {v['noise']} ok {v['ok_vs_larger_spread']} ok_K_only {v['ok_vs_base_spread_only']}")
+    for k, v in c["acc"].items():
+        print(f"ACC {k}: {json.dumps(v)}")
+    print("STRUCT", json.dumps({k: v for k, v in c["structured"].items() if k not in ("ms_step_runs", "gate_ms_step", "gate_tok_s")}))
+    print("POP", json.dumps(c["pop"]))
+    print("GREEDY", json.dumps({k: v for k, v in c["greedy"].items() if k != "note"}))
+    print("VALID", c["counted_valid"], "patch_same", c["patch_same"], "code_diff", repr(c["code_diff"]))
+    print("CORRDIFF", c["corr_diff"], "SMOKES", c["smokes"])
+    print("LOAD", json.dumps({b: c["val"][b]["model_loading_per_rank"] for b in c["val"]}))
+    print("QUAL", json.dumps({b: [q["passed"], q["failed_gates"], q["tools_exact"], q["tools_exact_failed"]] for b, q in c["qual"].items()}))
+    print("PPW8", json.dumps(c["ppw8"]))
+    print("ENV", json.dumps({b: c["val"][b]["addon_envs_both_ranks"] for b in c["val"]}))
