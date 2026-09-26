@@ -1,0 +1,2581 @@
+{
+ "what": "ARMS-r3 section 5 (P2) kernel-bundle decision: ARMS.md step 6 applied to the six counted boots A-1, K-1, KC-1, A-2, K-2, KC-2 (results/2026-09-26-serve-r3/). Computed from the raw per-boot files by decision-bundle-compute.py.txt (lail10.txt, bench_decode.txt, four/four_numbers.json, four/02-micro.log, quality_*.json, gate files), not from the stages' summary.json; every number below matches the stages' summaries.",
+ "date": "2026-09-26",
+ "inputs": {
+  "image": "dsv41-flash-exl3-sm121:review-e14 = sha256:3a002b55c9bc... on both ranks, every boot",
+  "snapshot": "2.0bpw-mcg-lmhead-mxfp8 (serve pin), every boot",
+  "order": "A-1, K-1, KC-1, A-2, K-2, KC-2 (the section 5 interleave), each the counted attempt; K-1 is attempt 2 after fix ae0255a (DSV41_MHC_DET_SPLITS self-test dtype)",
+  "commits_at_boot": {
+   "A-1": "96a7de76a8e5",
+   "K-1": "ae0255acca35",
+   "KC-1": "1e3a7c72bc6b",
+   "A-2": "5a45ed13d57b",
+   "K-2": "f03792b5f424",
+   "KC-2": "da3cb4e14040"
+  },
+  "docker_patch": "sha256 lists identical on K-1, KC-1, A-2, K-2, KC-2 (61 files). A-1 differs in docker/patch/mhc_det.py only (pre-fix ae0255a; the change touches the MHC_DET self-tests, a lever that is off in A). Non-results diff 96a7de7..da3cb4e: docker/patch/mhc_det.py and tests/test_mhc_det.py only, so the bench, four_numbers and quality tools are the same code on all six boots.",
+  "arm_envs_verified_in_containers": "A: every round-3 lever 0/unset on both ranks. K: the 10 K envs on both ranks (P2B_COOP=2). KC: the 9 KC envs on both ranks, DSV41_P2B_COOP unset. KP add-ons (MHC_DET_OVERLAP/WKV_TP/NCCL_EAGER_TWIN/AR_L2_PREFETCH=0, PM_QOS_US unset) off on all six. Round-34 defaults (WILLNEED, STREAM_FEED, WOA_PREPACK, SPARSE_MARKOV =1) on all six. Source: four/four_numbers.json serve_env per rank."
+ },
+ "rule": {
+  "source": "ARMS.md step 6 + ARMS-r3 section 5",
+  "primary_metric": "prose_median_ms_per_step (four_numbers prose cell, 9 runs) and prose_long c=1 median_ms_per_step (5 runs), per boot; arm value = median of its 2 boots",
+  "noise": "larger boot-to-boot spread (max-min of the per-boot values) of the two compared arms",
+  "promote_K_when": [
+   "K-vs-A median improvement > noise on both primary metrics",
+   "every K boot beats the A median",
+   "per-boot median_run_acceptance_len overlaps (matched acceptance)",
+   "non-inferiority on pp_warm/pp_novel 8k/32k, prose_long c=2 aggregate, warm-prefix (not worse than A by more than the larger boot-to-boot spread)",
+   "honest cells: natural_finish length, post-EOS 0, serve_env_ranks_match, lever_disarmed false; disarm_scan and gpu_guard clean on every counted boot",
+   "quality quick passes on both K boots; quality full passes on K#2"
+  ],
+  "coop": "K vs KC beyond the noise (better) keeps COOP; inside the noise keeps it only if P3 shows its mechanism; worse beyond the noise drops it"
+ },
+ "validity": {
+  "all_six_counted_boots_valid": true,
+  "per_boot": {
+   "A-1": {
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_after_smoke_spark1_spark2": [
+     "22Gi",
+     "24Gi"
+    ]
+   },
+   "A-2": {
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_after_smoke_spark1_spark2": [
+     "23Gi",
+     "25Gi"
+    ]
+   },
+   "K-1": {
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_after_smoke_spark1_spark2": [
+     "22Gi",
+     "24Gi"
+    ]
+   },
+   "K-2": {
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_after_smoke_spark1_spark2": [
+     "23Gi",
+     "24Gi"
+    ]
+   },
+   "KC-1": {
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_after_smoke_spark1_spark2": [
+     "23Gi",
+     "24Gi"
+    ]
+   },
+   "KC-2": {
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_after_smoke_spark1_spark2": [
+     "22Gi",
+     "24Gi"
+    ]
+   }
+  },
+  "notes": [
+   "No boot is VOID: gpu_guard --check rc=0 (0 FOREIGN) on all six; no CONTAMINATED marker.",
+   "Deviation from section 1 on A-1, K-1, KC-1, K-2: the spark2 GPU lock holder was refused by the session's permission layer; the lock was free at precheck and the spark2 guard (10 s samples) saw only VLLM::Worker_TP / Xorg / gnome-shell. The lock was held on A-2 and KC-2.",
+   "Slow runs inside clean boots, kept as measured: K-2 L.A.I.L runs 4/5 at 52.49/55.96 ms/step (other 8: 48.38-49.50); KC-2 L.A.I.L run 1 at 63.93 (other 9: 55.73-57.68). The per-boot medians (48.909, 56.349) are not moved by them.",
+   "Boot floors held: MemAvailable 116-117 GiB before every boot, 20-25 GiB after the smokes (floor 8)."
+  ]
+ },
+ "comparisons": {
+  "K_vs_A": {
+   "ms_step": {
+    "four_prose_c1_ms_step": {
+     "base": [
+      63.866,
+      63.083
+     ],
+     "cand": [
+      47.156,
+      48.245
+     ],
+     "base_median": 63.475,
+     "cand_median": 47.701,
+     "base_spread": 0.782,
+     "cand_spread": 1.089,
+     "noise": 1.089,
+     "improvement": 15.774,
+     "improvement_pct": 24.85,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "prose_long_c1_ms_step": {
+     "base": [
+      63.47,
+      63.216
+     ],
+     "cand": [
+      49.01,
+      48.702
+     ],
+     "base_median": 63.343,
+     "cand_median": 48.856,
+     "base_spread": 0.254,
+     "cand_spread": 0.308,
+     "noise": 0.308,
+     "improvement": 14.487,
+     "improvement_pct": 22.87,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "lail_ms_step": {
+     "base": [
+      63.013,
+      62.568
+     ],
+     "cand": [
+      48.328,
+      48.909
+     ],
+     "base_median": 62.79,
+     "cand_median": 48.618,
+     "base_spread": 0.445,
+     "cand_spread": 0.581,
+     "noise": 0.581,
+     "improvement": 14.172,
+     "improvement_pct": 22.57,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "bench_prose_c1_ms_step": {
+     "base": [
+      63.995,
+      63.774
+     ],
+     "cand": [
+      48.244,
+      48.764
+     ],
+     "base_median": 63.884,
+     "cand_median": 48.504,
+     "base_spread": 0.221,
+     "cand_spread": 0.52,
+     "noise": 0.52,
+     "improvement": 15.38,
+     "improvement_pct": 24.08,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "structured_c1_ms_step": {
+     "base": [
+      64.275,
+      63.112
+     ],
+     "cand": [
+      46.877,
+      47.196
+     ],
+     "base_median": 63.694,
+     "cand_median": 47.036,
+     "base_spread": 1.163,
+     "cand_spread": 0.318,
+     "noise": 1.163,
+     "improvement": 16.657,
+     "improvement_pct": 26.15,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "bench_prose_c2_ms_step": {
+     "base": [
+      88.747,
+      86.959
+     ],
+     "cand": [
+      57.836,
+      59.209
+     ],
+     "base_median": 87.853,
+     "cand_median": 58.523,
+     "base_spread": 1.788,
+     "cand_spread": 1.373,
+     "noise": 1.788,
+     "improvement": 29.33,
+     "improvement_pct": 33.39,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "structured_c2_ms_step": {
+     "base": [
+      89.5,
+      86.96
+     ],
+     "cand": [
+      55.768,
+      57.277
+     ],
+     "base_median": 88.23,
+     "cand_median": 56.523,
+     "base_spread": 2.541,
+     "cand_spread": 1.509,
+     "noise": 2.541,
+     "improvement": 31.707,
+     "improvement_pct": 35.94,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "prose_long_c2_ms_step": {
+     "base": [
+      88.735,
+      87.214
+     ],
+     "cand": [
+      60.724,
+      61.415
+     ],
+     "base_median": 87.975,
+     "cand_median": 61.07,
+     "base_spread": 1.521,
+     "cand_spread": 0.691,
+     "noise": 1.521,
+     "improvement": 26.905,
+     "improvement_pct": 30.58,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    }
+   },
+   "tok_s": {
+    "lail_tok_s": {
+     "base": [
+      33.692,
+      34.208
+     ],
+     "cand": [
+      43.567,
+      42.531
+     ],
+     "base_median": 33.95,
+     "cand_median": 43.049,
+     "base_spread": 0.516,
+     "cand_spread": 1.035,
+     "noise": 1.035,
+     "improvement": 9.099,
+     "improvement_pct": 26.8,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "four_prose_c1_tok_s": {
+     "base": [
+      39.07,
+      39.24
+     ],
+     "cand": [
+      54.42,
+      53.43
+     ],
+     "base_median": 39.155,
+     "cand_median": 53.925,
+     "base_spread": 0.17,
+     "cand_spread": 0.99,
+     "noise": 0.99,
+     "improvement": 14.77,
+     "improvement_pct": 37.72,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "bench_prose_c1_tok_s": {
+     "base": [
+      38.106,
+      39.29
+     ],
+     "cand": [
+      52.338,
+      53.531
+     ],
+     "base_median": 38.698,
+     "cand_median": 52.935,
+     "base_spread": 1.184,
+     "cand_spread": 1.193,
+     "noise": 1.193,
+     "improvement": 14.237,
+     "improvement_pct": 36.79,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "structured_c1_tok_s": {
+     "base": [
+      61.622,
+      62.758
+     ],
+     "cand": [
+      84.493,
+      83.923
+     ],
+     "base_median": 62.19,
+     "cand_median": 84.208,
+     "base_spread": 1.135,
+     "cand_spread": 0.57,
+     "noise": 1.135,
+     "improvement": 22.017,
+     "improvement_pct": 35.4,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "prose_long_c1_tok_s": {
+     "base": [
+      32.884,
+      33.119
+     ],
+     "cand": [
+      43.688,
+      43.923
+     ],
+     "base_median": 33.001,
+     "cand_median": 43.806,
+     "base_spread": 0.235,
+     "cand_spread": 0.235,
+     "noise": 0.235,
+     "improvement": 10.804,
+     "improvement_pct": 32.74,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "bench_prose_c2_agg_tok_s": {
+     "base": [
+      55.443,
+      57.947
+     ],
+     "cand": [
+      87.585,
+      85.457
+     ],
+     "base_median": 56.695,
+     "cand_median": 86.521,
+     "base_spread": 2.505,
+     "cand_spread": 2.128,
+     "noise": 2.505,
+     "improvement": 29.826,
+     "improvement_pct": 52.61,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "structured_c2_agg_tok_s": {
+     "base": [
+      88.348,
+      89.732
+     ],
+     "cand": [
+      139.836,
+      139.038
+     ],
+     "base_median": 89.04,
+     "cand_median": 139.437,
+     "base_spread": 1.384,
+     "cand_spread": 0.797,
+     "noise": 1.384,
+     "improvement": 50.397,
+     "improvement_pct": 56.6,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "prose_long_c2_agg_tok_s": {
+     "base": [
+      47.182,
+      47.625
+     ],
+     "cand": [
+      68.063,
+      68.259
+     ],
+     "base_median": 47.403,
+     "cand_median": 68.161,
+     "base_spread": 0.443,
+     "cand_spread": 0.196,
+     "noise": 0.443,
+     "improvement": 20.758,
+     "improvement_pct": 43.79,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "lail_after_c2_3x_tok_s": {
+     "base": [
+      32.85,
+      33.38
+     ],
+     "cand": [
+      41.79,
+      44.23
+     ],
+     "base_median": 33.115,
+     "cand_median": 43.01,
+     "base_spread": 0.53,
+     "cand_spread": 2.44,
+     "noise": 2.44,
+     "improvement": 9.895,
+     "improvement_pct": 29.88,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    }
+   },
+   "non_inferiority": {
+    "pp_warm_8k": {
+     "base": [
+      758.1,
+      756.6
+     ],
+     "cand": [
+      758.1,
+      784.4
+     ],
+     "base_median": 757.35,
+     "cand_median": 771.25,
+     "delta": 13.9,
+     "base_spread": 1.5,
+     "cand_spread": 26.3,
+     "noise": 26.3,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    },
+    "pp_warm_32k": {
+     "base": [
+      765.9,
+      763.8
+     ],
+     "cand": [
+      769.7,
+      758.9
+     ],
+     "base_median": 764.85,
+     "cand_median": 764.3,
+     "delta": -0.55,
+     "base_spread": 2.1,
+     "cand_spread": 10.8,
+     "noise": 10.8,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    },
+    "pp_novel_8k": {
+     "base": [
+      819.5,
+      818.9
+     ],
+     "cand": [
+      804.0,
+      825.6
+     ],
+     "base_median": 819.2,
+     "cand_median": 814.8,
+     "delta": -4.4,
+     "base_spread": 0.6,
+     "cand_spread": 21.6,
+     "noise": 21.6,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": false
+    },
+    "pp_novel_32k": {
+     "base": [
+      808.5,
+      817.4
+     ],
+     "cand": [
+      799.5,
+      811.4
+     ],
+     "base_median": 812.95,
+     "cand_median": 805.45,
+     "delta": -7.5,
+     "base_spread": 8.9,
+     "cand_spread": 11.9,
+     "noise": 11.9,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    },
+    "prose_long_c2_agg_tok_s": {
+     "base": [
+      47.182,
+      47.625
+     ],
+     "cand": [
+      68.063,
+      68.259
+     ],
+     "base_median": 47.403,
+     "cand_median": 68.161,
+     "delta": 20.758,
+     "base_spread": 0.443,
+     "cand_spread": 0.196,
+     "noise": 0.443,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    },
+    "warm_prefix_hit_fraction": {
+     "base": [
+      1.0,
+      1.0
+     ],
+     "cand": [
+      1.0,
+      1.0
+     ],
+     "base_median": 1.0,
+     "cand_median": 1.0,
+     "delta": 0.0,
+     "base_spread": 0.0,
+     "cand_spread": 0.0,
+     "noise": 0.0,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    }
+   },
+   "acceptance": {
+    "four_prose_c1": {
+     "base_per_boot": [
+      2.5443,
+      2.4568
+     ],
+     "cand_per_boot": [
+      2.557,
+      2.5316
+     ],
+     "per_boot_interval_overlap": true,
+     "base_run_range": [
+      2.2614,
+      2.8986
+     ],
+     "cand_run_range": [
+      2.314,
+      3.0606
+     ],
+     "run_range_overlap": true
+    },
+    "prose_long_c1": {
+     "base_per_boot": [
+      2.1505,
+      2.0729
+     ],
+     "cand_per_boot": [
+      2.117,
+      2.1505
+     ],
+     "per_boot_interval_overlap": true,
+     "base_run_range": [
+      2.0,
+      2.2472
+     ],
+     "cand_run_range": [
+      2.0,
+      2.2472
+     ],
+     "run_range_overlap": true
+    }
+   }
+  },
+  "K_vs_KC": {
+   "ms_step": {
+    "four_prose_c1_ms_step": {
+     "base": [
+      56.154,
+      56.213
+     ],
+     "cand": [
+      47.156,
+      48.245
+     ],
+     "base_median": 56.184,
+     "cand_median": 47.701,
+     "base_spread": 0.059,
+     "cand_spread": 1.089,
+     "noise": 1.089,
+     "improvement": 8.483,
+     "improvement_pct": 15.1,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "prose_long_c1_ms_step": {
+     "base": [
+      56.9,
+      57.161
+     ],
+     "cand": [
+      49.01,
+      48.702
+     ],
+     "base_median": 57.03,
+     "cand_median": 48.856,
+     "base_spread": 0.261,
+     "cand_spread": 0.308,
+     "noise": 0.308,
+     "improvement": 8.175,
+     "improvement_pct": 14.33,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "lail_ms_step": {
+     "base": [
+      56.205,
+      56.349
+     ],
+     "cand": [
+      48.328,
+      48.909
+     ],
+     "base_median": 56.277,
+     "cand_median": 48.618,
+     "base_spread": 0.144,
+     "cand_spread": 0.581,
+     "noise": 0.581,
+     "improvement": 7.659,
+     "improvement_pct": 13.61,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "bench_prose_c1_ms_step": {
+     "base": [
+      56.352,
+      57.177
+     ],
+     "cand": [
+      48.244,
+      48.764
+     ],
+     "base_median": 56.764,
+     "cand_median": 48.504,
+     "base_spread": 0.825,
+     "cand_spread": 0.52,
+     "noise": 0.825,
+     "improvement": 8.26,
+     "improvement_pct": 14.55,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "structured_c1_ms_step": {
+     "base": [
+      55.888,
+      56.089
+     ],
+     "cand": [
+      46.877,
+      47.196
+     ],
+     "base_median": 55.989,
+     "cand_median": 47.036,
+     "base_spread": 0.201,
+     "cand_spread": 0.318,
+     "noise": 0.318,
+     "improvement": 8.952,
+     "improvement_pct": 15.99,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "bench_prose_c2_ms_step": {
+     "base": [
+      80.013,
+      80.15
+     ],
+     "cand": [
+      57.836,
+      59.209
+     ],
+     "base_median": 80.082,
+     "cand_median": 58.523,
+     "base_spread": 0.137,
+     "cand_spread": 1.373,
+     "noise": 1.373,
+     "improvement": 21.559,
+     "improvement_pct": 26.92,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "structured_c2_ms_step": {
+     "base": [
+      79.231,
+      79.345
+     ],
+     "cand": [
+      55.768,
+      57.277
+     ],
+     "base_median": 79.288,
+     "cand_median": 56.523,
+     "base_spread": 0.114,
+     "cand_spread": 1.509,
+     "noise": 1.509,
+     "improvement": 22.765,
+     "improvement_pct": 28.71,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "prose_long_c2_ms_step": {
+     "base": [
+      80.357,
+      80.6
+     ],
+     "cand": [
+      60.724,
+      61.415
+     ],
+     "base_median": 80.479,
+     "cand_median": 61.07,
+     "base_spread": 0.243,
+     "cand_spread": 0.691,
+     "noise": 0.691,
+     "improvement": 19.409,
+     "improvement_pct": 24.12,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    }
+   },
+   "tok_s": {
+    "lail_tok_s": {
+     "base": [
+      37.562,
+      36.73
+     ],
+     "cand": [
+      43.567,
+      42.531
+     ],
+     "base_median": 37.146,
+     "cand_median": 43.049,
+     "base_spread": 0.833,
+     "cand_spread": 1.035,
+     "noise": 1.035,
+     "improvement": 5.903,
+     "improvement_pct": 15.89,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "four_prose_c1_tok_s": {
+     "base": [
+      47.12,
+      45.05
+     ],
+     "cand": [
+      54.42,
+      53.43
+     ],
+     "base_median": 46.085,
+     "cand_median": 53.925,
+     "base_spread": 2.07,
+     "cand_spread": 0.99,
+     "noise": 2.07,
+     "improvement": 7.84,
+     "improvement_pct": 17.01,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "bench_prose_c1_tok_s": {
+     "base": [
+      43.594,
+      45.538
+     ],
+     "cand": [
+      52.338,
+      53.531
+     ],
+     "base_median": 44.566,
+     "cand_median": 52.935,
+     "base_spread": 1.944,
+     "cand_spread": 1.193,
+     "noise": 1.944,
+     "improvement": 8.369,
+     "improvement_pct": 18.78,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "structured_c1_tok_s": {
+     "base": [
+      70.87,
+      70.616
+     ],
+     "cand": [
+      84.493,
+      83.923
+     ],
+     "base_median": 70.743,
+     "cand_median": 84.208,
+     "base_spread": 0.255,
+     "cand_spread": 0.57,
+     "noise": 0.57,
+     "improvement": 13.465,
+     "improvement_pct": 19.03,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "prose_long_c1_tok_s": {
+     "base": [
+      36.038,
+      37.164
+     ],
+     "cand": [
+      43.688,
+      43.923
+     ],
+     "base_median": 36.601,
+     "cand_median": 43.806,
+     "base_spread": 1.126,
+     "cand_spread": 0.235,
+     "noise": 1.126,
+     "improvement": 7.204,
+     "improvement_pct": 19.68,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "bench_prose_c2_agg_tok_s": {
+     "base": [
+      62.616,
+      62.801
+     ],
+     "cand": [
+      87.585,
+      85.457
+     ],
+     "base_median": 62.709,
+     "cand_median": 86.521,
+     "base_spread": 0.185,
+     "cand_spread": 2.128,
+     "noise": 2.128,
+     "improvement": 23.812,
+     "improvement_pct": 37.97,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "structured_c2_agg_tok_s": {
+     "base": [
+      98.399,
+      98.627
+     ],
+     "cand": [
+      139.836,
+      139.038
+     ],
+     "base_median": 98.513,
+     "cand_median": 139.437,
+     "base_spread": 0.228,
+     "cand_spread": 0.797,
+     "noise": 0.797,
+     "improvement": 40.924,
+     "improvement_pct": 41.54,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "prose_long_c2_agg_tok_s": {
+     "base": [
+      52.312,
+      51.455
+     ],
+     "cand": [
+      68.063,
+      68.259
+     ],
+     "base_median": 51.883,
+     "cand_median": 68.161,
+     "base_spread": 0.858,
+     "cand_spread": 0.196,
+     "noise": 0.858,
+     "improvement": 16.277,
+     "improvement_pct": 31.37,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "lail_after_c2_3x_tok_s": {
+     "base": [
+      36.91,
+      35.37
+     ],
+     "cand": [
+      41.79,
+      44.23
+     ],
+     "base_median": 36.14,
+     "cand_median": 43.01,
+     "base_spread": 1.54,
+     "cand_spread": 2.44,
+     "noise": 2.44,
+     "improvement": 6.87,
+     "improvement_pct": 19.01,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    }
+   },
+   "non_inferiority": {
+    "pp_warm_8k": {
+     "base": [
+      763.5,
+      764.1
+     ],
+     "cand": [
+      758.1,
+      784.4
+     ],
+     "base_median": 763.8,
+     "cand_median": 771.25,
+     "delta": 7.45,
+     "base_spread": 0.6,
+     "cand_spread": 26.3,
+     "noise": 26.3,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    },
+    "pp_warm_32k": {
+     "base": [
+      772.0,
+      766.6
+     ],
+     "cand": [
+      769.7,
+      758.9
+     ],
+     "base_median": 769.3,
+     "cand_median": 764.3,
+     "delta": -5.0,
+     "base_spread": 5.4,
+     "cand_spread": 10.8,
+     "noise": 10.8,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    },
+    "pp_novel_8k": {
+     "base": [
+      804.8,
+      836.0
+     ],
+     "cand": [
+      804.0,
+      825.6
+     ],
+     "base_median": 820.4,
+     "cand_median": 814.8,
+     "delta": -5.6,
+     "base_spread": 31.2,
+     "cand_spread": 21.6,
+     "noise": 31.2,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    },
+    "pp_novel_32k": {
+     "base": [
+      815.6,
+      820.7
+     ],
+     "cand": [
+      799.5,
+      811.4
+     ],
+     "base_median": 818.15,
+     "cand_median": 805.45,
+     "delta": -12.7,
+     "base_spread": 5.1,
+     "cand_spread": 11.9,
+     "noise": 11.9,
+     "ok_vs_larger_spread": false,
+     "ok_vs_base_spread_only": false
+    },
+    "prose_long_c2_agg_tok_s": {
+     "base": [
+      52.312,
+      51.455
+     ],
+     "cand": [
+      68.063,
+      68.259
+     ],
+     "base_median": 51.883,
+     "cand_median": 68.161,
+     "delta": 16.277,
+     "base_spread": 0.858,
+     "cand_spread": 0.196,
+     "noise": 0.858,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    },
+    "warm_prefix_hit_fraction": {
+     "base": [
+      1.0,
+      1.0
+     ],
+     "cand": [
+      1.0,
+      1.0
+     ],
+     "base_median": 1.0,
+     "cand_median": 1.0,
+     "delta": 0.0,
+     "base_spread": 0.0,
+     "cand_spread": 0.0,
+     "noise": 0.0,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    }
+   },
+   "acceptance": {
+    "four_prose_c1": {
+     "base_per_boot": [
+      2.5844,
+      2.5443
+     ],
+     "cand_per_boot": [
+      2.557,
+      2.5316
+     ],
+     "per_boot_interval_overlap": true,
+     "base_run_range": [
+      2.3529,
+      2.9275
+     ],
+     "cand_run_range": [
+      2.314,
+      3.0606
+     ],
+     "run_range_overlap": true
+    },
+    "prose_long_c1": {
+     "base_per_boot": [
+      2.051,
+      2.117
+     ],
+     "cand_per_boot": [
+      2.117,
+      2.1505
+     ],
+     "per_boot_interval_overlap": true,
+     "base_run_range": [
+      1.9706,
+      2.1848
+     ],
+     "cand_run_range": [
+      2.0,
+      2.2472
+     ],
+     "run_range_overlap": true
+    }
+   }
+  },
+  "KC_vs_A": {
+   "ms_step": {
+    "four_prose_c1_ms_step": {
+     "base": [
+      63.866,
+      63.083
+     ],
+     "cand": [
+      56.154,
+      56.213
+     ],
+     "base_median": 63.475,
+     "cand_median": 56.184,
+     "base_spread": 0.782,
+     "cand_spread": 0.059,
+     "noise": 0.782,
+     "improvement": 7.291,
+     "improvement_pct": 11.49,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "prose_long_c1_ms_step": {
+     "base": [
+      63.47,
+      63.216
+     ],
+     "cand": [
+      56.9,
+      57.161
+     ],
+     "base_median": 63.343,
+     "cand_median": 57.03,
+     "base_spread": 0.254,
+     "cand_spread": 0.261,
+     "noise": 0.261,
+     "improvement": 6.312,
+     "improvement_pct": 9.97,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "lail_ms_step": {
+     "base": [
+      63.013,
+      62.568
+     ],
+     "cand": [
+      56.205,
+      56.349
+     ],
+     "base_median": 62.79,
+     "cand_median": 56.277,
+     "base_spread": 0.445,
+     "cand_spread": 0.144,
+     "noise": 0.445,
+     "improvement": 6.513,
+     "improvement_pct": 10.37,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "bench_prose_c1_ms_step": {
+     "base": [
+      63.995,
+      63.774
+     ],
+     "cand": [
+      56.352,
+      57.177
+     ],
+     "base_median": 63.884,
+     "cand_median": 56.764,
+     "base_spread": 0.221,
+     "cand_spread": 0.825,
+     "noise": 0.825,
+     "improvement": 7.12,
+     "improvement_pct": 11.14,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "structured_c1_ms_step": {
+     "base": [
+      64.275,
+      63.112
+     ],
+     "cand": [
+      55.888,
+      56.089
+     ],
+     "base_median": 63.694,
+     "cand_median": 55.989,
+     "base_spread": 1.163,
+     "cand_spread": 0.201,
+     "noise": 1.163,
+     "improvement": 7.705,
+     "improvement_pct": 12.1,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "bench_prose_c2_ms_step": {
+     "base": [
+      88.747,
+      86.959
+     ],
+     "cand": [
+      80.013,
+      80.15
+     ],
+     "base_median": 87.853,
+     "cand_median": 80.082,
+     "base_spread": 1.788,
+     "cand_spread": 0.137,
+     "noise": 1.788,
+     "improvement": 7.772,
+     "improvement_pct": 8.85,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "structured_c2_ms_step": {
+     "base": [
+      89.5,
+      86.96
+     ],
+     "cand": [
+      79.231,
+      79.345
+     ],
+     "base_median": 88.23,
+     "cand_median": 79.288,
+     "base_spread": 2.541,
+     "cand_spread": 0.114,
+     "noise": 2.541,
+     "improvement": 8.942,
+     "improvement_pct": 10.13,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "prose_long_c2_ms_step": {
+     "base": [
+      88.735,
+      87.214
+     ],
+     "cand": [
+      80.357,
+      80.6
+     ],
+     "base_median": 87.975,
+     "cand_median": 80.479,
+     "base_spread": 1.521,
+     "cand_spread": 0.243,
+     "noise": 1.521,
+     "improvement": 7.496,
+     "improvement_pct": 8.52,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    }
+   },
+   "tok_s": {
+    "lail_tok_s": {
+     "base": [
+      33.692,
+      34.208
+     ],
+     "cand": [
+      37.562,
+      36.73
+     ],
+     "base_median": 33.95,
+     "cand_median": 37.146,
+     "base_spread": 0.516,
+     "cand_spread": 0.833,
+     "noise": 0.833,
+     "improvement": 3.196,
+     "improvement_pct": 9.41,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "four_prose_c1_tok_s": {
+     "base": [
+      39.07,
+      39.24
+     ],
+     "cand": [
+      47.12,
+      45.05
+     ],
+     "base_median": 39.155,
+     "cand_median": 46.085,
+     "base_spread": 0.17,
+     "cand_spread": 2.07,
+     "noise": 2.07,
+     "improvement": 6.93,
+     "improvement_pct": 17.7,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "bench_prose_c1_tok_s": {
+     "base": [
+      38.106,
+      39.29
+     ],
+     "cand": [
+      43.594,
+      45.538
+     ],
+     "base_median": 38.698,
+     "cand_median": 44.566,
+     "base_spread": 1.184,
+     "cand_spread": 1.944,
+     "noise": 1.944,
+     "improvement": 5.868,
+     "improvement_pct": 15.16,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "structured_c1_tok_s": {
+     "base": [
+      61.622,
+      62.758
+     ],
+     "cand": [
+      70.87,
+      70.616
+     ],
+     "base_median": 62.19,
+     "cand_median": 70.743,
+     "base_spread": 1.135,
+     "cand_spread": 0.255,
+     "noise": 1.135,
+     "improvement": 8.553,
+     "improvement_pct": 13.75,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "prose_long_c1_tok_s": {
+     "base": [
+      32.884,
+      33.119
+     ],
+     "cand": [
+      36.038,
+      37.164
+     ],
+     "base_median": 33.001,
+     "cand_median": 36.601,
+     "base_spread": 0.235,
+     "cand_spread": 1.126,
+     "noise": 1.126,
+     "improvement": 3.6,
+     "improvement_pct": 10.91,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "bench_prose_c2_agg_tok_s": {
+     "base": [
+      55.443,
+      57.947
+     ],
+     "cand": [
+      62.616,
+      62.801
+     ],
+     "base_median": 56.695,
+     "cand_median": 62.709,
+     "base_spread": 2.505,
+     "cand_spread": 0.185,
+     "noise": 2.505,
+     "improvement": 6.014,
+     "improvement_pct": 10.61,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "structured_c2_agg_tok_s": {
+     "base": [
+      88.348,
+      89.732
+     ],
+     "cand": [
+      98.399,
+      98.627
+     ],
+     "base_median": 89.04,
+     "cand_median": 98.513,
+     "base_spread": 1.384,
+     "cand_spread": 0.228,
+     "noise": 1.384,
+     "improvement": 9.473,
+     "improvement_pct": 10.64,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "prose_long_c2_agg_tok_s": {
+     "base": [
+      47.182,
+      47.625
+     ],
+     "cand": [
+      52.312,
+      51.455
+     ],
+     "base_median": 47.403,
+     "cand_median": 51.883,
+     "base_spread": 0.443,
+     "cand_spread": 0.858,
+     "noise": 0.858,
+     "improvement": 4.48,
+     "improvement_pct": 9.45,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    },
+    "lail_after_c2_3x_tok_s": {
+     "base": [
+      32.85,
+      33.38
+     ],
+     "cand": [
+      36.91,
+      35.37
+     ],
+     "base_median": 33.115,
+     "cand_median": 36.14,
+     "base_spread": 0.53,
+     "cand_spread": 1.54,
+     "noise": 1.54,
+     "improvement": 3.025,
+     "improvement_pct": 9.13,
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true
+    }
+   },
+   "non_inferiority": {
+    "pp_warm_8k": {
+     "base": [
+      758.1,
+      756.6
+     ],
+     "cand": [
+      763.5,
+      764.1
+     ],
+     "base_median": 757.35,
+     "cand_median": 763.8,
+     "delta": 6.45,
+     "base_spread": 1.5,
+     "cand_spread": 0.6,
+     "noise": 1.5,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    },
+    "pp_warm_32k": {
+     "base": [
+      765.9,
+      763.8
+     ],
+     "cand": [
+      772.0,
+      766.6
+     ],
+     "base_median": 764.85,
+     "cand_median": 769.3,
+     "delta": 4.45,
+     "base_spread": 2.1,
+     "cand_spread": 5.4,
+     "noise": 5.4,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    },
+    "pp_novel_8k": {
+     "base": [
+      819.5,
+      818.9
+     ],
+     "cand": [
+      804.8,
+      836.0
+     ],
+     "base_median": 819.2,
+     "cand_median": 820.4,
+     "delta": 1.2,
+     "base_spread": 0.6,
+     "cand_spread": 31.2,
+     "noise": 31.2,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    },
+    "pp_novel_32k": {
+     "base": [
+      808.5,
+      817.4
+     ],
+     "cand": [
+      815.6,
+      820.7
+     ],
+     "base_median": 812.95,
+     "cand_median": 818.15,
+     "delta": 5.2,
+     "base_spread": 8.9,
+     "cand_spread": 5.1,
+     "noise": 8.9,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    },
+    "prose_long_c2_agg_tok_s": {
+     "base": [
+      47.182,
+      47.625
+     ],
+     "cand": [
+      52.312,
+      51.455
+     ],
+     "base_median": 47.403,
+     "cand_median": 51.883,
+     "delta": 4.48,
+     "base_spread": 0.443,
+     "cand_spread": 0.858,
+     "noise": 0.858,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    },
+    "warm_prefix_hit_fraction": {
+     "base": [
+      1.0,
+      1.0
+     ],
+     "cand": [
+      1.0,
+      1.0
+     ],
+     "base_median": 1.0,
+     "cand_median": 1.0,
+     "delta": 0.0,
+     "base_spread": 0.0,
+     "cand_spread": 0.0,
+     "noise": 0.0,
+     "ok_vs_larger_spread": true,
+     "ok_vs_base_spread_only": true
+    }
+   },
+   "acceptance": {
+    "four_prose_c1": {
+     "base_per_boot": [
+      2.5443,
+      2.4568
+     ],
+     "cand_per_boot": [
+      2.5844,
+      2.5443
+     ],
+     "per_boot_interval_overlap": true,
+     "base_run_range": [
+      2.2614,
+      2.8986
+     ],
+     "cand_run_range": [
+      2.3529,
+      2.9275
+     ],
+     "run_range_overlap": true
+    },
+    "prose_long_c1": {
+     "base_per_boot": [
+      2.1505,
+      2.0729
+     ],
+     "cand_per_boot": [
+      2.051,
+      2.117
+     ],
+     "per_boot_interval_overlap": true,
+     "base_run_range": [
+      2.0,
+      2.2472
+     ],
+     "cand_run_range": [
+      1.9706,
+      2.1848
+     ],
+     "run_range_overlap": true
+    }
+   }
+  }
+ },
+ "checks": {
+  "K_vs_A": {
+   "primary_gate": {
+    "four_prose_c1_ms_step": {
+     "base": [
+      63.866,
+      63.083
+     ],
+     "cand": [
+      47.156,
+      48.245
+     ],
+     "base_median": 63.475,
+     "cand_median": 47.701,
+     "improvement": 15.774,
+     "noise": 1.089,
+     "every_cand_boot_beats_base_median": true,
+     "gate_pass": true
+    },
+    "prose_long_c1_ms_step": {
+     "base": [
+      63.47,
+      63.216
+     ],
+     "cand": [
+      49.01,
+      48.702
+     ],
+     "base_median": 63.343,
+     "cand_median": 48.856,
+     "improvement": 14.487,
+     "noise": 0.308,
+     "every_cand_boot_beats_base_median": true,
+     "gate_pass": true
+    }
+   },
+   "acceptance_matched": {
+    "four_prose_c1": true,
+    "prose_long_c1": true
+   },
+   "non_inferiority_ok_vs_larger_spread": {
+    "pp_warm_8k": true,
+    "pp_warm_32k": true,
+    "pp_novel_8k": true,
+    "pp_novel_32k": true,
+    "prose_long_c2_agg_tok_s": true,
+    "warm_prefix_hit_fraction": true
+   }
+  },
+  "K_vs_KC": {
+   "primary_gate": {
+    "four_prose_c1_ms_step": {
+     "base": [
+      56.154,
+      56.213
+     ],
+     "cand": [
+      47.156,
+      48.245
+     ],
+     "base_median": 56.184,
+     "cand_median": 47.701,
+     "improvement": 8.483,
+     "noise": 1.089,
+     "every_cand_boot_beats_base_median": true,
+     "gate_pass": true
+    },
+    "prose_long_c1_ms_step": {
+     "base": [
+      56.9,
+      57.161
+     ],
+     "cand": [
+      49.01,
+      48.702
+     ],
+     "base_median": 57.03,
+     "cand_median": 48.856,
+     "improvement": 8.175,
+     "noise": 0.308,
+     "every_cand_boot_beats_base_median": true,
+     "gate_pass": true
+    }
+   },
+   "acceptance_matched": {
+    "four_prose_c1": true,
+    "prose_long_c1": true
+   },
+   "non_inferiority_ok_vs_larger_spread": {
+    "pp_warm_8k": true,
+    "pp_warm_32k": true,
+    "pp_novel_8k": true,
+    "pp_novel_32k": false,
+    "prose_long_c2_agg_tok_s": true,
+    "warm_prefix_hit_fraction": true
+   }
+  },
+  "KC_vs_A": {
+   "primary_gate": {
+    "four_prose_c1_ms_step": {
+     "base": [
+      63.866,
+      63.083
+     ],
+     "cand": [
+      56.154,
+      56.213
+     ],
+     "base_median": 63.475,
+     "cand_median": 56.184,
+     "improvement": 7.291,
+     "noise": 0.782,
+     "every_cand_boot_beats_base_median": true,
+     "gate_pass": true
+    },
+    "prose_long_c1_ms_step": {
+     "base": [
+      63.47,
+      63.216
+     ],
+     "cand": [
+      56.9,
+      57.161
+     ],
+     "base_median": 63.343,
+     "cand_median": 57.03,
+     "improvement": 6.312,
+     "noise": 0.261,
+     "every_cand_boot_beats_base_median": true,
+     "gate_pass": true
+    }
+   },
+   "acceptance_matched": {
+    "four_prose_c1": true,
+    "prose_long_c1": true
+   },
+   "non_inferiority_ok_vs_larger_spread": {
+    "pp_warm_8k": true,
+    "pp_warm_32k": true,
+    "pp_novel_8k": true,
+    "pp_novel_32k": true,
+    "prose_long_c2_agg_tok_s": true,
+    "warm_prefix_hit_fraction": true
+   }
+  }
+ },
+ "quality": {
+  "per_boot": {
+   "A-1": {
+    "quick": {
+     "file": "A-1/quality_quick.json",
+     "mode": "quick",
+     "passed": false,
+     "nll": 0.24453,
+     "decode_median_dlp": 0.02183,
+     "gen_nll_prefill": 0.36981,
+     "aa_hazard": 0.03516,
+     "golden_hazard": 0.02026,
+     "hazard_limit": 0.03206,
+     "selfcons_identical": "3/12",
+     "tools_exact": "22/22",
+     "tools_exact_failed": [],
+     "tools_json": 1.0,
+     "no_call": 1.0,
+     "needle": "6/6",
+     "failed_gates": [
+      "selfcons.aa_hazard"
+     ],
+     "extra": {}
+    },
+    "quick_rep2_extra": {
+     "file": "A-1/quality_quick_rep2.json",
+     "mode": "quick",
+     "passed": true,
+     "nll": 0.24388,
+     "decode_median_dlp": 0.01373,
+     "gen_nll_prefill": 0.33774,
+     "aa_hazard": 0.01923,
+     "golden_hazard": 0.01463,
+     "hazard_limit": 0.03206,
+     "selfcons_identical": "4/12",
+     "tools_exact": "21/22",
+     "tools_exact_failed": [
+      "t09"
+     ],
+     "tools_json": 1.0,
+     "no_call": 1.0,
+     "needle": "6/6",
+     "failed_gates": [],
+     "extra": {}
+    }
+   },
+   "A-2": {
+    "quick": {
+     "file": "A-2/quality_quick.json",
+     "mode": "quick",
+     "passed": true,
+     "nll": 0.242723,
+     "decode_median_dlp": 0.01112,
+     "gen_nll_prefill": 0.29075,
+     "aa_hazard": 0.01663,
+     "golden_hazard": 0.01926,
+     "hazard_limit": 0.03206,
+     "selfcons_identical": "5/12",
+     "tools_exact": "21/22",
+     "tools_exact_failed": [
+      "t09"
+     ],
+     "tools_json": 1.0,
+     "no_call": 1.0,
+     "needle": "6/6",
+     "failed_gates": [],
+     "extra": {}
+    }
+   },
+   "K-1": {
+    "quick": {
+     "file": "K-1/quality_quick.json",
+     "mode": "quick",
+     "passed": true,
+     "nll": 0.244407,
+     "decode_median_dlp": 0.01473,
+     "gen_nll_prefill": 0.34696,
+     "aa_hazard": 0.01562,
+     "golden_hazard": 0.015,
+     "hazard_limit": 0.03206,
+     "selfcons_identical": "4/12",
+     "tools_exact": "21/22",
+     "tools_exact_failed": [
+      "t09"
+     ],
+     "tools_json": 1.0,
+     "no_call": 1.0,
+     "needle": "6/6",
+     "failed_gates": [],
+     "extra": {}
+    }
+   },
+   "K-2": {
+    "quick": {
+     "file": "K-2/quality_quick.json",
+     "mode": "quick",
+     "passed": true,
+     "nll": 0.242911,
+     "decode_median_dlp": 0.00965,
+     "gen_nll_prefill": 0.30345,
+     "aa_hazard": 0.01627,
+     "golden_hazard": 0.01415,
+     "hazard_limit": 0.03206,
+     "selfcons_identical": "3/12",
+     "tools_exact": "20/22",
+     "tools_exact_failed": [
+      "t01",
+      "t09"
+     ],
+     "tools_json": 1.0,
+     "no_call": 1.0,
+     "needle": "6/6",
+     "failed_gates": [],
+     "extra": {}
+    },
+    "full": {
+     "file": "K-2/quality_full.json",
+     "mode": "full",
+     "passed": true,
+     "nll": 0.242805,
+     "decode_median_dlp": 0.01647,
+     "gen_nll_prefill": 0.34277,
+     "aa_hazard": 0.02059,
+     "golden_hazard": 0.02317,
+     "hazard_limit": 0.04348,
+     "selfcons_identical": "3/12",
+     "tools_exact": "20/22",
+     "tools_exact_failed": [
+      "t09",
+      "t17"
+     ],
+     "tools_json": 1.0,
+     "no_call": 1.0,
+     "needle": "9/9",
+     "failed_gates": [],
+     "extra": {
+      "gsm8k.acc": 0.94,
+      "gsm8k_think.acc": 0.975,
+      "mmlu.acc": 0.8728
+     }
+    }
+   },
+   "KC-1": {
+    "quick": {
+     "file": "KC-1/quality_quick.json",
+     "mode": "quick",
+     "passed": true,
+     "nll": 0.245195,
+     "decode_median_dlp": 0.01124,
+     "gen_nll_prefill": 0.28112,
+     "aa_hazard": 0.01911,
+     "golden_hazard": 0.01912,
+     "hazard_limit": 0.03206,
+     "selfcons_identical": "3/12",
+     "tools_exact": "21/22",
+     "tools_exact_failed": [
+      "t09"
+     ],
+     "tools_json": 1.0,
+     "no_call": 1.0,
+     "needle": "6/6",
+     "failed_gates": [],
+     "extra": {}
+    }
+   },
+   "KC-2": {
+    "quick": {
+     "file": "KC-2/quality_quick.json",
+     "mode": "quick",
+     "passed": true,
+     "nll": 0.246794,
+     "decode_median_dlp": 0.0063,
+     "gen_nll_prefill": 0.28515,
+     "aa_hazard": 0.01674,
+     "golden_hazard": 0.02541,
+     "hazard_limit": 0.03206,
+     "selfcons_identical": "4/12",
+     "tools_exact": "20/22",
+     "tools_exact_failed": [
+      "t08",
+      "t09"
+     ],
+     "tools_json": 1.0,
+     "no_call": 1.0,
+     "needle": "6/6",
+     "failed_gates": [],
+     "extra": {}
+    }
+   }
+  },
+  "gate": {
+   "quick_K": true,
+   "quick_KC": true,
+   "full_K2": true
+  },
+  "section10_bit_exact_read": "KC (bit-exact levers only) vs the A/A control: decode-vs-prefill median |dlogprob| KC 0.01124/0.0063 vs A 0.02183/0.01112 (A-1 rep2 0.01373); golden hazard KC 0.01912/0.02541 vs the A/A hazard on A 0.03516 (A-1 rep1) / 0.01923 (A-1 rep2) / 0.01663 (A-2), so inside the A/A range; gen_nll_decode KC 0.26421/0.26444 vs A 0.33564/0.31227/0.26395. No KC reading is above what A showed against itself.",
+  "observations": [
+   "A-1 rep1 (the gate run on the baseline arm, no lever armed) failed selfcons.aa_hazard 0.03516 > 0.03206; A-1 rep2 (an extra replicate on the same boot, reported next to rep1) and A-2 passed. The A/A hazard is noisy with 12 pairs. The rule gates candidate boots; all four candidate quick runs and the K-2 full run pass every component.",
+   "tools.exact_args: A 22/22 (A-1 rep1), 21/22 (A-1 rep2), 21/22 (A-2); K 21/22, 20/22 (full 20/22); KC 21/22, 20/22. t09 fails with args {} in every run except A-1 rep1; the second miss varies (K-2 t01, K-2 full t17, KC-2 t08). The 20/22 readings pass by the gate's one-item Wilson slack. KC-2 is bit-exact against A by construction and reads the same 20/22 as K-2, so the extra miss is within the serve's run-to-run variation, not COOP.",
+   "Prefill NLL (nll.mean_nll, prefill path only): A 0.24453/0.242723 (rep2 0.24388), K 0.244407/0.242911 (full 0.242805/0.242064), KC 0.245195/0.246794. Same-boot repeats move it by 0.00065 (A-1 rep1 vs rep2) and 0.000741 (K-2 full). KC-2 is the highest of the ten readings, but K carries every KC lever and its four readings sit at or below A's, so the KC-2 reading is not a lever effect. All pass the 0.25316 limit.",
+   "K-2 full: gsm8k 94/100 (baseline 94/100), gsm8k_think 39/40 (baseline 38/40), mmlu 199/228 = 0.8728 (baseline 197/228), needle 9/9 incl. 128k, nll 0.242805 (repeat delta 0.000741)."
+  ]
+ },
+ "decision": {
+  "promote_K_bundle": true,
+  "include_COOP": true,
+  "promote": [
+   "DSV41_P2B_COOP=2",
+   "DSV41_DENSE_GEMV=1",
+   "DSV41_MHC_DET_SPLITS=16",
+   "DSV41_ENGRAM_NATIVE_STAGE=1",
+   "DSV41_ENGRAM_EARLY_HASH=1",
+   "DSV41_ATTN_T2R_DEDUP=1",
+   "DSV41_SWA_META_FUSED=1",
+   "DSV41_MOE_PREP_FUSED=1",
+   "DSV41_CANDIDATE_MASK_BOUNDED=1",
+   "DSV41_INDEXER_WP_GEMV=1"
+  ],
+  "reject": [],
+  "verdict": "PROMOTE all 10 K envs (the bundle including DSV41_P2B_COOP=2). K beats A beyond the noise on both primary metrics with every K boot beating the A median, at matched acceptance, with non-inferiority, honest cells, clean guards and quality passing (quick on K-1, K-2, KC-1, KC-2; full on K-2). K beats KC beyond the noise on both primary metrics, so COOP stays. KC beats A beyond the noise too (the bit-exact rest carries its own weight).",
+  "primary_numbers": {
+   "K_vs_A": "four prose c=1 ms/step A 63.866/63.083 (median 63.475), K 47.156/48.245 (47.701): improvement 15.774 vs noise 1.089, every K boot < 63.475. prose_long c=1 A 63.47/63.216 (63.343), K 49.01/48.702 (48.856): 14.487 vs noise 0.308, every K boot < 63.343.",
+   "K_vs_KC": "four prose c=1 KC 56.154/56.213 (56.184) vs K 47.701: 8.483 vs noise 1.089. prose_long c=1 KC 56.9/57.161 (57.03) vs K 48.856: 8.175 vs noise 0.308. Every K boot beats the KC median.",
+   "KC_vs_A": "four prose c=1 7.291 vs noise 0.782; prose_long c=1 6.312 vs noise 0.261; every KC boot beats the A median.",
+   "acceptance": "four prose c=1 per-boot median_run_acceptance_len A 2.5443/2.4568, K 2.557/2.5316, KC 2.5844/2.5443; prose_long c=1 A 2.1505/2.0729, K 2.117/2.1505, KC 2.051/2.117. Per-boot intervals and per-run ranges overlap for all three pairs, so ms/step is compared at matched acceptance."
+  },
+  "non_inferiority_notes": [
+   "K vs A (the promotion comparison): every row passes against the larger spread. pp_warm 8k +13.9, 32k -0.55; pp_novel 8k -4.4 (noise 21.6), 32k -7.5 (noise 11.9); prose_long c=2 aggregate +20.758; warm-prefix 1.0 on all boots. pp_novel_8k is outside A's own spread (0.6) but inside K's (21.6); A-1's three runs alone span 800.0-841.8, so a 0.6 A spread is a coincidence of two medians.",
+   "K vs KC (COOP only): pp_novel_32k K 799.5/811.4 vs KC 815.6/820.7, delta -12.7 against noise 11.9, 0.8 beyond it. The run ranges overlap (K 798.4-824.6, KC 796.6-826.5), and COOP cannot act in prefill: the p2b fused MoE takes 1-8 rows (docker/patch/widen_p2b_mrow.py MAX_ROWS = 8) and a coop call it cannot take would log LOG_DISARMED, which disarm_scan did not find on either K boot after the 8k/32k prefill cells. K vs A on the same row is -7.5, inside the noise. Recorded, not a gate failure for the bundle (section 5 applies non-inferiority to K vs A)."
+  ]
+ },
+ "K_vs_A_deltas": {
+  "note": "delta = K median - A median of the per-boot values (ms/step: negative is faster; tok/s: positive is faster). n = 2 boots per arm; per-boot values are medians of 10 (L.A.I.L), 9 (bench_decode c=1 and four prose), 18 streams / 9 runs (bench c=2), 5 (prose_long c=1), 10 streams / 5 runs (prose_long c=2), 3 (L.A.I.L after c=2).",
+  "ms_step": {
+   "four_prose_c1_ms_step": {
+    "A": [
+     63.866,
+     63.083
+    ],
+    "K": [
+     47.156,
+     48.245
+    ],
+    "A_median": 63.475,
+    "K_median": 47.701,
+    "delta": -15.774,
+    "delta_pct": -24.85,
+    "noise": 1.089,
+    "every_K_boot_beats_A_median": true
+   },
+   "prose_long_c1_ms_step": {
+    "A": [
+     63.47,
+     63.216
+    ],
+    "K": [
+     49.01,
+     48.702
+    ],
+    "A_median": 63.343,
+    "K_median": 48.856,
+    "delta": -14.487,
+    "delta_pct": -22.87,
+    "noise": 0.308,
+    "every_K_boot_beats_A_median": true
+   },
+   "lail_ms_step": {
+    "A": [
+     63.013,
+     62.568
+    ],
+    "K": [
+     48.328,
+     48.909
+    ],
+    "A_median": 62.79,
+    "K_median": 48.618,
+    "delta": -14.172,
+    "delta_pct": -22.57,
+    "noise": 0.581,
+    "every_K_boot_beats_A_median": true
+   },
+   "bench_prose_c1_ms_step": {
+    "A": [
+     63.995,
+     63.774
+    ],
+    "K": [
+     48.244,
+     48.764
+    ],
+    "A_median": 63.884,
+    "K_median": 48.504,
+    "delta": -15.38,
+    "delta_pct": -24.08,
+    "noise": 0.52,
+    "every_K_boot_beats_A_median": true
+   },
+   "structured_c1_ms_step": {
+    "A": [
+     64.275,
+     63.112
+    ],
+    "K": [
+     46.877,
+     47.196
+    ],
+    "A_median": 63.694,
+    "K_median": 47.036,
+    "delta": -16.657,
+    "delta_pct": -26.15,
+    "noise": 1.163,
+    "every_K_boot_beats_A_median": true
+   },
+   "bench_prose_c2_ms_step": {
+    "A": [
+     88.747,
+     86.959
+    ],
+    "K": [
+     57.836,
+     59.209
+    ],
+    "A_median": 87.853,
+    "K_median": 58.523,
+    "delta": -29.33,
+    "delta_pct": -33.39,
+    "noise": 1.788,
+    "every_K_boot_beats_A_median": true
+   },
+   "structured_c2_ms_step": {
+    "A": [
+     89.5,
+     86.96
+    ],
+    "K": [
+     55.768,
+     57.277
+    ],
+    "A_median": 88.23,
+    "K_median": 56.523,
+    "delta": -31.707,
+    "delta_pct": -35.94,
+    "noise": 2.541,
+    "every_K_boot_beats_A_median": true
+   },
+   "prose_long_c2_ms_step": {
+    "A": [
+     88.735,
+     87.214
+    ],
+    "K": [
+     60.724,
+     61.415
+    ],
+    "A_median": 87.975,
+    "K_median": 61.07,
+    "delta": -26.905,
+    "delta_pct": -30.58,
+    "noise": 1.521,
+    "every_K_boot_beats_A_median": true
+   }
+  },
+  "tok_s": {
+   "lail_tok_s": {
+    "A": [
+     33.692,
+     34.208
+    ],
+    "K": [
+     43.567,
+     42.531
+    ],
+    "A_median": 33.95,
+    "K_median": 43.049,
+    "delta": 9.099,
+    "delta_pct": 26.8,
+    "noise": 1.035,
+    "every_K_boot_beats_A_median": true
+   },
+   "four_prose_c1_tok_s": {
+    "A": [
+     39.07,
+     39.24
+    ],
+    "K": [
+     54.42,
+     53.43
+    ],
+    "A_median": 39.155,
+    "K_median": 53.925,
+    "delta": 14.77,
+    "delta_pct": 37.72,
+    "noise": 0.99,
+    "every_K_boot_beats_A_median": true
+   },
+   "bench_prose_c1_tok_s": {
+    "A": [
+     38.106,
+     39.29
+    ],
+    "K": [
+     52.338,
+     53.531
+    ],
+    "A_median": 38.698,
+    "K_median": 52.935,
+    "delta": 14.237,
+    "delta_pct": 36.79,
+    "noise": 1.193,
+    "every_K_boot_beats_A_median": true
+   },
+   "structured_c1_tok_s": {
+    "A": [
+     61.622,
+     62.758
+    ],
+    "K": [
+     84.493,
+     83.923
+    ],
+    "A_median": 62.19,
+    "K_median": 84.208,
+    "delta": 22.017,
+    "delta_pct": 35.4,
+    "noise": 1.135,
+    "every_K_boot_beats_A_median": true
+   },
+   "prose_long_c1_tok_s": {
+    "A": [
+     32.884,
+     33.119
+    ],
+    "K": [
+     43.688,
+     43.923
+    ],
+    "A_median": 33.001,
+    "K_median": 43.806,
+    "delta": 10.804,
+    "delta_pct": 32.74,
+    "noise": 0.235,
+    "every_K_boot_beats_A_median": true
+   },
+   "bench_prose_c2_agg_tok_s": {
+    "A": [
+     55.443,
+     57.947
+    ],
+    "K": [
+     87.585,
+     85.457
+    ],
+    "A_median": 56.695,
+    "K_median": 86.521,
+    "delta": 29.826,
+    "delta_pct": 52.61,
+    "noise": 2.505,
+    "every_K_boot_beats_A_median": true
+   },
+   "structured_c2_agg_tok_s": {
+    "A": [
+     88.348,
+     89.732
+    ],
+    "K": [
+     139.836,
+     139.038
+    ],
+    "A_median": 89.04,
+    "K_median": 139.437,
+    "delta": 50.397,
+    "delta_pct": 56.6,
+    "noise": 1.384,
+    "every_K_boot_beats_A_median": true
+   },
+   "prose_long_c2_agg_tok_s": {
+    "A": [
+     47.182,
+     47.625
+    ],
+    "K": [
+     68.063,
+     68.259
+    ],
+    "A_median": 47.403,
+    "K_median": 68.161,
+    "delta": 20.758,
+    "delta_pct": 43.79,
+    "noise": 0.443,
+    "every_K_boot_beats_A_median": true
+   },
+   "lail_after_c2_3x_tok_s": {
+    "A": [
+     32.85,
+     33.38
+    ],
+    "K": [
+     41.79,
+     44.23
+    ],
+    "A_median": 33.115,
+    "K_median": 43.01,
+    "delta": 9.895,
+    "delta_pct": 29.88,
+    "noise": 2.44,
+    "every_K_boot_beats_A_median": true
+   }
+  }
+ },
+ "projection_vs_measured": {
+  "source": "ARMS-r3 section 11 (microbench, first order, serve-untested) and section 5 expectations; K_vs_KC c=1 = COOP 6.76-6.81 over three replicates, +- 0.16 ci95 -> 6.60-6.97, KC_vs_A c=2 = DENSE_GEMV 1.58 + MHC_DET ~1.0 + FH ALL 3.63-4.20",
+  "table": {
+   "K_vs_A": {
+    "c1": {
+     "projected_saving_ms_step": [
+      11.9,
+      13.1
+     ],
+     "measured_saving_ms_step": {
+      "four_prose_c1_ms_step": 15.774,
+      "prose_long_c1_ms_step": 14.487,
+      "lail_ms_step": 14.172,
+      "bench_prose_c1_ms_step": 15.38,
+      "structured_c1_ms_step": 16.657
+     },
+     "measured_minus_projected_ms_step": {
+      "four_prose_c1_ms_step": [
+       2.674,
+       3.874
+      ],
+      "prose_long_c1_ms_step": [
+       1.387,
+       2.587
+      ],
+      "lail_ms_step": [
+       1.072,
+       2.272
+      ],
+      "bench_prose_c1_ms_step": [
+       2.28,
+       3.48
+      ],
+      "structured_c1_ms_step": [
+       3.557,
+       4.757
+      ]
+     },
+     "measured_above_projection_top": {
+      "four_prose_c1_ms_step": true,
+      "prose_long_c1_ms_step": true,
+      "lail_ms_step": true,
+      "bench_prose_c1_ms_step": true,
+      "structured_c1_ms_step": true
+     }
+    },
+    "c2": {
+     "projected_saving_ms_step": [
+      21.5,
+      22.0
+     ],
+     "measured_saving_ms_step": {
+      "prose_long_c2_ms_step": 26.905,
+      "bench_prose_c2_ms_step": 29.33,
+      "structured_c2_ms_step": 31.707
+     },
+     "measured_minus_projected_ms_step": {
+      "prose_long_c2_ms_step": [
+       4.905,
+       5.405
+      ],
+      "bench_prose_c2_ms_step": [
+       7.33,
+       7.83
+      ],
+      "structured_c2_ms_step": [
+       9.707,
+       10.207
+      ]
+     },
+     "measured_above_projection_top": {
+      "prose_long_c2_ms_step": true,
+      "bench_prose_c2_ms_step": true,
+      "structured_c2_ms_step": true
+     }
+    }
+   },
+   "K_vs_KC": {
+    "c1": {
+     "projected_saving_ms_step": [
+      6.6,
+      6.97
+     ],
+     "measured_saving_ms_step": {
+      "four_prose_c1_ms_step": 8.483,
+      "prose_long_c1_ms_step": 8.175,
+      "lail_ms_step": 7.659,
+      "bench_prose_c1_ms_step": 8.26,
+      "structured_c1_ms_step": 8.952
+     },
+     "measured_minus_projected_ms_step": {
+      "four_prose_c1_ms_step": [
+       1.513,
+       1.883
+      ],
+      "prose_long_c1_ms_step": [
+       1.205,
+       1.575
+      ],
+      "lail_ms_step": [
+       0.689,
+       1.059
+      ],
+      "bench_prose_c1_ms_step": [
+       1.29,
+       1.66
+      ],
+      "structured_c1_ms_step": [
+       1.982,
+       2.352
+      ]
+     },
+     "measured_above_projection_top": {
+      "four_prose_c1_ms_step": true,
+      "prose_long_c1_ms_step": true,
+      "lail_ms_step": true,
+      "bench_prose_c1_ms_step": true,
+      "structured_c1_ms_step": true
+     }
+    },
+    "c2": {
+     "projected_saving_ms_step": [
+      15.2,
+      15.3
+     ],
+     "measured_saving_ms_step": {
+      "prose_long_c2_ms_step": 19.409,
+      "bench_prose_c2_ms_step": 21.559,
+      "structured_c2_ms_step": 22.765
+     },
+     "measured_minus_projected_ms_step": {
+      "prose_long_c2_ms_step": [
+       4.109,
+       4.209
+      ],
+      "bench_prose_c2_ms_step": [
+       6.259,
+       6.359
+      ],
+      "structured_c2_ms_step": [
+       7.465,
+       7.565
+      ]
+     },
+     "measured_above_projection_top": {
+      "prose_long_c2_ms_step": true,
+      "bench_prose_c2_ms_step": true,
+      "structured_c2_ms_step": true
+     }
+    }
+   },
+   "KC_vs_A": {
+    "c1": {
+     "projected_saving_ms_step": [
+      5.1,
+      6.3
+     ],
+     "measured_saving_ms_step": {
+      "four_prose_c1_ms_step": 7.291,
+      "prose_long_c1_ms_step": 6.312,
+      "lail_ms_step": 6.513,
+      "bench_prose_c1_ms_step": 7.12,
+      "structured_c1_ms_step": 7.705
+     },
+     "measured_minus_projected_ms_step": {
+      "four_prose_c1_ms_step": [
+       0.991,
+       2.191
+      ],
+      "prose_long_c1_ms_step": [
+       0.012,
+       1.212
+      ],
+      "lail_ms_step": [
+       0.213,
+       1.413
+      ],
+      "bench_prose_c1_ms_step": [
+       0.82,
+       2.02
+      ],
+      "structured_c1_ms_step": [
+       1.405,
+       2.605
+      ]
+     },
+     "measured_above_projection_top": {
+      "four_prose_c1_ms_step": true,
+      "prose_long_c1_ms_step": true,
+      "lail_ms_step": true,
+      "bench_prose_c1_ms_step": true,
+      "structured_c1_ms_step": true
+     }
+    },
+    "c2": {
+     "projected_saving_ms_step": [
+      6.21,
+      6.78
+     ],
+     "measured_saving_ms_step": {
+      "prose_long_c2_ms_step": 7.496,
+      "bench_prose_c2_ms_step": 7.772,
+      "structured_c2_ms_step": 8.942
+     },
+     "measured_minus_projected_ms_step": {
+      "prose_long_c2_ms_step": [
+       0.716,
+       1.286
+      ],
+      "bench_prose_c2_ms_step": [
+       0.992,
+       1.562
+      ],
+      "structured_c2_ms_step": [
+       2.162,
+       2.732
+      ]
+     },
+     "measured_above_projection_top": {
+      "prose_long_c2_ms_step": true,
+      "bench_prose_c2_ms_step": true,
+      "structured_c2_ms_step": true
+     }
+    }
+   }
+  },
+  "reference_check": "The A boots reproduce the projection's reference: prose_long c=1 63.47/63.216 ms/step vs R34 s13 62.88; L.A.I.L 63.013/62.568 vs the k3 profile boot's 62.8. The gap below is not a slow baseline.",
+  "summary": "Measured savings exceed the projection in every comparison. c=1: K vs A 14.172-16.657 ms/step against 11.9-13.1 (primary: 15.774 and 14.487), i.e. 1.07-4.76 ms above; K (47.701 / 48.856 / 48.618 ms/step on four prose c=1 / prose_long c=1 / L.A.I.L) lands below the projected 49.8-51.0. COOP (K vs KC) 7.659-8.952 against 6.60-6.97; the bit-exact rest (KC vs A) 6.312-7.705 against 5.1-6.3. c=2: K vs A 26.905-31.707 against 21.5-22.0; COOP 19.409-22.765 against 15.2-15.3; KC vs A 7.496-8.942 against about 6.2-6.8. In tok/s the section 5 expectation was ~+23-26% at matched acceptance; measured K vs A is +26.8% (L.A.I.L), +32.7% (prose_long c=1), +37.7% (four prose c=1), +35.4% (structured c=1).",
+  "gap_explanation_section12": [
+   "Section 11 sums single-GPU, isolated-kernel savings. The serve is TP=2 with an all-reduce after every attention and MoE block, so a step lasts as long as the slower rank. The k3 profile (timeline-r3.txt section 3) found rank 0 late on 72% of in-layer ARs: rank 1 waited 3.92 ms/step and rank 0 1.34 ms/step; rank 0's non-NCCL kernel time was 63.0 against 59.7 ms/step, and its p2b p99 1170 us against 724 us. Section 12 said that with COOP shortening the MoE 'the skew can move either way'. The measured excess over the sum is in the direction of less cross-rank wait, so it favours that reading, but these boots do not measure it.",
+   "Serving tax. The same profile found in-serve kernels slower than isolated (p2b +6.7% on the median; on means 4.97 ms/step of excess on rank 0 across the weight-streaming kernels). In-serve p2b at m=4 ran 546.6 median / 579.9 mean us per layer against coop-moe's isolated p2b 522.2 / 523.2 us (cold, m=4). Arithmetic, not a measurement: if COOP's isolated saving scaled by the same mean ratio (579.9 / 523.2), it would be 6.81 x 1.108 = 7.55 ms/step, which covers part of the 7.66-8.95 measured COOP saving at c=1 but not all of it.",
+   "c=2 is not explained by the serving tax: on the clean rank at m=8 the in-serve p2b was 1032.5 us against 1013.8 us isolated (+1.8%). The k3 c=2 step-level profile was not usable (rank 0 shared the GPU with Chromium), so there is no clean c=2 decomposition to compare against. The c=2 COOP excess (4.1-7.5 ms/step over 15.3) is unattributed.",
+   "The other section 12 interactions do not apply to K: DENSE_GEMV x WKV_TP, MHC_OVERLAP x L2_PREFETCH and EAGER_TWIN x PM_QOS involve KP add-ons that were off on every boot. COOP x MOE_PREP_FUSED: the fused prep feeds p2b bit-exact inputs, and neither projection counts the other's saving, so there is no double count in the sum.",
+   "Attribution is P3's job (ARMS-r3 section 6): one A_p and one K_p profile boot with gpu_guard clean, per-kernel time per lever and the rank-skew re-read section 12 asks for. The P3 recipe profiles c=1 only; the c=2 gap needs a c=2 window as well (timeline-r3.txt section 7 has the recipe)."
+  ]
+ },
+ "open_items": [
+  "Section 6: 'Promote the bundle as a unit and record the per-lever table with it.' P3 has not run, so the per-lever table is still owed. A lever whose kernel time does not move as expected in P3 leaves the bundle for its own profile check.",
+  "Section 13 promotion steps are not done by this stage: the promoted envs become defaults in recipe.yaml then kit/render.py; recipe.yaml's image tag moves to the e14 content (docker tag review-e14 canonical-e14 on both nodes, same ID); verdicts go to flags.md and results/RESULTS.md (ARMS.md step 8). After the promotion the next pairs (P4 CUR/VIT, P5 K/KP, P6) carry these envs in their baseline."
+ ],
+ "serve_state_at_decision": "down on both nodes (docker ps: no dsv41 container on spark1 or spark2); this stage booted nothing."
+}

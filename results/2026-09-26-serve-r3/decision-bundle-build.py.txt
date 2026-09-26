@@ -1,0 +1,178 @@
+# Composes decision-bundle.json from the output of decision-bundle-compute.py.txt:
+#   python3 decision-bundle-compute.py.txt raw.json && python3 decision-bundle-build.py.txt raw.json decision-bundle.json
+import json, sys
+raw = json.load(open(sys.argv[1]))
+C = raw["comparisons"]
+P = raw["per_boot"]
+r = lambda x, n=3: round(x, n)
+
+K_ENV = ["DSV41_P2B_COOP=2", "DSV41_DENSE_GEMV=1", "DSV41_MHC_DET_SPLITS=16", "DSV41_ENGRAM_NATIVE_STAGE=1",
+         "DSV41_ENGRAM_EARLY_HASH=1", "DSV41_ATTN_T2R_DEDUP=1", "DSV41_SWA_META_FUSED=1", "DSV41_MOE_PREP_FUSED=1",
+         "DSV41_CANDIDATE_MASK_BOUNDED=1", "DSV41_INDEXER_WP_GEMV=1"]
+
+def row(cmpname, grp, key):
+    return C[cmpname][grp][key]
+
+def g(cmpname, key):
+    v = row(cmpname, "ms_step", key)
+    return v
+
+# ---- promotion checks (ARMS-r3 section 5 / ARMS.md step 6)
+prim = ["four_prose_c1_ms_step", "prose_long_c1_ms_step"]
+checks = {}
+for name in ("K_vs_A", "K_vs_KC", "KC_vs_A"):
+    checks[name] = {
+        "primary_gate": {k: {kk: row(name, "ms_step", k)[kk] for kk in
+                             ("base", "cand", "base_median", "cand_median", "improvement", "noise",
+                              "every_cand_boot_beats_base_median", "gate_pass")} for k in prim},
+        "acceptance_matched": {k: v["per_boot_interval_overlap"] and v["run_range_overlap"]
+                               for k, v in C[name]["acceptance"].items()},
+        "non_inferiority_ok_vs_larger_spread": {k: v["ok_vs_larger_spread"] for k, v in C[name]["non_inferiority"].items()},
+    }
+
+boots_K = ["K-1", "K-2"]; boots_KC = ["KC-1", "KC-2"]; boots_A = ["A-1", "A-2"]
+honest = {b: dict(prose_long_c1=f"{P[b]['prose_long_c1_finish']}, post-EOS {P[b]['prose_long_c1_post_eos']}",
+                  prose_long_c2=f"{P[b]['prose_long_c2_finish']}, post-EOS {P[b]['prose_long_c2_post_eos']}",
+                  lail_finish=P[b]["lail_finish"], serve_env_ranks_match=P[b]["serve_env_ranks_match"],
+                  lever_disarmed=P[b]["lever_disarmed"], disarm_scan_rc=P[b]["disarm_scan_rc"],
+                  gpu_guard_rc=P[b]["gpu_guard_rc"], contaminated=P[b]["contaminated"],
+                  e2e_rc=P[b]["e2e_rc"], correctness=P[b]["correctness"],
+                  memavail_after_smoke_spark1_spark2=P[b]["memavail_after_smoke_gib"])
+          for b in P}
+all_honest = all(P[b]["prose_long_c1_finish"] == "length" and P[b]["prose_long_c1_post_eos"] == 0.0
+                 and P[b]["prose_long_c2_finish"] == "length" and P[b]["serve_env_ranks_match"]
+                 and not P[b]["lever_disarmed"] and P[b]["disarm_scan_rc"] == [0] and P[b]["gpu_guard_rc"] == [0]
+                 and not P[b]["contaminated"] and P[b]["e2e_rc"] == [0] and P[b]["correctness"] == "8/8" for b in P)
+q_quick_K = all(P[b]["quality"]["quick"]["passed"] for b in boots_K)
+q_quick_KC = all(P[b]["quality"]["quick"]["passed"] for b in boots_KC)
+q_full_K2 = P["K-2"]["quality"]["full"]["passed"]
+
+KvA = checks["K_vs_A"]
+promote_K = (all(v["gate_pass"] for v in KvA["primary_gate"].values())
+             and all(KvA["acceptance_matched"].values())
+             and all(KvA["non_inferiority_ok_vs_larger_spread"].values())
+             and all_honest and q_quick_K and q_full_K2)
+KvKC = checks["K_vs_KC"]
+coop_beyond = all(v["gate_pass"] for v in KvKC["primary_gate"].values())
+promote = (K_ENV if coop_beyond else [e for e in K_ENV if not e.startswith("DSV41_P2B_COOP")]) if promote_K else []
+
+# ---- K vs A deltas table (what the task asks for)
+def d(name, key, grp):
+    v = C[name][grp][key]
+    return {"A": v["base"], "K": v["cand"], "A_median": v["base_median"], "K_median": v["cand_median"],
+            "delta": (-v["improvement"] if grp == "ms_step" else v["improvement"]),
+            "delta_pct": (-v["improvement_pct"] if grp == "ms_step" else v["improvement_pct"]),
+            "noise": v["noise"], "every_K_boot_beats_A_median": v["every_cand_boot_beats_base_median"]}
+deltas = {
+    "ms_step": {k: d("K_vs_A", k, "ms_step") for k in C["K_vs_A"]["ms_step"]},
+    "tok_s": {k: d("K_vs_A", k, "tok_s") for k in C["K_vs_A"]["tok_s"]},
+}
+
+# ---- projection vs measured (section 11)
+proj = {
+    "K_vs_A": {"c1": [11.9, 13.1], "c2": [21.5, 22.0]},
+    "K_vs_KC": {"c1": [6.6, 6.97], "c2": [15.2, 15.3]},
+    "KC_vs_A": {"c1": [5.1, 6.3], "c2": [6.21, 6.78]},
+}
+c1_keys = ["four_prose_c1_ms_step", "prose_long_c1_ms_step", "lail_ms_step", "bench_prose_c1_ms_step", "structured_c1_ms_step"]
+c2_keys = ["prose_long_c2_ms_step", "bench_prose_c2_ms_step", "structured_c2_ms_step"]
+pvm = {}
+for name, pr in proj.items():
+    ent = {}
+    for conc, keys in (("c1", c1_keys), ("c2", c2_keys)):
+        lo, hi = pr[conc]
+        meas = {k: C[name]["ms_step"][k]["improvement"] for k in keys}
+        ent[conc] = {"projected_saving_ms_step": [lo, hi],
+                     "measured_saving_ms_step": meas,
+                     "measured_minus_projected_ms_step": {k: [r(v - hi), r(v - lo)] for k, v in meas.items()},
+                     "measured_above_projection_top": {k: v > hi for k, v in meas.items()}}
+    pvm[name] = ent
+
+out = {
+    "what": "ARMS-r3 section 5 (P2) kernel-bundle decision: ARMS.md step 6 applied to the six counted boots A-1, K-1, KC-1, A-2, K-2, KC-2 (results/2026-09-26-serve-r3/). Computed from the raw per-boot files by decision-bundle-compute.py.txt (lail10.txt, bench_decode.txt, four/four_numbers.json, four/02-micro.log, quality_*.json, gate files), not from the stages' summary.json; every number below matches the stages' summaries.",
+    "date": "2026-09-26",
+    "inputs": {
+        "image": "dsv41-flash-exl3-sm121:review-e14 = sha256:3a002b55c9bc... on both ranks, every boot",
+        "snapshot": "2.0bpw-mcg-lmhead-mxfp8 (serve pin), every boot",
+        "order": "A-1, K-1, KC-1, A-2, K-2, KC-2 (the section 5 interleave), each the counted attempt; K-1 is attempt 2 after fix ae0255a (DSV41_MHC_DET_SPLITS self-test dtype)",
+        "commits_at_boot": {b: P[b]["commit"][:12] for b in ["A-1", "K-1", "KC-1", "A-2", "K-2", "KC-2"]},
+        "docker_patch": "sha256 lists identical on K-1, KC-1, A-2, K-2, KC-2 (61 files). A-1 differs in docker/patch/mhc_det.py only (pre-fix ae0255a; the change touches the MHC_DET self-tests, a lever that is off in A). Non-results diff 96a7de7..da3cb4e: docker/patch/mhc_det.py and tests/test_mhc_det.py only, so the bench, four_numbers and quality tools are the same code on all six boots.",
+        "arm_envs_verified_in_containers": "A: every round-3 lever 0/unset on both ranks. K: the 10 K envs on both ranks (P2B_COOP=2). KC: the 9 KC envs on both ranks, DSV41_P2B_COOP unset. KP add-ons (MHC_DET_OVERLAP/WKV_TP/NCCL_EAGER_TWIN/AR_L2_PREFETCH=0, PM_QOS_US unset) off on all six. Round-34 defaults (WILLNEED, STREAM_FEED, WOA_PREPACK, SPARSE_MARKOV =1) on all six. Source: four/four_numbers.json serve_env per rank.",
+    },
+    "rule": {
+        "source": "ARMS.md step 6 + ARMS-r3 section 5",
+        "primary_metric": "prose_median_ms_per_step (four_numbers prose cell, 9 runs) and prose_long c=1 median_ms_per_step (5 runs), per boot; arm value = median of its 2 boots",
+        "noise": "larger boot-to-boot spread (max-min of the per-boot values) of the two compared arms",
+        "promote_K_when": ["K-vs-A median improvement > noise on both primary metrics", "every K boot beats the A median",
+                           "per-boot median_run_acceptance_len overlaps (matched acceptance)",
+                           "non-inferiority on pp_warm/pp_novel 8k/32k, prose_long c=2 aggregate, warm-prefix (not worse than A by more than the larger boot-to-boot spread)",
+                           "honest cells: natural_finish length, post-EOS 0, serve_env_ranks_match, lever_disarmed false; disarm_scan and gpu_guard clean on every counted boot",
+                           "quality quick passes on both K boots; quality full passes on K#2"],
+        "coop": "K vs KC beyond the noise (better) keeps COOP; inside the noise keeps it only if P3 shows its mechanism; worse beyond the noise drops it",
+    },
+    "validity": {
+        "all_six_counted_boots_valid": all_honest,
+        "per_boot": honest,
+        "notes": [
+            "No boot is VOID: gpu_guard --check rc=0 (0 FOREIGN) on all six; no CONTAMINATED marker.",
+            "Deviation from section 1 on A-1, K-1, KC-1, K-2: the spark2 GPU lock holder was refused by the session's permission layer; the lock was free at precheck and the spark2 guard (10 s samples) saw only VLLM::Worker_TP / Xorg / gnome-shell. The lock was held on A-2 and KC-2.",
+            "Slow runs inside clean boots, kept as measured: K-2 L.A.I.L runs 4/5 at 52.49/55.96 ms/step (other 8: 48.38-49.50); KC-2 L.A.I.L run 1 at 63.93 (other 9: 55.73-57.68). The per-boot medians (48.909, 56.349) are not moved by them.",
+            "Boot floors held: MemAvailable 116-117 GiB before every boot, 20-25 GiB after the smokes (floor 8).",
+        ],
+    },
+    "comparisons": C,
+    "checks": checks,
+    "quality": {
+        "per_boot": {b: P[b]["quality"] for b in P},
+        "gate": {"quick_K": q_quick_K, "quick_KC": q_quick_KC, "full_K2": q_full_K2},
+        "section10_bit_exact_read": "KC (bit-exact levers only) vs the A/A control: decode-vs-prefill median |dlogprob| KC 0.01124/0.0063 vs A 0.02183/0.01112 (A-1 rep2 0.01373); golden hazard KC 0.01912/0.02541 vs the A/A hazard on A 0.03516 (A-1 rep1) / 0.01923 (A-1 rep2) / 0.01663 (A-2), so inside the A/A range; gen_nll_decode KC 0.26421/0.26444 vs A 0.33564/0.31227/0.26395. No KC reading is above what A showed against itself.",
+        "observations": [
+            "A-1 rep1 (the gate run on the baseline arm, no lever armed) failed selfcons.aa_hazard 0.03516 > 0.03206; A-1 rep2 (an extra replicate on the same boot, reported next to rep1) and A-2 passed. The A/A hazard is noisy with 12 pairs. The rule gates candidate boots; all four candidate quick runs and the K-2 full run pass every component.",
+            "tools.exact_args: A 22/22 (A-1 rep1), 21/22 (A-1 rep2), 21/22 (A-2); K 21/22, 20/22 (full 20/22); KC 21/22, 20/22. t09 fails with args {} in every run except A-1 rep1; the second miss varies (K-2 t01, K-2 full t17, KC-2 t08). The 20/22 readings pass by the gate's one-item Wilson slack. KC-2 is bit-exact against A by construction and reads the same 20/22 as K-2, so the extra miss is within the serve's run-to-run variation, not COOP.",
+            "Prefill NLL (nll.mean_nll, prefill path only): A 0.24453/0.242723 (rep2 0.24388), K 0.244407/0.242911 (full 0.242805/0.242064), KC 0.245195/0.246794. Same-boot repeats move it by 0.00065 (A-1 rep1 vs rep2) and 0.000741 (K-2 full). KC-2 is the highest of the ten readings, but K carries every KC lever and its four readings sit at or below A's, so the KC-2 reading is not a lever effect. All pass the 0.25316 limit.",
+            "K-2 full: gsm8k 94/100 (baseline 94/100), gsm8k_think 39/40 (baseline 38/40), mmlu 199/228 = 0.8728 (baseline 197/228), needle 9/9 incl. 128k, nll 0.242805 (repeat delta 0.000741).",
+        ],
+    },
+    "decision": {
+        "promote_K_bundle": promote_K,
+        "include_COOP": coop_beyond,
+        "promote": promote,
+        "reject": [],
+        "verdict": "PROMOTE all 10 K envs (the bundle including DSV41_P2B_COOP=2). K beats A beyond the noise on both primary metrics with every K boot beating the A median, at matched acceptance, with non-inferiority, honest cells, clean guards and quality passing (quick on K-1, K-2, KC-1, KC-2; full on K-2). K beats KC beyond the noise on both primary metrics, so COOP stays. KC beats A beyond the noise too (the bit-exact rest carries its own weight).",
+        "primary_numbers": {
+            "K_vs_A": "four prose c=1 ms/step A 63.866/63.083 (median 63.475), K 47.156/48.245 (47.701): improvement 15.774 vs noise 1.089, every K boot < 63.475. prose_long c=1 A 63.47/63.216 (63.343), K 49.01/48.702 (48.856): 14.487 vs noise 0.308, every K boot < 63.343.",
+            "K_vs_KC": "four prose c=1 KC 56.154/56.213 (56.184) vs K 47.701: 8.483 vs noise 1.089. prose_long c=1 KC 56.9/57.161 (57.03) vs K 48.856: 8.175 vs noise 0.308. Every K boot beats the KC median.",
+            "KC_vs_A": "four prose c=1 7.291 vs noise 0.782; prose_long c=1 6.312 vs noise 0.261; every KC boot beats the A median.",
+            "acceptance": "four prose c=1 per-boot median_run_acceptance_len A 2.5443/2.4568, K 2.557/2.5316, KC 2.5844/2.5443; prose_long c=1 A 2.1505/2.0729, K 2.117/2.1505, KC 2.051/2.117. Per-boot intervals and per-run ranges overlap for all three pairs, so ms/step is compared at matched acceptance.",
+        },
+        "non_inferiority_notes": [
+            "K vs A (the promotion comparison): every row passes against the larger spread. pp_warm 8k +13.9, 32k -0.55; pp_novel 8k -4.4 (noise 21.6), 32k -7.5 (noise 11.9); prose_long c=2 aggregate +20.758; warm-prefix 1.0 on all boots. pp_novel_8k is outside A's own spread (0.6) but inside K's (21.6); A-1's three runs alone span 800.0-841.8, so a 0.6 A spread is a coincidence of two medians.",
+            "K vs KC (COOP only): pp_novel_32k K 799.5/811.4 vs KC 815.6/820.7, delta -12.7 against noise 11.9, 0.8 beyond it. The run ranges overlap (K 798.4-824.6, KC 796.6-826.5), and COOP cannot act in prefill: the p2b fused MoE takes 1-8 rows (docker/patch/widen_p2b_mrow.py MAX_ROWS = 8) and a coop call it cannot take would log LOG_DISARMED, which disarm_scan did not find on either K boot after the 8k/32k prefill cells. K vs A on the same row is -7.5, inside the noise. Recorded, not a gate failure for the bundle (section 5 applies non-inferiority to K vs A).",
+        ],
+    },
+    "K_vs_A_deltas": {
+        "note": "delta = K median - A median of the per-boot values (ms/step: negative is faster; tok/s: positive is faster). n = 2 boots per arm; per-boot values are medians of 10 (L.A.I.L), 9 (bench_decode c=1 and four prose), 18 streams / 9 runs (bench c=2), 5 (prose_long c=1), 10 streams / 5 runs (prose_long c=2), 3 (L.A.I.L after c=2).",
+        **deltas,
+    },
+    "projection_vs_measured": {
+        "source": "ARMS-r3 section 11 (microbench, first order, serve-untested) and section 5 expectations; K_vs_KC c=1 = COOP 6.76-6.81 over three replicates, +- 0.16 ci95 -> 6.60-6.97, KC_vs_A c=2 = DENSE_GEMV 1.58 + MHC_DET ~1.0 + FH ALL 3.63-4.20",
+        "table": pvm,
+        "reference_check": "The A boots reproduce the projection's reference: prose_long c=1 63.47/63.216 ms/step vs R34 s13 62.88; L.A.I.L 63.013/62.568 vs the k3 profile boot's 62.8. The gap below is not a slow baseline.",
+        "summary": "Measured savings exceed the projection in every comparison. c=1: K vs A 14.172-16.657 ms/step against 11.9-13.1 (primary: 15.774 and 14.487), i.e. 1.07-4.76 ms above; K (47.701 / 48.856 / 48.618 ms/step on four prose c=1 / prose_long c=1 / L.A.I.L) lands below the projected 49.8-51.0. COOP (K vs KC) 7.659-8.952 against 6.60-6.97; the bit-exact rest (KC vs A) 6.312-7.705 against 5.1-6.3. c=2: K vs A 26.905-31.707 against 21.5-22.0; COOP 19.409-22.765 against 15.2-15.3; KC vs A 7.496-8.942 against about 6.2-6.8. In tok/s the section 5 expectation was ~+23-26% at matched acceptance; measured K vs A is +26.8% (L.A.I.L), +32.7% (prose_long c=1), +37.7% (four prose c=1), +35.4% (structured c=1).",
+        "gap_explanation_section12": [
+            "Section 11 sums single-GPU, isolated-kernel savings. The serve is TP=2 with an all-reduce after every attention and MoE block, so a step lasts as long as the slower rank. The k3 profile (timeline-r3.txt section 3) found rank 0 late on 72% of in-layer ARs: rank 1 waited 3.92 ms/step and rank 0 1.34 ms/step; rank 0's non-NCCL kernel time was 63.0 against 59.7 ms/step, and its p2b p99 1170 us against 724 us. Section 12 said that with COOP shortening the MoE 'the skew can move either way'. The measured excess over the sum is in the direction of less cross-rank wait, so it favours that reading, but these boots do not measure it.",
+            "Serving tax. The same profile found in-serve kernels slower than isolated (p2b +6.7% on the median; on means 4.97 ms/step of excess on rank 0 across the weight-streaming kernels). In-serve p2b at m=4 ran 546.6 median / 579.9 mean us per layer against coop-moe's isolated p2b 522.2 / 523.2 us (cold, m=4). Arithmetic, not a measurement: if COOP's isolated saving scaled by the same mean ratio (579.9 / 523.2), it would be 6.81 x 1.108 = 7.55 ms/step, which covers part of the 7.66-8.95 measured COOP saving at c=1 but not all of it.",
+            "c=2 is not explained by the serving tax: on the clean rank at m=8 the in-serve p2b was 1032.5 us against 1013.8 us isolated (+1.8%). The k3 c=2 step-level profile was not usable (rank 0 shared the GPU with Chromium), so there is no clean c=2 decomposition to compare against. The c=2 COOP excess (4.1-7.5 ms/step over 15.3) is unattributed.",
+            "The other section 12 interactions do not apply to K: DENSE_GEMV x WKV_TP, MHC_OVERLAP x L2_PREFETCH and EAGER_TWIN x PM_QOS involve KP add-ons that were off on every boot. COOP x MOE_PREP_FUSED: the fused prep feeds p2b bit-exact inputs, and neither projection counts the other's saving, so there is no double count in the sum.",
+            "Attribution is P3's job (ARMS-r3 section 6): one A_p and one K_p profile boot with gpu_guard clean, per-kernel time per lever and the rank-skew re-read section 12 asks for. The P3 recipe profiles c=1 only; the c=2 gap needs a c=2 window as well (timeline-r3.txt section 7 has the recipe).",
+        ],
+    },
+    "open_items": [
+        "Section 6: 'Promote the bundle as a unit and record the per-lever table with it.' P3 has not run, so the per-lever table is still owed. A lever whose kernel time does not move as expected in P3 leaves the bundle for its own profile check.",
+        "Section 13 promotion steps are not done by this stage: the promoted envs become defaults in recipe.yaml then kit/render.py; recipe.yaml's image tag moves to the e14 content (docker tag review-e14 canonical-e14 on both nodes, same ID); verdicts go to flags.md and results/RESULTS.md (ARMS.md step 8). After the promotion the next pairs (P4 CUR/VIT, P5 K/KP, P6) carry these envs in their baseline.",
+    ],
+    "serve_state_at_decision": "down on both nodes (docker ps: no dsv41 container on spark1 or spark2); this stage booted nothing.",
+}
+json.dump(out, open(sys.argv[2], "w"), indent=1)
+print(json.dumps({"promote": promote, "promote_K": promote_K, "coop": coop_beyond, "all_honest": all_honest,
+                  "q": [q_quick_K, q_quick_KC, q_full_K2], "checks": checks}, indent=1))
