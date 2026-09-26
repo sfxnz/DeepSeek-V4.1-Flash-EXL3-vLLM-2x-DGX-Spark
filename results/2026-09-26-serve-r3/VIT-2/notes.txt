@@ -1,0 +1,78 @@
+VIT-2 boot notes. Arm VIT is the promoted config (the 10 K envs on the round-34 defaults, same env as CUR-1/CUR-2) on the
+Viterbi pack 2.0bpw-mcg-viterbi-lmhead-mxfp8, image review-e14. This is P4 boot 4 of the order CUR#1, VIT#1, CUR#2, VIT#2,
+so the 2+2 P4 set is complete with this boot.
+- Command: command.txt (nohup, background, output in boot.txt). HEAD ebeec5e at boot. docker/patch sha256 identical to
+  VIT-1/CUR-2 (61 files). First attempt counted: no fix, no retry. run.sh started 15:19:47Z, vLLM server started 15:29:31Z
+  (584 s), run.sh exited after warmup 15:30:12Z (625 s). Model loading 416.96 s (weights 344.65 + 20.72, 75.58 GiB), init
+  engine 60.08 s. Both ranks loaded .../snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8.
+- Preconditions (preconditions.txt, 15:17:31Z): requant DONE. No GPU container on either node. pmon spark1 empty, spark2
+  Xorg/gnome-shell only. No microbench running. MemAvailable 116/117 GiB. Image ID 3a002b55c9bc on both nodes. Viterbi
+  snapshot present on both nodes (60 entries). Tree clean apart from this dir. unittest 798 OK (14 skipped) rc 0, render
+  --check rc 0 (tests-render.txt). gpu_free_wait GPUFREE at 15:19:37Z (gpufree-spark1.txt). The section-7 Viterbi kernel
+  pre-check is the one recorded for VIT-1 (commit 8bf97c5); the pack and the kernels are unchanged since.
+- spark2 lock: held for the boot (flock ... sleep 86400 from 15:17:16Z; LOCK_HELD before run.sh). After stop, the killed
+  local ssh left the remote flock/sleep pair (pids 3840676/3840678, started 15:17:16Z by this session) holding the lock, as
+  on CUR-1/CUR-2; this session killed its own pair and confirmed LOCK_FREE at 16:24:14Z.
+- Guards were started at 15:36:52Z, after run.sh had exited (15:30:12Z) and before the smokes; nothing was measured in
+  between. mem-after-boot.txt was taken after the smokes (15:37Z), so it is not a separate after-warmup reading.
+- Audit: boot.txt has "audit ok: every expected patch engaged on head, worker"; a strict re-run on the end-of-boot logs with
+  the head container's DSV41_ env also passed (rc 0, engagement.txt). engagement.txt: every section-3 line for K 1x per rank
+  (COOP=2, mhc det target 81 fn / draft 6 fn, native stage, early hash, t2r dedup + census, moe prep, candidate mask, wp
+  gemv, swa meta), dense GEMV 9 lines per rank, lm_head mxfp8 / prefetch v3 / gather v2 1x per rank, woa fp8 43/43; KP
+  add-ons 0; 0 LOG_DISARMED hits; envs equal on both ranks (only VLLM_HOST_IP differs); running image 3a002b55c9bc on both
+  ranks. COOP and lm_head mxfp8 engaged exactly as in CUR. disarm_scan rc 0.
+- gpu_guard rc=0 (0 FOREIGN). spark1 1334 samples at 2 s (15:36:52Z-16:23:49Z), only VLLM::Worker_TP. spark2 260 at 10 s
+  (VLLM::Worker_TP, Xorg, gnome-shell). Not VOID.
+- Smokes: chat 323, vision Red (both run from the worktree cwd). Correctness 8/8 rc 0. MemAvailable after smoke 22/25 GiB
+  (floor 8).
+- L.A.I.L x10: median 42.174 tok/s (37.532-45.289), 48.679 ms/step, acc 2.0857 (1.921-2.216), finish length. Runs 5 and 8
+  read 52.12/55.68 ms/step; the other 8 read 48.25-49.18. Guards clean. Kept as measured.
+- bench_decode x9 (median_run_acc):
+    - prose c=1 48.914 tok/s at 48.396 ms/step, acc 2.3488 (2.258-2.463);
+    - prose c=2 agg 78.263 at 59.144 ms/step, acc 2.4663;
+    - structured c=1 84.424 at 47.38 ms/step, acc 4.0 on every run;
+    - structured c=2 agg 156.916 at 50.965 ms/step, acc 4.0 on every run.
+- four_numbers: prose c=1 51.42 tok/s at 47.743 ms/step (median run acc 2.439); prose_long c=1 48.629 tok/s at 48.728
+  ms/step (acc 2.369, range 2.128-2.5, n=5, finish length, post-EOS 0); prose_long c=2 agg 69.337 at 61.109 ms/step;
+  pp_warm 8k/32k 775.7/760.4 (runs 765.1/775.7/789.3, 760.4/752.1/782.7); pp_novel 8k/32k 814.2/794.2 (runs
+  814.2/797.8/841.2, 791.7/795.3/794.2); L.A.I.L 3x after c=2 43.09 (46.77/43.09/41.05); warm prefix 1.0 (TTFT cold/warm
+  2.645/0.424 s); ranks_match true; disarmed false. MemAvailable after micro 21.07/23.53 GiB.
+- e2e rc 0, 3/3 (useful_tok_s 5.78). correctness --full 9/9 rc 0 (recall_64k in a 62803-token doc).
+- Quality quick FAIL (rc 1, 318.5 s). Only failing component: selfcons.golden_hazard 0.10204 > 0.03206 (20/24 golden
+  pairs diverge, first_div [0,9,7,-,1,-,0,1,5,3,0,0 | same]). Passed: nll 0.138664 (CUR 0.24387/0.24232), dlp 0.00294,
+  gen_nll_prefill 0.25052, aa_hazard 0.01166 (4/12 identical), tools 22/22 json / 22/22 exact / 8/8 no_call, needle 6/6,
+  c2, vision.
+- Quality full FAIL (rc 1, 1292.3 s). Only failing component: golden_hazard 0.0939 > 0.04348 (20/24 diverged). Passed:
+  nll 0.139313 (two passes 0.139313/0.138906, repeat delta 0.000407; CUR 0.243424/0.24389), dlp 0.0022, gen_nll_prefill
+  0.25107, aa_hazard 0.01207 (5/12 identical), tools 22/22 / 22/22 / 8/8, needle 9/9 including 128k, gsm8k 97/100 (CUR
+  95, 94), gsm8k_think 39/40 (CUR 39, 39), mmlu 204/228 = 0.8947 (CUR 196, 198; limit 0.864), c2, vision.
+  Same pattern as VIT-1: the golden texts are greedy output of the old pack, and the new pack diverges from them early
+  (first_div mostly 0-9 tokens) with the same prompts diverging on both VIT boots. VIT's own A/A hazard is in band on all
+  four VIT runs. ARMS-r3 section 7 requires both gates to pass with no component outside its band; neither VIT boot meets
+  that as written. The serve pin does not change.
+- Order followed: smokes, mem, correctness, L.A.I.L x10, bench_decode x9, four_numbers, e2e, quality quick, quality full,
+  correctness --full, disarm_scan, engagement check + strict audit re-run, gpu_guard --check, mem-end, ./stop.sh (16:23:58Z).
+- P4 2+2 readings, CUR = [CUR-1, CUR-2], VIT = [VIT-1, VIT-2] (summary.json P4_2x2_readings_not_a_written_verdict; noise =
+  the larger boot-to-boot spread):
+    - prose_long c=1 tok/s: CUR 44.893/43.395, VIT 45.875/48.629. Median delta +3.108, noise 2.754, both VIT boots above
+      the CUR median. Passes the noise rule.
+    - L.A.I.L tok/s: CUR 42.927/43.123, VIT 41.829/42.174. Median delta -1.023, noise 0.345, both VIT boots below the CUR
+      median. Worse beyond the noise.
+    - ms/step equal within noise on every c=1 cell: prose_long c=1 -0.032 (noise 0.426), L.A.I.L -0.322 (0.733), four
+      prose c=1 -0.084 (0.185). So the c=1 tok/s moves come through acceptance, as section 7 predicts.
+    - Acceptance (median run): L.A.I.L CUR 2.118/2.1225, VIT 2.044/2.0857 (lower). prose_long c=1 CUR 2.2222/2.117, VIT
+      2.2472/2.369 (higher). four prose c=1 CUR 2.6184/2.5443, VIT 2.3976/2.439 (lower); four prose c=1 tok/s CUR
+      54.11/53.34, VIT 50.79/51.42 (-2.62, noise 0.77). bench prose c=1 tok/s CUR 53.688/52.363, VIT 49.363/48.914. structured
+      acc 4.0 on every VIT run (CUR 3.9608).
+    - structured c=2: agg CUR 138.839/139.219, VIT 157.32/156.916; ms/step CUR 56.38/56.18, VIT 50.836/50.965 (-5.38, noise
+      0.2). A ms/step change at c=2 structured, reproduced on both VIT boots, coinciding with acceptance 4.0; the cause is
+      not established (section 7: "a ms/step change means something else moved").
+    - Non-inferiority: pp_novel 8k +10.5 (noise 12.5), pp_novel 32k -10.15 (noise 24.0; VIT-2 794.2 is below both CUR
+      boots), pp_warm 8k +16.15 (19.4), pp_warm 32k -3.3 (9.0), prose_long c=2 agg +0.669 (3.996); warm prefix 1.0. All
+      inside the noise.
+    - Quality: VIT quick and full FAIL on golden_hazard only, on both boots; CUR passed both on both boots. NLL is lower on
+      VIT (quick 0.1375/0.1387 vs 0.2439/0.2423; full 0.1386/0.1393 vs 0.2434/0.2439). gsm8k 97/97 vs 95/94, mmlu 206/204 vs
+      196/198.
+  Mixed perf (prose_long up beyond noise, L.A.I.L and short prose c=1 down beyond noise) and a failed quality gate as
+  written: the section-7 conditions for moving the serve pin are not met. The verdict and any change to the golden-gate
+  rule for pack changes belong to the protocol owner.
