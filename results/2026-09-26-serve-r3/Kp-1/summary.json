@@ -1,0 +1,353 @@
+{
+ "arm": "Kp-1",
+ "phase": "P5 (KP add-ons ABAB), boot 1 of K#3, KP#1, K#4, KP#2 (this is K#3; arm name Kp = promoted K bundle, KP add-ons off)",
+ "env": "AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e14 DSV41_P2B_COOP=2 DSV41_DENSE_GEMV=1 DSV41_MHC_DET_SPLITS=16 DSV41_ENGRAM_NATIVE_STAGE=1 DSV41_ENGRAM_EARLY_HASH=1 DSV41_ATTN_T2R_DEDUP=1 DSV41_SWA_META_FUSED=1 DSV41_MOE_PREP_FUSED=1 DSV41_CANDIDATE_MASK_BOUNDED=1 DSV41_INDEXER_WP_GEMV=1 (promoted config = the 10 K envs on round-34 defaults; same env as K-1/K-2/CUR-1/CUR-2)",
+ "head_at_boot": "36392cea5300c5eec15987ea0e9b9e46778f3896",
+ "patch_sha256": "identical to KPsafe-1 / CUR-2 / VIT-2 (61 files)",
+ "snapshot": "2.0bpw-mcg-lmhead-mxfp8 (SNAPSHOT_SHA default); head boot.txt and worker container args both .../snapshots/2.0bpw-mcg-lmhead-mxfp8",
+ "attempts": {
+  "1": "first attempt counted; no fix, no retry, no lever dropped"
+ },
+ "lail_fresh_median": 43.493,
+ "lail_fresh_n": 10,
+ "lail_fresh_runs": [
+  42.865,
+  41.917,
+  42.474,
+  46.245,
+  39.375,
+  43.104,
+  43.954,
+  46.701,
+  43.883,
+  44.001
+ ],
+ "lail_fresh_range": [
+  39.375,
+  46.701
+ ],
+ "lail_ms_step": 48.547,
+ "lail_ms_step_range": [
+  48.358,
+  53.733
+ ],
+ "lail_ms_step_runs": [
+  48.358,
+  49.856,
+  48.412,
+  48.559,
+  53.733,
+  48.483,
+  48.535,
+  48.511,
+  48.614,
+  48.687
+ ],
+ "lail_acc": 2.1269,
+ "lail_acc_range": [
+  2.0605,
+  2.2711
+ ],
+ "lail_ttft_median_s": 0.2996,
+ "lail_natural_finish": [
+  "length"
+ ],
+ "lail_note": "Run 5 read 53.73 ms/step (39.37 tok/s) and run 2 49.86; the other 8 read 48.36-48.69. Both guards clean for the whole boot (spark1 only VLLM::Worker_TP at 2 s). Kept as measured.",
+ "bench_decode_n9": {
+  "prose_c1": {
+   "tok_s": 51.953,
+   "agg_tok_s": 51.941,
+   "ms_step": 48.214,
+   "acc": 2.5097,
+   "acc_range": [
+    2.369,
+    2.632
+   ],
+   "median_run_acc": 2.525,
+   "ttft_p50_s": 0.2145,
+   "natural_finish": "stop",
+   "post_eos_fraction": 0.565
+  },
+  "prose_c2": {
+   "tok_s": 43.242,
+   "agg_tok_s": 85.558,
+   "ms_step": 58.332,
+   "acc": 2.5481,
+   "acc_range": [
+    2.381,
+    2.658
+   ],
+   "median_run_acc": 2.538,
+   "ttft_p50_s": 0.2431,
+   "natural_finish": "stop",
+   "post_eos_fraction": 0.565
+  },
+  "structured_c1": {
+   "tok_s": 84.023,
+   "agg_tok_s": 83.998,
+   "ms_step": 47.139,
+   "acc": 3.9608,
+   "acc_range": [
+    3.961,
+    3.961
+   ],
+   "median_run_acc": 3.9608,
+   "ttft_p50_s": 0.1771,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  },
+  "structured_c2": {
+   "tok_s": 72.214,
+   "agg_tok_s": 138.909,
+   "ms_step": 54.848,
+   "acc": 3.9608,
+   "acc_range": [
+    3.961,
+    3.961
+   ],
+   "median_run_acc": 3.9608,
+   "ttft_p50_s": 0.1923,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  }
+ },
+ "four_numbers": {
+  "prose_c1_median_tok_s": 54.52,
+  "prose_runs": [
+   47.74,
+   50.43,
+   57.84,
+   56.16,
+   56.08,
+   53.16,
+   54.14,
+   55.7,
+   54.52
+  ],
+  "prose_c1_ms_step": 48.083,
+  "prose_acc": 2.5897,
+  "prose_acc_range": [
+   2.2955,
+   2.7917
+  ],
+  "prose_post_eos_fraction": 0.61,
+  "prose_long_c1": {
+   "tok_s": 44.259,
+   "ms_step": 48.744,
+   "acc": 2.1505,
+   "acc_range": [
+    2.0101,
+    2.2841
+   ],
+   "n": 5,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0
+  },
+  "prose_long_c2": {
+   "agg_tok_s": 68.323,
+   "per_stream_tok_s": 34.482,
+   "ms_step": 61.316,
+   "acc": 2.1211,
+   "n": 10,
+   "natural_finish": "length"
+  },
+  "pp_warm_8k": 752.0,
+  "pp_warm_8k_runs": [
+   749.6,
+   752.0,
+   756.7
+  ],
+  "pp_warm_32k": 765.4,
+  "pp_warm_32k_runs": [
+   766.4,
+   765.4,
+   765.1
+  ],
+  "pp_novel_8k": 803.7,
+  "pp_novel_8k_runs": [
+   803.7,
+   799.7,
+   820.4
+  ],
+  "pp_novel_32k": 811.1,
+  "pp_novel_32k_runs": [
+   822.5,
+   811.1,
+   807.7
+  ],
+  "lail_after_c2_3x_median": 44.26,
+  "lail_after_c2_runs": [
+   45.76,
+   42.65,
+   44.26
+  ],
+  "memavail_after_micro_gib": {
+   "spark1": 21.43,
+   "spark2": 23.34
+  },
+  "warm_prefix_hit_fraction": 1.0,
+  "warm_prefix_ttft_cold_warm_s": [
+   2.62,
+   0.354
+  ],
+  "serve_env_ranks_match": true,
+  "lever_disarmed": false
+ },
+ "correctness": "8/8 rc=0",
+ "e2e": "rc=0, 3/3 (useful_tok_s 6.19)",
+ "disarm_scan": "rc=0",
+ "audit": "boot.txt: '==> audit ok: every expected patch engaged on head, worker' (AUDIT=strict); strict re-run on the end-of-boot logs rc=0 (engagement.txt)",
+ "engagement": "every s3 line for the K env 1x per rank (COOP=2; mhc det target 81 fn / draft 6 fn; native stage; early hash; t2r dedup + census; moe prep; cand mask; wp gemv; swa meta); dense GEMV armed 9 per rank; lm_head mxfp8 / prefetch v3 / gather v2 1x per rank; woa fp8 43/43; KP add-on lines 0; 0 disarm lines; envs equal on both ranks except VLLM_HOST_IP; running image 3a002b55c9bc on both ranks",
+ "gpu_guard": "rc=0, 0 FOREIGN. spark1 767 samples at 2 s (17:40:45Z-18:07:42Z), only VLLM::Worker_TP. spark2 149 samples at 10 s (17:40:45Z-18:07:33Z): VLLM::Worker_TP, Xorg, gnome-shell. Not VOID.",
+ "spark2_lock": "not held: the 'ssh spark2 flock ... sleep 86400' holder was refused by the permission layer (as on A-1/K-1/KC-1/K-2). LOCK_FREE at precheck (17:27Z) and after stop (18:07Z); no microbench process on either node; spark2 guard clean.",
+ "quality_quick": {
+  "pass": true,
+  "rc": 0,
+  "elapsed_s": 318.6,
+  "nll": 0.243135,
+  "decode_median_dlp": 0.0101,
+  "gen_nll_prefill": 0.28213,
+  "golden_hazard": 0.01985,
+  "aa_hazard": 0.02273,
+  "limit_hazard": 0.03206,
+  "selfcons_identical": "4/12",
+  "tools_json": "22/22",
+  "exact_args": "20/22 = 0.9091 (t01 get_weather, t09 calculate_loan_payment called with {}); passes the 0.9545 limit by the gate's one-item slack, as on K-2/KC-2/CUR-2 quick",
+  "no_call": "8/8",
+  "needle": "6/6",
+  "c2": true,
+  "vision": "Red"
+ },
+ "quality_full": "not run: ARMS-r3 s10/s8 require quick only on P5 K/KP boots",
+ "memavail_gib": {
+  "before_boot": {
+   "spark1": 116,
+   "spark2": 116
+  },
+  "after_smoke": {
+   "spark1": 23,
+   "spark2": 25
+  },
+  "after_micro": {
+   "spark1": 21.43,
+   "spark2": 23.34
+  },
+  "end_serve_up": {
+   "spark1": 21,
+   "spark2": 24
+  },
+  "floor_after_smoke": 8,
+  "swap_used": "spark1 3.3 -> 7.3 GiB, spark2 1.6 -> 5.1 GiB"
+ },
+ "load": "run.sh start 17:30:06Z; vLLM server start 17:39:50Z (584 s); /v1/models created 17:40:01Z; run.sh exit after warmup 17:40:29Z (623 s). Model loading 429.76 s (weights 344.85 + 27.65, 75.58 GiB). Init engine 60.69 s.",
+ "stop": "./stop.sh 18:07:50Z rc 0; no dsv41 container on either node after",
+ "single_boot_context_vs_K_config_not_a_verdict": {
+  "four_prose_c1_ms_step": {
+   "K_prior": [
+    47.156,
+    48.245,
+    47.753,
+    47.715
+   ],
+   "K_prior_range": [
+    47.156,
+    48.245
+   ],
+   "Kp1": 48.083,
+   "inside_K_range": true
+  },
+  "prose_long_c1_ms_step": {
+   "K_prior": [
+    49.01,
+    48.702,
+    49.101,
+    48.675
+   ],
+   "K_prior_range": [
+    48.675,
+    49.101
+   ],
+   "Kp1": 48.744,
+   "inside_K_range": true
+  },
+  "lail_ms_step": {
+   "K_prior": [
+    48.328,
+    48.909,
+    49.371,
+    48.638
+   ],
+   "K_prior_range": [
+    48.328,
+    49.371
+   ],
+   "Kp1": 48.547,
+   "inside_K_range": true
+  },
+  "lail_tok_s": {
+   "K_prior": [
+    43.566,
+    42.532,
+    42.928,
+    43.123
+   ],
+   "K_prior_range": [
+    42.532,
+    43.566
+   ],
+   "Kp1": 43.493,
+   "inside_K_range": true
+  },
+  "prose_long_c1_tok_s": {
+   "K_prior": [
+    43.688,
+    43.923,
+    44.893,
+    43.395
+   ],
+   "K_prior_range": [
+    43.395,
+    44.893
+   ],
+   "Kp1": 44.259,
+   "inside_K_range": true
+  },
+  "prose_long_c2_agg": {
+   "K_prior": [
+    68.063,
+    68.259,
+    70.089,
+    66.093
+   ],
+   "K_prior_range": [
+    66.093,
+    70.089
+   ],
+   "Kp1": 68.323,
+   "inside_K_range": true
+  },
+  "prose_long_c2_ms_step": {
+   "K_prior": [
+    60.724,
+    61.415,
+    60.197,
+    62.2
+   ],
+   "K_prior_range": [
+    60.197,
+    62.2
+   ],
+   "Kp1": 61.316,
+   "inside_K_range": true
+  },
+  "KPsafe1_uncounted": {
+   "four_prose_c1_ms_step": 46.064,
+   "prose_long_c1_ms_step": 47.1,
+   "lail_ms_step": 47.007,
+   "lail_tok_s": 45.114,
+   "prose_long_c1_tok_s": 45.303,
+   "prose_long_c2_agg": 68.541
+  },
+  "note": "K_prior = K-1, K-2, CUR-1, CUR-2 (same env, image, patch sha and pack). Kp-1 is K#3 of the P5 ABAB K#3, KP#1, K#4, KP#2. Single boot: context only, not a verdict."
+ }
+}
