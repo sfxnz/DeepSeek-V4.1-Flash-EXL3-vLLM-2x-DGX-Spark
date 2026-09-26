@@ -1,0 +1,42 @@
+CUR-2 boot notes. Arm CUR is the promoted config (the 10 K envs on the round-34 defaults) on the current pack
+2.0bpw-mcg-lmhead-mxfp8, image review-e14. This is P4 boot 3 of the order CUR#1, VIT#1, CUR#2, VIT#2.
+- Command: command.txt (nohup, background, output in boot.txt). HEAD fcfb092 at boot. docker/patch sha256 identical to
+  CUR-1/VIT-1 (61 files). First attempt counted: no fix, no retry. run.sh started 14:17:03Z, vLLM server started 14:27:02Z
+  (599 s), run.sh exited after warmup 14:27:41Z (638 s). Model loading 436.89 s (weights 351.64 + 26.56, 75.58 GiB),
+  init engine 60.70 s. Both ranks loaded .../snapshots/2.0bpw-mcg-lmhead-mxfp8.
+- Preconditions (preconditions.txt, 14:13:38Z): requant DONE. No GPU container on either node. pmon spark1 empty, spark2
+  Xorg/gnome-shell only. No microbench running. MemAvailable 116/116 GiB. Image ID 3a002b55c9bc on both nodes. Tree clean
+  apart from this dir. unittest 798 OK (14 skipped) rc 0, render --check rc 0 (tests-render.txt). gpu_free_wait GPUFREE
+  at 14:16:52Z (gpufree-spark1.txt).
+- spark2 lock: held for the boot (flock ... sleep 86400 from 14:13Z; LOCK_HELD before run.sh). After stop, killing the
+  local ssh left the remote sleep (pid 3598370) as an orphan holding the lock; this session killed its own sleep and
+  confirmed LOCK_FREE at 15:14:29Z.
+- Audit: boot.txt has "audit ok: every expected patch engaged on head, worker"; a strict re-run on the end-of-boot logs
+  also passed (rc 0). engagement.txt: every section-3 line for K 1x per rank (COOP=2, mhc det target 81 fn / draft 6 fn,
+  native stage, early hash, t2r dedup + census, moe prep, candidate mask, wp gemv, swa meta), dense GEMV 9 lines per
+  rank, lm_head mxfp8 / prefetch v3 / gather v2 1x per rank, woa fp8 43/43; KP add-ons 0; 0 LOG_DISARMED; envs equal on
+  both ranks (only VLLM_HOST_IP differs); running image 3a002b55c9bc on both ranks. disarm_scan rc 0.
+- gpu_guard rc=0 (0 FOREIGN). spark1 1310 samples at 2 s (14:27:50Z-15:13:59Z), only VLLM::Worker_TP. spark2 256 at 10 s
+  (VLLM::Worker_TP, Xorg, gnome-shell). Not VOID.
+- Smokes: chat 323, vision Red. Correctness 8/8 rc 0. MemAvailable after smoke 23/24 GiB (floor 8).
+- L.A.I.L x10: median 43.123 tok/s (38.376-45.684), 48.638 ms/step, acc 2.1225 (2.044-2.231), finish length. Run 3 read
+  55.82 ms/step (38.38 tok/s); the other 9 read 48.32-48.73. Guards clean. Kept as measured.
+- bench_decode x9: prose c=1 52.363 tok/s at 48.355 ms/step (acc 2.519); prose c=2 agg 84.659 at 59.17; structured c=1
+  83.715 at 47.313 (acc 3.9608); structured c=2 agg 139.219 at 56.18.
+- four_numbers: prose c=1 53.34 tok/s at 47.715 ms/step (median run acc 2.5443); prose_long c=1 43.395 tok/s at 48.675
+  ms/step (acc 2.117, range 1.932-2.222, n=5, finish length, post-EOS 0); prose_long c=2 agg 66.093 at 62.2 ms/step;
+  pp_warm 8k/32k 743.1/772.0 (runs 740.3/743.1/750.3, 772.0/759.9/779.6); pp_novel 8k/32k 810.2/821.0 (runs
+  810.2/802.4/813.2, 824.3/793.0/821.0); L.A.I.L 3x after c=2 43.66 (40.71/43.66/44.05); warm prefix 1.0; ranks_match
+  true; disarmed false. MemAvailable after micro 21.64/23.73 GiB.
+- e2e rc 0, 3/3 (useful_tok_s 6.87).
+- Quality quick: PASS (single run, rc 0, 317.6 s). nll 0.24232, dlp 0.00847, gen_nll_prefill 0.27689, aa 0.0274, golden
+  0.01641 (limit 0.03206), exact_args 20/22 (t01, t09; passes by the one-item slack as on K-2/KC-2), needle 6/6.
+- Quality full: PASS (single run, rc 0, 1348.4 s). nll 0.24389 (repeat delta 0.001486), dlp 0.00995, aa 0.01232, golden
+  0.0195 (limit 0.04348; 6/12 identical), exact_args 21/22 (t09), needle 9/9, gsm8k 94/100 (limit 0.94, exactly at it),
+  gsm8k_think 39/40, mmlu 198/228 = 0.8684 (limit 0.864).
+- Order followed: smokes, mem, correctness, L.A.I.L x10, bench_decode x9, four_numbers, e2e, quality quick, quality full,
+  disarm_scan, engagement check + strict audit re-run, gpu_guard --check, mem-end, ./stop.sh (15:14:15Z).
+- CUR pair (CUR-1, CUR-2) and VIT-1, single-boot context, not a verdict (VIT-2 pending):
+  four prose c=1 ms/step CUR 47.753/47.715, VIT-1 47.558; prose_long c=1 ms/step CUR 49.101/48.675, VIT-1 48.985;
+  prose_long c=1 tok/s CUR 44.893/43.395 (spread 1.498), VIT-1 45.875; L.A.I.L tok/s CUR 42.927/43.123 (spread 0.196),
+  VIT-1 41.829; prose_long c=2 agg CUR 70.089/66.093, VIT-1 68.184.
