@@ -138,6 +138,16 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(out.getvalue().count(mhc_det.LOG_DISARMED), 1)
         self.assertFalse(mhc_det._S.on)
 
+    def test_allocations_name_their_dtype(self) -> None:
+        # prepare() runs inside vLLM's set_default_torch_dtype(bf16) (the load hooks): a bare
+        # randn/empty is bf16 there, and DeepGEMM asserts fp32 outputs (serve K-1 attempt 1).
+        tree = ast.parse((PATCH / "mhc_det.py").read_text())
+        bare = [n.lineno for n in ast.walk(tree) if isinstance(n, ast.Call)
+                and isinstance(n.func, ast.Attribute) and n.func.attr in ("randn", "empty", "zeros", "full")
+                and getattr(n.func.value, "id", None) == "torch"
+                and not any(k.arg == "dtype" for k in n.keywords)]
+        self.assertEqual(bare, [])
+
 
 class PinnedAnchorTests(unittest.TestCase):
     """The det path mirrors the pinned stock functions; flag upstream drift here."""
