@@ -1,0 +1,278 @@
+{
+ "phase": "ARMS-r3 P1 (section 4) NCCL twin device check, serve down, both GPUs",
+ "image": "dsv41-flash-exl3-sm121:review-e14 (sha256:3a002b55c9bc...)",
+ "driver": "tools/nccl_twin_check.sh @13d22ab (timeout -k 10, docker --rm --init on both ranks)",
+ "nccl_version": [
+  "2.30.7"
+ ],
+ "gate": {
+  "rule": "every run exits 0 (no watchdog hang, 0 host mismatches); every --device-check rep device_bad_steps 0 with device_checked_steps = steps + warmup on both ranks; selftest flags exactly step 37 on both ranks",
+  "pass": true,
+  "problems": []
+ },
+ "gpu_guard": "0 FOREIGN samples (spark1 every 2 s, spark2 every 10 s, 04:59:56Z-05:10:32Z)",
+ "runs": {
+  "selftest": {
+   "twin": {
+    "reps": 1,
+    "rank0_step_ms_rep_medians": [
+     50.165
+    ],
+    "median_of_medians_ms": 50.165,
+    "spread_ms": 0.0,
+    "p10_p90_first_rep_ms": [
+     49.779,
+     51.418
+    ],
+    "delta_vs_keep_ms": null,
+    "host_mismatches": 0,
+    "device_checked_steps_rank0": 90,
+    "device_bad_steps_rank0": 1
+   }
+  },
+  "devcheck-c1": {
+   "keep": {
+    "reps": 1,
+    "rank0_step_ms_rep_medians": [
+     56.582
+    ],
+    "median_of_medians_ms": 56.582,
+    "spread_ms": 0.0,
+    "p10_p90_first_rep_ms": [
+     55.757,
+     57.744
+    ],
+    "delta_vs_keep_ms": 0.0,
+    "host_mismatches": 0,
+    "device_checked_steps_rank0": 330,
+    "device_bad_steps_rank0": 0
+   },
+   "keep_qos": {
+    "reps": 1,
+    "rank0_step_ms_rep_medians": [
+     55.867
+    ],
+    "median_of_medians_ms": 55.867,
+    "spread_ms": 0.0,
+    "p10_p90_first_rep_ms": [
+     55.094,
+     57.147
+    ],
+    "delta_vs_keep_ms": -0.715,
+    "host_mismatches": 0,
+    "device_checked_steps_rank0": 330,
+    "device_bad_steps_rank0": 0
+   },
+   "twin": {
+    "reps": 1,
+    "rank0_step_ms_rep_medians": [
+     50.08
+    ],
+    "median_of_medians_ms": 50.08,
+    "spread_ms": 0.0,
+    "p10_p90_first_rep_ms": [
+     49.694,
+     51.259
+    ],
+    "delta_vs_keep_ms": -6.502,
+    "host_mismatches": 0,
+    "device_checked_steps_rank0": 330,
+    "device_bad_steps_rank0": 0
+   },
+   "twin_qos": {
+    "reps": 1,
+    "rank0_step_ms_rep_medians": [
+     49.4
+    ],
+    "median_of_medians_ms": 49.4,
+    "spread_ms": 0.0,
+    "p10_p90_first_rep_ms": [
+     49.278,
+     50.541
+    ],
+    "delta_vs_keep_ms": -7.182,
+    "host_mismatches": 0,
+    "device_checked_steps_rank0": 330,
+    "device_bad_steps_rank0": 0
+   }
+  },
+  "devcheck-c2": {
+   "keep": {
+    "reps": 1,
+    "rank0_step_ms_rep_medians": [
+     57.211
+    ],
+    "median_of_medians_ms": 57.211,
+    "spread_ms": 0.0,
+    "p10_p90_first_rep_ms": [
+     56.46,
+     58.769
+    ],
+    "delta_vs_keep_ms": 0.0,
+    "host_mismatches": 0,
+    "device_checked_steps_rank0": 330,
+    "device_bad_steps_rank0": 0
+   },
+   "twin": {
+    "reps": 1,
+    "rank0_step_ms_rep_medians": [
+     50.608
+    ],
+    "median_of_medians_ms": 50.608,
+    "spread_ms": 0.0,
+    "p10_p90_first_rep_ms": [
+     50.37,
+     51.857
+    ],
+    "delta_vs_keep_ms": -6.603,
+    "host_mismatches": 0,
+    "device_checked_steps_rank0": 330,
+    "device_bad_steps_rank0": 0
+   }
+  },
+  "timing-c1": {
+   "keep": {
+    "reps": 3,
+    "rank0_step_ms_rep_medians": [
+     56.919,
+     56.673,
+     56.556
+    ],
+    "median_of_medians_ms": 56.673,
+    "spread_ms": 0.363,
+    "p10_p90_first_rep_ms": [
+     56.067,
+     58.041
+    ],
+    "delta_vs_keep_ms": 0.0,
+    "host_mismatches": 0,
+    "device_checked_steps_rank0": 0,
+    "device_bad_steps_rank0": 0
+   },
+   "keep_qos": {
+    "reps": 3,
+    "rank0_step_ms_rep_medians": [
+     55.562,
+     55.075,
+     55.961
+    ],
+    "median_of_medians_ms": 55.562,
+    "spread_ms": 0.886,
+    "p10_p90_first_rep_ms": [
+     54.69,
+     57.56
+    ],
+    "delta_vs_keep_ms": -1.111,
+    "host_mismatches": 0,
+    "device_checked_steps_rank0": 0,
+    "device_bad_steps_rank0": 0
+   },
+   "twin": {
+    "reps": 3,
+    "rank0_step_ms_rep_medians": [
+     50.38,
+     49.988,
+     50.054
+    ],
+    "median_of_medians_ms": 50.054,
+    "spread_ms": 0.392,
+    "p10_p90_first_rep_ms": [
+     49.748,
+     52.754
+    ],
+    "delta_vs_keep_ms": -6.619,
+    "host_mismatches": 0,
+    "device_checked_steps_rank0": 0,
+    "device_bad_steps_rank0": 0
+   },
+   "twin_qos": {
+    "reps": 3,
+    "rank0_step_ms_rep_medians": [
+     49.472,
+     49.421,
+     49.448
+    ],
+    "median_of_medians_ms": 49.448,
+    "spread_ms": 0.05,
+    "p10_p90_first_rep_ms": [
+     49.291,
+     51.029
+    ],
+    "delta_vs_keep_ms": -7.225,
+    "host_mismatches": 0,
+    "device_checked_steps_rank0": 0,
+    "device_bad_steps_rank0": 0
+   }
+  },
+  "timing-c2": {
+   "keep": {
+    "reps": 2,
+    "rank0_step_ms_rep_medians": [
+     57.534,
+     57.753
+    ],
+    "median_of_medians_ms": 57.643,
+    "spread_ms": 0.219,
+    "p10_p90_first_rep_ms": [
+     56.763,
+     58.779
+    ],
+    "delta_vs_keep_ms": 0.0,
+    "host_mismatches": 0,
+    "device_checked_steps_rank0": 0,
+    "device_bad_steps_rank0": 0
+   },
+   "twin": {
+    "reps": 2,
+    "rank0_step_ms_rep_medians": [
+     50.796,
+     50.532
+    ],
+    "median_of_medians_ms": 50.664,
+    "spread_ms": 0.264,
+    "p10_p90_first_rep_ms": [
+     50.333,
+     51.891
+    ],
+    "delta_vs_keep_ms": -6.979,
+    "host_mismatches": 0,
+    "device_checked_steps_rank0": 0,
+    "device_bad_steps_rank0": 0
+   }
+  }
+ },
+ "timing_readouts": {
+  "c1 twin vs keep": {
+   "delta_ms": -6.619,
+   "noise_ms": 0.392,
+   "beyond_noise": true,
+   "every_B_rep_beats_A_median": true
+  },
+  "c1 keep_qos vs keep": {
+   "delta_ms": -1.111,
+   "noise_ms": 0.886,
+   "beyond_noise": true,
+   "every_B_rep_beats_A_median": true
+  },
+  "c1 twin_qos vs twin": {
+   "delta_ms": -0.606,
+   "noise_ms": 0.392,
+   "beyond_noise": true,
+   "every_B_rep_beats_A_median": true
+  },
+  "c1 twin_qos vs keep": {
+   "delta_ms": -7.225,
+   "noise_ms": 0.363,
+   "beyond_noise": true,
+   "every_B_rep_beats_A_median": true
+  },
+  "c2 twin vs keep": {
+   "delta_ms": -6.979,
+   "noise_ms": 0.264,
+   "beyond_noise": true,
+   "every_B_rep_beats_A_median": true
+  }
+ },
+ "caveat": "Two-node harness: real NCCL collectives on the serve's decode pattern with memset work in the gaps (A 431/C 149/D 547 us per layer), not a serve. The serve effect of EAGER_TWIN is unmeasured; ARMS-r3 section 11 projects -0.5..-3.1 ms/step. The comm stage's one-GPU MPS emulation read twin-keep -0.256 ms (results/2026-09-25-kernels/comm/twin-devcheck).",
+ "verdict": "PASS: DSV41_NCCL_EAGER_TWIN=1 stays in KP_ENV"
+}

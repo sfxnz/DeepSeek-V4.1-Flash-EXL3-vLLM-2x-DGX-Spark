@@ -1,0 +1,48 @@
+"""ARMS-r3 section 4 gate over every run dir: both ranks' JSONs present per (arm, rep), 0 host
+mismatches, device-check reps: device_bad_steps 0 and device_checked_steps = steps + warmup on both
+ranks (selftest: exactly the injected step), no FAILED/HANG in the driver stdout, NCCL version,
+PM QoS state, per-rep step_us of both ranks."""
+import json
+import sys
+from pathlib import Path
+
+T = Path(sys.argv[1])
+out = {"runs": {}, "gate_pass": True, "problems": []}
+for run in sorted(p for p in T.iterdir() if p.is_dir()):
+    stdout = (T / f"{run.name}.stdout.txt").read_text() if (T / f"{run.name}.stdout.txt").exists() else ""
+    bad_stdout = [ln for ln in stdout.splitlines() if "FAILED" in ln or "HANG" in ln or "refusing" in ln]
+    r = {"reps": [], "driver_failed_lines": bad_stdout}
+    for armdir in sorted(p for p in run.iterdir() if p.is_dir()):
+        reps = sorted({f.name.split(".")[0] for f in armdir.glob("rep*.rank*.txt")})
+        for rep in reps:
+            row = {"arm": armdir.name, "rep": rep}
+            for rank in (0, 1):
+                f = armdir / f"{rep}.rank{rank}.json"
+                if not f.exists():
+                    out["problems"].append(f"{run.name}/{armdir.name}/{rep}: rank{rank} json missing")
+                    continue
+                d = json.loads(f.read_text())
+                total = d["steps"] + d["warmup"]
+                inj = d.get("inject_fault", -1)
+                ok = d["n_mismatches"] == 0
+                if d["device_check"]:
+                    ok &= d["device_checked_steps"] == total
+                    ok &= d["device_bad_steps"] == ([inj] if inj >= 0 else [])
+                txt = (armdir / f"{rep}.rank{rank}.txt").read_text()
+                ok &= "HANG" not in txt and "Traceback" not in txt
+                if d["arm"].endswith("_qos"):
+                    ok &= d["pm_qos"] == "armed"
+                row[f"rank{rank}"] = {"host": d["host"], "nccl": d["nccl_version"], "pm_qos": d["pm_qos"],
+                                      "device_checked": d["device_checked_steps"], "total": total,
+                                      "device_bad_steps": d["device_bad_steps"], "mismatches": d["n_mismatches"],
+                                      "checked_host": d["checked_steps"], "router": d["router_counts"],
+                                      "step_us_median": d["step_us"]["median"], "p10": d["step_us"]["p10"],
+                                      "p90": d["step_us"]["p90"], "n": d["step_us"]["n"], "ok": ok}
+                if not ok:
+                    out["problems"].append(f"{run.name}/{armdir.name}/{rep}/rank{rank}")
+            r["reps"].append(row)
+    if bad_stdout:
+        out["problems"].append(f"{run.name}: driver stdout {bad_stdout}")
+    out["runs"][run.name] = r
+out["gate_pass"] = not out["problems"]
+print(json.dumps(out, indent=1))

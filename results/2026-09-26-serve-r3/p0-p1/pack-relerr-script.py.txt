@@ -1,0 +1,65 @@
+"""relerr over all routed-expert tensors: manifest aggregates + per-tensor rows from both nodes."""
+import json
+import math
+import statistics
+import subprocess
+from pathlib import Path
+
+OUT = Path("/home/sfxnz/projects/data/dsv41-requant-viterbi")
+man = json.loads((OUT / "state/manifest.json").read_text())
+U = man["units"]
+
+
+def agg(kind):
+    st = [U[u]["stats"][kind] for u in sorted(U)]
+    n = sum(s["n"] for s in st)
+    return {"n": n, "mean": sum(s["mean"] * s["n"] for s in st) / n,
+            "min": min(s["min"] for s in st), "max": max(s["max"] for s in st)}
+
+
+res = {"source_manifest": str(OUT / "state/manifest.json"), "manifest_updated": man["updated"],
+       "units_done": man["units_done"], "complete": man["complete"],
+       "manifest_relerr_mean_final": man["relerr_mean_final"],
+       "manifest_relerr_mean_stock": man["relerr_mean_stock"],
+       "manifest_mse_ratio_vs_stock": man["mse_ratio_vs_stock"],
+       "from_unit_stats": {k: agg(k) for k in ("final", "viterbi", "stock")},
+       "unit_gate_ratio_min_max": [min(U[u]["gate"]["ratio"] for u in U), max(U[u]["gate"]["ratio"] for u in U)],
+       "unit_gate_all_ok": all(U[u]["gate"]["ok"] and U[u]["gate"]["finite"] for u in U),
+       "refit_kept_total": sum(U[u]["stats"]["refit_kept"] for u in U),
+       "units_by_node": {n: sum(U[u]["node"] == n for u in U) for n in ("spark1", "spark2")},
+       "sec_per_tensor_by_node_median": {n: statistics.median(U[u]["sec_per_tensor"] for u in U if U[u]["node"] == n)
+                                         for n in ("spark1", "spark2")}}
+
+rows = []
+for u in sorted(U):
+    p = OUT / "units" / f"{u}.json"
+    if U[u]["node"] == "spark1":
+        d = json.loads(p.read_text())
+    else:
+        d = json.loads(subprocess.run(["ssh", "-o", "BatchMode=yes", "spark2", "cat", str(p)],
+                                      capture_output=True, text=True, check=True).stdout)
+    assert d["sha256"] == U[u]["sha256"], u
+    rows += d["rows"]
+fin = [r["final"] for r in rows]
+stk = [r["stock"] for r in rows]
+vit = [r["viterbi"] for r in rows]
+ratio = [r["final"] / r["stock"] for r in rows]
+
+
+def s(xs):
+    return {"n": len(xs), "mean": statistics.fmean(xs), "min": min(xs), "max": max(xs),
+            "median": statistics.median(xs), "all_finite": all(math.isfinite(x) for x in xs)}
+
+
+res["per_tensor"] = {
+    "tensors": len(rows),
+    "unique_names": len({r["tensor"] for r in rows}),
+    "final": s(fin), "viterbi_before_refit": s(vit), "stock": s(stk),
+    "final_over_stock": s(ratio),
+    "tensors_improved_vs_stock": sum(f < t for f, t in zip(fin, stk)),
+    "refit_kept": sum(bool(r["refit"]) for r in rows),
+    "mse_ratio_of_means": (statistics.fmean(fin) / statistics.fmean(stk)) ** 2,
+    "mean_of_squared_ratio": statistics.fmean(x * x for x in ratio),
+    "by_proj": {w: statistics.fmean(r["final"] for r in rows if r["tensor"].endswith(w)) for w in (".w1", ".w2", ".w3")},
+}
+print(json.dumps(res, indent=1))

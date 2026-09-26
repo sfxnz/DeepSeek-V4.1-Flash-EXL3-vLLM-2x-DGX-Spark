@@ -1,0 +1,132 @@
+"""Independent check of the assembled Viterbi snapshot on this node (stdlib; run on each node).
+
+- every unit shard: coreutils sha256sum + size vs the manifest; the snapshot entry is a hard
+  link to OUT/shards (same inode); safetensors header bytes equal the stock 2.0bpw-mcg shard;
+  every non-routed-expert tensor byte-equal to stock; routed-expert tensors counted equal/differ
+- every non-unit entry of 2.0bpw-mcg-lmhead-mxfp8 resolves to the same file (realpath) in the new
+  snapshot, or (copied index) has the same sha256; no extra entries but the manifest; every
+  realpath stays inside the HF hub (the serve container mounts only the cache)
+Prints one JSON document.
+"""
+import hashlib
+import json
+import os
+import socket
+import struct
+import subprocess
+import sys
+from pathlib import Path
+
+EXPERT_SUFFIXES = (".trellis", ".suh", ".svh")  # EXL3 pack names (requant_full.EXPERT_SUFFIXES)
+
+
+def is_routed_expert_tensor(k):
+    """Re-encoded routed-expert tensor of the EXL3 pack; .mcg markers and all else must be byte-equal."""
+    return (".ffn.experts." in k and ".shared_experts." not in k and not k.startswith("mtp.")
+            and ".mtp." not in k and k.endswith(EXPERT_SUFFIXES))
+
+HUBROOT = Path.home() / ".cache/huggingface/hub"
+SN = HUBROOT / "models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots"
+NEW, BASE, STOCK = SN / "2.0bpw-mcg-viterbi-lmhead-mxfp8", SN / "2.0bpw-mcg-lmhead-mxfp8", SN / "2.0bpw-mcg"
+OUT = Path("/home/sfxnz/projects/data/dsv41-requant-viterbi")
+
+
+def header(p):
+    with open(p, "rb") as fh:
+        n = struct.unpack("<Q", fh.read(8))[0]
+        raw = fh.read(n)
+    return n, raw, json.loads(raw)
+
+
+def sha(p):
+    h = hashlib.sha256()
+    with open(p, "rb") as fh:
+        while b := fh.read(1 << 24):
+            h.update(b)
+    return h.hexdigest()
+
+
+man = json.loads((NEW / "requant-viterbi-manifest.json").read_text())
+units = {rec["file"]: rec for rec in man["units"].values()}
+res = {"host": socket.gethostname(), "units": len(units), "problems": []}
+P = res["problems"]
+
+# sha256 of all unit shards through the snapshot path, 8 in parallel
+files = sorted(units)
+r = subprocess.run("xargs -0 -P 8 -n 1 sha256sum", shell=True, cwd=NEW, input="\0".join(files),
+                   capture_output=True, text=True, check=True)
+got = {line.split()[1]: line.split()[0] for line in r.stdout.splitlines()}
+res["sha_match"] = sum(got.get(f) == units[f]["sha256"] for f in files)
+res["size_match"] = sum((NEW / f).stat().st_size == units[f]["size"] for f in files)
+for f in files:
+    if got.get(f) != units[f]["sha256"]:
+        P.append(f"sha {f}")
+res["sha_list_digest"] = hashlib.sha256("".join(f"{f} {got.get(f)}\n" for f in files).encode()).hexdigest()
+
+hard = 0
+hdr_equal = 0
+nonexp = {"tensors": 0, "bytes": 0, "equal": 0}
+exp = {}
+for f in files:
+    st_new, st_out = (NEW / f).stat(), (OUT / "shards" / f).stat()
+    if (NEW / f).is_symlink() or st_new.st_ino != st_out.st_ino or st_new.st_nlink < 2:
+        P.append(f"hardlink {f}")
+    else:
+        hard += 1
+    n1, raw1, h1 = header(NEW / f)
+    n2, raw2, h2 = header(STOCK / f)
+    hdr_equal += raw1 == raw2
+    if raw1 != raw2:
+        P.append(f"header {f}")
+    with open(NEW / f, "rb") as a, open(STOCK / f, "rb") as b:
+        for k, v in h1.items():
+            if k == "__metadata__":
+                continue
+            s, e = v["data_offsets"]
+            a.seek(8 + n1 + s)
+            b.seek(8 + n2 + h2[k]["data_offsets"][0])
+            x, y = a.read(e - s), b.read(e - s)
+            if is_routed_expert_tensor(k):
+                suf = k.rsplit(".", 1)[-1]
+                d = exp.setdefault(suf, {"equal": 0, "differ": 0})
+                d["equal" if x == y else "differ"] += 1
+            else:
+                nonexp["tensors"] += 1
+                nonexp["bytes"] += e - s
+                nonexp["equal"] += x == y
+                if x != y:
+                    P.append(f"non-expert differs {f}:{k}")
+res["hardlinks_ok"] = hard
+res["header_bytes_equal_stock"] = hdr_equal
+res["non_expert_in_unit_shards"] = nonexp
+res["routed_expert_tensors_vs_stock"] = exp
+
+# mirror of the base for every non-unit entry
+base_names = {p.name for p in BASE.iterdir()}
+new_names = {p.name for p in NEW.iterdir()}
+res["extra_in_new"] = sorted(new_names - base_names)
+res["missing_in_new"] = sorted(base_names - new_names)
+same_real = 0
+mirror = []
+for name in sorted(base_names - set(files)):
+    a, b = BASE / name, NEW / name
+    ra, rb = a.resolve(), b.resolve()
+    if not str(rb).startswith(str(HUBROOT)):
+        P.append(f"outside hub {name} -> {rb}")
+    if ra == rb:
+        same_real += 1
+        how = "same-file"
+    elif a.is_file() and b.is_file() and sha(a) == sha(b):
+        how = "sha-equal-copy"
+    else:
+        how = "DIFFERS"
+        P.append(f"mirror {name}")
+    mirror.append({"name": name, "new": os.readlink(b) if b.is_symlink() else "file", "how": how})
+res["non_unit_entries"] = len(mirror)
+res["non_unit_same_file"] = same_real
+res["non_unit_detail"] = mirror
+res["problems_n"] = len(P)
+res["problems"] = P[:50]
+st = os.statvfs(str(OUT))
+res["disk_free_bytes"] = st.f_bavail * st.f_frsize
+print(json.dumps(res, indent=1))
