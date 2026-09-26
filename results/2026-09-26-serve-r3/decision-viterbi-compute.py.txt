@@ -1,0 +1,679 @@
+#!/usr/bin/env python3
+# ARMS-r3 section 7 (P4) Viterbi pack decision: CUR-1, VIT-1, CUR-2, VIT-2.
+# Quality first (paired tests over the fixed eval items), then speed (ARMS.md step 6 noise rule).
+# Reads only the raw per-boot evidence in this directory (lail10.txt, bench_decode.txt,
+# four/four_numbers.json, four/02-micro.log, four/06-prose-long.log, quality_*.json, gate files)
+# through the per-boot readers of decision-bundle-compute.py.txt, plus the 09-24 quality
+# baselines and tests/quality/*.jsonl for the item universes. Stdlib only. Run from this directory:
+#   python3 decision-viterbi-compute.py.txt decision-viterbi.json
+import collections, importlib.util, json, math, os, random, re, statistics as st, sys
+from importlib.machinery import SourceFileLoader
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+os.chdir(HERE)
+W = os.path.abspath(os.path.join(HERE, "..", ".."))
+_ld = SourceFileLoader("bundle_compute", "decision-bundle-compute.py.txt")
+_sp = importlib.util.spec_from_loader(_ld.name, _ld)
+BC = importlib.util.module_from_spec(_sp)
+_ld.exec_module(BC)
+r = BC.r
+
+CUR, VIT = ["CUR-1", "CUR-2"], ["VIT-1", "VIT-2"]
+ORDER = ["CUR-1", "VIT-1", "CUR-2", "VIT-2"]
+MODES = ["quick", "full"]
+PIN_VIT = "2.0bpw-mcg-viterbi-lmhead-mxfp8"
+PIN_CUR = "2.0bpw-mcg-lmhead-mxfp8"
+TOK = f"/home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/{PIN_CUR}/tokenizer.json"
+BASE = {m: json.load(open(f"{W}/results/2026-09-24-review/quality-baseline/{m}.json")) for m in MODES}
+Q = {(b, m): json.load(open(f"{b}/quality_{m}.json")) for b in ORDER for m in MODES}
+import subprocess
+CODE_DIFF = subprocess.run(["git", "-C", W, "diff", "--stat", "7db92e93a10c", "ebeec5ed1962", "--", ".", ":!results"],
+                           capture_output=True, text=True, check=True).stdout.strip()
+T975_DF39 = 2.022691  # Student t 0.975 quantile, 39 degrees of freedom (40 passages)
+
+
+# ------------------------------------------------------------------ statistics (stdlib)
+def sign_p(k, n):
+    """Exact two-sided binomial(n, 0.5) p-value for k successes (sign test / exact McNemar)."""
+    if n == 0:
+        return 1.0
+    lo = min(k, n - k)
+    return min(1.0, 2 * sum(math.comb(n, i) for i in range(lo + 1)) / 2 ** n)
+
+
+def wilcoxon_exact(d):
+    """Exact two-sided Wilcoxon signed-rank p (zeros dropped, ties by average rank, exact
+    conditional distribution over doubled ranks)."""
+    d = [x for x in d if x != 0]
+    n = len(d)
+    order = sorted(range(n), key=lambda i: abs(d[i]))
+    r2 = [0] * n
+    i = 0
+    while i < n:
+        j = i
+        while j + 1 < n and abs(d[order[j + 1]]) == abs(d[order[i]]):
+            j += 1
+        for k in range(i, j + 1):
+            r2[order[k]] = (i + 1) + (j + 1)
+        i = j + 1
+    dist = {0: 1}
+    for rr in r2:
+        nd = dict(dist)
+        for s, c in dist.items():
+            nd[s + rr] = nd.get(s + rr, 0) + c
+        dist = nd
+    wp = sum(r2[i] for i in range(n) if d[i] > 0)
+    tot = 2 ** n
+    lo = sum(c for s, c in dist.items() if s <= wp) / tot
+    hi = sum(c for s, c in dist.items() if s >= wp) / tot
+    return dict(n_nonzero=n, w_plus=wp / 2, w_minus=(sum(r2) - wp) / 2, p_two_sided=min(1.0, 2 * min(lo, hi)))
+
+
+def boot_ci_mean(d, reps=20000, seed=20260926):
+    rng = random.Random(seed)
+    n = len(d)
+    ms = sorted(sum(rng.choice(d) for _ in range(n)) / n for _ in range(reps))
+    return [ms[int(0.025 * reps)], ms[int(0.975 * reps) - 1]]
+
+
+def mwu(x, y):
+    """Mann-Whitney U of y vs x, normal approximation with tie and continuity correction."""
+    n1, n2 = len(x), len(y)
+    allv = sorted(x + y)
+    rank, i = {}, 0
+    while i < len(allv):
+        j = i
+        while j + 1 < len(allv) and allv[j + 1] == allv[i]:
+            j += 1
+        rank[allv[i]] = (i + 1 + j + 1) / 2
+        i = j + 1
+    u2 = sum(rank[v] for v in y) - n2 * (n2 + 1) / 2
+    mu, N = n1 * n2 / 2, n1 + n2
+    tie = sum(t ** 3 - t for t in collections.Counter(allv).values())
+    var = n1 * n2 / 12 * ((N + 1) - tie / (N * (N - 1)))
+    z = 0.0 if u2 == mu else (u2 - mu - math.copysign(0.5, u2 - mu)) / math.sqrt(var)
+    return dict(n_cur=n1, n_vit=n2, U_vit=u2, z=r(z, 3), p_two_sided_normal=r(math.erfc(abs(z) / math.sqrt(2)), 5),
+                hodges_lehmann_vit_minus_cur=r(st.median([b - a for a in x for b in y]), 4))
+
+
+# ------------------------------------------------------------------ speed (ARMS.md step 6)
+def cmp(data, key, lower_better):
+    xa, xb = [data[b][key] for b in CUR], [data[b][key] for b in VIT]
+    ma, mb = st.median(xa), st.median(xb)
+    sa, sb = max(xa) - min(xa), max(xb) - min(xb)
+    noise = max(sa, sb)
+    imp = (ma - mb) if lower_better else (mb - ma)
+    better_all = all((v < ma) if lower_better else (v > ma) for v in xb)
+    worse_all = all((v > ma) if lower_better else (v < ma) for v in xb)
+    return dict(CUR=[r(v) for v in xa], VIT=[r(v) for v in xb], CUR_median=r(ma), VIT_median=r(mb),
+                delta_VIT_minus_CUR=r(mb - ma), delta_pct=r(100.0 * (mb - ma) / ma, 2),
+                CUR_spread=r(sa), VIT_spread=r(sb), noise=r(noise), improvement=r(imp),
+                every_VIT_boot_beats_CUR_median=better_all, every_VIT_boot_worse_than_CUR_median=worse_all,
+                better_beyond_noise=(imp > noise and better_all), worse_beyond_noise=((-imp) > noise),
+                within_noise=abs(imp) <= noise)
+
+
+def acc_overlap(per_boot_key, runs_of):
+    pa, pb = [D[b][per_boot_key] for b in CUR], [D[b][per_boot_key] for b in VIT]
+    ra = [v for b in CUR for v in runs_of(b)]
+    rb = [v for b in VIT for v in runs_of(b)]
+    return dict(CUR_per_boot=[r(v, 4) for v in pa], VIT_per_boot=[r(v, 4) for v in pb],
+                per_boot_interval_overlap=max(min(pa), min(pb)) <= min(max(pa), max(pb)),
+                CUR_run_range=[r(min(ra), 4), r(max(ra), 4)], VIT_run_range=[r(min(rb), 4), r(max(rb), 4)],
+                run_range_overlap=max(min(ra), min(rb)) <= min(max(ra), max(rb)),
+                mwu_runs=mwu(ra, rb))
+
+
+def lail_runs(b):
+    rows = [json.loads(m.group(1)) for m in (re.match(r"run=\d+ (\{.*\})$", l.strip()) for l in open(f"{b}/lail10.txt")) if m]
+    return rows
+
+
+def prose_long_runs(b, conc=1):
+    out = []
+    for l in open(f"{b}/four/06-prose-long.log"):
+        m = re.match(rf"phase=prose_long c={conc} run=\d+ .* per_stream=\[([^\]]*)\] ttft=\[([^\]]*)\] acc=([\d.]+) ms_step=\[([^\]]*)\]", l)
+        if m:
+            out.append(dict(tok_s=[float(x) for x in m.group(1).split(",")], ttft=[float(x) for x in m.group(2).split(",")],
+                            acc=float(m.group(3)), ms_step=[float(x) for x in m.group(4).split(",")]))
+    return out
+
+
+def bench_runs(b, phase, conc):
+    out = []
+    for l in open(f"{b}/bench_decode.txt"):
+        m = re.match(rf"phase={phase} c={conc} run=\d+ .* ttft=\[([^\]]*)\] acc=([\d.]+) ms_step=\[([^\]]*)\]", l)
+        if m:
+            t = [float(x) for x in m.group(1).split(",")]
+            out.append(dict(ttft=t, ttft_gap=max(t) - min(t), acc=float(m.group(2)),
+                            ms_step=[float(x) for x in m.group(3).split(",")]))
+    return out
+
+
+# ------------------------------------------------------------------ quality helpers
+def gates_of(b, m):
+    return {g["gate"]: g for g in Q[(b, m)]["gates"]}
+
+
+def paired_binary(name, universe, ok, pairs, aa_pairs):
+    """ok[(boot, mode)] = set of correct items. Exact McNemar per interleaved pair, pooled
+    per-item sign test over all readings of each arm, and the same-arm A/A discordance."""
+    per_pair = {}
+    for c, v in pairs:
+        b_ = len(ok[c] - ok[v])          # CUR right, VIT wrong
+        c_ = len(ok[v] - ok[c])          # CUR wrong, VIT right
+        per_pair[f"{v[0]}/{v[1]} vs {c[0]}/{c[1]}"] = dict(
+            CUR_k=len(ok[c]), VIT_k=len(ok[v]), n=len(universe), CUR_only=b_, VIT_only=c_,
+            CUR_only_items=sorted(ok[c] - ok[v]), VIT_only_items=sorted(ok[v] - ok[c]),
+            mcnemar_exact_p=r(sign_p(c_, b_ + c_), 5))
+    cur_keys = [c for c, _ in pairs]
+    vit_keys = [v for _, v in pairs]
+    score = {i: sum(i in ok[v] for v in vit_keys) - sum(i in ok[c] for c in cur_keys) for i in universe}
+    pos = sorted(i for i, s in score.items() if s > 0)
+    neg = sorted(i for i, s in score.items() if s < 0)
+    aa = {}
+    for x, y in aa_pairs:
+        aa[f"{y[0]}/{y[1]} vs {x[0]}/{x[1]}"] = dict(discordant=len(ok[x] ^ ok[y]), items=sorted(ok[x] ^ ok[y]))
+    return dict(component=name, n_items=len(universe), per_pair=per_pair,
+                pooled=dict(readings_per_arm=len(pairs), items_VIT_better=len(pos), items_CUR_better=len(neg),
+                            VIT_better_items=pos, CUR_better_items=neg,
+                            sign_test_exact_p=r(sign_p(len(pos), len(pos) + len(neg)), 5),
+                            CUR_total_correct=sum(len(ok[c]) for c in cur_keys),
+                            VIT_total_correct=sum(len(ok[v]) for v in vit_keys),
+                            total_items_scored_per_arm=len(universe) * len(pairs)),
+                same_arm_AA_discordance=aa)
+
+
+def first_div(a, b):
+    for i, (x, y) in enumerate(zip(a, b)):
+        if x != y:
+            return i
+    return None if len(a) == len(b) else min(len(a), len(b))
+
+
+def hazard(pairs):
+    ev, risk, divs = 0, 0, []
+    for a, b in pairs:
+        d = first_div(a, b)
+        divs.append(d)
+        if d is None:
+            risk += len(a)
+        else:
+            ev += 1
+            risk += d + 1
+    return dict(hazard=r(ev / risk, 5) if risk else 0.0, diverged=ev, pairs=len(pairs), first_div=divs)
+
+
+def vs_golden(target_runs, golden_run0):
+    return hazard([(s, golden_run0[i]) for run in target_runs for i, s in enumerate(run)])
+
+
+def bytes_to_unicode():
+    bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
+    cs = bs[:]
+    n = 0
+    for b in range(256):
+        if b not in bs:
+            bs.append(b)
+            cs.append(256 + n)
+            n += 1
+    return dict(zip(bs, [chr(c) for c in cs]))
+
+
+def make_decoder():
+    if not os.path.exists(TOK):
+        return None
+    t = json.load(open(TOK))
+    inv = {v: k for k, v in t["model"]["vocab"].items()}
+    added = {a["id"]: a["content"] for a in t["added_tokens"]}
+    u2b = {v: k for k, v in bytes_to_unicode().items()}
+
+    def dec(ids):
+        out, buf = [], bytearray()
+        for i in ids:
+            if i in added:
+                out.append(buf.decode("utf-8", "replace"))
+                buf = bytearray()
+                out.append(added[i])
+            else:
+                buf.extend(u2b[c] for c in inv.get(i, "") if c in u2b)
+        out.append(buf.decode("utf-8", "replace"))
+        return "".join(out)
+    return dec
+
+
+PRIMES20 = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71]
+CHECKS = {  # selfcons prompts whose answer fits in 128 tokens (index into tests/quality_eval.py SELFCONS_PROMPTS)
+    3: ("first 20 primes", lambda s: [int(x) for x in re.findall(r"\d+", s)][:20] == PRIMES20),
+    4: ("French: renard + chien", lambda s: "renard" in s.lower() and "chien" in s.lower()),
+    5: ("capital of Australia -> Canberra", lambda s: "canberra" in s.lower()),
+}
+UNCHECKED = "Prompts 0 (17*19), 8 (quadratic) and 11 (IEEE 754) are cut by the 128-token cap before their final answer in every reading of every arm, the 09-24 baseline included, so they are not scored."
+
+
+# ------------------------------------------------------------------ main
+def main():
+    global D
+    D = {b: BC.boot(b) for b in ORDER}
+    for b in ORDER:
+        L = lail_runs(b)
+        D[b]["lail_runs"] = L
+        D[b]["prose_long_c1_runs"] = prose_long_runs(b, 1)
+    out = {}
+
+    # ---------------- validity
+    val = {}
+    for b in ORDER:
+        P = D[b]
+        prov = {m: Q[(b, m)]["provenance"]["root"].rsplit("/", 1)[-1] for m in MODES}
+        cf = open(f"{b}/correctness_full.txt").read() if os.path.exists(f"{b}/correctness_full.txt") else None
+        cfm = re.findall(r'CORRECTNESS \{"pass": (\d+), "total": (\d+)\}', cf or "")
+        val[b] = dict(commit=P["commit"][:12], snapshot_in_quality_provenance=prov,
+                      patch_sha256_list_digest=__import__("hashlib").sha256(open(f"{b}/patch.sha256", "rb").read()).hexdigest()[:16],
+                      prose_long_c1=f"{P['prose_long_c1_finish']}, post-EOS {P['prose_long_c1_post_eos']}",
+                      prose_long_c2=f"{P['prose_long_c2_finish']}, post-EOS {P['prose_long_c2_post_eos']}",
+                      lail_finish=P["lail_finish"], serve_env_ranks_match=P["serve_env_ranks_match"],
+                      lever_disarmed=P["lever_disarmed"], disarm_scan_rc=P["disarm_scan_rc"], gpu_guard_rc=P["gpu_guard_rc"],
+                      contaminated=P["contaminated"], e2e_rc=P["e2e_rc"], correctness=P["correctness"],
+                      correctness_full=(f"{cfm[-1][0]}/{cfm[-1][1]}" if cfm else None),
+                      memavail_after_smoke_spark1_spark2=P["memavail_after_smoke_gib"])
+    all_valid = all(v["prose_long_c1"] == "length, post-EOS 0.0" and v["serve_env_ranks_match"] and not v["lever_disarmed"]
+                    and v["disarm_scan_rc"] == [0] and v["gpu_guard_rc"] == [0] and not v["contaminated"]
+                    and v["e2e_rc"] == [0] and v["correctness"] == "8/8" for v in val.values())
+    snap_ok = all(val[b]["snapshot_in_quality_provenance"] == {m: PIN_CUR for m in MODES} for b in CUR) and \
+        all(val[b]["snapshot_in_quality_provenance"] == {m: PIN_VIT for m in MODES} for b in VIT)
+    patch_same = len({val[b]["patch_sha256_list_digest"] for b in ORDER}) == 1
+    out["validity"] = dict(all_four_valid=all_valid, snapshots_as_intended=snap_ok, patch_identical_all_four=patch_same, per_boot=val)
+
+    # ---------------- quality: gates as written
+    gate_tab = {}
+    for b in ORDER:
+        for m in MODES:
+            g = gates_of(b, m)
+            gate_tab[f"{b}/{m}"] = dict(pass_=Q[(b, m)]["pass"], failed=[k for k, v in g.items() if not v["pass"]],
+                                        values={k: [v["value"], v["limit"], v["pass"]] for k, v in g.items()})
+    q_quick_vit = all(Q[(b, "quick")]["pass"] for b in VIT)
+    q_full_vit = all(Q[(b, "full")]["pass"] for b in VIT)
+    q_all_cur = all(Q[(b, m)]["pass"] for b in CUR for m in MODES)
+
+    # ---------------- quality: paired NLL over the 40 fixed passages
+    ids = [json.loads(l)["id"] for l in open(f"{W}/tests/quality/nll_passages.jsonl")]
+    pp = {(b, m): Q[(b, m)]["components"]["nll"]["per_passage"] for b in ORDER for m in MODES}
+    assert all(set(v) == set(ids) for v in pp.values())
+    arm_pp = {arm: {p: st.mean(pp[(b, m)][p] for b in boots for m in MODES) for p in ids}
+              for arm, boots in (("CUR", CUR), ("VIT", VIT))}
+    d = [arm_pp["VIT"][p] - arm_pp["CUR"][p] for p in ids]
+    n = len(d)
+    assert n == 40
+    md, sd = st.mean(d), st.stdev(d)
+    se = sd / math.sqrt(n)
+    rel = [(arm_pp["VIT"][p] - arm_pp["CUR"][p]) / arm_pp["CUR"][p] for p in ids]
+
+    def pairdelta(x, y):
+        dd = [pp[y][p] - pp[x][p] for p in ids]
+        return dict(mean=r(st.mean(dd), 5), sd=r(st.stdev(dd), 5), max_abs=r(max(abs(v) for v in dd), 5),
+                    n_lower=sum(v < 0 for v in dd), n_higher=sum(v > 0 for v in dd))
+    mean_nll = {f"{b}/{m}": Q[(b, m)]["components"]["nll"]["mean_nll"] for b in ORDER for m in MODES}
+    run_means = {f"{b}/full": Q[(b, "full")]["components"]["nll"]["run_means"] for b in ORDER}
+    nll = dict(
+        unit="per-passage mean NLL (nats/token), 40 fixed passages; arm value per passage = mean of its 4 readings (quick + full first pass, 2 boots)",
+        CUR_mean_of_passages=r(st.mean(arm_pp["CUR"].values()), 5), VIT_mean_of_passages=r(st.mean(arm_pp["VIT"].values()), 5),
+        paired_delta_VIT_minus_CUR=dict(mean=r(md, 5), median=r(st.median(d), 5), sd=r(sd, 5),
+                                        ci95_t=[r(md - T975_DF39 * se, 5), r(md + T975_DF39 * se, 5)],
+                                        ci95_bootstrap=[r(v, 5) for v in boot_ci_mean(d)],
+                                        relative_mean_pct=r(100 * st.mean(rel), 2),
+                                        relative_ci95_bootstrap_pct=[r(100 * v, 2) for v in boot_ci_mean(rel)],
+                                        passages_lower_on_VIT=sum(v < 0 for v in d), passages_higher_on_VIT=sum(v > 0 for v in d),
+                                        sign_test_exact_p=sign_p(sum(v < 0 for v in d), sum(v != 0 for v in d)),
+                                        wilcoxon=wilcoxon_exact(d),
+                                        least_improved=sorted(((p, r(arm_pp["VIT"][p] - arm_pp["CUR"][p], 5)) for p in ids), key=lambda t: t[1])[-3:]),
+        interleaved_pairs={f"{v}/{m} - {c}/{m}": pairdelta((c, m), (v, m)) for c, v in zip(CUR, VIT) for m in MODES},
+        same_arm_AA_control={f"{y}/{m} - {x}/{m}": pairdelta((x, m), (y, m)) for x, y in (CUR, VIT) for m in MODES},
+        within_run_repeat={f"{b}/full": dict(repeat_abs_delta=Q[(b, "full")]["components"]["nll"]["repeat_abs_delta"],
+                                             repeat_max_passage_delta=Q[(b, "full")]["components"]["nll"]["repeat_max_passage_delta"])
+                           for b in ORDER},
+        token_weighted_mean_nll=mean_nll, full_two_pass_run_means=run_means,
+        gate_limits={"quick": gates_of("VIT-1", "quick")["nll.mean_nll"]["limit"], "full": gates_of("VIT-1", "full")["nll.mean_nll"]["limit"]},
+    )
+
+    # ---------------- quality: GSM8K / GSM8K-think / MMLU (full only), tools, needle (quick + full)
+    gsm_items = [json.loads(l)["idx"] for l in open(f"{W}/tests/quality/gsm8k_100.jsonl")]
+    mmlu_items = [f"{it['subject']}/{it['row']}" for it in map(json.loads, open(f"{W}/tests/quality/mmlu_228.jsonl"))]
+    full_pairs = [((c, "full"), (v, "full")) for c, v in zip(CUR, VIT)]
+    full_aa = [((CUR[0], "full"), (CUR[1], "full")), ((VIT[0], "full"), (VIT[1], "full"))]
+    all_pairs = [((c, m), (v, m)) for c, v in zip(CUR, VIT) for m in MODES]
+    all_aa = [((CUR[0], m), (CUR[1], m)) for m in MODES] + [((VIT[0], m), (VIT[1], m)) for m in MODES]
+
+    def ok_gsm(comp, universe):
+        return {(b, "full"): set(universe) - {x["idx"] for x in Q[(b, "full")]["components"][comp]["misses"]} for b in ORDER}
+    ok_mmlu = {(b, "full"): set(mmlu_items) - {x.rsplit(":", 1)[0] for x in Q[(b, "full")]["components"]["mmlu"]["misses"]} for b in ORDER}
+    for k, v in ok_mmlu.items():
+        assert len(v) == Q[k]["components"]["mmlu"]["acc"]["k"], k
+    ok_g = ok_gsm("gsm8k", gsm_items)
+    ok_gt = ok_gsm("gsm8k_think", gsm_items[:40])
+    for k in ok_g:
+        assert len(ok_g[k]) == Q[k]["components"]["gsm8k"]["acc"]["k"] and len(ok_gt[k]) == Q[k]["components"]["gsm8k_think"]["acc"]["k"], k
+
+    def tool_sets(field):
+        res = {}
+        for b in ORDER:
+            for m in MODES:
+                it = Q[(b, m)]["components"]["tools"]["items"]
+                if field == "no_call":
+                    res[(b, m)] = {i["id"] for i in it if i["id"].startswith("n") and i.get("no_call_ok")}
+                else:
+                    res[(b, m)] = {i["id"] for i in it if i["id"].startswith("t") and i.get(field)}
+        return res
+    tool_items = [i["id"] for i in Q[("CUR-1", "quick")]["components"]["tools"]["items"]]
+    t_items = [i for i in tool_items if i.startswith("t")]
+    n_items = [i for i in tool_items if i.startswith("n")]
+    needle_ok = {}
+    needle_univ = {}
+    for b in ORDER:
+        for m in MODES:
+            cells = Q[(b, m)]["components"]["needle"]["cells"]
+            needle_ok[(b, m)] = {k for k, v in cells.items() if v["found"]}
+            needle_univ[m] = sorted(cells)
+    paired = dict(
+        gsm8k=paired_binary("gsm8k (100, thinking off)", gsm_items, ok_g, full_pairs, full_aa),
+        gsm8k_think=paired_binary("gsm8k_think (first 40, thinking on)", gsm_items[:40], ok_gt, full_pairs, full_aa),
+        mmlu=paired_binary("mmlu (228)", mmlu_items, ok_mmlu, full_pairs, full_aa),
+        tools_exact_args=paired_binary("tools exact_args (22)", t_items, tool_sets("exact"), all_pairs, all_aa),
+        tools_json_valid=paired_binary("tools json_valid (22)", t_items, tool_sets("json_valid"), all_pairs, all_aa),
+        tools_no_call=paired_binary("tools no_call (8)", n_items, tool_sets("no_call"), all_pairs, all_aa),
+        needle_quick=paired_binary("needle quick (8k/32k x 3 depths)", needle_univ["quick"], {k: v for k, v in needle_ok.items() if k[1] == "quick"},
+                                   [p for p in all_pairs if p[0][1] == "quick"], [p for p in all_aa if p[0][1] == "quick"]),
+        needle_full=paired_binary("needle full (8k/32k/128k x 3 depths)", needle_univ["full"], {k: v for k, v in needle_ok.items() if k[1] == "full"},
+                                  [p for p in all_pairs if p[0][1] == "full"], [p for p in all_aa if p[0][1] == "full"]),
+    )
+
+    # ---------------- quality: decode probe, c2, vision
+    decode = {f"{b}/{m}": {k: Q[(b, m)]["components"]["decode"][k] for k in
+                           ("median_abs_dlogprob", "p99_abs_dlogprob", "mean_abs_dlogprob", "gen_nll_prefill", "gen_nll_decode")}
+              for b in ORDER for m in MODES}
+    misc = {f"{b}/{m}": dict(c2=Q[(b, m)]["components"]["c2"]["pass"], vision=Q[(b, m)]["components"]["vision"]["content"])
+            for b in ORDER for m in MODES}
+
+    # ---------------- quality: greedy self-consistency control
+    runs = {(b, m): Q[(b, m)]["components"]["selfcons"]["runs"] for b in ORDER for m in MODES}
+    base_runs = {m: BASE[m]["components"]["selfcons"]["runs"] for m in MODES}
+    sc = {"limits": {m: r(2 * max(BASE[m]["components"]["selfcons"]["aa"]["hazard"], 0.005), 5) for m in MODES}}
+    recompute_ok = True
+    rows = {}
+    for b in ORDER:
+        for m in MODES:
+            aa = hazard(list(zip(runs[(b, m)][0], runs[(b, m)][1])))
+            gold = vs_golden(runs[(b, m)], base_runs[m][0])
+            comp = Q[(b, m)]["components"]["selfcons"]
+            recompute_ok &= (aa["hazard"] == comp["aa"]["hazard"] and gold["hazard"] == comp["golden"]["hazard"])
+            rows[f"{b}/{m}"] = dict(aa_hazard=aa["hazard"], aa_diverged=aa["diverged"], golden_old_pack_hazard=gold["hazard"],
+                                    golden_diverged=gold["diverged"], golden_first_div=gold["first_div"])
+    sc["per_reading_vs_09_24_old_pack_golden"] = rows
+    sc["recomputed_equals_stored"] = recompute_ok
+    cross = {}
+    for m in MODES:
+        cross[f"CUR-2/{m} vs CUR-1/{m} run A (same pack, cross-boot)"] = vs_golden(runs[("CUR-2", m)], runs[("CUR-1", m)][0])
+        cross[f"VIT-2/{m} vs VIT-1/{m} run A (same pack, cross-boot)"] = vs_golden(runs[("VIT-2", m)], runs[("VIT-1", m)][0])
+        cross[f"VIT-1/{m} vs CUR-1/{m} run A (cross-pack, interleaved pair 1)"] = vs_golden(runs[("VIT-1", m)], runs[("CUR-1", m)][0])
+        cross[f"VIT-2/{m} vs CUR-2/{m} run A (cross-pack, interleaved pair 2)"] = vs_golden(runs[("VIT-2", m)], runs[("CUR-2", m)][0])
+        cross[f"CUR-1/{m} vs 09-24 baseline/{m} run A (golden gate as run)"] = vs_golden(runs[("CUR-1", m)], base_runs[m][0])
+    sc["cross_boot_and_cross_pack_hazard"] = cross
+    # Pack-systematic divergence: VIT vs old golden first_div per prompt on every VIT run
+    fd = {}
+    for i in range(12):
+        fd[i] = sorted({(rows[f"{b}/{m}"]["golden_first_div"][i], rows[f"{b}/{m}"]["golden_first_div"][12 + i]) for b in VIT for m in MODES},
+                       key=str)
+    sc["VIT_first_div_vs_old_golden_by_prompt"] = {str(k): v for k, v in fd.items()}
+    dec = make_decoder()
+    if dec:
+        chk = {}
+        for idx, (label, fn) in CHECKS.items():
+            row = {}
+            row["09-24 baseline (old pack, e12)"] = f"{sum(fn(dec(run[idx])) for m in MODES for run in base_runs[m])}/4"
+            for arm, boots in (("CUR", CUR), ("VIT", VIT)):
+                row[arm] = f"{sum(fn(dec(run[idx])) for b in boots for m in MODES for run in runs[(b, m)])}/8"
+            chk[label] = row
+        sc["checkable_answers_in_greedy_text"] = dict(
+            note="Decoded offline from token ids with tokenizer.json (byte-level BPE). Readings: baseline 2 modes x 2 runs; each arm 2 boots x 2 modes x 2 runs. " + UNCHECKED,
+            per_prompt=chk)
+        sc["previews_run_A_quick"] = {str(i): {"baseline": dec(base_runs["quick"][0][i])[:110], "CUR-1": dec(runs[("CUR-1", "quick")][0][i])[:110],
+                                               "VIT-1": dec(runs[("VIT-1", "quick")][0][i])[:110]} for i in range(12)}
+    quality = dict(gates_as_written=dict(per_reading=gate_tab, quick_pass_both_VIT=q_quick_vit, full_pass_both_VIT=q_full_vit,
+                                         CUR_pass_all_four=q_all_cur),
+                   nll=nll, paired_item_tests=paired, decode_probe=decode, c2_vision=misc, selfcons=sc)
+    out["quality"] = quality
+
+    # ---------------- speed
+    ms_keys = ["four_prose_c1_ms_step", "prose_long_c1_ms_step", "lail_ms_step", "bench_prose_c1_ms_step",
+               "structured_c1_ms_step", "bench_prose_c2_ms_step", "structured_c2_ms_step", "prose_long_c2_ms_step"]
+    tok_keys = ["prose_long_c1_tok_s", "lail_tok_s", "four_prose_c1_tok_s", "bench_prose_c1_tok_s", "structured_c1_tok_s",
+                "bench_prose_c2_agg_tok_s", "structured_c2_agg_tok_s", "prose_long_c2_agg_tok_s", "lail_after_c2_3x_tok_s"]
+    ni_keys = ["pp_warm_8k", "pp_warm_32k", "pp_novel_8k", "pp_novel_32k", "prose_long_c2_agg_tok_s", "warm_prefix_hit_fraction"]
+    speed = dict(ms_step={k: cmp(D, k, True) for k in ms_keys}, tok_s={k: cmp(D, k, False) for k in tok_keys},
+                 non_inferiority={k: cmp(D, k, False) for k in ni_keys})
+    speed["acceptance"] = dict(
+        four_prose_c1=acc_overlap("acc_four_prose_c1", lambda b: D[b]["acc_four_prose_c1_runs"]),
+        prose_long_c1=acc_overlap("acc_prose_long_c1", lambda b: D[b]["acc_prose_long_c1_runs"]),
+        lail=acc_overlap("acc_lail", lambda b: [x["acceptance_len"] for x in D[b]["lail_runs"]]),
+        structured_c1={"CUR": [D[b]["acc_structured_c1"] for b in CUR], "VIT": [D[b]["acc_structured_c1"] for b in VIT]},
+    )
+    speed["cell_honesty"] = {b: dict(four_prose_c1_post_eos=json.load(open(f"{b}/four/four_numbers.json"))["prose_cell"]["post_eos_fraction"],
+                                     four_prose_natural_tokens=json.load(open(f"{b}/four/four_numbers.json"))["prose_cell"]["natural_completion_tokens"],
+                                     prose_long_c1_post_eos=D[b]["prose_long_c1_post_eos"], lail_finish=D[b]["lail_finish"])
+                             for b in ORDER}
+    speed["run_level_supplementary"] = dict(
+        note="Pooled runs per arm (2 boots). Not the gate: ARMS.md step 6 gates on per-boot medians and the boot-to-boot spread.",
+        lail_tok_s=mwu([x["lail_tok_s"] for b in CUR for x in D[b]["lail_runs"]], [x["lail_tok_s"] for b in VIT for x in D[b]["lail_runs"]]),
+        lail_acceptance=mwu([x["acceptance_len"] for b in CUR for x in D[b]["lail_runs"]], [x["acceptance_len"] for b in VIT for x in D[b]["lail_runs"]]),
+        prose_long_c1_tok_s=mwu([x["tok_s"][0] for b in CUR for x in D[b]["prose_long_c1_runs"]], [x["tok_s"][0] for b in VIT for x in D[b]["prose_long_c1_runs"]]),
+        prose_long_c1_acceptance=mwu([x["acc"] for b in CUR for x in D[b]["prose_long_c1_runs"]], [x["acc"] for b in VIT for x in D[b]["prose_long_c1_runs"]]),
+    )
+    c2adm = {}
+    for b in ORDER:
+        c2adm[b] = {}
+        for ph in ("structured", "prose"):
+            rr = bench_runs(b, ph, 2)
+            c2adm[b][f"{ph}_c2_median_ttft_gap_s"] = r(st.median(x["ttft_gap"] for x in rr), 3)
+            c2adm[b][f"{ph}_c2_runs_with_both_streams_same_ms_step"] = sum(len(set(x["ms_step"])) == 1 for x in rr)
+        c2adm[b]["structured_c1_median_ttft_s"] = r(st.median(x["ttft"][0] for x in bench_runs(b, "structured", 1)), 3)
+    speed["c2_admission"] = c2adm
+    out["speed"] = speed
+
+    doc = decide(out)
+    json.dump(doc, open(sys.argv[1], "w"), indent=1, default=str)
+    return out
+
+
+def span(xs, n=5):
+    return f"{r(min(xs), n)}-{r(max(xs), n)}"
+
+
+def decide(out):
+    q, s, v = out["quality"], out["speed"], out["validity"]
+    n = q["nll"]["paired_delta_VIT_minus_CUR"]
+    pit = q["paired_item_tests"]
+    sc = q["selfcons"]["per_reading_vs_09_24_old_pack_golden"]
+    x = q["selfcons"]["cross_boot_and_cross_pack_hazard"]
+    dp = q["decode_probe"]
+    rd = lambda arm, key, src: [src[f"{b}/{m}"][key] for b in arm for m in MODES]
+    tw = q["nll"]["token_weighted_mean_nll"]
+    twC, twV = [tw[f"{b}/{m}"] for b in CUR for m in MODES], [tw[f"{b}/{m}"] for b in VIT for m in MODES]
+
+    # ---- quality: every gate better-or-equal, and at least one significant improvement
+    per_gate = {
+        "nll.mean_nll": dict(verdict="better, significant",
+                             evidence=f"paired over 40 passages: mean delta {n['mean']} nats/token, 95% CI t {n['ci95_t']}, bootstrap {n['ci95_bootstrap']}; {n['passages_lower_on_VIT']}/40 passages lower; Wilcoxon exact p {n['wilcoxon']['p_two_sided']:.2e}; relative {n['relative_mean_pct']}% ({n['relative_ci95_bootstrap_pct']}). Token-weighted mean_nll CUR {twC}, VIT {twV}."),
+        "decode.median_abs_dlogprob": dict(verdict="better (no overlap; aggregates only, no paired test possible)",
+                                           evidence=f"CUR {rd(CUR, 'median_abs_dlogprob', dp)}, VIT {rd(VIT, 'median_abs_dlogprob', dp)}"),
+        "decode.gen_nll_prefill": dict(verdict="equal or better (band gate; texts differ per arm so not paired)",
+                                       evidence=f"CUR {rd(CUR, 'gen_nll_prefill', dp)}, VIT {rd(VIT, 'gen_nll_prefill', dp)}"),
+        "selfcons.aa_hazard": dict(verdict="equal (VIT inside CUR's range)",
+                                   evidence=f"CUR {rd(CUR, 'aa_hazard', sc)}, VIT {rd(VIT, 'aa_hazard', sc)}; limits quick {q['selfcons']['limits']['quick']}, full {q['selfcons']['limits']['full']}"),
+        "selfcons.golden_hazard": dict(verdict="WORSE: fails its limit on all 4 VIT readings",
+                                       evidence=f"CUR {rd(CUR, 'golden_old_pack_hazard', sc)}, VIT {rd(VIT, 'golden_old_pack_hazard', sc)} (20/24 pairs diverge on every VIT reading); limits quick {q['selfcons']['limits']['quick']}, full {q['selfcons']['limits']['full']}"),
+        "tools.exact_args": dict(verdict="equal or better, not significant",
+                                 evidence=f"CUR {pit['tools_exact_args']['pooled']['CUR_total_correct']}/88, VIT {pit['tools_exact_args']['pooled']['VIT_total_correct']}/88 over 4 readings each; items VIT better {pit['tools_exact_args']['pooled']['VIT_better_items']}, CUR better {pit['tools_exact_args']['pooled']['CUR_better_items']}; sign test p {pit['tools_exact_args']['pooled']['sign_test_exact_p']}"),
+        "tools.json_valid": dict(verdict="equal", evidence="88/88 on both arms"),
+        "tools.no_call": dict(verdict="equal", evidence="32/32 on both arms"),
+        "needle.found": dict(verdict="equal", evidence="quick 6/6 and full 9/9 (incl. 128k) on every reading of both arms"),
+        "gsm8k.acc": dict(verdict="equal or better, not significant",
+                          evidence=f"CUR 95/100, 94/100; VIT 97/100, 97/100; pooled items VIT better {pit['gsm8k']['pooled']['items_VIT_better']}, CUR better {pit['gsm8k']['pooled']['items_CUR_better']}, sign test p {pit['gsm8k']['pooled']['sign_test_exact_p']}; McNemar per pair p {[vv['mcnemar_exact_p'] for vv in pit['gsm8k']['per_pair'].values()]}"),
+        "gsm8k_think.acc": dict(verdict="equal", evidence="39/40 on all four boots, same miss (idx 403)"),
+        "mmlu.acc": dict(verdict="equal or better, not significant after pooling",
+                         evidence=f"CUR 196/228, 198/228; VIT 206/228, 204/228; McNemar per pair p {[vv['mcnemar_exact_p'] for vv in pit['mmlu']['per_pair'].values()]}; pooled items VIT better {pit['mmlu']['pooled']['items_VIT_better']}, CUR better {pit['mmlu']['pooled']['items_CUR_better']}, sign test p {pit['mmlu']['pooled']['sign_test_exact_p']}. Same-arm A/A discordance is 4 items on each arm."),
+        "c2": dict(verdict="equal", evidence="pass on all 8 readings"),
+        "vision": dict(verdict="equal", evidence="'Red' on all 8 readings"),
+        "correctness --full (s7, VIT only)": dict(verdict="pass", evidence=f"VIT-1 {v['per_boot']['VIT-1']['correctness_full']}, VIT-2 {v['per_boot']['VIT-2']['correctness_full']}"),
+    }
+    every_gate_ge = all(not g["verdict"].startswith("WORSE") for g in per_gate.values())
+    nll_sig = n["ci95_t"][1] < 0 and n["ci95_bootstrap"][1] < 0 and n["wilcoxon"]["p_two_sided"] < 0.05
+    gates_pass = q["gates_as_written"]["quick_pass_both_VIT"] and q["gates_as_written"]["full_pass_both_VIT"]
+    quality_ok = gates_pass and every_gate_ge and nll_sig
+
+    # ---- speed: s7 gate metrics (prose_long c=1 tok/s and L.A.I.L tok/s) with the noise rule
+    acc = s["acceptance"]
+    matched = {k: acc[k]["per_boot_interval_overlap"] for k in ("four_prose_c1", "prose_long_c1", "lail")}
+    pl, la = s["tok_s"]["prose_long_c1_tok_s"], s["tok_s"]["lail_tok_s"]
+    ms_eq = {k: s["ms_step"][k]["within_noise"] for k in ("four_prose_c1_ms_step", "prose_long_c1_ms_step", "lail_ms_step", "bench_prose_c1_ms_step")}
+    ni_ok = {k: not vv["worse_beyond_noise"] for k, vv in s["non_inferiority"].items()}
+    speed_not_worse = not pl["worse_beyond_noise"] and not la["worse_beyond_noise"] and all(ni_ok.values())
+    honest = v["all_four_valid"] and v["snapshots_as_intended"] and v["patch_identical_all_four"]
+    promote = quality_ok and speed_not_worse and honest
+    rl = s["run_level_supplementary"]
+    fdv = q["selfcons"]["VIT_first_div_vs_old_golden_by_prompt"]
+    fd_single = {int(k): vv[0] for k, vv in fdv.items() if len(vv) == 1}
+    fd_same = sum(1 for t in fd_single.values() if t[0] is not None and t[0] == t[1])
+    fd_same_pos = sorted({t[0] for t in fd_single.values() if t[0] is not None})
+    fd_never = [k for k, t in sorted(fd_single.items()) if t == (None, None)]
+    fd_vary = sorted(int(k) for k, vv in fdv.items() if len(vv) > 1)
+    fd_vary_pos = {k: sorted({p for t in fdv[str(k)] for p in t if p is not None}) for k in fd_vary}
+    chk = q["selfcons"].get("checkable_answers_in_greedy_text", {}).get("per_prompt", {})
+    chk_txt = "; ".join(f"{k}: baseline {vv['09-24 baseline (old pack, e12)']}, CUR {vv['CUR']}, VIT {vv['VIT']}" for k, vv in chk.items()) or "not decoded"
+    pp_str = lambda comp: "/".join(f"{vv['VIT_k'] - vv['CUR_k']:+}" for vv in pit[comp]["per_pair"].values())
+    mm_pp, gs_pp, te_pp = pp_str("mmlu"), pp_str("gsm8k"), pp_str("tools_exact_args")
+    up = [t for t in n["least_improved"] if t[1] > 0]
+    up_p, up_d = (up[-1][0], up[-1][1]) if up else ("none", 0.0)
+    aa_max = [vv["max_abs"] for vv in q["nll"]["same_arm_AA_control"].values()]
+    aa_lo, aa_hi = min(aa_max), max(aa_max)
+
+    decision = dict(
+        checks=dict(
+            validity_all_four_boots=honest,
+            quality_gates_as_written_pass_on_both_VIT_boots=gates_pass,
+            quality_quick_pass=[Q[(b, "quick")]["pass"] for b in VIT], quality_full_pass=[Q[(b, "full")]["pass"] for b in VIT],
+            quality_every_gate_better_or_equal=every_gate_ge,
+            quality_significant_improvement_NLL=nll_sig,
+            acceptance_matched_per_boot=matched,
+            ms_step_c1_equal_within_noise=ms_eq,
+            speed_gate_prose_long_c1_tok_s=dict(better_beyond_noise=pl["better_beyond_noise"], worse_beyond_noise=pl["worse_beyond_noise"]),
+            speed_gate_lail_tok_s=dict(better_beyond_noise=la["better_beyond_noise"], worse_beyond_noise=la["worse_beyond_noise"]),
+            non_inferiority_ok=ni_ok,
+            speed_not_worse_beyond_noise=speed_not_worse,
+        ),
+        quality_per_gate=per_gate,
+        promote=[f"SNAPSHOT_SHA={PIN_VIT}"] if promote else [],
+        reject=[] if promote else [f"SNAPSHOT_SHA={PIN_VIT}"],
+        verdict=("PROMOTE" if promote else "REJECT") + f" SNAPSHOT_SHA={PIN_VIT}. " + (
+            "" if promote else
+            "Two independent grounds, each sufficient under the rule as written. (1) Quality: quick and full FAIL on both VIT boots, "
+            "on selfcons.golden_hazard only (ARMS.md step 6 needs quick to pass on every candidate boot; ARMS-r3 s7 needs quick and full "
+            "to pass with no component outside its band), so 'better or equal on every gate' does not hold even though NLL improves "
+            "far beyond its CI. (2) Speed: acceptance is not matched, so the s7 gate is tok/s on the honest cells with the noise rule; "
+            f"L.A.I.L tok/s is worse beyond the noise ({la['delta_VIT_minus_CUR']} tok/s, {la['delta_pct']}%, noise {la['noise']}; both VIT "
+            f"boots below the CUR median), while prose_long c=1 tok/s is better beyond it ({pl['delta_VIT_minus_CUR']:+}, {pl['delta_pct']:+}%, noise {pl['noise']}). "
+            "The serve pin stays SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8."),
+        summary_numbers=dict(
+            nll=f"per-passage paired delta VIT-CUR {n['mean']} nats/token (95% CI {n['ci95_t']}), {n['relative_mean_pct']}%, {n['passages_lower_on_VIT']}/40 lower, Wilcoxon p {n['wilcoxon']['p_two_sided']:.1e}; same-arm cross-boot per-passage deltas average {[vv['mean'] for vv in q['nll']['same_arm_AA_control'].values()]}",
+            golden=f"golden hazard CUR {rd(CUR, 'golden_old_pack_hazard', sc)}, VIT {rd(VIT, 'golden_old_pack_hazard', sc)}; limits 0.03206 quick / 0.04348 full",
+            prose_long_c1_tok_s=f"CUR {pl['CUR']} (median {pl['CUR_median']}), VIT {pl['VIT']} (median {pl['VIT_median']}), delta {pl['delta_VIT_minus_CUR']:+} ({pl['delta_pct']:+}%), noise {pl['noise']}",
+            lail_tok_s=f"CUR {la['CUR']} (median {la['CUR_median']}), VIT {la['VIT']} (median {la['VIT_median']}), delta {la['delta_VIT_minus_CUR']:+} ({la['delta_pct']:+}%), noise {la['noise']}",
+            ms_step_c1=f"four prose {s['ms_step']['four_prose_c1_ms_step']['delta_VIT_minus_CUR']:+} (noise {s['ms_step']['four_prose_c1_ms_step']['noise']}), prose_long {s['ms_step']['prose_long_c1_ms_step']['delta_VIT_minus_CUR']:+} (noise {s['ms_step']['prose_long_c1_ms_step']['noise']}), L.A.I.L {s['ms_step']['lail_ms_step']['delta_VIT_minus_CUR']:+} (noise {s['ms_step']['lail_ms_step']['noise']}) ms/step: equal within noise, as s7 expects",
+            acceptance=f"per-boot medians, CUR vs VIT: L.A.I.L {acc['lail']['CUR_per_boot']} vs {acc['lail']['VIT_per_boot']}; prose_long c=1 {acc['prose_long_c1']['CUR_per_boot']} vs {acc['prose_long_c1']['VIT_per_boot']}; four prose c=1 {acc['four_prose_c1']['CUR_per_boot']} vs {acc['four_prose_c1']['VIT_per_boot']}; structured c=1 {acc['structured_c1']['CUR']} vs {acc['structured_c1']['VIT']}",
+        ),
+        reading=[
+            f"Quality apart from the golden gate is equal or better on every component. NLL drops by {-n['relative_mean_pct']}% per passage on average ({n['passages_lower_on_VIT']}/40 passages lower); the one passage that rises ({up_p}, {up_d:+}) is comparable to the largest same-arm cross-boot per-passage deltas (max |delta| {aa_lo}-{aa_hi}). MMLU ({mm_pp} items per pair), GSM8K ({gs_pp}), tools exact_args ({te_pp} per reading pair) all move toward VIT, but none of them is significant after pooling the two pairs (sign tests p {pit['mmlu']['pooled']['sign_test_exact_p']}, {pit['gsm8k']['pooled']['sign_test_exact_p']}, {pit['tools_exact_args']['pooled']['sign_test_exact_p']}). GSM8K-think, needle, json_valid, no_call, c2 and vision are identical.",
+            f"The golden gate compares greedy text with the 09-24 baseline, which ran the old pack (canonical-e12, {PIN_CUR}). {fd_same} of 12 prompts diverge from it at the identical token on all 16 VIT sequences (first_div {fd_same_pos}); prompts {fd_never} never diverge; prompts {fd_vary} diverge at varying tokens ({fd_vary_pos}). VIT diverges from CUR's own run A in the same way ({x['VIT-1/quick vs CUR-1/quick run A (cross-pack, interleaved pair 1)']['hazard']}-{x['VIT-2/quick vs CUR-2/quick run A (cross-pack, interleaved pair 2)']['hazard']} quick). Against itself VIT is as stable as CUR: cross-boot hazard VIT-2 vs VIT-1 {x['VIT-2/quick vs VIT-1/quick run A (same pack, cross-boot)']['hazard']} quick / {x['VIT-2/full vs VIT-1/full run A (same pack, cross-boot)']['hazard']} full, CUR-2 vs CUR-1 {x['CUR-2/quick vs CUR-1/quick run A (same pack, cross-boot)']['hazard']} / {x['CUR-2/full vs CUR-1/full run A (same pack, cross-boot)']['hazard']}. The decoded VIT texts are coherent and differ in wording and format from token 0; answers that fit in 128 tokens: {chk_txt}. So the gate fails because the pack is different, not because the output is unstable. The rule as written does not exempt a pack change; changing that is for the protocol owner.",
+            f"Speed moves only through acceptance: c=1 ms/step is equal within the noise on every c=1 cell. Acceptance moved in opposite directions by prompt: prose_long c=1 up (run-level MWU p {rl['prose_long_c1_acceptance']['p_two_sided_normal']}), L.A.I.L down (p {rl['lail_acceptance']['p_two_sided_normal']}), short prose down (a cell that is 57-64% post-EOS text), structured at 4.0 on every VIT run. At run level (pooled, not the gate) the L.A.I.L tok/s drop has MWU p {rl['lail_tok_s']['p_two_sided_normal']} (Hodges-Lehmann {rl['lail_tok_s']['hodges_lehmann_vit_minus_cur']} tok/s) and the prose_long gain p {rl['prose_long_c1_tok_s']['p_two_sided_normal']} (HL {rl['prose_long_c1_tok_s']['hodges_lehmann_vit_minus_cur']:+}). The L.A.I.L 3x after c=2 cell reads {s['tok_s']['lail_after_c2_3x_tok_s']['CUR']} vs {s['tok_s']['lail_after_c2_3x_tok_s']['VIT']} (inside its noise {s['tok_s']['lail_after_c2_3x_tok_s']['noise']}). The net speed effect on a mixed workload is not settled by two prompts.",
+            f"structured c=2 is {s['ms_step']['structured_c2_ms_step']['delta_VIT_minus_CUR']} ms/step ({s['tok_s']['structured_c2_agg_tok_s']['delta_pct']:+}% aggregate), beyond its noise {s['ms_step']['structured_c2_ms_step']['noise']}. On both CUR boots the two c=2 streams start staggered (median TTFT gap {s['c2_admission']['CUR-1']['structured_c2_median_ttft_gap_s']}/{s['c2_admission']['CUR-2']['structured_c2_median_ttft_gap_s']} s); on both VIT boots they start together (gap {s['c2_admission']['VIT-1']['structured_c2_median_ttft_gap_s']}/{s['c2_admission']['VIT-2']['structured_c2_median_ttft_gap_s']} s) and, at acceptance 4.0, run in lockstep (equal per-stream ms/step on {s['c2_admission']['VIT-1']['structured_c2_runs_with_both_streams_same_ms_step']}/9 and {s['c2_admission']['VIT-2']['structured_c2_runs_with_both_streams_same_ms_step']}/9 runs). Prose c=2 shows the same start pattern (gap {s['c2_admission']['CUR-1']['prose_c2_median_ttft_gap_s']}/{s['c2_admission']['CUR-2']['prose_c2_median_ttft_gap_s']} vs {s['c2_admission']['VIT-1']['prose_c2_median_ttft_gap_s']}/{s['c2_admission']['VIT-2']['prose_c2_median_ttft_gap_s']} s) with ms/step unchanged. Structured c=1 TTFT is {s['c2_admission']['VIT-1']['structured_c1_median_ttft_s']}/{s['c2_admission']['VIT-2']['structured_c1_median_ttft_s']} s on VIT vs {s['c2_admission']['CUR-1']['structured_c1_median_ttft_s']}/{s['c2_admission']['CUR-2']['structured_c1_median_ttft_s']} s on CUR. This is a request-admission/batch-phase difference, not a decode kernel change; its cause is not established (s7: 'a ms/step change means something else moved').",
+            f"structured c=1 ms/step reads {s['ms_step']['structured_c1_ms_step']['delta_VIT_minus_CUR']:+} against a noise of {s['ms_step']['structured_c1_ms_step']['noise']} (at the noise edge; tok/s {s['tok_s']['structured_c1_tok_s']['delta_VIT_minus_CUR']:+}, inside its noise). It is not a gate metric.",
+        ],
+    )
+    return dict(
+        what="ARMS-r3 section 7 (P4) Viterbi pack decision: quality first (paired tests over the fixed eval items, greedy self-consistency control), then speed (ARMS.md step 6 noise rule) on the four counted boots CUR-1, VIT-1, CUR-2, VIT-2 (results/2026-09-26-serve-r3/). Computed by decision-viterbi-compute.py.txt from the raw per-boot files (lail10.txt, bench_decode.txt, four/four_numbers.json, four/02-micro.log, four/06-prose-long.log, quality_{quick,full}.json, gate files) through the same per-boot readers as decision-bundle-compute.py.txt; stdlib statistics only.",
+        date="2026-09-26",
+        inputs=dict(
+            image="dsv41-flash-exl3-sm121:review-e14 = sha256:3a002b55c9bc... on both ranks, every boot",
+            config="the promoted config on every boot: round-34 defaults + the 10 K envs (DSV41_P2B_COOP=2 ... DSV41_INDEXER_WP_GEMV=1); KP add-ons off; AUDIT=strict",
+            arms={"CUR": f"SNAPSHOT_SHA default = {PIN_CUR} (serve pin)", "VIT": f"SNAPSHOT_SHA={PIN_VIT}"},
+            order="CUR-1, VIT-1, CUR-2, VIT-2 (s7 order), each the first attempt, no fix or retry",
+            commits_at_boot={b: v["per_boot"][b]["commit"] for b in ORDER},
+            code_between_boots=f"git diff --stat {v['per_boot']['CUR-1']['commit']}..{v['per_boot']['VIT-2']['commit']} outside results/: " + (CODE_DIFF or "empty (only evidence and the viterbi-precheck results were committed between boots)"),
+            docker_patch=f"sha256 list digest {v['per_boot']['CUR-1']['patch_sha256_list_digest']} on all four boots (61 files)",
+            snapshots_loaded="quality provenance root and four/serve_cmd.json name the intended snapshot on every boot; boot.txt shows only that snapshot",
+            viterbi_kernel_precheck="results/2026-09-25-kernels/integration/viterbi-precheck (commit 8bf97c5): l20 --ref and l33 tp-rank 1, 24/24 checks each, pass",
+            quality_baselines="results/2026-09-24-review/quality-baseline/{quick,full}.json (09-24, canonical-e12, snapshot 2.0bpw-mcg-lmhead-mxfp8 = the CUR pack)",
+        ),
+        rule=dict(
+            sources=["ARMS-r3 section 7 (P4)", "ARMS-r3 section 10 (quality gates)", "ARMS.md step 6 (promote rule, quality gate)", "stage task: promote only if quality is better or equal on every gate with at least one significant improvement (NLL expected) and speed is not worse beyond noise; else reject"],
+            quality=["quick AND full pass on both VIT boots, no component outside its band (s7); quick must pass on every candidate boot (ARMS.md step 6)",
+                     "every gate better or equal vs CUR (paired where the data allow: NLL per passage, GSM8K/MMLU/tools/needle per item)",
+                     "at least one significant improvement (NLL expected)"],
+            speed=["primary: ms/step at matched acceptance (per-boot median_run_acceptance_len intervals overlap); if not matched, the arm changed drafting and the gate is tok/s with the same noise rule",
+                   "s7: gate on prose_long c=1 tok/s and L.A.I.L tok/s with the noise rule; ms/step at matched kernels should be equal within noise",
+                   "noise = larger boot-to-boot spread (max-min of per-boot values) of the two arms; 'worse beyond noise' = VIT median below the CUR median by more than the noise",
+                   "non-inferiority: pp_warm/pp_novel 8k/32k, prose_long c=2 aggregate, warm-prefix not worse by more than the noise"],
+        ),
+        validity=dict(**v, notes=[
+            "No boot is VOID: gpu_guard --check rc=0 (0 FOREIGN) on all four; no CONTAMINATED marker; disarm_scan rc 0; strict audit ok with COOP=2 and lm_head mxfp8 engaged once per rank on every boot (engagement.txt).",
+            "CUR-1 e2e rc was not captured directly (e2e.py ran in the background); e2e.txt records pass_rate 3/3, and main() returns 0 only when every phase passes.",
+            "VIT-2: the guards started after run.sh exited and before the smokes; nothing was measured in between.",
+            "Slow L.A.I.L runs inside clean boots were kept as measured (CUR-1 runs 4/5/10, CUR-2 run 3, VIT-2 runs 5/8); the per-boot medians are the gate values.",
+            "VIT-1 side reading, not scored: the main checkout's smoke_vision.py (1x1 'red' JPEG, pass rule = no HTTP 400) answered 'Gray' 3/3 on VIT-1. No CUR reading of that image exists, so it cannot be paired. The 64x64 red PNG reads 'Red' on all 8 CUR/VIT quality readings and in every worktree smoke.",
+        ]),
+        quality=q,
+        speed=s,
+        decision=decision,
+        open_items=[
+            "For the protocol owner: selfcons.golden_hazard compares with the old pack's greedy text, so a pack change fails it by construction. If pack changes are to be judged on NLL, task scores and VIT's own A/A plus cross-boot hazard (all equal or better here), the rule has to change first. That change does not happen in this decision.",
+            f"Even with that change, s7's speed gate needs L.A.I.L tok/s not worse beyond noise. Acceptance moved in opposite directions by prompt (prose_long up, L.A.I.L down). With n=2 boots per arm the noise is one range per arm (L.A.I.L CUR {la['CUR_spread']}, VIT {la['VIT_spread']}), and the pooled run-level test (not the gate) gives p {rl['lail_tok_s']['p_two_sided_normal']} for L.A.I.L tok/s. A broader prompt set for acceptance, or more CUR/VIT boots, would settle the net speed effect.",
+            "The structured and prose c=2 start pattern (staggered on CUR, together on VIT) and the +0.03 s structured c=1 TTFT on VIT are unexplained.",
+            "If the pack is reconsidered: a paired CUR/VIT reading of the main-checkout 1x1 JPEG smoke (VIT-1 answered 'Gray') would show whether that answer depends on the pack.",
+        ],
+        serve_state_at_decision="down on both nodes (docker ps on spark1 and spark2 show no dsv41 container; only matrix-conduit on spark1). This stage booted nothing.",
+        per_boot_raw={b: {k: vv for k, vv in D[b].items() if k not in ("lail_runs", "quality")} for b in ORDER},
+    )
+
+
+if __name__ == "__main__":
+    o = main()
+    print(json.dumps(o["validity"], default=str)[:800])
+    q = o["quality"]
+    print("gates quick VIT", q["gates_as_written"]["quick_pass_both_VIT"], "full VIT", q["gates_as_written"]["full_pass_both_VIT"],
+          "CUR all", q["gates_as_written"]["CUR_pass_all_four"])
+    for k, v in q["gates_as_written"]["per_reading"].items():
+        print("  ", k, v["pass_"], v["failed"])
+    print("NLL", json.dumps({k: v for k, v in q["nll"].items() if k in ("CUR_mean_of_passages", "VIT_mean_of_passages", "paired_delta_VIT_minus_CUR")}))
+    print("NLL pairs", json.dumps(q["nll"]["interleaved_pairs"]))
+    print("NLL AA", json.dumps(q["nll"]["same_arm_AA_control"]))
+    for k, v in q["paired_item_tests"].items():
+        print("ITEM", k, json.dumps({kk: {x: y for x, y in vv.items() if not x.endswith("items")} for kk, vv in v["per_pair"].items()}),
+              json.dumps({x: y for x, y in v["pooled"].items()}), json.dumps({kk: vv["discordant"] for kk, vv in v["same_arm_AA_discordance"].items()}))
+    print("DECODE", json.dumps(q["decode_probe"]))
+    sc = q["selfcons"]
+    print("SC recompute", sc["recomputed_equals_stored"], sc["limits"])
+    for k, v in sc["per_reading_vs_09_24_old_pack_golden"].items():
+        print("  ", k, {x: y for x, y in v.items() if x != "golden_first_div"})
+    for k, v in sc["cross_boot_and_cross_pack_hazard"].items():
+        print("  X", k, v["hazard"], f"{v['diverged']}/{v['pairs']}", v["first_div"])
+    print("  firstdiv", sc["VIT_first_div_vs_old_golden_by_prompt"])
+    print("  checks", json.dumps(sc.get("checkable_answers_in_greedy_text", {}).get("per_prompt")))
+    s = o["speed"]
+    for grp in ("ms_step", "tok_s", "non_inferiority"):
+        for k, v in s[grp].items():
+            print(f"{grp[:6]} {k:26s} CUR {v['CUR']} VIT {v['VIT']} d {v['delta_VIT_minus_CUR']} ({v['delta_pct']}%) noise {v['noise']} "
+                  f"better {v['better_beyond_noise']} worse {v['worse_beyond_noise']} within {v['within_noise']}")
+    for k, v in s["acceptance"].items():
+        print("ACC", k, json.dumps(v))
+    print("RUNLVL", json.dumps(s["run_level_supplementary"]))
+    print("C2ADM", json.dumps(s["c2_admission"]))
+    print("HONEST", json.dumps(s["cell_honesty"]))
