@@ -1137,7 +1137,7 @@ Paired against the round-35 readings (`round36-headline.json` quality):
 
 ### Not done / open
 
-- Publish the pack to the Hub as revision `2.0bpw-mcg-viterbi-lmhead-mxfp8` (the Publish stage; `tools/publish_pack.py` also uploads `model-card.md` as the README of `main` and of the new branch). This PR merges after it.
+- Publish the pack to the Hub as revision `2.0bpw-mcg-viterbi-lmhead-mxfp8` (the Publish stage; `tools/publish_pack.py` also uploads `model-card.md` as the README of `main` and of the new branch). This PR merges after it. **Not started.** The session's permission system blocked the Hub write, so no branch exists and nothing was uploaded; the owner has to approve it. A read-only check (`publish-delta-vs-lmhead.json`, script `publish-delta.py.txt`) compared the assembled snapshot with Hub `2.0bpw-mcg-lmhead-mxfp8` @ d3a74c0. 41 files differ, 143,482,916,447 bytes: `model-00003..00042` (same sizes, every sha256 different) and the new `requant-viterbi-manifest.json`. The other 13 serve files are byte-identical, including `model-00043`, the two Engram shards and the index. So a branch made from `2.0bpw-mcg-lmhead-mxfp8` needs only those 41 files. The tool's default route branches from `main` and uploads all 48 shards. `model-card.md` size row corrected to about 357 GB (333 GiB).
 - The short-prose acceptance drop (four prose c=1 −3.8%) and the V-2 prose_long c=1 reading 42.42 (V-1 45.17). A broader prompt set would settle the net speed effect on a mixed workload.
 - Structured c=2 lockstep on this pack (+13.0% aggregate): cause not established.
 - `fresh_doc` top-up pool exhaustion on large table segments (above).

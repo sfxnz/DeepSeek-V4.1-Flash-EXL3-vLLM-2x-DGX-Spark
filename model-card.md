@@ -37,7 +37,7 @@ The 2× DGX Spark cookbook is [sfxnz/DeepSeek-V4.1-Flash-EXL3-vLLM-2x-DGX-Spark]
 | Revision `2.0bpw-mcg-lmhead-mxfp8` (serve pin in rounds 33-35) | `2.0bpw-mcg` with only `model-00043` re-encoded (lm_head MXFP8, +5.9% L.A.I.L in round 33) |
 | Revision `2.0bpw-mcg` | The original MCG pack; the lm_head MXFP8 path turns itself off on it |
 | Shards | `model-00001-of-00048.safetensors` through `model-00048-of-00048.safetensors` |
-| Size on disk | about 334 GB |
+| Size on disk | about 357 GB (333 GiB) |
 
 Model weights are MIT from DeepSeek. `vllm-exl3` is AGPL-3.0. The recipe image clones it at build.
 

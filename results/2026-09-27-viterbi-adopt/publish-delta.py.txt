@@ -1,0 +1,62 @@
+# Read-only: which files of the local Viterbi snapshot differ from Hub revision 2.0bpw-mcg-lmhead-mxfp8.
+import fnmatch, hashlib, json, sys
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from huggingface_hub import HfApi
+from huggingface_hub.hf_api import RepoFile
+
+REPO = "sfxnz/DeepSeek-V4.1-Flash-EXL3"
+BASE = "2.0bpw-mcg-lmhead-mxfp8"
+SRC = Path.home() / ".cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8"
+MAN = json.load(open("/home/sfxnz/projects/data/dsv41-requant-viterbi/state/manifest.json"))
+ALLOW = ["config.json", "tokenizer.json", "tokenizer_config.json", "model.safetensors.index.json",
+         "model-*-of-00048.safetensors", "LICENSE", ".gitattributes", "requant-*-manifest.json"]
+
+api = HfApi()
+remote = {e.path: e for e in api.list_repo_tree(REPO, revision=BASE, recursive=True) if isinstance(e, RepoFile)}
+base_commit = api.list_repo_refs(REPO)
+base_commit = next(b.target_commit for b in base_commit.branches if b.name == BASE)
+unit_sha = {u["file"]: (u["sha256"], u["size"]) for u in MAN["units"].values()}
+
+files = sorted(p for p in SRC.iterdir() if p.is_file() and any(fnmatch.fnmatch(p.name, a) for a in ALLOW))
+
+def digest(p: Path):
+    size = p.stat().st_size
+    if p.name in unit_sha:   # 40 re-encoded shards: sha256 from the requant manifest (assemble verified the files)
+        return {"size": size, "sha256": unit_sha[p.name][0], "sha_source": "manifest", "manifest_size": unit_sha[p.name][1]}
+    hs = {"sha256": hashlib.sha256()}
+    if size <= 10 << 20:
+        hs["git_sha1"] = hashlib.sha1(b"blob %d\0" % size)
+    with p.open("rb") as f:
+        while chunk := f.read(64 << 20):
+            for h in hs.values():
+                h.update(chunk)
+    return {"size": size, **{k: h.hexdigest() for k, h in hs.items()}, "sha_source": "local-hash"}
+
+with ThreadPoolExecutor(4) as ex:
+    local = dict(zip([p.name for p in files], ex.map(digest, files)))
+
+rows = []
+for rel, d in local.items():
+    e = remote.get(rel)
+    if e is None:
+        same, remote_d = False, None
+    elif e.lfs:
+        remote_d = {"size": e.size, "lfs_sha256": e.lfs.sha256}
+        same = e.size == d["size"] and e.lfs.sha256 == d["sha256"]
+    else:
+        remote_d = {"size": e.size, "git_blob_sha1": e.blob_id}
+        same = e.size == d["size"] and e.blob_id == d.get("git_sha1")
+    rows.append({"file": rel, "differs_from_base": not same, "local": d, "base_hub": remote_d})
+
+up = [r for r in rows if r["differs_from_base"]]
+out = {
+    "what": "Read-only delta: local snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8 vs Hub revision 2.0bpw-mcg-lmhead-mxfp8 (allowed serve files only)",
+    "repo": REPO, "base_revision": BASE, "base_commit": base_commit, "src": str(SRC),
+    "rule": "LFS files: size + sha256 vs Hub lfs.sha256; small non-LFS files: size + git blob sha1 vs Hub blob_id. Unit shards use the requant manifest sha256.",
+    "files_total": len(rows), "files_differ": len(up), "bytes_differ": sum(r["local"]["size"] for r in up),
+    "files_same": len(rows) - len(up),
+    "differ": [r["file"] for r in up],
+    "rows": rows,
+}
+json.dump(out, sys.stdout, indent=1)
