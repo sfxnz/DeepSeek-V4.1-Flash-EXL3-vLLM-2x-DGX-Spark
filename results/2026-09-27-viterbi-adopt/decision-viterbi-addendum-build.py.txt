@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+# Round 36 addendum to results/2026-09-26-serve-r3/decision-viterbi.json: the protocol owner's decision to adopt
+# the Viterbi pack. Every number below is read from decision-viterbi.json (nothing is re-measured or re-typed).
+# Stdlib only, deterministic. Run from this directory:
+#   python3 decision-viterbi-addendum-build.py.txt decision-viterbi-addendum.json
+import json, os, sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+SRC = os.path.join(HERE, "..", "2026-09-26-serve-r3", "decision-viterbi.json")
+d = json.load(open(SRC))
+q, s, dec = d["quality"], d["speed"], d["decision"]
+nll = q["nll"]
+pit = q["paired_item_tests"]
+sc = q["selfcons"]
+AA = [(k, sc["per_reading_vs_09_24_old_pack_golden"][k]["aa_hazard"]) for k in
+      ("CUR-1/quick", "CUR-1/full", "CUR-2/quick", "CUR-2/full", "VIT-1/quick", "VIT-1/full", "VIT-2/quick",
+       "VIT-2/full")]
+XB = sc["cross_boot_and_cross_pack_hazard"]
+
+
+def pair(name):
+    p = pit[name]["pooled"]
+    return dict(per_pair={k: dict(CUR_k=v["CUR_k"], VIT_k=v["VIT_k"], n=v["n"], mcnemar_exact_p=v["mcnemar_exact_p"])
+                          for k, v in pit[name]["per_pair"].items()},
+                pooled_items_VIT_better=p["items_VIT_better"], pooled_items_CUR_better=p["items_CUR_better"],
+                pooled_sign_test_exact_p=p["sign_test_exact_p"],
+                CUR_total_correct=p["CUR_total_correct"], VIT_total_correct=p["VIT_total_correct"],
+                total_items_scored_per_arm=p["total_items_scored_per_arm"])
+
+
+out = {
+    "what": "Round 36 addendum to results/2026-09-26-serve-r3/decision-viterbi.json (round 35 P4). Records the "
+            "protocol owner's decision to adopt the Viterbi pack 2.0bpw-mcg-viterbi-lmhead-mxfp8 as the recipe "
+            "default and to publish it to the Hub as a new revision, and the protocol amendment that goes with it "
+            "(ARMS.md step 6, 'Pack changes'). Numbers are copied by decision-viterbi-addendum-build.py.txt from "
+            "decision-viterbi.json; nothing here was re-measured.",
+    "date": "2026-09-27",
+    "source": "results/2026-09-26-serve-r3/decision-viterbi.json (CUR-1, VIT-1, CUR-2, VIT-2 boot dirs)",
+    "p4_verdict_as_written": {
+        "verdict": dec["verdict"],
+        "promote": dec["promote"],
+        "reject": dec["reject"],
+        "grounds": {
+            "a_quality_golden_hazard": "quick and full failed on both VIT boots on selfcons.golden_hazard only "
+                                       "(every other component passed)",
+            "b_speed_lail": "L.A.I.L tok/s worse beyond noise while prose_long c=1 tok/s was better beyond noise",
+        },
+    },
+    "decision": {
+        "by": "the user (protocol owner)",
+        "adopt": "SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8 becomes the recipe default (recipe.yaml "
+                 "model.revision / serve.env.SNAPSHOT_SHA)",
+        "publish": "publish the pack to sfxnz/DeepSeek-V4.1-Flash-EXL3 as the new Hub revision "
+                   "2.0bpw-mcg-viterbi-lmhead-mxfp8 (the Publish stage; this PR merges after it)",
+        "golden_hazard_for_pack_changes": "not applicable. The golden hazard compares greedy output with goldens "
+                                          "recorded on the same pack, so it gates kernel/numerics levers only.",
+        "speed_ground": "accepted by the protocol owner as a trade: L.A.I.L -2.38% (acceptance lower) against "
+                        "prose_long c=1 +7.04% (acceptance higher), c=1 ms/step equal within noise, and the "
+                        "quality gains below. The measured numbers stand and are not reinterpreted.",
+        "previous_revisions_kept": ["2.0bpw-mcg-lmhead-mxfp8 (round-33..35 serve pin)", "2.0bpw-mcg (stock pack)"],
+    },
+    "protocol_amendment": {
+        "where": "ARMS.md step 6, paragraph 'Pack changes (amendment, round 36, 2026-09-27)'; tests/quality_eval.py "
+                 "docstring and --baseline help; README quality section",
+        "golden_gate_scope": "selfcons.golden_hazard compares the arm's greedy text with run A of the baseline's "
+                             "selfcons.runs. It gates kernel/numerics levers on the pack the baseline was "
+                             "recorded on. It does not apply to a pack (weights) change.",
+        "pack_change_judged_by": [
+            "paired NLL over the 40 fixed passages (per-passage delta vs the current pack, 95% CI, Wilcoxon; not "
+            "worse; same-arm cross-boot per-passage deltas are the noise)",
+            "paired benchmark tests over the fixed items (GSM8K, GSM8K-think, MMLU, tools exact_args; McNemar per "
+            "interleaved pair and a pooled sign test; no significant loss)",
+            "A/A self-consistency (the new pack's aa_hazard and cross-boot hazard inside the current pack's A/A band)",
+            "every other quick/full component in its band (decode probe, needle, tools json/no_call, c2, vision, "
+            "tests/correctness.sh --full)",
+            "speed per the rest of ARMS.md step 6",
+        ],
+        "on_adoption": "re-record the quality baseline and goldens on the new pack (quick + full, no --baseline, on "
+                       "the first boot of the new defaults), make it the documented baseline, and gate every later "
+                       "boot against it, including the golden hazard within the A/A band; keep the old baseline "
+                       "for the previous pack",
+    },
+    "p4_evidence_under_the_amended_rule": {
+        "paired_nll": {
+            "unit": nll["unit"],
+            "CUR_mean_of_passages": nll["CUR_mean_of_passages"],
+            "VIT_mean_of_passages": nll["VIT_mean_of_passages"],
+            "delta_mean": nll["paired_delta_VIT_minus_CUR"]["mean"],
+            "ci95_t": nll["paired_delta_VIT_minus_CUR"]["ci95_t"],
+            "ci95_bootstrap": nll["paired_delta_VIT_minus_CUR"]["ci95_bootstrap"],
+            "relative_mean_pct": nll["paired_delta_VIT_minus_CUR"]["relative_mean_pct"],
+            "passages_lower_on_VIT": nll["paired_delta_VIT_minus_CUR"]["passages_lower_on_VIT"],
+            "passages_higher_on_VIT": nll["paired_delta_VIT_minus_CUR"]["passages_higher_on_VIT"],
+            "wilcoxon_p_two_sided": nll["paired_delta_VIT_minus_CUR"]["wilcoxon"]["p_two_sided"],
+            "same_arm_AA_control_mean_deltas": {k: v["mean"] for k, v in nll["same_arm_AA_control"].items()},
+            "token_weighted_mean_nll": nll["token_weighted_mean_nll"],
+            "reading": "better, far beyond the same-arm cross-boot noise",
+        },
+        "paired_benchmarks": {
+            "gsm8k": pair("gsm8k"),
+            "gsm8k_think": pair("gsm8k_think"),
+            "mmlu": pair("mmlu"),
+            "tools_exact_args": pair("tools_exact_args"),
+            "reading": "no loss on any; GSM8K 97/97 vs 95/94, MMLU 206/204 vs 196/198, tools exact 88/88 vs "
+                       "84/88 favour VIT but are not significant after pooling",
+        },
+        "aa_self_consistency": {
+            "aa_hazard_per_reading": dict(AA),
+            "cross_boot_same_pack": {k: v["hazard"] for k, v in XB.items() if "same pack" in k},
+            "cross_pack": {k: v["hazard"] for k, v in XB.items() if "cross-pack" in k},
+            "limits_as_written": sc["limits"],
+            "reading": "VIT's own A/A hazards (0.00843-0.01609) are at or below CUR's (0.01232-0.0274), and its "
+                       "same-pack cross-boot hazards (0.01341 quick, 0.00985 full) are below CUR's (0.01825, "
+                       "0.01675). Only the cross-pack hazard (the golden gate against old-pack goldens, "
+                       "0.0939-0.10204) is high, by construction",
+        },
+        "other_components": {k: v["verdict"] for k, v in dec["quality_per_gate"].items()
+                             if k not in ("nll.mean_nll", "selfcons.golden_hazard")},
+        "golden_hazard_as_run": dec["quality_per_gate"]["selfcons.golden_hazard"],
+        "speed": {
+            "lail_tok_s": dec["summary_numbers"]["lail_tok_s"],
+            "prose_long_c1_tok_s": dec["summary_numbers"]["prose_long_c1_tok_s"],
+            "ms_step_c1": dec["summary_numbers"]["ms_step_c1"],
+            "acceptance": dec["summary_numbers"]["acceptance"],
+            "lail_acceptance_arm_medians": {
+                "CUR": round(sorted(s["acceptance"]["lail"]["CUR_per_boot"])[0] / 2
+                             + sorted(s["acceptance"]["lail"]["CUR_per_boot"])[1] / 2, 4),
+                "VIT": round(sorted(s["acceptance"]["lail"]["VIT_per_boot"])[0] / 2
+                             + sorted(s["acceptance"]["lail"]["VIT_per_boot"])[1] / 2, 4),
+            },
+            "non_inferiority_ok": dec["checks"]["non_inferiority_ok"],
+        },
+    },
+    "follow_up_in_round_36": [
+        "commit k3v protocol amendment (this file)",
+        "recipe default -> 2.0bpw-mcg-viterbi-lmhead-mxfp8 (recipe.yaml, render, README, model-card.md, AGENTS.md, tests)",
+        "V-1: boot the new defaults (AUDIT=strict, no overrides), full ARMS-r3 section 2 procedure, record the new "
+        "quality baseline (quick + full, no --baseline) in results/2026-09-27-viterbi-adopt/quality-baseline/",
+        "V-2: boot identically, full procedure, quality quick + full against the new baseline",
+        "pool V-1 + V-2 into recipe.yaml measured rows; RESULTS.md round 36; flags.md",
+    ],
+}
+json.dump(out, open(sys.argv[1], "w"), indent=1)
+print(json.dumps(out["p4_evidence_under_the_amended_rule"]["speed"], indent=1))

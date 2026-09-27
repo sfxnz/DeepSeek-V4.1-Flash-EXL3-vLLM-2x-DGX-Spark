@@ -89,6 +89,38 @@ One boot = one lever. Every arm produces the four numbers via
    needle 8k/32k, c=2 and vision. A lever that changes numerics by design
    (a new pack, lm_head, a kernel format) also runs `--full` against
    `full.json`. A failed gate means no KEEP, even when the perf win is real.
+
+   **Pack changes (amendment, round 36, 2026-09-27; decided by the
+   protocol owner).** The golden flip hazard (`selfcons.golden_hazard`)
+   compares the arm's greedy text with run A of the baseline's
+   `selfcons.runs` (the goldens). That only means something when the
+   baseline was recorded on the SAME pack (the same weights). So the golden
+   gate gates kernel and numerics levers on the pack the baseline ran:
+   kernels, formats, fused paths, lm_head paths. It does not apply to a pack
+   (weights) change. A new pack fails it by construction: round 35 P4 read
+   golden hazard 0.094-0.102 on the Viterbi pack while that pack's own A/A
+   hazard was 0.008-0.016 (`results/2026-09-26-serve-r3/decision-viterbi.json`).
+   A pack change is judged on these, against the current pack, in the same
+   ABAB:
+   - **paired NLL** over the 40 fixed passages: the per-passage delta
+     against the current pack, with its 95% CI and Wilcoxon test. It must
+     not be worse, and the same-arm cross-boot per-passage deltas are the
+     noise;
+   - **paired benchmark tests** over the fixed items: GSM8K, GSM8K-think,
+     MMLU and tools exact_args, with McNemar per interleaved pair and a
+     pooled sign test. No significant loss is allowed;
+   - **A/A self-consistency**: the new pack's own `aa_hazard`, and the
+     cross-boot hazard between its boots, inside the current pack's A/A
+     band;
+   - every other quick/full component in its band: decode probe, needle,
+     tools json/no_call, c=2, vision, `tests/correctness.sh --full`.
+   Speed follows the rest of step 6, as for any arm. Adopting a pack means
+   re-recording the quality baseline and goldens on it. Run quick and full
+   with no `--baseline` on the first boot of the new defaults, store them
+   as the new baseline, and gate every later boot against it (including
+   the second boot of the new defaults, where the golden hazard applies
+   again, within the A/A band). The old baseline stays as the reference for
+   the previous pack.
 7. **Free the box between arms**: `./stop.sh`, confirm no GPU containers on
    either node, then boot the next arm. Never stack levers on a promoted
    arm's boot without re-running the full four numbers.

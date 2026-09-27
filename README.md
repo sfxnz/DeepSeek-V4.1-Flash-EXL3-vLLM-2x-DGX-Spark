@@ -138,7 +138,7 @@ With `--baseline`, it gates on the following:
 | Needle | found ≥ baseline |
 | Golden flip hazard | ≤ 2× max(baseline A/A hazard, 0.005); the run's own A/A hazard has the same limit |
 
-Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-gates two saved runs offline with no traffic, which is how an A/B compares two boots. Run it serialized: never next to a bench, and never with a third stream. The vendored data and licenses are in `tests/quality/README.md`. The baseline numbers are in `results/2026-09-24-review/quality-baseline/README.md`.
+The golden flip hazard compares greedy text with the baseline's own greedy run, so it applies only when the baseline ran the same pack (weights). It gates kernel and numerics levers. A pack change is judged on paired NLL over the fixed passages, paired task scores and A/A self-consistency, and then the baseline is re-recorded on the new pack (ARMS.md step 6). Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-gates two saved runs offline with no traffic, which is how an A/B compares two boots. Run it serialized: never next to a bench, and never with a third stream. The vendored data and licenses are in `tests/quality/README.md`. The baseline numbers are in `results/2026-09-24-review/quality-baseline/README.md`.
 
 ## Defaults
 
