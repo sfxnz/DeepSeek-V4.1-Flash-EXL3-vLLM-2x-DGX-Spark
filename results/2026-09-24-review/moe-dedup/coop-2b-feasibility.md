@@ -2,6 +2,17 @@
 
 Status: note only. Nothing is built, no image changed.
 
+Update 2026-09-25 (round 2, branch `round2/coop-moe`): the census gate passed
+(dup 0.2987, s10). Instead of either route below, the dedup went into p2b
+itself as `DSV41_P2B_COOP` (`docker/patch/widen_p2b_coop.py`, SORT=2, K=2 MCG,
+`docker/Dockerfile.e14`). Duplicate rows become MMA rows 0..7 of one tile (the
+exllamav3 gemv MMODE 1 layout). That keeps p2b's single cooperative launch,
+256-thread tile, activation math and scratch. It is not widen_p2b_mma's
+per-row MMA loop: `<2,1,2>` has p2b's register count and spill. It compiles
+for sm_121a, and SORT=0/1 SASS is identical
+(`coop-sass-identity.txt`). The GPU microbench is pending
+(`kernel_study/p2b_coop/README.txt`).
+
 ## What exists
 
 - The vendored tarball `docker/cooperative/upstream/exllamav3.tar.gz`

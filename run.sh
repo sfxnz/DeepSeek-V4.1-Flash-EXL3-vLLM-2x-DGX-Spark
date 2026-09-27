@@ -123,6 +123,7 @@ FORWARD_ENVS=(
   VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=
   VLLM_EXL3_FAT_THRESHOLD=
   DSV41_P2B_SRC_SORT=
+  DSV41_P2B_COOP=
   DSV41_ALLOW_CUDA_GRAPHS=
   VLLM_USE_BREAKABLE_CUDAGRAPH=
   VLLM_ADAPTIVE_VERIFICATION_PROFILE_CONTEXT_LEN=256
@@ -640,11 +641,13 @@ audit_engagement() {
   fi
 }
 
-# First-request JIT (Triton, CuTeDSL) off the user's TTFT. Nonce prompts stay out of the prefix cache.
+# First-request JIT (Triton, CuTeDSL, TileLang mHC split buckets) off the user's TTFT. Nonce prompts stay out of the prefix cache.
 warmup() {
   [[ "$WARMUP" == 1 ]] || return 0
-  log "Warmup: greedy, t=0.7 and a ~3k-token nonce prefill"
-  python3 "$SCRIPT_DIR/tools/warmup.py" --url "http://127.0.0.1:${PORT}/v1/chat/completions" --model "$SERVED_NAME" \
+  local vision_args=()
+  [[ "$LANGUAGE_MODEL_ONLY" == 1 ]] && vision_args=(--no-vision)
+  log "Warmup: greedy, t=0.7, ~3k/~1k/~300-token nonce prefills and a small image"
+  python3 "$SCRIPT_DIR/tools/warmup.py" --url "http://127.0.0.1:${PORT}/v1/chat/completions" --model "$SERVED_NAME" "${vision_args[@]}" \
     || echo "WARNING: warmup failed. The serve is up; the first requests pay the JIT." >&2
 }
 

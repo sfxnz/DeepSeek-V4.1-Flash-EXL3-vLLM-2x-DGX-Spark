@@ -44,6 +44,13 @@ python3 -m unittest discover -s tests -q
 python3 kit/render.py --check
 ```
 
+Torch-gated tests skip on the host. Run them CPU-only in the image, from `tests/` with plain module names: the image's dist-packages has its own `tests` package, which shadows `tests.X`.
+
+```bash
+docker run --rm --network none --memory 8g --cpus 4 -v "$PWD":/w -w /w/tests --entrypoint python3 \
+  dsv41-flash-exl3-sm121:canonical-e13 -m unittest test_lmhead_mxfp8 test_engram_gather_v2 test_fix_o_proj_woa_fp8 -q
+```
+
 After `./run.sh` is up:
 
 ```bash

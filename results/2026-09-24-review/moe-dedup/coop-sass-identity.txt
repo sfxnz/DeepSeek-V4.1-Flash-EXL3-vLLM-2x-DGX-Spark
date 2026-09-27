@@ -1,0 +1,56 @@
+# kernel_study/p2b_coop/sass_identity.sh on dsv41-flash-exl3-sm121:canonical-e13 (sha256:c81762335a12), 2026-09-25
+# one docker run --rm --network none --memory 8g --cpus 4 (no --gpus); host MemAvailable 20-21 GiB before and after; serve (canonical-e13) untouched
+# nvcc 13.0 V13.0.88, -O3 -gencode arch=compute_121a,code=sm_121a; SASS dump with the host cuobjdump/nvdisasm 13.0
+# sources (sha256): chain_srcsort.cu 94534e1dcb013df5  chain_coop.cu 2abc03021d5a95a3  bench_coop.cu 51d3a4b8d533656b
+Cuda compilation tools, release 13.0, V13.0.88
+Build cuda_13.0.r13.0/compiler.36424714_0
+chain_srcsort: nvcc 23 s, max child RSS 2657 MiB
+40 bytes stack frame, 56 bytes spill stores, 140 bytes spill loads
+Used 64 registers, used 1 barriers, 40 bytes cumulative stack size, 2048 bytes smem
+chain_coop: nvcc 24 s, max child RSS 2658 MiB
+40 bytes stack frame, 56 bytes spill stores, 140 bytes spill loads
+Used 64 registers, used 1 barriers, 40 bytes cumulative stack size, 17668 bytes smem
+40 bytes stack frame, 56 bytes spill stores, 140 bytes spill loads
+Used 64 registers, used 1 barriers, 40 bytes cumulative stack size, 2048 bytes smem
+bench_coop: nvcc 28 s, max child RSS 2749 MiB
+40 bytes stack frame, 56 bytes spill stores, 140 bytes spill loads
+Used 64 registers, used 1 barriers, 40 bytes cumulative stack size, 2048 bytes smem
+40 bytes stack frame, 56 bytes spill stores, 140 bytes spill loads
+Used 64 registers, used 1 barriers, 40 bytes cumulative stack size, 17668 bytes smem
+BITS=2 CB=1 SORT=0: 78976 vs 78976 bytes IDENTICAL
+BITS=2 CB=1 SORT=1: 84864 vs 84864 bytes IDENTICAL
+BITS=2 CB=2 SORT=0: 77952 vs 77952 bytes IDENTICAL
+BITS=2 CB=2 SORT=1: 83840 vs 83840 bytes IDENTICAL
+BITS=3 CB=1 SORT=0: 82944 vs 82944 bytes IDENTICAL
+BITS=3 CB=1 SORT=1: 88576 vs 88576 bytes IDENTICAL
+BITS=3 CB=2 SORT=0: 81792 vs 81792 bytes IDENTICAL
+BITS=3 CB=2 SORT=1: 87424 vs 87424 bytes IDENTICAL
+BITS=4 CB=1 SORT=0: 78208 vs 78208 bytes IDENTICAL
+BITS=4 CB=1 SORT=1: 83968 vs 83968 bytes IDENTICAL
+BITS=4 CB=2 SORT=0: 77440 vs 77440 bytes IDENTICAL
+BITS=4 CB=2 SORT=1: 83200 vs 83200 bytes IDENTICAL
+BITS=2 CB=1 SORT=2: 86912 bytes (new)
+sort0.sass: loop 0x2780-0x4ac0 instr 565 HMMA 16 LDL 1 STL 0 LDG.E.EF 4
+sort0.sass: loop 0x89b0-0xadc0 instr 578 HMMA 16 LDL 1 STL 0 LDG.E.EF 4
+sort2.sass: loop 0x44f0-0x69d0 instr 591 HMMA 16 LDL 3 STL 0 LDG.E.EF 4
+sort2.sass: loop 0xad70-0xd1c0 instr 582 HMMA 16 LDL 0 STL 0 LDG.E.EF 4
+live vllm_exl3_c <2, 1, 0> vs pin chain: IDENTICAL (informational)
+live vllm_exl3_c <2, 1, 1> vs pin chain: IDENTICAL (informational)
+live vllm_exl3_c <2, 2, 0> vs pin chain: IDENTICAL (informational)
+live vllm_exl3_c <2, 2, 1> vs pin chain: IDENTICAL (informational)
+live vllm_exl3_c <3, 1, 0> vs pin chain: IDENTICAL (informational)
+live vllm_exl3_c <3, 1, 1> vs pin chain: IDENTICAL (informational)
+live vllm_exl3_c <3, 2, 0> vs pin chain: IDENTICAL (informational)
+live vllm_exl3_c <3, 2, 1> vs pin chain: IDENTICAL (informational)
+live vllm_exl3_c <4, 1, 0> vs pin chain: IDENTICAL (informational)
+live vllm_exl3_c <4, 1, 1> vs pin chain: IDENTICAL (informational)
+live vllm_exl3_c <4, 2, 0> vs pin chain: IDENTICAL (informational)
+live vllm_exl3_c <4, 2, 1> vs pin chain: IDENTICAL (informational)
+# ptxas -v, p2b_moe_batched_kernel<BITS=2, CB=1, SORT> in chain_coop.o:
+<2,1,2>: Used 64 registers, used 1 barriers, 40 bytes cumulative stack size, 17668 bytes smem; 40 bytes stack frame, 56 bytes spill stores, 140 bytes spill loads
+<2,1,0>: Used 64 registers, used 1 barriers, 40 bytes cumulative stack size, 2048 bytes smem; 40 bytes stack frame, 56 bytes spill stores, 140 bytes spill loads
+<2,1,1>: Used 64 registers, used 1 barriers, 48 bytes cumulative stack size, 2816 bytes smem; 48 bytes stack frame, 60 bytes spill stores, 144 bytes spill loads
+# A-load variants tried for <2,1,2> (same container recipe, -cubin; inner gate/up and down MMA loops from hot_loops.py):
+#   guarded load (r0_ok ? A2[..] : hzero, as p2b):     spill 64/156 B, inner LDL 5 / 1, generic LD.E for A
+#   32-bit row offset from the base pointer:           spill 68/168 B, inner LDL 3 / 2
+#   unconditional load + value mask (shipped):         spill 56/140 B (= p2b), inner LDL 3 / 0 (p2b 1 / 1)

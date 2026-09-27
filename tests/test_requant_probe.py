@@ -17,6 +17,18 @@ except ImportError:  # pragma: no cover
     np = None
 
 
+class PackageVersionTests(unittest.TestCase):
+    def test_reads_distribution_metadata_not_module_attr(self) -> None:
+        # Round 34 s1: exllamav3 1.5.1 has no __version__, so the JSON said '?'.
+        import importlib.metadata as md
+
+        self.assertEqual(rq.package_version("pip"), md.version("pip"))
+        self.assertEqual(rq.package_version("no-such-dist-dsv41"), "?")
+        src = (ROOT / "tools/requant_probe.py").read_text()
+        self.assertIn('"exllamav3": package_version("exllamav3")', src)
+        self.assertNotIn("__version__", src.split("def main", 1)[1])
+
+
 @unittest.skipIf(np is None, "numpy not installed")
 class RequantProbeTests(unittest.TestCase):
     def test_refit_matches_closed_form_and_never_hurts(self) -> None:
