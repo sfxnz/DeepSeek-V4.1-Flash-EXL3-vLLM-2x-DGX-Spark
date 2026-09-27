@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+# Round 35 headline: before = arm A (the round-34 defaults on review-e14; A-1, A-2), after = the final promoted
+# config (the 10 K envs + DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024 on the round-34 defaults; S1024-1, S1024-2 and the
+# final validation boot final-1, all with the same container env, image ID, docker/patch sha256 list and pack).
+# Context rows: the K config (the 10 K envs, TOPK 256; K-1, K-2, CUR-1, CUR-2, Kp-1, Kp-2, S-1..S-4).
+# Per cell: per-boot medians, the arm value (median of the per-boot medians, ARMS.md step 6), the spread
+# (max - min of the per-boot medians) and, where per-run values exist (L.A.I.L 10 runs, four prose 9 runs), the
+# pooled per-run median. The A boots and the final-config boots ran in the same window but not interleaved with
+# each other (A: 2026-09-26 05:27-08:46Z; S1024: 2026-09-27 00:08-02:07Z; final-1 after the promotion commit), so
+# the before/after delta is a description, not a step-6 verdict (the verdicts are decision-*.json).
+# Reads raw per-boot files through the readers of decision-bundle-compute.py.txt. Stdlib only, deterministic.
+#   python3 round35-headline-compute.py.txt round35-headline.json
+import importlib.util, json, os, re, statistics as st, sys
+from importlib.machinery import SourceFileLoader
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+os.chdir(HERE)
+
+
+def _load(name, path):
+    ld = SourceFileLoader(name, path)
+    m = importlib.util.module_from_spec(importlib.util.spec_from_loader(ld.name, ld))
+    ld.exec_module(m)
+    return m
+
+
+BC = _load("bundle_compute_m", "decision-bundle-compute.py.txt")
+r = BC.r
+
+ARMS = {
+    "A": ["A-1", "A-2"],
+    "final_config": ["S1024-1", "S1024-2", "final-1"],
+    "K_config_topk256": ["K-1", "K-2", "CUR-1", "CUR-2", "Kp-1", "Kp-2", "S-1", "S-2", "S-3", "S-4"],
+}
+TOK = ["lail_tok_s", "four_prose_c1_tok_s", "bench_prose_c1_tok_s", "structured_c1_tok_s", "prose_long_c1_tok_s",
+       "bench_prose_c2_agg_tok_s", "structured_c2_agg_tok_s", "prose_long_c2_agg_tok_s", "lail_after_c2_3x_tok_s"]
+MS = ["lail_ms_step", "four_prose_c1_ms_step", "bench_prose_c1_ms_step", "structured_c1_ms_step",
+      "prose_long_c1_ms_step", "bench_prose_c2_ms_step", "structured_c2_ms_step", "prose_long_c2_ms_step"]
+ACC = ["acc_lail", "acc_four_prose_c1", "acc_bench_prose_c1", "acc_structured_c1", "acc_prose_long_c1"]
+PP = ["pp_warm_8k", "pp_warm_32k", "pp_novel_8k", "pp_novel_32k", "warm_prefix_hit_fraction"]
+
+
+def lail_runs(b):
+    out = []
+    for line in open(f"{b}/lail10.txt"):
+        m = re.match(r"run=\d+ (\{.*\})$", line.strip())
+        if m:
+            out.append(json.loads(m.group(1))["lail_tok_s"])
+    return out
+
+
+def four_prose_runs(b):
+    return json.load(open(f"{b}/four/four_numbers.json"))["prose_runs"]
+
+
+def ttft(b):
+    f = json.load(open(f"{b}/four/four_numbers.json"))
+    bd = BC.bench(b)
+    L = [json.loads(m.group(1)) for m in (re.match(r"run=\d+ (\{.*\})$", l.strip()) for l in open(f"{b}/lail10.txt")) if m]
+    tt = [x.get("ttft_s") for x in L if x.get("ttft_s") is not None]
+    return dict(lail_ttft_median_s=r(st.median(tt), 4) if tt else None,
+                bench_prose_c1_ttft_p50_s=r(bd["prose_c1"]["ttft_s_p50"], 4),
+                structured_c1_ttft_p50_s=r(bd["structured_c1"]["ttft_s_p50"], 4),
+                bench_prose_c2_ttft_p50_s=r(bd["prose_c2"]["ttft_s_p50"], 4),
+                structured_c2_ttft_p50_s=r(bd["structured_c2"]["ttft_s_p50"], 4),
+                bench_prose_c2_per_stream_tok_s=r(bd["prose_c2"]["median_decode_tok_s"]),
+                structured_c2_per_stream_tok_s=r(bd["structured_c2"]["median_decode_tok_s"]))
+
+
+def quality_rows(b):
+    out = {}
+    for mode in ("quick", "full"):
+        p = f"{b}/quality_{mode}.json"
+        if os.path.exists(p):
+            q = BC.quality(p)
+            out[mode] = {k: q[k] for k in ("passed", "nll", "decode_median_dlp", "gen_nll_prefill", "aa_hazard",
+                                           "golden_hazard", "selfcons_identical", "tools_exact", "tools_json",
+                                           "no_call", "needle", "failed_gates", "extra")}
+    return out
+
+
+BENCH = re.compile(r"phase=(\w+) c=(\d+) run=\d+ .*agg=([\d.]+) tok/s per_stream=\[([^\]]*)\] "
+                   r"ttft=\[([^\]]*)\] acc=([\d.]+) ms_step=\[([^\]]*)\]")
+
+
+def pool_bench(boots):
+    """Round-34 pooling (campaign/pool_s8_s13.py): per-stream decode, per-run aggregate and per-stream TTFT
+    values as logged in bench_decode.txt, pooled over the boots; median of the pool."""
+    cells = {}
+    for b in boots:
+        for line in open(f"{b}/bench_decode.txt"):
+            m = BENCH.match(line.strip())
+            if not m:
+                continue
+            c = cells.setdefault(f"{m[1]} c={m[2]}", {"runs": 0, "agg": [], "decode": [], "ttft": [], "ms": []})
+            c["runs"] += 1
+            c["agg"].append(float(m[3]))
+            c["decode"] += [float(x) for x in m[4].split(",")]
+            c["ttft"] += [float(x) for x in m[5].split(",")]
+            c["ms"] += [float(x) for x in m[7].split(",")]
+    return {k: dict(n_runs=c["runs"], n_streams=len(c["decode"]), median_decode_tok_s=r(st.median(c["decode"]), 2),
+                    median_agg_tok_s=r(st.median(c["agg"]), 2), median_ttft_s=r(st.median(c["ttft"]), 3),
+                    median_ms_per_step=r(st.median(c["ms"]), 2)) for k, c in sorted(cells.items())}
+
+
+def pool_lail(boots):
+    rows = [json.loads(m.group(1)) for b in boots
+            for m in (re.match(r"run=\d+ (\{.*\})$", l.strip()) for l in open(f"{b}/lail10.txt")) if m]
+    return dict(n_runs=len(rows), median_tok_s=r(st.median([x["lail_tok_s"] for x in rows]), 2),
+                median_ttft_s=r(st.median([x["ttft_s"] for x in rows]), 3),
+                median_ms_per_step=r(st.median([x["decode_s"] / x["chunks"] * 1000.0 for x in rows]), 2))
+
+
+def arm(boots):
+    per = {b: BC.boot(b) for b in boots}
+    cells = {}
+    for k in TOK + MS + ACC + PP:
+        vals = [per[b][k] for b in boots]
+        cells[k] = dict(per_boot=[r(v, 4) for v in vals], arm_median=r(st.median(vals), 4),
+                        spread=r(max(vals) - min(vals), 4))
+    pooled = {
+        "lail_tok_s_pooled_runs": dict(n=sum(len(lail_runs(b)) for b in boots),
+                                       median=r(st.median([x for b in boots for x in lail_runs(b)]), 3)),
+        "four_prose_c1_tok_s_pooled_runs": dict(n=sum(len(four_prose_runs(b)) for b in boots),
+                                                median=r(st.median([x for b in boots for x in four_prose_runs(b)]), 3)),
+        "bench_decode_pooled": pool_bench(boots),
+        "lail_pooled": pool_lail(boots),
+    }
+    return per, cells, pooled
+
+
+def main(out):
+    res = {"what": "Round 35 headline (see the header of round35-headline-compute.py.txt)", "arms": ARMS, "cells": {},
+           "pooled": {}, "ttft": {}, "quality": {}, "validity": {}}
+    for name, boots in ARMS.items():
+        per, cells, pooled = arm(boots)
+        res["cells"][name] = cells
+        res["pooled"][name] = pooled
+        res["ttft"][name] = {b: ttft(b) for b in boots}
+        res["quality"][name] = {b: quality_rows(b) for b in boots}
+        res["validity"][name] = {b: dict(commit=per[b]["commit"][:12], contaminated=per[b]["contaminated"],
+                                         serve_env_ranks_match=per[b]["serve_env_ranks_match"],
+                                         lever_disarmed=per[b]["lever_disarmed"],
+                                         disarm_scan_rc=per[b]["disarm_scan_rc"],
+                                         gpu_guard_rc=per[b]["gpu_guard_rc"], e2e_rc=per[b]["e2e_rc"],
+                                         correctness=per[b]["correctness"],
+                                         prose_long_c1=f"{per[b]['prose_long_c1_finish']}, post-EOS {per[b]['prose_long_c1_post_eos']}",
+                                         memavail_after_smoke_gib=per[b]["memavail_after_smoke_gib"])
+                                 for b in boots}
+    delta = {}
+    a, f = res["cells"]["A"], res["cells"]["final_config"]
+    for k in TOK + MS + ACC + PP:
+        av, fv = a[k]["arm_median"], f[k]["arm_median"]
+        delta[k] = dict(A=av, final=fv, delta=r(fv - av, 4), pct=r(100.0 * (fv - av) / av, 2) if av else None,
+                        noise=r(max(a[k]["spread"], f[k]["spread"]), 4),
+                        every_final_boot_beyond_A_median=(all(x < av for x in f[k]["per_boot"]) if k in MS
+                                                          else all(x > av for x in f[k]["per_boot"])))
+    res["A_to_final"] = delta
+    for key in ("lail_tok_s_pooled_runs", "four_prose_c1_tok_s_pooled_runs"):
+        av, fv = res["pooled"]["A"][key]["median"], res["pooled"]["final_config"][key]["median"]
+        res["A_to_final"][key] = dict(A=av, final=fv, pct=r(100.0 * (fv - av) / av, 2))
+    json.dump(res, open(out, "w"), indent=1, sort_keys=False)
+    json.dump(res["A_to_final"], sys.stdout, indent=1)
+    print()
+
+
+if __name__ == "__main__":
+    main(sys.argv[1])
