@@ -1,4 +1,10 @@
+# check at 03:31:32Z (end of the procedure)
 gpu_guard: 0 FOREIGN samples in results/2026-09-26-serve-r3/final-1/gpu-spark1.txt results/2026-09-26-serve-r3/final-1/gpu-spark2.txt
 rc=0
 gpu-spark1: 1279 samples 2026-09-27T02:46:27Z-2026-09-27T03:31:32Z; procs:    1279 VLLM::Worker_TP;
 gpu-spark2: 250 samples 2026-09-27T02:46:27Z-2026-09-27T03:31:29Z; procs:     250 VLLM::Worker_TP;    250 Xorg;    250 gnome-shell;
+# the guard processes kept sampling until 03:33:22Z (the first kill hit their nohup wrappers, not the loops); re-check over the complete files:
+gpu_guard: 0 FOREIGN samples in results/2026-09-26-serve-r3/final-1/gpu-spark1.txt results/2026-09-26-serve-r3/final-1/gpu-spark2.txt
+rc=0
+gpu-spark1: 1332 samples 2026-09-27T02:46:27Z-2026-09-27T03:33:22Z; procs:    1332 VLLM::Worker_TP;
+gpu-spark2: 260 samples 2026-09-27T02:46:27Z-2026-09-27T03:33:16Z; procs:     260 VLLM::Worker_TP;    260 Xorg;    260 gnome-shell;
