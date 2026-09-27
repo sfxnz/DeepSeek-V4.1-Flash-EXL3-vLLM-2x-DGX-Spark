@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Round 36 engagement capture for one boot (same sections as round 35's <boot>/engagement.txt, which each
+# session built by hand). Reads both ranks' docker logs and container config; changes nothing.
+#   bash engagement-capture.sh.txt <boot-dir>        # writes <boot-dir>/engagement.txt, exit = strict audit rc
+set -uo pipefail
+O=$1
+W=/home/sfxnz/projects/ai-lab/recipes/.worktrees/kernels-r3
+C=dsv41-flash-exl3
+H=$O/.logs-head.tmp
+K=$O/.logs-worker.tmp
+docker logs $C >"$H" 2>&1
+ssh -o BatchMode=yes spark2 "docker logs $C" >"$K" 2>&1
+cnt() { grep -cF -- "$1" "$2"; }
+row() { printf '%-28s %-80s head(spark1)=%s  worker(spark2)=%s\n' "$1" "'$2'" "$(cnt "$2" "$H")" "$(cnt "$2" "$K")"; }
+{
+echo "# $(basename "$O") engagement check (docker logs of both ranks at $(date -u +%FT%TZ)), round-36 defaults: the round-35 set on pack $(grep -oE 'snapshots/[^ ,"]+' "$H" | head -1)"
+echo "# ARMS-r3 section 3 expected lines for the K env (must be present)"
+row widen_p2b_dataflow.py 'dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)'
+row dense_gemv.py 'dense GEMV armed'
+row mhc_det.py 'dsv41: mhc det engaged'
+row 'mhc_det.py(target 81 fn)' 'dsv41: mhc det engaged: target: 81 fn packed'
+row 'mhc_det.py(draft 6 fn)' 'dsv41: mhc det engaged: draft: 6 fn packed'
+row engram_native_stage.py 'dsv41: engram native stage self-check bit-exact'
+row engram_early_hash.py 'dsv41: engram early hash matches the stock hash'
+row attn_t2r_dedup.py 'dsv41: attention t2r dedup reuse bit-exact'
+row 'attn_t2r_dedup.py(census)' '[t2r-census]'
+row moe_prep_fused.py 'dsv41: moe prep fused self-check bit-exact'
+row candidate_mask_bounded.py 'dsv41: candidate mask bounded self-check bit-exact'
+row indexer_wp_gemv.py 'dsv41: indexer weights_proj GEMV self-check bit-exact'
+row swa_meta_fused.py 'dsv41: swa metadata fused self-check bit-exact'
+echo "# default-on lines (must be present)"
+row lmhead_mxfp8.py 'dsv41: lm_head mxfp8 enabled'
+row engram_prefetch_v3.py 'dsv41: engram prefetch v3 armed'
+row engram_gather_v2.py 'dsv41: engram gather v2 self-check bit-exact'
+row fix_o_proj_woa_fp8.py '[woa-requant] fp8 einsum engaged'
+row 'woa-prepack engaged' '[woa-prepack] packed ue8m0 scale engaged'
+row drop_page_cache.py 'dropped page cache of'
+row vllm 'Breakable CUDA graph enabled'
+row engram_stage_census '[native-census]'
+row 'engram_stage_census(stock)' '[stage-census]'
+echo "# SPARSE_MARKOV lines"
+row 'SPARSE_MARKOV (PRESENT)' 'dsv41: DSpark sparse Markov (gathered top-k)'
+row 'SPARSE_MARKOV k=1024 (PRESENT)' 'dsv41: DSpark sparse Markov (gathered top-k) k=1024'
+row 'SPARSE_MARKOV k=256 (ABSENT)' 'dsv41: DSpark sparse Markov (gathered top-k) k=256'
+row 'WOA prepack missing (ABSENT)' 'DSV41_WOA_PREPACK=1 but this image'
+echo "# KP add-ons (must be absent)"
+row mhc_det_overlap.py 'dsv41: mhc det overlap engaged'
+row engram_wkv_tp.py 'dsv41: engram wkv column-parallel self-check bit-exact'
+row pm_qos.py 'dsv41: pm qos engaged'
+row nccl_eager_twin.py 'dsv41: nccl eager twin engaged'
+row ar_l2_prefetch.py 'dsv41: ar l2 prefetch engaged'
+echo "# snapshot paths named in the logs (counts)"
+echo "head:   $(grep -oE 'snapshots/[A-Za-z0-9._-]+' "$H" | sort | uniq -c | tr '\n' ';')"
+echo "worker: $(grep -oE 'snapshots/[A-Za-z0-9._-]+' "$K" | sort | uniq -c | tr '\n' ';')"
+echo "# disarm markers (LOG_DISARMED-style lines; expect 0)"
+echo "grep -ciE \"disarm\" head=$(grep -ciE disarm "$H") worker=$(grep -ciE disarm "$K")"
+mapfile -t M < <(cd "$W" && python3 -c 'import sys; sys.path.insert(0, "tools"); import engagement_audit as a; print("\n".join(sorted(set(a.expectations({})[1]))))')
+hits=0; for m in "${M[@]}"; do hits=$((hits + $(cnt "$m" "$H") + $(cnt "$m" "$K"))); done
+echo "known LOG_DISARMED markers ${#M[@]}, hits total $hits"
+echo "# strict audit re-run on these logs (env = the head container's DSV41_/NCCL_/VLLM_ env)"
+mapfile -t E < <(docker inspect $C --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -E '^(DSV41_|NCCL_|VLLM_)')
+(cd "$W" && env "${E[@]}" python3 tools/engagement_audit.py --mode strict head="$H" worker="$K"); arc=$?
+echo "strict audit rc=$arc"
+echo "# container env equality across ranks (DSV41/NCCL/VLLM; VLLM_HOST_IP excluded)"
+f='{{range .Config.Env}}{{println .}}{{end}}'
+de=$(diff <(docker inspect $C --format "$f" | grep -E '^(DSV41_|NCCL_|VLLM_)' | grep -v '^VLLM_HOST_IP=' | sort) \
+          <(ssh spark2 "docker inspect $C --format '$f'" | grep -E '^(DSV41_|NCCL_|VLLM_)' | grep -v '^VLLM_HOST_IP=' | sort))
+if [ -z "$de" ]; then echo "env equal on both ranks"; else echo "ENV DIFFERS:"; echo "$de"; fi
+echo "lever envs (head): $(docker inspect $C --format "$f" | grep -E '^DSV41_(P2B_COOP|DENSE_GEMV|MHC_DET|ENGRAM_NATIVE|ENGRAM_EARLY|ATTN_T2R|SWA_META|MOE_PREP|CANDIDATE|INDEXER_WP|DSPARK_SPARSE|WOA_PREPACK|ENGRAM_WKV|NCCL_EAGER|AR_L2|PM_QOS|LMHEAD)' | sort | tr '\n' ' ')"
+echo "running image: head $(docker inspect $C --format '{{.Image}}') worker $(ssh spark2 "docker inspect $C --format '{{.Image}}'")"
+echo "# model path in container args"
+echo "head: $(docker inspect $C --format '{{json .Args}}' | grep -oE 'snapshots/[^"]+' | sort -u | tr '\n' ' ')"
+echo "worker: $(ssh spark2 "docker inspect $C --format '{{json .Args}}'" | grep -oE 'snapshots/[^"]+' | sort -u | tr '\n' ' ')"
+} >"$O/engagement.txt" 2>&1
+rm -f "$H" "$K"
+exit $arc
