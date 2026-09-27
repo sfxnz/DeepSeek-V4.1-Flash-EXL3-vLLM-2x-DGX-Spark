@@ -41,9 +41,9 @@ class PackMetaTests(unittest.TestCase):
         self.assertEqual(cfg["non_routed_quantization"]["expert_dtype"], "fp4")
         self.assertEqual(cfg["weight_block_size"], [32, 32])
 
-    def test_serve_revision_stays_mcg_rebuild_defaults_mul1(self) -> None:
+    def test_serve_revision_is_mcg_lmhead_rebuild_defaults_mul1(self) -> None:
         self.assertEqual(self.meta.DEFAULT_CODEBOOK, "mul1")
-        self.assertEqual(self.meta.SERVE_REVISION, "2.0bpw-mcg")
+        self.assertEqual(self.meta.SERVE_REVISION, "2.0bpw-mcg-lmhead-mxfp8")
         self.assertEqual(self.meta.revision_for(), "2.0bpw-mul1")
         self.assertEqual(self.meta.revision_for(codebook="mcg"), "2.0bpw-mcg")
         self.assertEqual(self.meta.get_codebook("mul1").cb, 2)

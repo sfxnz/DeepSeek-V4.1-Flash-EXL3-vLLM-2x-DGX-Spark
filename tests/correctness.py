@@ -33,7 +33,7 @@ CODE_SNIPPET = """```
 names = ["alpha", "beta", "gamma"]
 short = [n[:2] for n in reversed(names)]
 print(":".join(short))
-``"""
+```"""
 
 TOOLS = [
     {

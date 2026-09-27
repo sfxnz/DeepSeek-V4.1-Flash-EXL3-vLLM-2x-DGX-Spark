@@ -20,8 +20,11 @@ import types
 import unittest
 from pathlib import Path
 
-import torch
-from torch.nn.parameter import Parameter
+try:
+    import torch
+    from torch.nn.parameter import Parameter
+except ImportError:
+    raise unittest.SkipTest("torch not installed on this host")
 
 ROOT = Path(__file__).resolve().parents[1]
 PATCH = ROOT / "docker/patch/lmhead_mxfp8.py"

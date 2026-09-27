@@ -1,0 +1,60 @@
+== e2e ==
+coding_agent run=1 pass=True cond=True flag=True block=True words=232 ttft=1.42s decode=38.55
+doc_recall run=1 doc=62914 pass=False needle=miss ttft=89.46s decode=34.8
+tool_json run=1 pass=True get_weather({"city": "Paris", "unit": "c"})
+SUMMARY {
+ "phases": [
+  {
+   "phase": "coding_agent",
+   "run": 1,
+   "pass": true,
+   "detail": "cond=True flag=True block=True words=232",
+   "ttft_s": 1.42,
+   "decode_s": 11.6,
+   "decode_tok_s": 38.55,
+   "prompt_tokens": 761,
+   "completion_tokens": 448
+  },
+  {
+   "phase": "doc_recall",
+   "run": 1,
+   "pass": false,
+   "detail": "needle=miss",
+   "ttft_s": 89.46,
+   "decode_s": 5.49,
+   "decode_tok_s": 34.8,
+   "prompt_tokens": 62946,
+   "completion_tokens": 192
+  },
+  {
+   "phase": "tool_json",
+   "run": 1,
+   "pass": true,
+   "detail": "get_weather({\"city\": \"Paris\", \"unit\": \"c\"})",
+   "ttft_s": 0.79,
+   "decode_s": 2.6,
+   "decode_tok_s": 48.86,
+   "prompt_tokens": 296,
+   "completion_tokens": 128
+  }
+ ],
+ "useful_tok_s": 35.1,
+ "pass_rate": "2/3"
+}
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=512 temperature=0.2 runs=3 phase=lail_prose c=1
+run=1 {"ttft_s": 0.3441137979971245, "decode_s": 21.15342079900438, "prompt_tokens": 61, "completion_tokens": 512, "chunks": 205, "lail_tok_s": 24.204123052480387, "recipe_tok_s": 24.15684937464351, "tokens_per_chunk": 2.497560975609756, "repeat_ratio": 0.0024154589371980675, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On a DGX Spark with unified memory, the boundary between \"what the model knows\" and \"what the machine remembers\" dissolves into a single pool that both the prompt and the cache draw fr", "acceptance_len": 2.519607843137255, "draft_acceptance_rate": 0.30392156862745096}
+run=2 {"ttft_s": 0.32111767600872554, "decode_s": 23.007986971992068, "prompt_tokens": 61, "completion_tokens": 512, "chunks": 229, "lail_tok_s": 22.25314194689281, "recipe_tok_s": 22.209678779027787, "tokens_per_chunk": 2.2358078602620086, "repeat_ratio": 0.002457002457002457, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On a DGX Spark with unified memory, the boundary between \"prompt processing\" and \"generation\" is not a wall but a gradient. Prefill writes the cache; decode reads it. Both phases draw ", "acceptance_len": 2.2412280701754383, "draft_acceptance_rate": 0.2482456140350877}
+run=3 {"ttft_s": 0.39924506697570905, "decode_s": 21.39006848502322, "prompt_tokens": 61, "completion_tokens": 512, "chunks": 214, "lail_tok_s": 23.93634224960473, "recipe_tok_s": 23.889591581148473, "tokens_per_chunk": 2.392523364485981, "repeat_ratio": 0.002398081534772182, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On a DGX Spark with unified memory, that product is manufactured once and then rented out to every tab that inherits the same long system prompt. The manufacturing cost is the prefill ", "acceptance_len": 2.39906103286385, "draft_acceptance_rate": 0.27981220657276995}
+SUMMARY {
+  "phase": "lail_prose",
+  "concurrency": 1,
+  "max_tokens": 512,
+  "temperature": 0.2,
+  "n": 3,
+  "median_lail_tok_s": 23.93634224960473,
+  "median_recipe_tok_s": 23.889591581148473,
+  "median_ttft_s": 0.3441137979971245,
+  "median_completion_tokens": 512,
+  "median_acceptance_len": 2.39906103286385,
+  "median_draft_acceptance_rate": 0.27981220657276995
+}

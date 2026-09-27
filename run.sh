@@ -5,7 +5,7 @@ set -euo pipefail
 # BEGIN generated from recipe.yaml — edit recipe.yaml and run kit/render.py
 MODEL="${MODEL:-sfxnz/DeepSeek-V4.1-Flash-EXL3}"
 SERVED_NAME="${SERVED_NAME:-deepseek-ai/DeepSeek-V4.1-Flash}"
-IMAGE="${IMAGE:-dsv41-flash-exl3-sm121}"
+IMAGE="${IMAGE:-dsv41-flash-exl3-sm121:canonical-e12}"
 CONTAINER_NAME="${CONTAINER_NAME:-dsv41-flash-exl3}"
 PORT="${PORT:-8000}"
 MASTER_PORT="${MASTER_PORT:-29524}"
@@ -29,25 +29,105 @@ DSV41_ENGRAM_DISK="${DSV41_ENGRAM_DISK:-1}"
 LANGUAGE_MODEL_ONLY="${LANGUAGE_MODEL_ONLY:-0}"
 MM_ENCODER_TP_MODE="${MM_ENCODER_TP_MODE:-data}"
 MAX_NUM_BATCHED_TOKENS="${MAX_NUM_BATCHED_TOKENS:-8192}"
-FORCE_UNSAFE_CTX="${FORCE_UNSAFE_CTX:-1}"
+FORCE_UNSAFE_CTX="${FORCE_UNSAFE_CTX:-0}"
 FORCE_UNSAFE_ENGRAM="${FORCE_UNSAFE_ENGRAM:-0}"
 FORCE_UNSAFE_QUANT="${FORCE_UNSAFE_QUANT:-0}"
 ENFORCE_EAGER="${ENFORCE_EAGER:-0}"
 DSV41_ALLOW_CUDA_GRAPHS="${DSV41_ALLOW_CUDA_GRAPHS:-1}"
 VLLM_USE_BREAKABLE_CUDAGRAPH="${VLLM_USE_BREAKABLE_CUDAGRAPH:-1}"
 HF_CACHE="${HF_CACHE:-$HOME/.cache/huggingface}"
-SNAPSHOT_SHA="${SNAPSHOT_SHA:-2.0bpw-mcg}"
+SNAPSHOT_SHA="${SNAPSHOT_SHA:-2.0bpw-mcg-lmhead-mxfp8}"
 SKIP_DOWNLOAD="${SKIP_DOWNLOAD:-0}"
 ORCHESTRATE="${ORCHESTRATE:-auto}"
+AUDIT="${AUDIT:-warn}"
+WARMUP="${WARMUP:-1}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 DSV41_ENGRAM_PREFETCH="${DSV41_ENGRAM_PREFETCH:-1}"
 DSV41_ENGRAM_CENSUS="${DSV41_ENGRAM_CENSUS:-1}"
 DSV41_ENGRAM_GATHER_V2="${DSV41_ENGRAM_GATHER_V2:-1}"
 DSV41_LMHEAD_MXFP8="${DSV41_LMHEAD_MXFP8:-1}"
+NCCL_BUFFSIZE="${NCCL_BUFFSIZE:-1048576}"
+NCCL_LL128_BUFFSIZE="${NCCL_LL128_BUFFSIZE:-262144}"
+NCCL_PROTO="${NCCL_PROTO:-^LL128}"
+NCCL_MAX_NCHANNELS="${NCCL_MAX_NCHANNELS:-8}"
+DSV41_DROP_PAGE_CACHE="${DSV41_DROP_PAGE_CACHE:-1}"
+DSV41_INDEXER_PREFILL_FACTOR="${DSV41_INDEXER_PREFILL_FACTOR:-1}"
+DSV41_PREFILL_EMPTY_CACHE_TOKENS="${DSV41_PREFILL_EMPTY_CACHE_TOKENS:-8192}"
+DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB="${DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB:-2.5}"
+VLLM_SPARSE_INDEXER_MAX_LOGITS_MB="${VLLM_SPARSE_INDEXER_MAX_LOGITS_MB:-256}"
 # END generated
 HF_HOME_IN_CONTAINER="/cache/huggingface"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PATCH_DIR="${DSV41_PATCH_DIR:-$SCRIPT_DIR/docker/patch}"
+RUN_STATE="$SCRIPT_DIR/.run-state"
+# Worker copy of PATCH_DIR, relative to the worker's $HOME: per-user, not a shared /tmp name.
+WORKER_PATCH_DIR=".cache/dsv41-patch"
+
+# Container env for BOTH ranks: `docker run -e` below and the worker ssh line.
+# NAME=default; an empty value is not passed (unset in the container). Names
+# with an empty default here take their default from the generated block.
+# Every env a docker/patch/*.py file reads must be listed (tests check it).
+FORWARD_ENVS=(
+  VLLM_EXL3_MOE_KERNEL=native
+  DSV41_PATCH_STRICT=1
+  DSV41_ENGRAM_DISK=
+  LANGUAGE_MODEL_ONLY=
+  MM_ENCODER_TP_MODE=
+  DSV41_DSPARK_MARKOV_SCALE=1
+  DSV41_STEP_CENSUS=0
+  DSV41_INDEX_TOPK=0
+  DSV41_MHC_DECODE_SPLITS=0
+  DSV41_ENGRAM_CACHE=0
+  DSV41_ENGRAM_CACHE_ROWS=
+  DSV41_ENGRAM_CENSUS=
+  DSV41_ENGRAM_CENSUS_EVERY=
+  DSV41_ENGRAM_DISK_CHUNK=
+  DSV41_ENGRAM_DISK_THREADS=
+  DSV41_ENGRAM_FAST_STAGE=1
+  DSV41_ENGRAM_STAGE_THREADS=16
+  DSV41_ENGRAM_PREFETCH=
+  DSV41_ENGRAM_PF_DUMP=0
+  DSV41_ENGRAM_PREFETCH_DEBUG=0
+  DSV41_ENGRAM_FADVISE_CAP=
+  DSV41_ENGRAM_CPU_HASH=0
+  DSV41_ENGRAM_GATHER_V2=
+  DSV41_ENGRAM_DEFER=0
+  DSV41_LOAD_PF_G8=0
+  DSV41_STREAM_FEED=0
+  DSV41_MHC_NO_DEEPGEMM=0
+  DSV41_DSPARK_DRAFT_TOPK=0
+  DSV41_DSPARK_TAIL_NGRAM=0
+  DSV41_DSPARK_TAIL_NGRAM_POS=3
+  DSV41_DSPARK_SOFTMAX_VERIFY=0
+  DSV41_DSPARK_REFINE_PASS=0
+  DSV41_DSPARK_CONF_GATE=0
+  DSV41_MLA_IO_WARPS=0
+  DSV41_MLA_CHUNKS_PER_BLOCK=0
+  DSV41_PROBE_WO_A_EVERY=
+  DSV41_LMHEAD_MXFP8=
+  DSV41_DROP_PAGE_CACHE=
+  DSV41_INDEXER_PREFILL_FACTOR=
+  DSV41_PREFILL_EMPTY_CACHE_TOKENS=
+  DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=
+  VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=
+  VLLM_EXL3_FAT_THRESHOLD=
+  DSV41_ALLOW_CUDA_GRAPHS=
+  VLLM_USE_BREAKABLE_CUDAGRAPH=
+  VLLM_ADAPTIVE_VERIFICATION_PROFILE_CONTEXT_LEN=256
+  NCCL_MIN_NCHANNELS=
+  NCCL_MAX_NCHANNELS=
+  NCCL_NTHREADS=
+  NCCL_BUFFSIZE=
+  NCCL_LL128_BUFFSIZE=
+  NCCL_PROTO=
+  NCCL_LAUNCH_CACHE=
+)
+for fwd in "${FORWARD_ENVS[@]}"; do
+  fwd_name="${fwd%%=*}"
+  if [[ -z "${!fwd_name:-}" ]]; then
+    printf -v "$fwd_name" '%s' "${fwd#*=}"
+  fi
+done
 
 # Hub download writes a commit hash in refs/<rev>. Files live in snapshots/<commit>/.
 # Assembled packs live at snapshots/<rev>/ with no refs file. Prefer refs when both exist.
@@ -103,10 +183,6 @@ if [[ -z "${SPEC_CONFIG:-}" ]]; then
   esac
 fi
 
-if [[ -z "${COMPILATION_CONFIG:-}" ]]; then
-  COMPILATION_CONFIG='{"cudagraph_mode":"FULL_AND_PIECEWISE","cudagraph_capture_sizes":[1,3,4,6,8],"custom_ops":["all"]}'
-fi
-
 if [[ "$QUANTIZATION" != exl3 && "$FORCE_UNSAFE_QUANT" != 1 ]]; then
   echo "QUANTIZATION=$QUANTIZATION. Native MXFP4 experts plus Engram do not fit 2x Spark UMA. This recipe serves an EXL3 pack. FORCE_UNSAFE_QUANT=1 overrides." >&2
   exit 1
@@ -127,14 +203,36 @@ if [[ "$KV_CACHE_MEMORY" -gt 8589934592 && "$FORCE_UNSAFE_CTX" != 1 ]]; then
   echo "KV_CACHE_MEMORY=$KV_CACHE_MEMORY exceeds 8 GiB pin 8589934592. CSA2 is 890 B/token; 4 GiB holds 1M x 2. FORCE_UNSAFE_CTX=1 overrides." >&2
   exit 1
 fi
-if [[ "$SPEC" == dspark && $((NUM_SPECULATIVE_TOKENS % 5)) -ne 0 && "$FORCE_UNSAFE_CTX" != 1 ]]; then
-  echo "NUM_SPECULATIVE_TOKENS=$NUM_SPECULATIVE_TOKENS is not divisible by 5 (DSpark block size). FORCE_UNSAFE_CTX=1 overrides." >&2
+if [[ "$SPEC" == dspark && ! "$NUM_SPECULATIVE_TOKENS" =~ ^[1-5]$ && "$FORCE_UNSAFE_CTX" != 1 ]]; then
+  echo "NUM_SPECULATIVE_TOKENS=$NUM_SPECULATIVE_TOKENS must be an integer 1..5 (DSpark block size 5). E6: k=10 collapsed L.A.I.L to 12.1 vs 22.6. FORCE_UNSAFE_CTX=1 overrides." >&2
   exit 1
+fi
+case "$AUDIT" in
+  warn | strict | off) ;;
+  *)
+    echo "AUDIT=$AUDIT (want warn, strict or off)" >&2
+    exit 1
+    ;;
+esac
+
+# Cudagraph capture sizes match the verify batch: {1} + {s*k, s*(k+1)} for s in 1..MAX_NUM_SEQS.
+# k=3, 2 seqs gives [1,3,4,6,8] (R16: +5.5% vs padded k5-era sizes).
+if [[ -z "${COMPILATION_CONFIG:-}" ]]; then
+  spec_k=0
+  if [[ "$SPEC" == dspark ]]; then
+    spec_k="$NUM_SPECULATIVE_TOKENS"
+  fi
+  capture_sizes=(1)
+  for ((s = 1; s <= MAX_NUM_SEQS; s++)); do
+    capture_sizes+=($((s * spec_k)) $((s * (spec_k + 1))))
+  done
+  capture_list="$(printf '%s\n' "${capture_sizes[@]}" | awk '$1 > 0' | sort -nu | paste -sd, -)"
+  COMPILATION_CONFIG='{"cudagraph_mode":"FULL_AND_PIECEWISE","cudagraph_capture_sizes":['"$capture_list"'],"custom_ops":["all"]}'
 fi
 
 if [[ "${VALIDATE_ONLY:-0}" == "1" ]]; then
-  printf '==> validate-only spec=%s seqs=%s spec_tokens=%s quant=%s engram_disk=%s eager=%s lm_only=%s image=%s\n' \
-    "$SPEC" "$MAX_NUM_SEQS" "$NUM_SPECULATIVE_TOKENS" "$QUANTIZATION" "$DSV41_ENGRAM_DISK" "$ENFORCE_EAGER" "$LANGUAGE_MODEL_ONLY" "$IMAGE"
+  printf '==> validate-only spec=%s seqs=%s spec_tokens=%s quant=%s engram_disk=%s eager=%s lm_only=%s image=%s compilation_config=%s\n' \
+    "$SPEC" "$MAX_NUM_SEQS" "$NUM_SPECULATIVE_TOKENS" "$QUANTIZATION" "$DSV41_ENGRAM_DISK" "$ENFORCE_EAGER" "$LANGUAGE_MODEL_ONLY" "$IMAGE" "$COMPILATION_CONFIG"
   exit 0
 fi
 
@@ -163,16 +261,6 @@ hf_bin() {
   fi
 }
 
-token_env() {
-  if [[ -n "${HF_TOKEN:-}" ]]; then
-    printf '%s' "$HF_TOKEN"
-    return
-  fi
-  if [[ -f "$HOME/.cache/huggingface/token" ]]; then
-    tr -d '[:space:]' <"$HOME/.cache/huggingface/token"
-  fi
-}
-
 resolve_model() {
   printf '%s\n' "$SNAPSHOT_IN_CONTAINER"
 }
@@ -190,6 +278,9 @@ ensure_image() {
     echo "Image $IMAGE not found. Build docker/Dockerfile from this repo first:" >&2
     echo "  docker build -f docker/Dockerfile -t $IMAGE docker" >&2
     exit 1
+  fi
+  if ! docker image inspect -f '{{json .Config.Labels}}' "$IMAGE" 2>/dev/null | grep -q '"dsv41.recipe.patches"'; then
+    echo "WARNING: $IMAGE has no dsv41.recipe.patches label: not built from this repo's docker/Dockerfile, or built before the label existed. Rebuild: docker build -f docker/Dockerfile -t $IMAGE docker" >&2
   fi
 }
 
@@ -242,7 +333,7 @@ refuse_foreign_serve() {
 
 refuse_busy_port() {
   if (echo >/dev/tcp/127.0.0.1/"$PORT") >/dev/null 2>&1; then
-    echo "Port $PORT is already in use" >&2
+    echo "Port $PORT is already in use. If it is this recipe's serve, stop it first: ./stop.sh" >&2
     exit 1
   fi
 }
@@ -270,53 +361,17 @@ start_local() {
   local serve_model
   serve_model="$(resolve_model)"
 
-  local tok
-  tok="$(token_env || true)"
+  # The model is always a local snapshot path (resolve_model), so the
+  # container gets no Hub token and no Hub access.
   local env_args=(
     -e "HF_HOME=$HF_HOME_IN_CONTAINER"
+    -e "HF_HUB_OFFLINE=1"
     -e "TORCH_CUDA_ARCH_LIST=12.1a"
     -e "FLASHINFER_CUDA_ARCH_LIST=12.1a"
     -e "FLASHINFER_DISABLE_VERSION_CHECK=1"
     -e "VLLM_ENGINE_READY_TIMEOUT_S=3600"
     -e "PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True"
     -e "VLLM_PLUGINS=vllm_exl3"
-    -e "VLLM_EXL3_MOE_KERNEL=${VLLM_EXL3_MOE_KERNEL:-native}"
-    -e "DSV41_ENGRAM_DISK=$DSV41_ENGRAM_DISK"
-    -e "LANGUAGE_MODEL_ONLY=$LANGUAGE_MODEL_ONLY"
-    -e "MM_ENCODER_TP_MODE=$MM_ENCODER_TP_MODE"
-    -e "DSV41_DSPARK_MARKOV_SCALE=${DSV41_DSPARK_MARKOV_SCALE:-1}"
-    -e "DSV41_STEP_CENSUS=${DSV41_STEP_CENSUS:-0}"
-    -e "DSV41_INDEX_TOPK=${DSV41_INDEX_TOPK:-0}"
-    -e "DSV41_MHC_DECODE_SPLITS=${DSV41_MHC_DECODE_SPLITS:-0}"
-    -e "DSV41_ENGRAM_CACHE=${DSV41_ENGRAM_CACHE:-0}"
-    -e "DSV41_ENGRAM_CENSUS=${DSV41_ENGRAM_CENSUS:-0}"
-    -e "DSV41_ENGRAM_FAST_STAGE=${DSV41_ENGRAM_FAST_STAGE:-1}"
-    -e "DSV41_ENGRAM_STAGE_THREADS=${DSV41_ENGRAM_STAGE_THREADS:-16}"
-    -e "DSV41_ENGRAM_PREFETCH=${DSV41_ENGRAM_PREFETCH:-0}"
-    -e "DSV41_ENGRAM_PF_DUMP=${DSV41_ENGRAM_PF_DUMP:-0}"
-    -e "DSV41_ENGRAM_PREFETCH_DEBUG=${DSV41_ENGRAM_PREFETCH_DEBUG:-0}"
-    -e "DSV41_ENGRAM_CPU_HASH=${DSV41_ENGRAM_CPU_HASH:-0}"
-    -e "DSV41_ENGRAM_GATHER_V2=${DSV41_ENGRAM_GATHER_V2:-0}"
-    -e "DSV41_ENGRAM_DEFER=${DSV41_ENGRAM_DEFER:-0}"
-    -e "DSV41_LOAD_PF_G8=${DSV41_LOAD_PF_G8:-0}"
-    -e "DSV41_MHC_NO_DEEPGEMM=${DSV41_MHC_NO_DEEPGEMM:-0}"
-    -e "DSV41_DSPARK_DRAFT_TOPK=${DSV41_DSPARK_DRAFT_TOPK:-0}"
-    -e "DSV41_DSPARK_TAIL_NGRAM=${DSV41_DSPARK_TAIL_NGRAM:-0}"
-    -e "DSV41_DSPARK_TAIL_NGRAM_POS=${DSV41_DSPARK_TAIL_NGRAM_POS:-3}"
-    -e "DSV41_DSPARK_SOFTMAX_VERIFY=${DSV41_DSPARK_SOFTMAX_VERIFY:-0}"
-    -e "DSV41_DSPARK_REFINE_PASS=${DSV41_DSPARK_REFINE_PASS:-0}"
-    -e "DSV41_DSPARK_CONF_GATE=${DSV41_DSPARK_CONF_GATE:-0}"
-    -e "DSV41_MLA_IO_WARPS=${DSV41_MLA_IO_WARPS:-0}"
-    -e "DSV41_MLA_CHUNKS_PER_BLOCK=${DSV41_MLA_CHUNKS_PER_BLOCK:-0}"
-    -e "DSV41_LMHEAD_MXFP8=${DSV41_LMHEAD_MXFP8:-0}"
-    -e "DSV41_DROP_PAGE_CACHE=${DSV41_DROP_PAGE_CACHE:-0}"
-    -e "DSV41_INDEXER_PREFILL_FACTOR=${DSV41_INDEXER_PREFILL_FACTOR:-}"
-    -e "DSV41_PREFILL_EMPTY_CACHE_TOKENS=${DSV41_PREFILL_EMPTY_CACHE_TOKENS:-0}"
-    -e "DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=${DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB:-2.5}"
-    -e "VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=${VLLM_SPARSE_INDEXER_MAX_LOGITS_MB:-}"
-    -e "DSV41_ALLOW_CUDA_GRAPHS=$DSV41_ALLOW_CUDA_GRAPHS"
-    -e "VLLM_USE_BREAKABLE_CUDAGRAPH=$VLLM_USE_BREAKABLE_CUDAGRAPH"
-    -e "VLLM_ADAPTIVE_VERIFICATION_PROFILE_CONTEXT_LEN=${VLLM_ADAPTIVE_VERIFICATION_PROFILE_CONTEXT_LEN:-256}"
     -e "NCCL_SOCKET_IFNAME=$IFACE"
     -e "GLOO_SOCKET_IFNAME=$IFACE"
     -e "TP_SOCKET_IFNAME=$IFACE"
@@ -328,11 +383,10 @@ start_local() {
     -e "NCCL_CUMEM_ENABLE=0"
     -e "NCCL_DEBUG=WARN"
   )
-  # Optional NCCL tuning passthrough (unset here = unset inside container).
-  for nccl_var in NCCL_MIN_NCHANNELS NCCL_MAX_NCHANNELS NCCL_NTHREADS \
-    NCCL_BUFFSIZE NCCL_LL128_BUFFSIZE NCCL_PROTO NCCL_LAUNCH_CACHE; do
-    if [[ -n "${!nccl_var:-}" ]]; then
-      env_args+=(-e "$nccl_var=${!nccl_var}")
+  local fwd_name
+  for fwd_name in "${FORWARD_ENVS[@]%%=*}"; do
+    if [[ -n "${!fwd_name:-}" ]]; then
+      env_args+=(-e "$fwd_name=${!fwd_name}")
     fi
   done
   local host_ip="$HEAD_IP"
@@ -341,9 +395,6 @@ start_local() {
     host_ip="${host_ip:-10.100.8.2}"
   fi
   env_args+=(-e "VLLM_HOST_IP=$host_ip")
-  if [[ -n "$tok" ]]; then
-    env_args+=(-e "HF_TOKEN=$tok" -e "HUGGING_FACE_HUB_TOKEN=$tok")
-  fi
 
   local rank_args=()
   if [[ "$rank" == "0" ]]; then
@@ -389,6 +440,8 @@ start_local() {
   elif [[ -n "${MM_ENCODER_TP_MODE:-}" ]]; then
     lm_args+=(--mm-encoder-tp-mode "$MM_ENCODER_TP_MODE")
   fi
+  local extra_args=()
+  read -ra extra_args <<<"$EXTRA_ARGS"
   local kv_dtype_arg="$KV_CACHE_DTYPE"
   if [[ "$kv_dtype_arg" == fp8_e4m3 ]]; then
     kv_dtype_arg=fp8
@@ -438,12 +491,89 @@ start_local() {
     "${load_args[@]}" \
     --served-model-name "$SERVED_NAME" \
     --trust-remote-code \
-    $EXTRA_ARGS
+    "${extra_args[@]}"
+}
+
+# Worker helpers (head side). An ssh failure is "unknown", never "exited".
+WORKER_STARTED=0
+WORKER_LOG=""
+# vLLM serve.py logs this when the headless rank starts connecting to HEAD_IP:MASTER_PORT.
+WORKER_LAUNCH_MARK="headless multiproc executor"
+
+worker_ssh() { ssh -o BatchMode=yes -o ConnectTimeout=5 "$WORKER_HOST" "$@"; }
+
+# 0 = running, 1 = not running, 2 = unknown (ssh or docker failed).
+worker_state() {
+  local names
+  names="$(worker_ssh "docker ps --format '{{.Names}}'" 2>/dev/null)" || return 2
+  grep -qx -- "$CONTAINER_NAME" <<<"$names"
+}
+
+save_worker_logs() {
+  [[ -n "$WORKER_LOG" ]] && return 0
+  mkdir -p "$RUN_STATE"
+  WORKER_LOG="$RUN_STATE/worker-$(date +%Y%m%d-%H%M%S).log"
+  if worker_ssh "docker logs $(printf '%q' "$CONTAINER_NAME")" >"$WORKER_LOG" 2>&1; then
+    echo "Worker logs saved to $WORKER_LOG" >&2
+  else
+    echo "Could not read worker logs from $WORKER_HOST (partial output in $WORKER_LOG)" >&2
+  fi
+}
+
+fail_worker_exited() {
+  echo "Worker $CONTAINER_NAME on $WORKER_HOST is not running. Last worker logs:" >&2
+  save_worker_logs
+  tail -n 120 "$WORKER_LOG" >&2
+  exit 1
+}
+
+# EXIT trap while the head is starting: keep both ranks' logs, then remove
+# both containers so a failed boot does not leave a ~75 GiB rank loaded on
+# either node (a started head keeps waiting on the rendezvous otherwise).
+HEAD_STARTED=0
+cleanup_worker_on_failure() {
+  local rc=$?
+  trap - EXIT
+  if [[ "$rc" != 0 && "$WORKER_STARTED" == 1 ]]; then
+    echo "Head start failed (exit $rc). Removing $CONTAINER_NAME on $WORKER_HOST." >&2
+    save_worker_logs
+    worker_ssh "docker rm -f $(printf '%q' "$CONTAINER_NAME")" >/dev/null 2>&1 \
+      || echo "Could not remove $CONTAINER_NAME on $WORKER_HOST. Run ./stop.sh." >&2
+    if [[ "$HEAD_STARTED" == 1 ]] && docker ps -a --format '{{.Names}}' | grep -qx -- "$CONTAINER_NAME"; then
+      local head_log
+      head_log="$RUN_STATE/head-$(date +%Y%m%d-%H%M%S).log"
+      mkdir -p "$RUN_STATE"
+      docker logs "$CONTAINER_NAME" >"$head_log" 2>&1 || true
+      echo "Head logs saved to $head_log. Removing $CONTAINER_NAME here." >&2
+      docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 \
+        || echo "Could not remove $CONTAINER_NAME here. Run ./stop.sh." >&2
+    fi
+  fi
+  exit "$rc"
+}
+
+# Start the head once the worker reached its rendezvous (replaces a fixed 25 s sleep).
+wait_worker_launch() {
+  local i st logs
+  for i in $(seq 1 60); do
+    st=0
+    worker_state || st=$?
+    if [[ "$st" == 1 ]]; then
+      fail_worker_exited
+    fi
+    logs="$(worker_ssh "docker logs $(printf '%q' "$CONTAINER_NAME") 2>&1" 2>/dev/null || true)"
+    if grep -qF -- "$WORKER_LAUNCH_MARK" <<<"$logs"; then
+      log "Worker is connecting to $HEAD_IP:$MASTER_PORT. Starting head."
+      return 0
+    fi
+    sleep 2
+  done
+  log "No '$WORKER_LAUNCH_MARK' in the worker log after 120s. Starting head anyway."
 }
 
 wait_ready() {
   log "Waiting for http://127.0.0.1:${PORT}/health and /v1/models"
-  local i body
+  local i body st
   for i in $(seq 1 720); do
     if curl -sf "http://127.0.0.1:${PORT}/health" >/dev/null 2>&1; then
       body="$(curl -sf "http://127.0.0.1:${PORT}/v1/models" || true)"
@@ -459,6 +589,13 @@ wait_ready() {
       docker logs "$CONTAINER_NAME" 2>&1 | tail -120 >&2
       exit 1
     fi
+    if [[ "$WORKER_STARTED" == 1 ]] && (( i % 12 == 0 )); then
+      st=0
+      worker_state || st=$?
+      if [[ "$st" == 1 ]]; then
+        fail_worker_exited
+      fi
+    fi
     sleep 5
     if (( i % 12 == 0 )); then
       log "still loading… (${i}×5s) — docker logs -f $CONTAINER_NAME"
@@ -468,6 +605,41 @@ wait_ready() {
   docker logs "$CONTAINER_NAME" 2>&1 | tail -120 >&2
   exit 1
 }
+
+# Grep both ranks' logs for the engagement markers kept next to each patch.
+audit_engagement() {
+  [[ "$AUDIT" == off ]] && return 0
+  local ts name logs=() envs=(ENFORCE_EAGER="$ENFORCE_EAGER")
+  ts="$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$RUN_STATE"
+  docker logs "$CONTAINER_NAME" >"$RUN_STATE/audit-head-$ts.log" 2>&1 || true
+  logs+=("head=$RUN_STATE/audit-head-$ts.log")
+  if [[ "$WORKER_STARTED" == 1 ]]; then
+    worker_ssh "docker logs $(printf '%q' "$CONTAINER_NAME")" >"$RUN_STATE/audit-worker-$ts.log" 2>&1 || true
+    logs+=("worker=$RUN_STATE/audit-worker-$ts.log")
+  fi
+  for name in "${FORWARD_ENVS[@]%%=*}"; do
+    envs+=("$name=${!name:-}")
+  done
+  if ! env "${envs[@]}" python3 "$SCRIPT_DIR/tools/engagement_audit.py" --mode "$AUDIT" "${logs[@]}"; then
+    echo "AUDIT=strict: a patch did not engage (see above). The serve is up; ./stop.sh tears it down." >&2
+    exit 1
+  fi
+}
+
+# First-request JIT (Triton, CuTeDSL) off the user's TTFT. Nonce prompts stay out of the prefix cache.
+warmup() {
+  [[ "$WARMUP" == 1 ]] || return 0
+  log "Warmup: greedy, t=0.7 and a ~3k-token nonce prefill"
+  python3 "$SCRIPT_DIR/tools/warmup.py" --url "http://127.0.0.1:${PORT}/v1/chat/completions" --model "$SERVED_NAME" \
+    || echo "WARNING: warmup failed. The serve is up; the first requests pay the JIT." >&2
+}
+
+if [[ "${PREFLIGHT_ONLY:-0}" == "1" ]]; then
+  ensure_image
+  ensure_weights
+  exit 0
+fi
 
 ROLE="$(detect_role)"
 log "role=$ROLE host=$(host_short)"
@@ -480,19 +652,45 @@ if [[ "$ORCHESTRATE" == "auto" && "$ROLE" == "head" ]]; then
       echo "Cannot SSH to $WORKER_HOST. Refusing to start a TP=$TP head rank alone (NNODES=$NNODES)." >&2
       exit 1
     fi
-    log "Starting worker on $WORKER_HOST first"
-    mkdir -p "${PWD}/.run-state"
-    printf '%s\n' "$WORKER_HOST" >"${PWD}/.run-state/worker_host"
+    # run.sh knobs the worker needs, plus FORWARD_ENVS. %q keeps quotes and JSON intact.
+    worker_config=(
+      IMAGE CONTAINER_NAME PORT MASTER_PORT HEAD_IP IFACE HCA
+      MAX_MODEL_LEN MAX_NUM_SEQS UTIL KV_CACHE_MEMORY KV_CACHE_DTYPE BLOCK_SIZE TP NNODES
+      SERVED_NAME SKIP_DOWNLOAD SPEC SPEC_CONFIG NUM_SPECULATIVE_TOKENS ENFORCE_EAGER
+      COMPILATION_CONFIG MAX_NUM_BATCHED_TOKENS FORCE_UNSAFE_CTX FORCE_UNSAFE_ENGRAM
+      FORCE_UNSAFE_QUANT LOAD_FORMAT QUANTIZATION SNAPSHOT_SHA HF_CACHE MODEL EXTRA_ARGS
+    )
+    worker_env="ROLE=worker ORCHESTRATE=0 DSV41_PATCH_DIR=\$HOME/$WORKER_PATCH_DIR"
+    for name in "${worker_config[@]}" "${FORWARD_ENVS[@]%%=*}"; do
+      worker_env+=" $name=$(printf '%q' "${!name:-}")"
+    done
+    # Preflight both nodes (image, weights, EXL3 config) before any container starts.
+    log "Preflight $(host_short)"
+    ensure_image
+    ensure_weights
     scp -q "$0" "${WORKER_HOST}:/tmp/dsv41-exl3-run.sh"
-    ssh "$WORKER_HOST" "rm -rf /tmp/dsv41-patch"
-    scp -q -r "$SCRIPT_DIR/docker/patch" "${WORKER_HOST}:/tmp/dsv41-patch"
-    ssh "$WORKER_HOST" \
-      "ROLE=worker ORCHESTRATE=0 IMAGE='$IMAGE' CONTAINER_NAME='$CONTAINER_NAME' PORT='$PORT' MASTER_PORT='$MASTER_PORT' HEAD_IP='$HEAD_IP' IFACE='$IFACE' HCA='$HCA' NCCL_MIN_NCHANNELS='${NCCL_MIN_NCHANNELS:-}' NCCL_MAX_NCHANNELS='${NCCL_MAX_NCHANNELS:-}' NCCL_NTHREADS='${NCCL_NTHREADS:-}' NCCL_BUFFSIZE='${NCCL_BUFFSIZE:-}' NCCL_LL128_BUFFSIZE='${NCCL_LL128_BUFFSIZE:-}' NCCL_PROTO='${NCCL_PROTO:-}' NCCL_LAUNCH_CACHE='${NCCL_LAUNCH_CACHE:-}' MAX_MODEL_LEN='$MAX_MODEL_LEN' MAX_NUM_SEQS='$MAX_NUM_SEQS' UTIL='$UTIL' KV_CACHE_MEMORY='$KV_CACHE_MEMORY' KV_CACHE_DTYPE='$KV_CACHE_DTYPE' BLOCK_SIZE='$BLOCK_SIZE' TP='$TP' NNODES='$NNODES' SERVED_NAME='$SERVED_NAME' SKIP_DOWNLOAD='$SKIP_DOWNLOAD' SPEC='$SPEC' SPEC_CONFIG='$SPEC_CONFIG' NUM_SPECULATIVE_TOKENS='$NUM_SPECULATIVE_TOKENS' ENFORCE_EAGER='$ENFORCE_EAGER' COMPILATION_CONFIG='$COMPILATION_CONFIG' MAX_NUM_BATCHED_TOKENS='$MAX_NUM_BATCHED_TOKENS' FORCE_UNSAFE_CTX='$FORCE_UNSAFE_CTX' FORCE_UNSAFE_ENGRAM='$FORCE_UNSAFE_ENGRAM' FORCE_UNSAFE_QUANT='$FORCE_UNSAFE_QUANT' LOAD_FORMAT='$LOAD_FORMAT' QUANTIZATION='$QUANTIZATION' DSV41_ENGRAM_DISK='$DSV41_ENGRAM_DISK' DSV41_ALLOW_CUDA_GRAPHS='$DSV41_ALLOW_CUDA_GRAPHS' VLLM_USE_BREAKABLE_CUDAGRAPH='$VLLM_USE_BREAKABLE_CUDAGRAPH' LANGUAGE_MODEL_ONLY='$LANGUAGE_MODEL_ONLY' MM_ENCODER_TP_MODE='$MM_ENCODER_TP_MODE' DSV41_DSPARK_MARKOV_SCALE='${DSV41_DSPARK_MARKOV_SCALE:-1}' DSV41_STEP_CENSUS='${DSV41_STEP_CENSUS:-0}' DSV41_INDEX_TOPK='${DSV41_INDEX_TOPK:-0}' DSV41_MHC_DECODE_SPLITS='${DSV41_MHC_DECODE_SPLITS:-0}' DSV41_ENGRAM_CACHE='${DSV41_ENGRAM_CACHE:-0}' DSV41_ENGRAM_CENSUS='${DSV41_ENGRAM_CENSUS:-0}' DSV41_ENGRAM_FAST_STAGE='${DSV41_ENGRAM_FAST_STAGE:-1}' DSV41_ENGRAM_STAGE_THREADS='${DSV41_ENGRAM_STAGE_THREADS:-16}' DSV41_ENGRAM_PREFETCH='${DSV41_ENGRAM_PREFETCH:-0}' DSV41_ENGRAM_PF_DUMP='${DSV41_ENGRAM_PF_DUMP:-0}' DSV41_ENGRAM_PREFETCH_DEBUG='${DSV41_ENGRAM_PREFETCH_DEBUG:-0}' DSV41_ENGRAM_CPU_HASH='${DSV41_ENGRAM_CPU_HASH:-0}' DSV41_ENGRAM_GATHER_V2='${DSV41_ENGRAM_GATHER_V2:-0}' DSV41_ENGRAM_DEFER='${DSV41_ENGRAM_DEFER:-0}' DSV41_LOAD_PF_G8='${DSV41_LOAD_PF_G8:-0}' DSV41_MHC_NO_DEEPGEMM='${DSV41_MHC_NO_DEEPGEMM:-0}' DSV41_DSPARK_DRAFT_TOPK='${DSV41_DSPARK_DRAFT_TOPK:-0}' DSV41_DSPARK_TAIL_NGRAM='${DSV41_DSPARK_TAIL_NGRAM:-0}' DSV41_DSPARK_TAIL_NGRAM_POS='${DSV41_DSPARK_TAIL_NGRAM_POS:-3}' DSV41_DSPARK_SOFTMAX_VERIFY='${DSV41_DSPARK_SOFTMAX_VERIFY:-0}' DSV41_DSPARK_REFINE_PASS='${DSV41_DSPARK_REFINE_PASS:-0}' DSV41_DSPARK_CONF_GATE='${DSV41_DSPARK_CONF_GATE:-0}' DSV41_MLA_IO_WARPS='${DSV41_MLA_IO_WARPS:-0}' DSV41_MLA_CHUNKS_PER_BLOCK='${DSV41_MLA_CHUNKS_PER_BLOCK:-0}' DSV41_LMHEAD_MXFP8='${DSV41_LMHEAD_MXFP8:-0}' DSV41_DROP_PAGE_CACHE='${DSV41_DROP_PAGE_CACHE:-0}' DSV41_INDEXER_PREFILL_FACTOR='${DSV41_INDEXER_PREFILL_FACTOR:-}' DSV41_PREFILL_EMPTY_CACHE_TOKENS='${DSV41_PREFILL_EMPTY_CACHE_TOKENS:-0}' DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB='${DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB:-2.5}' VLLM_SPARSE_INDEXER_MAX_LOGITS_MB='${VLLM_SPARSE_INDEXER_MAX_LOGITS_MB:-}' DSV41_PATCH_DIR='/tmp/dsv41-patch' VLLM_EXL3_MOE_KERNEL='${VLLM_EXL3_MOE_KERNEL:-native}' VLLM_ADAPTIVE_VERIFICATION_PROFILE_CONTEXT_LEN='${VLLM_ADAPTIVE_VERIFICATION_PROFILE_CONTEXT_LEN:-256}' SNAPSHOT_SHA='$SNAPSHOT_SHA' HF_CACHE='$HF_CACHE' MODEL='$MODEL' EXTRA_ARGS='$EXTRA_ARGS' bash /tmp/dsv41-exl3-run.sh"
-    log "Worker container started. Waiting 25s for NCCL listen, then starting head"
-    sleep 25
+    log "Preflight $WORKER_HOST"
+    if ! ssh "$WORKER_HOST" "$worker_env PREFLIGHT_ONLY=1 bash /tmp/dsv41-exl3-run.sh"; then
+      echo "Preflight failed on $WORKER_HOST. No container was started." >&2
+      exit 1
+    fi
+    mkdir -p "$RUN_STATE"
+    printf '%s\n' "$WORKER_HOST" >"$RUN_STATE/worker_host"
+    ssh "$WORKER_HOST" "rm -rf ~/$WORKER_PATCH_DIR && mkdir -p ~/.cache"
+    scp -q -r "$PATCH_DIR" "${WORKER_HOST}:$WORKER_PATCH_DIR"
+    trap cleanup_worker_on_failure EXIT
+    trap 'trap - EXIT; echo "Interrupted. Containers keep loading; ./stop.sh stops both ranks." >&2; exit 130' INT
+    WORKER_STARTED=1
+    log "Starting worker on $WORKER_HOST first"
+    ssh "$WORKER_HOST" "$worker_env bash /tmp/dsv41-exl3-run.sh"
+    wait_worker_launch
   fi
+  HEAD_STARTED=1
   start_local 0
   wait_ready
+  trap - EXIT INT
+  audit_engagement
+  warmup
   log "Stop with: ./stop.sh"
 elif [[ "$ROLE" == "worker" ]]; then
   start_local 1
@@ -500,5 +698,7 @@ elif [[ "$ROLE" == "worker" ]]; then
 else
   start_local 0
   wait_ready
+  audit_engagement
+  warmup
   log "Stop with: ./stop.sh"
 fi

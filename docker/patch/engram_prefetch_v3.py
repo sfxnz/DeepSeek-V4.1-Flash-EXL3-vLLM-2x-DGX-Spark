@@ -42,6 +42,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+# Boot-log markers for tools/engagement_audit.py (run.sh post-ready audit).
+LOG_ENGAGED = "dsv41: engram prefetch v3 armed"
+LOG_DISARMED = "dsv41: engram prefetch disabled"
+
 MARKER = "# --- engram-prefetch-v3 ---"
 
 STAGER_INIT_TAIL = """        self.hashes_ready = torch.cuda.Event()

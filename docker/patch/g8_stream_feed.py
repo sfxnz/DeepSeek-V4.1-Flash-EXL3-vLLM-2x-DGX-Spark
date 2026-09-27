@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""G8 stream feed — env-gated (DSV41_LOAD_PF_G8=1 only), stock path untouched.
+"""Stream feed: gated on DSV41_LOAD_PF_G8=1 or DSV41_STREAM_FEED=1; stock path untouched.
 
 Root cause (diag v4/v5, 2026-09-22 g8final): the VL wrapper's load_weights
 (vllm/models/deseek_v4_1/nvidia/vl_model.py, DeepseekV41ForCausalLM) does
@@ -18,6 +18,13 @@ Fix: drain the sorted list IN PLACE while AutoWeightsLoader consumes it — each
 item slot is set to None right after it is yielded, so each source tensor (and
 its pinned pages) is dropped as soon as the child loader moves past it. diag_v6
 A/B: G8 consume-phase anon peak 39.3 GiB → 1.9 GiB (flat), swap 14.0 → 0.6.
+
+diag_v6 dropped the caller's reference with a box. The first version of this
+patch did not: `mapped` stayed bound in the load_weights frame and
+`list(seq)` was a copy, so nothing was freed. R32's G8 boots ran with that
+no-op drain, so "post-load balloon" there is unproven. Fixed 2026-09-24
+(box + del mapped). DSV41_STREAM_FEED=1 engages the same drain on stock
+packs.
 
 The sort order is preserved exactly (same key, same order); only lifetime
 changes. The contiguous-group contract of AutoWeightsLoader is unaffected: it
@@ -50,20 +57,29 @@ INSTALL_NEW = '''    def load_weights(self, weights: Iterable[tuple[str, torch.T
         # tensor's host pages until the tensor is freed; retaining the whole
         # sorted list (184k expert tensors) balloons host anon ~27 GiB stock /
         # ~53 GiB G8 (OOM). Yield the identical order but drop each item as
-        # consumed (diag_v6: anon peak 39.3 -> 1.9 GiB). G8-gated only.
+        # consumed. The list moves into a box and `mapped` is deleted, so the
+        # generator holds the only reference to it.
+        # Gate: DSV41_LOAD_PF_G8=1 or DSV41_STREAM_FEED=1.
         import os as _os
 
-        def _drained(seq):
-            if _os.environ.get("DSV41_LOAD_PF_G8", "0") != "1":
-                yield from seq
-                return
-            lst = list(seq)
-            for _i in range(len(lst)):
-                _item = lst[_i]
-                lst[_i] = None
-                yield _item
+        if (
+            _os.environ.get("DSV41_LOAD_PF_G8", "0") == "1"
+            or _os.environ.get("DSV41_STREAM_FEED", "0") == "1"
+        ):
 
-        loaded_params = loader.load_weights(_drained(mapped))'''
+            def _drained(box):
+                lst = box[0]
+                box[0] = None
+                for _i in range(len(lst)):
+                    _item = lst[_i]
+                    lst[_i] = None
+                    yield _item
+
+            _box = [mapped]
+            del mapped
+            loaded_params = loader.load_weights(_drained(_box))
+        else:
+            loaded_params = loader.load_weights(mapped)'''
 
 
 def install() -> bool:

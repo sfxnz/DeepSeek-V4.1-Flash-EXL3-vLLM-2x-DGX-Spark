@@ -22,8 +22,8 @@ Effect column key: **measured** = number recorded in `evidence/` or
 | `--gpu-memory-utilization 0.75` | UMA fraction | Leaves ~25 GiB for Engram staging + OS | **required** (0.9 OOMs boot) |
 | `--block-size 64` | KV pages | FlashInfer SM120 DSV4 decode kernel is compiled for page 64 | **required** (32 breaks decode kernel) |
 | `--quantization exl3` | Loader | Native MXFP4 experts ≈130 GiB/rank do not fit 121 GiB UMA | guard (`FORCE_UNSAFE_QUANT`) |
-| `--speculative-config '{"method":"dspark","num_speculative_tokens":5,"draft_sample_method":"greedy"}'` | DSpark MTP drafting | Checkpoint ships 3 nextn layers + Markov head; 5 = block size | **measured**: 12.75→21.2 tok/s (1.67×), `evidence/h1-dspark` |
-| `--compilation-config '{"cudagraph_mode":"FULL_AND_PIECEWISE","cudagraph_capture_sizes":[1,5,6,10,12],"custom_ops":["all"]}'` | CUDA graphs incl. draft | Eager decode wastes ~4 µs/launch × ~11 kernels/step | **measured**: see `evidence/c1-graphs234`, `evidence/vision-on-lail` |
+| `--speculative-config '{"method":"dspark","num_speculative_tokens":3,"draft_sample_method":"greedy"}'` | DSpark MTP drafting | Checkpoint ships 3 nextn layers + Markov head; k=3 is the R15/R17 sweep optimum (k5 26.32 / k4 25.87 / k3 28.76 / k2 26.89 L.A.I.L); k must stay 1..5 (block size 5) | **measured**: 12.75→21.2 tok/s (1.67×) at k=5, `evidence/h1-dspark`; k=3 R15/R17 |
+| `--compilation-config '{"cudagraph_mode":"FULL_AND_PIECEWISE","cudagraph_capture_sizes":[1,3,4,6,8],"custom_ops":["all"]}'` | CUDA graphs incl. draft; run.sh derives the sizes as {1} ∪ {s·k, s·(k+1)} for s ≤ `MAX_NUM_SEQS` when `COMPILATION_CONFIG` is unset | Eager decode wastes ~4 µs/launch × ~11 kernels/step; matched sizes avoid padding the verify batch | **measured**: see `evidence/c1-graphs234`, `evidence/vision-on-lail`; matched captures +5.5% (R16, 27.27→28.76) |
 | `--kernel-config '{"enable_flashinfer_autotune":false,"enable_jit_warmup":false}'` | Disable SM120 sparse-MLA autotune | Autotune feeds DeepGEMM paged-MQA which asserts `block_kv∈{32,64}` and crashes warmup | **required** for boot with graphs |
 | `--tokenizer-mode/--tool-call-parser/--reasoning-parser deepseek_v41` | Native parsers | V4.1 chat template + tool format | **required** for tool-call eval |
 | `--default-chat-template-kwargs '{"thinking":false,"reasoning_effort":"low"}'` | Thinking off by default | Recipe ships fast-answer default; caller can override per request | quality tradeoff — see `results/RESULTS.md` baseline notes |
@@ -47,13 +47,19 @@ Effect column key: **measured** = number recorded in `evidence/` or
 | `LANGUAGE_MODEL_ONLY=0` | Vision weights loaded | See flag row above | — |
 | `VLLM_ADAPTIVE_VERIFICATION_PROFILE_CONTEXT_LEN=256` | Adaptive verify profile | Spec verification profile context | default kept |
 | `HF_XET_HIGH_PERFORMANCE=1` (download path) | Xet on | Engram shards ~95 GiB need xet | — |
+| `NCCL_BUFFSIZE=1048576` `NCCL_LL128_BUFFSIZE=262144` `NCCL_PROTO=^LL128` `NCCL_MAX_NCHANNELS=8` | NCCL AR-tail set | Smaller pinned buffers; LL128 off (isolated AR: LL 43.0 µs vs LL128 81.8 µs, E10) | **KEEP (R12)**: prose flat, prefill32k +2.1%, L.A.I.L above band, MemAvail +3.5/+2.8 GiB; `results/2026-09-20-nccl/` |
+| `DSV41_DROP_PAGE_CACHE=1` `DSV41_INDEXER_PREFILL_FACTOR=1` `DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192` `DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=2.5` `VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=256` | Mem-hygiene bundle | Room for Engram staging and long prefills | **KEEP (2026-09-20)**: perf flat, MemAvail post-32k +5.82/+6.33 GiB; `results/2026-09-20-memhygiene/VERDICT.md` |
+| `DSV41_ENGRAM_PREFETCH=1` + `DSV41_ENGRAM_CENSUS=1` | Engram prefetch v3 (fadvise next-step rows) + census | Hides NVMe reads behind the step | **KEEP (R21)**: pf_hit 100% both ranks, L.A.I.L 28.76→30.10 (+4.6%); `results/2026-09-21-pfrearm/VERDICT.md` |
+| `DSV41_ENGRAM_GATHER_V2=1` | Engram gather v2 (preadv run batching, bit-exact dequant) | Removes the stage pool hop per gather | **KEEP (R23)**: L.A.I.L 30.10→31.37; `results/2026-09-21-gatherv2/` |
+| `DSV41_LMHEAD_MXFP8=1` + pack `2.0bpw-mcg-lmhead-mxfp8` | lm_head on the b12x MXFP8 path | Halves the vocab-head weight stream | **KEEP (R33)**: L.A.I.L 31.37→33.23 (+5.9%); self-disarms on stock `2.0bpw-mcg`; `results/2026-09-22-close/VERDICT.md` |
 
 ## Refuse-guards (run.sh, all overridable)
 
 `QUANTIZATION!=exl3` (`FORCE_UNSAFE_QUANT`), `DSV41_ENGRAM_DISK!=1`
 (`FORCE_UNSAFE_ENGRAM`), `MAX_MODEL_LEN>1048576` / `MAX_NUM_SEQS>2` /
-`KV_CACHE_MEMORY>8 GiB` / DSpark tokens not %5 (`FORCE_UNSAFE_CTX`). These
-encode measured occupancy/memory limits, not style rules.
+`KV_CACHE_MEMORY>8 GiB` / DSpark tokens not an integer 1..5 (`FORCE_UNSAFE_CTX`;
+E6 k=10 collapsed to 12.1). These encode measured occupancy/memory limits, not
+style rules. All `FORCE_UNSAFE_*` default to 0.
 
 ## Image patches — always on (docker/patch/sitecustomize.py)
 
@@ -103,15 +109,16 @@ same ideas are not retried blind.
 
 | Env | What | Verdict | Evidence |
 |---|---|---|---|
-| `DSV41_STEP_CENSUS=1` | Per-step census (draft/target/Engram timings) | diagnostic only | `evidence/b12x-census` |
+| `DSV41_STEP_CENSUS=1` | Per-step census (draft/target/Engram timings, plus per-rank `pre_draft` = target end to draft start; compare ranks for the draft-start AR skew) | diagnostic only | `evidence/b12x-census` |
+| `DSV41_STREAM_FEED=1` | Drain the VL wrapper's sorted weight list while it loads (`g8_stream_feed.py` on stock packs) | unmeasured on stock; boot A/B pending (per-rank 'Loading weights took', swap, MemAvail). The R31 drain kept every item alive until the 2026-09-24 fix, so R32's G8 "post-load balloon" verdict is unproven | `docker/patch/g8_stream_feed.py`, `tests/test_stream_feed.py` |
 | `DSV41_INDEX_TOPK` | Clamp indexer topk | rejected as default | `evidence/extra-topk-128`, `evidence/indexer-native` |
 | `DSV41_MHC_DECODE_SPLITS=1` | Collapse MHC prenorm split-K to 1 | rejected | `evidence/mhc-decode-splits` |
 | `DSV41_ENGRAM_CACHE=1` | Host LRU for Engram rows | rejected (staging already prestage-hidden) | `evidence/engram-cache` |
 | `DSV41_ENGRAM_FAST_STAGE=1` (default) | Parallel per-table Engram disk gathers | **KEEP**: kills ~13 ms/step of GPU idle; L.A.I.L 22.0-23.5 -> 25.2-26.3 | `results/2026-09-19-faststage` |
 | `DSV41_ENGRAM_STAGE_THREADS=16` | Worker pool for the parallel stage | default measured good | round 11 |
-| `DSV41_ENGRAM_PREFETCH=1` | fadvise next-step Engram rows from CPU-hash at postprocess | experimental, off: pf_hit ~0%, plumbing verified offline | round 11 |
-| `DSV41_ENGRAM_CENSUS=1` | Per-gather read/dequant timing + pf_hit | diagnostic | round 11 |
-| `--async-scheduling` | V1 async scheduler | neutral-negative on L.A.I.L (21.8/21.9 vs 22.0-23.5) | round 11 |
+| `DSV41_ENGRAM_PREFETCH=1` | fadvise next-step Engram rows from CPU-hash at postprocess | round 11: off, pf_hit ~0%. Superseded: v3 is **default on** since R21 (pf_hit 100%, see Container env table) | round 11, R21 |
+| `DSV41_ENGRAM_CENSUS=1` | Per-gather read/dequant timing + pf_hit | diagnostic; **default on** with prefetch v3 | round 11, R21 |
+| `--async-scheduling` | V1 async scheduler | neutral-negative on L.A.I.L (21.8/21.9 vs 22.0-23.5). This build turns async scheduling on when it is unset (vllm/config/vllm.py:1297-1346; dspark is exempt from the spec-decode disable), so R11 compared on vs on: noise, not a verdict on the lever | round 11 |
 | `NCCL_MIN/MAX_NCHANNELS=1` | Force single NCCL channel | null (steps/s 9.65 vs 9.68-10.26); AR p50 already 41-54 us | round 11 |
 | `DSV41_MHC_NO_DEEPGEMM=1` | TileLang GEMM for MHC prenorm | rejected | `evidence/mhc-tilelang-gemm` |
 | `DSV41_DSPARK_DRAFT_TOPK=k` | Topk-mask draft logits | rejected | `evidence/dspark-draft-topk` |
@@ -121,8 +128,8 @@ same ideas are not retried blind.
 | `DSV41_DSPARK_CONF_GATE=1` | Confidence-gated Markov bias | rejected | `evidence/dspark-conf-gate` |
 | `DSV41_MLA_IO_WARPS=2` | 2 IO warps in DSV4 MLA decode | rejected (races mbarriers at 4) | `evidence/mla-io2` |
 | `DSV41_MLA_CHUNKS_PER_BLOCK=k` | Bake MLA chunks_per_block | rejected | `evidence/mla-chunks-per-block` |
-| p2b kernel variants (`widen_p2b_{mma,fma,cp16,cpasync,ldg,pf4,nocoop,mrow}.py`) | Alternate p2b kernels | all rejected or reverted; mma→mrow regression 13.24 | `evidence/p2b-*`, `evidence/mma-revert` |
-| `widen_mla_{tile32,kv_buf,io2}.py`, `sm120_wo_a.py`, `c1_graph_safe_adaptive.py` | MLA/KV/graph variants | unwired (failed L.A.I.L or no win) | `evidence/mla-*`, `evidence/c1-*`, `evidence/sm120-wo-a*` |
+| p2b kernel variants (`widen_p2b_mma.py`, `attic/widen_p2b_{fma,cp16,cpasync,ldg,pf4,nocoop}.py`) | Alternate p2b kernels | all rejected or reverted; mma→mrow regression 13.24. `widen_p2b_mrow.py` is live (docker/Dockerfile) | `evidence/p2b-*`, `evidence/mma-revert` |
+| `widen_mla_{tile32,io2}.py`, `attic/{widen_mla_kv_buf,sm120_wo_a,c1_graph_safe_adaptive}.py` | MLA/KV/graph variants | unwired (failed L.A.I.L or no win). Index of `docker/patch/attic/`: its README | `evidence/mla-*`, `evidence/c1-*`, `evidence/sm120-wo-a*` |
 
 ## Bench/eval settings (frozen for comparability)
 
@@ -153,7 +160,7 @@ latency. See results/RESULTS.md round 5.
 | change | verdict | evidence |
 |---|---|---|
 | widen_p2b_fshift (funnelshift window merge) | **KEEP** | bit-exact; -6.1% p2b warm; correctness 8/8 |
-| widen_b12x_smalls ((16,64) tiles m<=8 n<=8192) | **KEEP** | prefill flat 754/700; prose 25.1->31.4 same-session; gates pass |
+| widen_b12x_smalls ((16,64) tiles m<=8 n<=8192) | **KEEP (harmless, no effect)** | prefill flat 754/700; gates pass. The same-session prose 25.1->31.4 is not this patch: the R7 trace shows NO EFFECT (dense GEMM total 990→1038 ms) |
 | probe_wo_a (diagnostic) | keep | wo_a runtime dtype = bf16 (pack F8) -> sm_80 WMMA bmm: next target |
 | NCCL_PROTO forcing | **CLOSED** | isolated 2-rank AR: default=LL 43.0us; LL128 81.8us |
 

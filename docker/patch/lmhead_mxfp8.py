@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""lm_head MXFP8: route the vocab head through the in-image b12x dense path.
+r"""lm_head MXFP8: route the vocab head through the in-image b12x dense path.
 
 The bf16 lm_head GEMM pair (DSpark draft propose m=1 + target verify m=4-6,
 `cutlass_80_wmma` bf16, 2692us each, 5.35 ms/step, 100% in decode graphs) is
@@ -72,6 +72,10 @@ MXFP8_BLOCK_SIZE = 32
 ENV_FLAG = "DSV41_LMHEAD_MXFP8"
 CKPT_SCALE_KEY = "lm_head.weight_scale"
 CKPT_WEIGHT_KEY = "lm_head.weight"
+
+# Boot-log markers for tools/engagement_audit.py (run.sh post-ready audit).
+LOG_ENGAGED = "dsv41: lm_head mxfp8 enabled"
+LOG_DISARMED = "dsv41: lm_head mxfp8 self-disarmed"
 
 
 # ---------------------------------------------------------------------------

@@ -52,4 +52,6 @@ RUN python3 /opt/dsv41-patch/widen_b12x_smalls.py /usr/local/lib/python3.12/dist
 # b12x package kernels and prose decode measured 5-9% slower than the
 # flashinfer cute-dsl path at equal acceptance (2026-09-19 A/B, two 5-run
 # batches per image). Revisit only with a proper kernel-level A/B.
+# run.sh warns when IMAGE lacks this label (e.g. a stale local :latest).
+LABEL dsv41.recipe.patches="shapes,mrow,cfg1,codebook,fshift,b12x_smalls,fix_o_proj_woa_fp8"
 ENTRYPOINT ["vllm", "serve"]

@@ -793,11 +793,15 @@ def install_step_census(records: list | None = None) -> list:
     CUDA graphs bake inner kernels, so this times graph replay and host
     staging, not individual MHC/MoE ops. One device sync before and after
     each GPU wrap so leftover work is not billed to the next bucket.
+
+    pre_draft: target end to draft start on this rank (sampler, draft prep,
+    their GPU work). Compare ranks: the rank with the larger pre_draft is
+    the one the other waits for at the draft-start all-reduce.
     """
     import time
 
     sink: list = records if records is not None else []
-    ticks = {"draft": 0}
+    ticks = {"draft": 0, "target_end": None}
 
     def wrap_gpu(fn, name: str):
         def inner(*args, **kwargs):
@@ -813,6 +817,9 @@ def install_step_census(records: list | None = None) -> list:
             if census_skip_during_capture(capturing):
                 return fn(*args, **kwargs)
             _gpu_sync()
+            if name == "draft" and ticks["target_end"] is not None:
+                sink.append(("pre_draft", time.perf_counter() - ticks["target_end"]))
+                ticks["target_end"] = None
 
             def run():
                 out = fn(*args, **kwargs)
@@ -820,6 +827,8 @@ def install_step_census(records: list | None = None) -> list:
                 return out
 
             out = timed_call(time.perf_counter, sink, name, run)
+            if name == "target":
+                ticks["target_end"] = time.perf_counter()
             if name == "draft":
                 ticks["draft"] += 1
                 if ticks["draft"] % 8 == 0:
@@ -846,6 +855,25 @@ def install_step_census(records: list | None = None) -> list:
         from vllm.models.deepseek_v4_1.nvidia.model import DeepseekV4Model
 
         DeepseekV4Model.forward = wrap_gpu(DeepseekV4Model.forward, "target")
+    except Exception:
+        pass
+    # FULL-graph decode replays without calling forward/_generate_draft.
+    try:
+        from vllm.v1.worker.gpu.cudagraph_utils import ModelCudaGraphManager
+
+        ModelCudaGraphManager.run_fullgraph = wrap_gpu(
+            ModelCudaGraphManager.run_fullgraph, "target"
+        )
+    except Exception:
+        pass
+    try:
+        from vllm.v1.worker.gpu.spec_decode.dflash.cudagraph import (
+            DFlashCudaGraphManager,
+        )
+
+        DFlashCudaGraphManager.run_fullgraph = wrap_gpu(
+            DFlashCudaGraphManager.run_fullgraph, "draft"
+        )
     except Exception:
         pass
     try:

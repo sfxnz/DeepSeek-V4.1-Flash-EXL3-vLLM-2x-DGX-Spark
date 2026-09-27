@@ -1,0 +1,13 @@
+# run.sh dry-run head (defaults, 2026-09-24) vs live `docker inspect dsv41-flash-exl3` (booted by results/2026-09-22-endgame2/boot-lm.sh)
+image: dry=dsv41-flash-exl3-sm121:canonical-e12 live=dsv41-flash-exl3-sm121:canonical-e12
+env diffs (DSV41_/NCCL_/VLLM_/LANGUAGE_/MM_; tokens excluded):
+  VLLM_BUILD_COMMIT: dry=None live='unknown'
+  VLLM_BUILD_PIPELINE: dry=None live='local'
+  VLLM_BUILD_URL: dry=None live=''
+  VLLM_ENABLE_CUDA_COMPATIBILITY: dry=None live='0'
+  VLLM_IMAGE_TAG: dry=None live='local/vllm-openai:dev'
+  VLLM_USAGE_SOURCE: dry=None live='production-docker-image'
+vllm argv diff (live -> dry):
+  @@ -18 +18 @@
+  -8000
+  +40939

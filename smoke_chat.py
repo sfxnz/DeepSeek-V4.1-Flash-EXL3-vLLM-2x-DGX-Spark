@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Thinking-off chat smoke. Fails if content is empty or HTTP is not 2xx."""
+"""Thinking-off chat smoke. Fails if HTTP is not 2xx, content is empty, or
+content does not match --expect (default: 323, the answer to 17*19)."""
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -43,6 +45,11 @@ def main() -> int:
     ap.add_argument("--prompt", default="What is 17*19? Return only the integer.")
     ap.add_argument("--max-tokens", type=int, default=32)
     ap.add_argument(
+        "--expect",
+        default=r"\b323\b",
+        help="Regex the content must match. '' accepts any non-empty content.",
+    )
+    ap.add_argument(
         "--json-out",
         type=Path,
         default=None,
@@ -60,6 +67,8 @@ def main() -> int:
     text = content_of(payload)
     if args.json_out is not None:
         args.json_out.write_text(json.dumps(payload) + "\n")
+    if args.expect and not re.search(args.expect, text):
+        raise SystemExit(f"content does not match --expect {args.expect!r}: {text[:200]!r}")
     print(text)
     return 0
 
