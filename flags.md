@@ -99,6 +99,7 @@ Do not retry row batching or threshold tuning; those axes are closed.
 | `VLLM_EXL3_MOE_KERNEL` | `native` (run.sh sets) | Native p2b fused MoE vs generic | **measured** ~23 vs 15 tok/s decode |
 | `VLLM_EXL3_FAT_THRESHOLD` | 256 | Rows above which an expert takes the per-expert 128×128 fat GEMM loop instead of the standard kernel | **measured** (E3): 96 → pp@16k −11%, pp@64k noise; keep 256 |
 | `VLLM_EXL3_PREFILL_SYNC` | unset | CPU/device sync workaround for 33..144-row prefill wedges | not needed at 8192 chunks; leave unset |
+| `DSV41_P2B_SRC_SORT` | unset (off) | `=1`: p2b gate/up + down work items walk a src-sorted pair order so verify-row duplicate experts stream together (`widen_p2b_srcsort.py`); bit-exact, off = byte-identical SASS. Needs an image built with the patch: on an older `vllm_exl3_c` the boot logs `decode lever p2b_src_sort: ... the lever is OFF` (audit disarm) | **pending** GPU campaign (census `tools/moe_census.py`, microbench `kernel_study/p2b_srcsort/`) |
 | `TEMP_ROWS_FUSED` | 2048 (const) | Fused-kernel per-expert row cap; chunks with a hotter expert are re-sliced | **measured** (E1): avoiding re-slice via 2048 chunks does not improve pp — not a bottleneck |
 
 ## Experiment knobs — present, default OFF, with verdicts
@@ -113,6 +114,7 @@ same ideas are not retried blind.
 | `DSV41_STREAM_FEED=1` | Drain the VL wrapper's sorted weight list while it loads (`g8_stream_feed.py` on stock packs) | unmeasured on stock; boot A/B pending (per-rank 'Loading weights took', swap, MemAvail). The R31 drain kept every item alive until the 2026-09-24 fix, so R32's G8 "post-load balloon" verdict is unproven | `docker/patch/g8_stream_feed.py`, `tests/test_stream_feed.py` |
 | `DSV41_INDEX_TOPK` | Clamp indexer topk | rejected as default | `evidence/extra-topk-128`, `evidence/indexer-native` |
 | `DSV41_MHC_DECODE_SPLITS=1` | Collapse MHC prenorm split-K to 1 | rejected | `evidence/mhc-decode-splits` |
+| `DSV41_MHC_DECODE_SPLITS=N` (N >= 2) | Force MHC prenorm split-K to N at num_tokens <= 64 (stock clamps 48 -> 16); `docker/patch/decode_levers.py` | untested, GPU campaign decides (microbench 16/24/32/40/48 first) | `kernel_study/decode_levers` |
 | `DSV41_ENGRAM_CACHE=1` | Host LRU for Engram rows | rejected (staging already prestage-hidden) | `evidence/engram-cache` |
 | `DSV41_ENGRAM_FAST_STAGE=1` (default) | Parallel per-table Engram disk gathers | **KEEP**: kills ~13 ms/step of GPU idle; L.A.I.L 22.0-23.5 -> 25.2-26.3 | `results/2026-09-19-faststage` |
 | `DSV41_ENGRAM_STAGE_THREADS=16` | Worker pool for the parallel stage | default measured good | round 11 |
@@ -124,12 +126,15 @@ same ideas are not retried blind.
 | `NCCL_MIN/MAX_NCHANNELS=1` | Force single NCCL channel | null (steps/s 9.65 vs 9.68-10.26); AR p50 already 41-54 us | round 11 |
 | `DSV41_MHC_NO_DEEPGEMM=1` | TileLang GEMM for MHC prenorm | rejected | `evidence/mhc-tilelang-gemm` |
 | `DSV41_DSPARK_DRAFT_TOPK=k` | Topk-mask draft logits | rejected | `evidence/dspark-draft-topk` |
+| `DSV41_DSPARK_SPARSE_MARKOV=1` (+`_TOPK`, default 256) | Gathered top-k Markov bias via the speculator's `_sample_sequential_topk` (drops the 3 x 66 MB Markov GEMM; argmax stays); refuses MARKOV_SCALE != 1, CONF_GATE, DRAFT_TOPK | untested, GPU campaign decides | `kernel_study/decode_levers` |
+| `DSV41_WOA_PREPACK=1` | Pack the fp32 wo_a scale to UE8M0 once (bitwise self-test, else fp32 stays); needs an image with `fix_o_proj_woa_fp8.py` stage 2 (`docker/Dockerfile.woa-prepack`) | untested, GPU campaign decides | `kernel_study/decode_levers` |
 | `DSV41_DSPARK_TAIL_NGRAM=1` (+`_POS`) | Prompt-lookup tail on drafts | rejected | `evidence/dspark-tail-ngram`, `evidence/ngram-overlay` |
 | `DSV41_DSPARK_SOFTMAX_VERIFY=1` | Greedy propose, softmax verify | rejected | `evidence/dspark-softmax-verify` |
 | `DSV41_DSPARK_REFINE_PASS=1` | Second draft pass on pass-1 fills | rejected | `evidence/dspark-refine-pass` |
 | `DSV41_DSPARK_CONF_GATE=1` | Confidence-gated Markov bias | rejected | `evidence/dspark-conf-gate` |
 | `DSV41_MLA_IO_WARPS=2` | 2 IO warps in DSV4 MLA decode | rejected (races mbarriers at 4) | `evidence/mla-io2` |
 | `DSV41_MLA_CHUNKS_PER_BLOCK=k` | Bake MLA chunks_per_block | rejected | `evidence/mla-chunks-per-block` |
+| `DSV41_DENSE_DG_SMALLM=1` (+`DSV41_DENSE_DG_SHAPES=KxN,...`) | Dense MXFP8 GEMMs at M<=8 on deep_gemm `fp8_gemm_nt` (recipe (1,1,32), scales packed once at load; heuristic split-K unconfirmed until `DG_PRINT_CONFIGS=1`) instead of b12x; per-layer load self-test (M=1..8 vs b12x, graph capture checked at M=4 once per shape), falls back to b12x. wq_b is not wireable (fused q/kv RMSNorm+quant hands it a QuantizedActivation) | **untested**: microbench first (`kernel_study/dense_gemm/`), serve arm only for shapes >=10% faster | `docker/patch/dense_mxfp8_deepgemm.py` |
 | p2b kernel variants (`widen_p2b_mma.py`, `attic/widen_p2b_{fma,cp16,cpasync,ldg,pf4,nocoop}.py`) | Alternate p2b kernels | all rejected or reverted; mma→mrow regression 13.24. `widen_p2b_mrow.py` is live (docker/Dockerfile) | `evidence/p2b-*`, `evidence/mma-revert` |
 | `widen_mla_{tile32,io2}.py`, `attic/{widen_mla_kv_buf,sm120_wo_a,c1_graph_safe_adaptive}.py` | MLA/KV/graph variants | unwired (failed L.A.I.L or no win). Index of `docker/patch/attic/`: its README | `evidence/mla-*`, `evidence/c1-*`, `evidence/sm120-wo-a*` |
 

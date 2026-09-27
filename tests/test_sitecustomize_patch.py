@@ -137,6 +137,17 @@ class PatchHelperTests(unittest.TestCase):
             self.assertEqual(target.stat().st_mode & 0o777, 0o640)
             self.assertEqual(sorted(p.name for p in Path(d).iterdir()), ["indexer.py"], "no tmp file left")
 
+    def test_mhc_splits_skip_line_names_the_value(self) -> None:
+        # N >= 2 belongs to decode_levers; the legacy =1 block must not say "is not 1".
+        tree = ast.parse(SITE.read_text())
+        fn = next(n for n in tree.body if getattr(n, "name", None) == "_p_mhc_decode_splits")
+        for value, want in (("40", "DSV41_MHC_DECODE_SPLITS=40: "), ("", "DSV41_MHC_DECODE_SPLITS=0: ")):
+            proc = _run(ast.unparse(fn) + f"\nos.environ['DSV41_MHC_DECODE_SPLITS'] = {value!r}\n"
+                        "_patch('mhc_decode_splits', _p_mhc_decode_splits)\n")
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertTrue(proc.stderr.startswith("dsv41-patch skip mhc_decode_splits: " + want), proc.stderr)
+            self.assertIn("N >= 2 is decode_levers", proc.stderr)
+
     def test_required_rewrite_of_absent_file_fails(self) -> None:
         # A moved file is image drift: FAIL (the audit's disarm marker), exit when strict.
         body = """

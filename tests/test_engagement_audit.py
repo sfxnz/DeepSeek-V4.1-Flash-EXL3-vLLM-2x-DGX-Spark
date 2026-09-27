@@ -82,6 +82,29 @@ class AuditTests(unittest.TestCase):
         problems = ea.audit({"head": bad}, DEFAULT_ENV)
         self.assertEqual(len(problems), 5, problems)
 
+    def test_decode_lever_off_lines_are_disarms(self) -> None:
+        # Printed by docker/patch/decode_levers.py (image dry-run, scenario B).
+        bad = ENGAGED + (
+            "dsv41: decode lever sparse-markov FAILED, lever is OFF: ValueError('x')\n"
+            "dsv41: WARNING DSV41_WOA_PREPACK=1 but this image's o_proj.py has no "
+            "prepack stage; the lever is OFF. Build docker/Dockerfile.woa-prepack.\n"
+        )
+        problems = ea.audit({"head": bad}, DEFAULT_ENV)
+        self.assertEqual(len(problems), 2, problems)
+
+    def test_opt_in_lever_self_rejects_are_disarms(self) -> None:
+        # A lever whose load self-test rejects every layer must not read "audit ok".
+        bad = ENGAGED + (
+            "[woa-prepack] REJECTED (ValueError('self-test not bitwise equal')); this layer "
+            "keeps the fp32 scale (per-call repack)\n"
+            "[dense-dg] rank0 K1024xN1792 rejected (RuntimeError('DeepGEMM E8M0 not in use')); b12x stays\n"
+            "[dense-dg] rank1 K4096xN2304 armed but got QuantizedActivation input; b12x runs\n"
+            "[dense-dg] rank0 K1024xN1792 armed (M<=8 via deep_gemm fp8_gemm_nt; graph capture ok at M=4)\n"
+        )
+        problems = ea.audit({"head": bad}, DEFAULT_ENV)
+        self.assertEqual(len(problems), 3, problems)
+        self.assertFalse(any("graph capture ok" in p for p in problems))
+
     def test_gates_off_expect_nothing(self) -> None:
         env = dict(DEFAULT_ENV, DSV41_LMHEAD_MXFP8="0", ENFORCE_EAGER="1")
         log = ENGAGED.replace("dsv41: lm_head mxfp8 enabled", "").replace("Breakable CUDA graph enabled", "")

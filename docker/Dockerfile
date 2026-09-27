@@ -32,6 +32,7 @@ RUN apt-get update \
  && python3 /opt/dsv41-patch/widen_p2b_cfg1.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_codebook.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_fshift.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_srcsort.py /opt/vllm-exl3 \
  && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps /opt/vllm-exl3 \
  && python3 -c "import torch, vllm_exl3, vllm_exl3_c; assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); print('vllm_exl3 cuda ok')" \
  && rm -rf /opt/exllamav3 /opt/vllm-exl3 /var/lib/apt/lists/*
@@ -53,5 +54,5 @@ RUN python3 /opt/dsv41-patch/widen_b12x_smalls.py /usr/local/lib/python3.12/dist
 # flashinfer cute-dsl path at equal acceptance (2026-09-19 A/B, two 5-run
 # batches per image). Revisit only with a proper kernel-level A/B.
 # run.sh warns when IMAGE lacks this label (e.g. a stale local :latest).
-LABEL dsv41.recipe.patches="shapes,mrow,cfg1,codebook,fshift,b12x_smalls,fix_o_proj_woa_fp8"
+LABEL dsv41.recipe.patches="shapes,mrow,cfg1,codebook,fshift,srcsort,b12x_smalls,fix_o_proj_woa_fp8"
 ENTRYPOINT ["vllm", "serve"]

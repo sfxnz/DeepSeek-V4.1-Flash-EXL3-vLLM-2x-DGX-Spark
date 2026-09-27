@@ -30,6 +30,8 @@ PATCHES = {
     "fix_o_proj_woa_fp8.py": {},  # baked into the image at build time
     "drop_page_cache.py": {"DSV41_DROP_PAGE_CACHE": "1"},
     "sitecustomize.py": None,  # disarm markers only
+    "decode_levers.py": None,  # disarm markers only
+    "dense_mxfp8_deepgemm.py": None,  # disarm markers only (opt-in lever)
 }
 # vLLM's own line (vllm/compilation/breakable_cudagraph.py:290 in the pinned image).
 BREAKABLE_CUDAGRAPH = "Breakable CUDA graph enabled"

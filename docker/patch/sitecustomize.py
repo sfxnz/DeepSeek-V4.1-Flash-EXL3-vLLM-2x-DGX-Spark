@@ -176,6 +176,20 @@ def _p_prefer_b12x_mxfp8():
 
 _patch("prefer_b12x_mxfp8", _p_prefer_b12x_mxfp8)
 
+# Dense MXFP8 at M<=8 on deep_gemm fp8_gemm_nt (DSV41_DENSE_DG_SMALLM=1,
+# default off; shapes via DSV41_DENSE_DG_SHAPES). Layers self-test at load
+# and stay on b12x on any failure.
+try:
+    from pathlib import Path as _Pdg
+
+    from dense_mxfp8_deepgemm import apply as _apply_dense_dg
+    from dense_mxfp8_deepgemm import enabled_from_env as _dense_dg_enabled
+
+    if _dense_dg_enabled():
+        _apply_dense_dg(_Pdg("/usr/local/lib/python3.12/dist-packages/vllm"))
+except (Exception, SystemExit) as _dense_dg_err:  # SystemExit = anchor drift
+    print(f"dsv41: dense deep_gemm small-M patch skipped: {_dense_dg_err!r}", flush=True)
+
 # Indexer prefill gather workspace: stock max_model_len*40 entries (~5.3 GiB
 # per rank at 1M ctx) locked for process life. DSV41_INDEXER_PREFILL_FACTOR=1
 # right-sizes it to max_model_len*1 (~130 MB). Unset = stock no-op.
@@ -591,7 +605,11 @@ def _p_mhc_decode_splits():
         _mhc_tl.compute_mhc_pre_num_splits = _mhc_splits_decode
         print("dsv41: MHC decode prenorm splits collapsed to 1", flush=True)
     else:
-        raise _PatchSkip("DSV41_MHC_DECODE_SPLITS is not 1")
+        # N >= 2 is decode_levers' forced split-K (its own log line); 0 is stock.
+        raise _PatchSkip(
+            f"DSV41_MHC_DECODE_SPLITS={os.environ.get('DSV41_MHC_DECODE_SPLITS') or '0'}: "
+            "this block only collapses at =1 (N >= 2 is decode_levers)"
+        )
 
 
 _patch("mhc_decode_splits", _p_mhc_decode_splits)
@@ -1129,3 +1147,6 @@ except SystemExit as _g8sf_exit:
     _os_sfx._exit(1)
 except Exception as _g8sf_err:
     print(f"dsv41: g8 stream feed skipped: {_g8sf_err!r}", flush=True)
+
+# Env-gated decode levers (docker/patch/decode_levers.py; each is off by default).
+_patch("decode_levers", lambda: __import__("decode_levers").install())
