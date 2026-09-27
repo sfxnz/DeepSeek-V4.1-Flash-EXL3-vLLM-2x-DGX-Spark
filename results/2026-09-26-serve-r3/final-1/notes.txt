@@ -31,7 +31,9 @@ image-baked VLLM_BUILD_*/VLLM_IMAGE_TAG/VLLM_USAGE_SOURCE/VLLM_ENABLE_CUDA_COMPA
   Running image 3a002b55c9bc on both ranks. disarm_scan rc 0.
 - gpu_guard rc=0 (0 FOREIGN). spark1 1279 samples at 2 s (02:46:27Z-03:31:32Z), only VLLM::Worker_TP. spark2 250 at
   10 s (02:46:27Z-03:31:29Z; VLLM::Worker_TP, Xorg, gnome-shell). Guards started right after run.sh exited, before the
-  smokes, and were stopped by pid after quality full, disarm_scan, the engagement capture and mem-end. Not VOID.
+  smokes. The check ran after quality full, disarm_scan, the engagement capture and mem-end; the first kill hit the
+  guards' nohup wrappers, so the loops sampled on to 03:33:22Z (serve idle, 1332 / 260 samples). The re-check over
+  the complete files is also rc 0, 0 FOREIGN (gpu_guard.txt). Not VOID.
 - Smokes: chat 323 rc 0, vision Red rc 0. Correctness 8/8 rc 0 (sampled prose_sanity ttr 0.70). MemAvailable after
   smoke 23/25 GiB (floor 8).
 - L.A.I.L x10 (fresh, before any c=2, 02:47:01-02:49:16Z): median 42.737 tok/s (40.018-46.088), 48.732 ms/step
