@@ -1,0 +1,59 @@
+V-2 boot notes. Round 36, boot 2 of 2 of the new defaults, booted identically to V-1 (the round-35 config on the
+default pack 2.0bpw-mcg-viterbi-lmhead-mxfp8). Quality quick and full are gated against the new baseline that V-1
+recorded (../quality-baseline/). Every gate passes, so the serve is LEFT UP on this boot.
+Driver: ../boot-procedure.sh.txt (V-2 gate keep), step log steps.txt.
+- Command: command.txt, `env AUDIT=strict ./run.sh` with SNAPSHOT_SHA and IMAGE unset and no lever env. HEAD ff93f29
+  at boot (commit.txt). Code outside results/ is identical to V-1's dcca87e: ff93f29 only adds V-1 evidence, the
+  baseline and doc pointers (ARMS.md, README, AGENTS.md, the old baseline README, a docstring line in
+  tests/quality_eval.py). The README and AGENTS.md edits also change the repo-text corpus that the pp_warm docs
+  (benches/micro.py) and the correctness recall docs are built from. That changes their content, not their size
+  target. docker/patch sha256 list byte-identical to V-1 and final-1. First attempt counted: no fix, no retry.
+- Timeline (UTC): V-1 had already stopped the serve. stop-pre.txt shows no local container. Its "Stopped remote"
+  line is stop.sh's `docker rm -f` on spark2, which exits 0 even for a missing container (checked). Before the
+  launch, spark2's docker ps was empty. Preconditions 06:53:04Z. Unit
+  tests 798 OK (14 skipped) and render --check rc 0. GPUFREE 06:55:34Z. run.sh 06:55:34Z -> rc 0 at 07:06:03Z
+  (629 s). Worker container started 06:55:37Z, head 06:56:03Z. Head model loading 426.78 s (weights 346.26 + 22.87 s,
+  75.58 GiB), init engine 62.15 s, server start 07:05:19Z (load-times.txt). Worker model loading 260.64 s. Procedure
+  ended 07:51:15Z. The serve stays up.
+- Preconditions (preconditions.txt): the same checks as V-1, all pass. MemAvailable 116/117 GiB. Tree clean apart
+  from this dir.
+- spark2 GPU lock: the V-1 hold continued through V-2 (LOCK_HELD). Released after the last measurement: this session
+  stopped its local ssh and killed the remote flock/sleep pair. LOCK_FREE confirmed at 07:51:30Z.
+- Audit: boot.txt "audit ok: every expected patch engaged on head, worker". The strict re-run on the end-of-procedure
+  logs gives rc 0 (engagement.txt). Every section-3 K line appears once per rank. k=1024 head 4 / worker 3, k=256 0,
+  KP lines 0. LOG_DISARMED hits 0. Env is equal on both ranks. Image 3a002b55c9bc on both ranks. Model path
+  snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8 on both ranks. disarm_scan rc 0. The head vLLM argv and both ranks'
+  container env equal final-1's and V-1's apart from the model path (../round36-headline.json validity).
+- gpu_guard rc 0, 0 FOREIGN. spark1 has 1282 samples at 2 s (07:06:03Z-07:51:14Z), all VLLM::Worker_TP. spark2 has
+  250 samples at 10 s (750 process rows: VLLM::Worker_TP, Xorg, gnome-shell). Not VOID.
+- Smokes: chat 323 rc 0, vision "Red" rc 0. Correctness 8/8 rc 0. MemAvailable after smoke 22/24 GiB (floor 8).
+- L.A.I.L x10 (fresh, before any c=2): median 42.436 tok/s at 48.754 ms/step, median-run acceptance 2.1222 (range
+  2.0198-2.2314), finish length. Runs 5, 6 and 8 read 50.92 / 54.10 / 51.12 ms/step with the guards clean; the other
+  7 read 48.54-49.77. Kept as measured.
+- bench_decode x9 (rc 0), median-run acceptance in brackets:
+    - prose c=1 51.124 tok/s at 48.504 ms/step [2.4568]
+    - prose c=2 agg 80.764 at 59.730 ms/step
+    - structured c=1 84.186 at 47.514 ms/step [4.0]
+    - structured c=2 agg 156.330 at 51.154 ms/step
+- four_numbers (rc 0):
+    - prose c=1 50.42 tok/s at 48.253 ms/step (median-run acceptance 2.4217)
+    - prose_long c=1 42.422 at 50.123 ms/step (acceptance 2.1263, runs 2.0729-2.2614, finish length, post-EOS 0)
+    - prose_long c=2 agg 66.673 at 63.289 ms/step
+    - pp_warm 8k/32k 756.2/772.9 (8k runs 733.7/814.2/756.2)
+    - pp_novel 8k/32k 813.0/805.6
+    - L.A.I.L 3x after c=2: 41.67
+    - warm prefix 1.0; ranks_match true; disarmed false
+- e2e rc 0, 3/3 (useful_tok_s 5.94). correctness --full 9/9 rc 0.
+- Quality quick vs ../quality-baseline/quick.json: PASS, rc 0, 314.3 s.
+    - NLL 0.138972 (limit 0.14856); decode median 0.00256 (limit 0.05734); greedy-text NLL 0.27358 (limit 0.4836)
+    - golden hazard 0.01104 and A/A 0.0123 (limit 0.0244), 5/12 identical
+    - tools 22/22 json, 22/22 exact, 8/8 no-call; needle 6/6; c2; vision Red
+- Quality full vs ../quality-baseline/full.json: PASS on every component, rc 0, 1292.3 s.
+    - NLL 0.137368 (repeat delta 0.001758, limit 0.14932); decode median 0.00335; greedy-text NLL 0.25592
+    - golden hazard 0.01128 and A/A 0.00957 (limit 0.01936), 6/12 identical
+    - tools 22/22 / 22/22 / 8/8; needle 9/9 including 128k
+    - GSM8K 96/100 (base 97; passes on the one-item Wilson slack: the 95% upper bound of 97/100 is 0.99 >= 0.97)
+    - thinking 39/40; MMLU 202/228 = 0.886 (base 205, passes on the same slack); c2, vision
+  A/A between the V boots: GSM8K discordant 1 item (1105), MMLU 3 items, tools 0.
+- Order: as V-1, but quality gated and no ./stop.sh at the end (every gate passed).
+- MemAvailable at the end, serve up: 21/23 GiB (mem-end.txt).

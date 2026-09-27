@@ -2,7 +2,7 @@
 
 Serve an EXL3 pack of [deepseek-ai/DeepSeek-V4.1-Flash](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash) across two NVIDIA DGX Spark (GB10) nodes at tensor-parallel 2.
 
-The pack is [sfxnz/DeepSeek-V4.1-Flash-EXL3](https://huggingface.co/sfxnz/DeepSeek-V4.1-Flash-EXL3) at revision `2.0bpw-mcg` (served through the `2.0bpw-mcg-lmhead-mxfp8` derivative — same pack, only the lm_head tensor re-encoded to mxfp8, see Rebuild). Routed experts are EXL3 2.0 bpw (MCG). Engram stays on NVMe (`DSV41_ENGRAM_DISK=1`). Native MXFP4 and MXFP8 weights are about 511 GB and do not fit 2× Spark UMA.
+The pack is [sfxnz/DeepSeek-V4.1-Flash-EXL3](https://huggingface.co/sfxnz/DeepSeek-V4.1-Flash-EXL3) at revision `2.0bpw-mcg-viterbi-lmhead-mxfp8`. It has the same format and bytes as the stock `2.0bpw-mcg` pack, but the routed experts are re-encoded with tail-biting Viterbi plus a scale refit (relative error 0.262 vs 0.378), and the lm_head tensor is in MXFP8. See Download the pack and Rebuild. Routed experts are EXL3 2.0 bpw (MCG). Engram stays on NVMe (`DSV41_ENGRAM_DISK=1`). Native MXFP4 and MXFP8 weights are about 511 GB and do not fit 2× Spark UMA.
 
 **Decode campaign 2026-09-20/22 (+44% vs published)**: real-use prose 23 → **33.2 tok/s** (L.A.I.L cell, c=1 t=0.2, pooled n=10), greedy single-stream **39.6 tok/s** (9-run median, acc 2.61), 21.6/23.2 GiB free per Spark after a 32k prefill, zero OOMs in ~30 boots. Won levers: spec k=5→k=3 + matched cudagraph captures, Engram prefetch v3 (pf_hit 100%) + gather v2, NCCL AR-tail set, mem-hygiene bundle, lm_head mxfp8. Full evidence: `results/RESULTS.md` rounds 15–33.
 
@@ -23,7 +23,14 @@ The pack is [sfxnz/DeepSeek-V4.1-Flash-EXL3](https://huggingface.co/sfxnz/DeepSe
 - c=2 aggregate: prose 56.70 → 81.69 (+44.1%), structured 89.04 → 138.34 (+55.4%), prose_long 47.40 → 65.62 (+38.4%)
 - prefill unchanged within noise (pp_novel 8k/32k 821.4 / 806.3)
 - quality: quick PASS on all three boots; full PASS on final-1 (GSM8K 94/100, thinking 39/40, MMLU 199/228, needle 9/9)
-- Not promoted: the five KP add-ons (no tok/s gain beyond noise). Rejected: the Viterbi re-encoded pack (golden-hazard gate and L.A.I.L; local only, not on the Hub).
+- Not promoted: the five KP add-ons (no tok/s gain beyond noise). Rejected as written: the Viterbi re-encoded pack (golden-hazard gate and L.A.I.L). Round 36 adopted it (below).
+
+**Viterbi pack 2026-09-27 (round 36)**: the default pack is now `2.0bpw-mcg-viterbi-lmhead-mxfp8`. Format and kernels are the same; the routed experts are re-encoded (tail-biting Viterbi + scale refit). Round 35 rejected it as its rules were written. The protocol owner adopted it on its quality evidence, and the golden-hazard gate now applies only to same-pack levers (ARMS.md step 6). Before is the round-35 final config on the old pack (S1024-1, S1024-2, final-1). After is the new defaults (V-1, V-2). The two sets were not interleaved. Values are medians of the per-boot medians:
+- quality: NLL 0.243 → **0.139** nats/token (−42%, 39/40 passages lower, paired), GSM8K 94 → 97 / 96, MMLU 199 → 205 / 202, tools exact args 21/22 → 22/22; V-2 passes quick and full against the new baseline
+- L.A.I.L fresh: 43.17 → 42.58 tok/s (−1.4%, boot-to-boot noise 0.88); 49.00 → 48.78 ms/step; acceptance 2.133 → 2.115
+- prose_long c=1: 43.73 → 43.80 tok/s (+0.2%, noise 2.75); four_numbers prose c=1 52.52 → 50.51 (−3.8%; acceptance 2.513 → 2.416)
+- structured c=2 aggregate: 138.34 → 156.29 (+13.0%; both streams run at acceptance 4.0)
+- c=1 ms/step and prefill: unchanged within noise
 
 New default levers (round 35): `DSV41_P2B_COOP=2`, `DSV41_DENSE_GEMV=1`, `DSV41_MHC_DET_SPLITS=16`, `DSV41_ENGRAM_NATIVE_STAGE=1`, `DSV41_ENGRAM_EARLY_HASH=1`, `DSV41_ATTN_T2R_DEDUP=1`, `DSV41_SWA_META_FUSED=1`, `DSV41_MOE_PREP_FUSED=1`, `DSV41_CANDIDATE_MASK_BOUNDED=1`, `DSV41_INDEXER_WP_GEMV=1` and `DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024`, on image `canonical-e14`. Evidence: `results/RESULTS.md` round 35 (per-lever attribution in `results/2026-09-26-serve-r3/P3/attribution.txt`). Round 34's (`DSV41_ENGRAM_WILLNEED`, `DSV41_STREAM_FEED`, `DSV41_WOA_PREPACK`, `DSV41_DSPARK_SPARSE_MARKOV`) stay on.
 
@@ -59,10 +66,10 @@ Run the download on both nodes. Keep Hugging Face xet enabled. Do not set `HF_HU
 ```bash
 unset HF_HUB_DISABLE_XET
 export HF_XET_HIGH_PERFORMANCE=1
-hf download sfxnz/DeepSeek-V4.1-Flash-EXL3 --revision 2.0bpw-mcg-lmhead-mxfp8
+hf download sfxnz/DeepSeek-V4.1-Flash-EXL3 --revision 2.0bpw-mcg-viterbi-lmhead-mxfp8
 ```
 
-`2.0bpw-mcg-lmhead-mxfp8` is the serve pin: the stock `2.0bpw-mcg` pack with only `model-00043` re-encoded (lm_head to MXFP8). `hf download` writes `refs/2.0bpw-mcg-lmhead-mxfp8` and `snapshots/<commit>/`. `./run.sh` resolves that layout. An assembled pack at `snapshots/2.0bpw-mcg-lmhead-mxfp8` still works. If both exist, `run.sh` uses the Hub commit snapshot. To serve the stock pack, download `--revision 2.0bpw-mcg` and run `SNAPSHOT_SHA=2.0bpw-mcg ./run.sh`; the lm_head MXFP8 path then turns itself off.
+`2.0bpw-mcg-viterbi-lmhead-mxfp8` is the serve pin (round 36). It is `2.0bpw-mcg-lmhead-mxfp8` with all 40 routed-expert shards re-encoded from the MXFP4 source: tail-biting Viterbi plus a closed-form scale refit, the same 2.0 bpw MCG K=2 format, and the lm_head MXFP8 `model-00043` unchanged. Against round 35's pin it has 42% lower teacher-forced NLL on the fixed passages (0.139 vs 0.243 nats/token, 39 of 40 passages lower), GSM8K 97/97 vs 95/94 and MMLU 206/204 vs 196/198 (`results/RESULTS.md` rounds 35 and 36). `hf download` writes `refs/2.0bpw-mcg-viterbi-lmhead-mxfp8` and `snapshots/<commit>/`. `./run.sh` resolves that layout. An assembled pack at `snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8` still works. If both exist, `run.sh` uses the Hub commit snapshot. Previous revisions stay on the Hub. `2.0bpw-mcg-lmhead-mxfp8` was the serve pin in rounds 33-35: the stock pack with only `model-00043` re-encoded (lm_head to MXFP8). To serve it, download `--revision 2.0bpw-mcg-lmhead-mxfp8` and run `SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8 ./run.sh`. `2.0bpw-mcg` is the stock pack. To serve it, download `--revision 2.0bpw-mcg` and run `SNAPSHOT_SHA=2.0bpw-mcg ./run.sh`; the lm_head MXFP8 path then turns itself off.
 
 If the pack is already in the Hub cache on a node, skip the download on that node.
 
@@ -125,7 +132,7 @@ When you are done:
 
 ```bash
 python3 tests/quality_eval.py --quick --out /tmp/q.json \
-  --baseline results/2026-09-24-review/quality-baseline/quick.json
+  --baseline results/2026-09-27-viterbi-adopt/quality-baseline/quick.json
 ```
 
 With `--baseline`, it gates on the following:
@@ -138,7 +145,7 @@ With `--baseline`, it gates on the following:
 | Needle | found ≥ baseline |
 | Golden flip hazard | ≤ 2× max(baseline A/A hazard, 0.005); the run's own A/A hazard has the same limit |
 
-Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-gates two saved runs offline with no traffic, which is how an A/B compares two boots. Run it serialized: never next to a bench, and never with a third stream. The vendored data and licenses are in `tests/quality/README.md`. The baseline numbers are in `results/2026-09-24-review/quality-baseline/README.md`.
+The golden flip hazard compares greedy text with the baseline's own greedy run, so it applies only when the baseline ran the same pack (weights). It gates kernel and numerics levers. A pack change is judged on paired NLL over the fixed passages, paired task scores and A/A self-consistency, and then the baseline is re-recorded on the new pack (ARMS.md step 6). Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-gates two saved runs offline with no traffic, which is how an A/B compares two boots. Run it serialized: never next to a bench, and never with a third stream. The vendored data and licenses are in `tests/quality/README.md`. The baseline for the default pack `2.0bpw-mcg-viterbi-lmhead-mxfp8` was recorded on boot V-1 of round 36; its numbers are in `results/2026-09-27-viterbi-adopt/quality-baseline/README.txt`. The baseline for `2.0bpw-mcg-lmhead-mxfp8` (rounds 33-35) is `results/2026-09-24-review/quality-baseline/`.
 
 ## Defaults
 
@@ -146,7 +153,7 @@ Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-
 | Setting | Value |
 |---|---|
 | Image | `dsv41-flash-exl3-sm121:canonical-e14` |
-| Model | `sfxnz/DeepSeek-V4.1-Flash-EXL3` revision `2.0bpw-mcg-lmhead-mxfp8` |
+| Model | `sfxnz/DeepSeek-V4.1-Flash-EXL3` revision `2.0bpw-mcg-viterbi-lmhead-mxfp8` |
 | `--tensor-parallel-size` / `--nnodes` | 2 / 2 |
 | `--max-model-len` | 1048576 |
 | `--max-num-seqs` | 2 |
@@ -160,7 +167,7 @@ Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-
 | CUDA graphs | `FULL_AND_PIECEWISE`, capture sizes {1} ∪ {s·k, s·(k+1)} for s ≤ `--max-num-seqs` (`[1,3,4,6,8]` at k=3) (`ENFORCE_EAGER=0`, `DSV41_ALLOW_CUDA_GRAPHS=1`) |
 | Engram prefetch / census / gather | `DSV41_ENGRAM_PREFETCH=1` `DSV41_ENGRAM_CENSUS=1` `DSV41_ENGRAM_GATHER_V2=1` |
 | Engram prefill read-ahead | `DSV41_ENGRAM_WILLNEED=1` (gv2 calls with >= 512 rows fadvise their pages before the preadv loop) |
-| lm_head | MXFP8 (`DSV41_LMHEAD_MXFP8=1`), needs the `2.0bpw-mcg-lmhead-mxfp8` pack; self-disarms on stock `2.0bpw-mcg` |
+| lm_head | MXFP8 (`DSV41_LMHEAD_MXFP8=1`), needs an lm_head-MXFP8 pack (`2.0bpw-mcg-viterbi-lmhead-mxfp8` or `2.0bpw-mcg-lmhead-mxfp8`); self-disarms on stock `2.0bpw-mcg` |
 | Weight-load stream feed | `DSV41_STREAM_FEED=1` |
 | Decode levers | `DSV41_WOA_PREPACK=1` (needs the `dsv41-flash-exl3-sm121:canonical-e14` o_proj stage) `DSV41_DSPARK_SPARSE_MARKOV=1` `DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024` |
 | Round-3 kernel bundle | `DSV41_P2B_COOP=2` (coop dataflow MoE kernel, needs the `dsv41-flash-exl3-sm121:canonical-e14` build) `DSV41_DENSE_GEMV=1` `DSV41_MHC_DET_SPLITS=16` `DSV41_ENGRAM_NATIVE_STAGE=1` `DSV41_ENGRAM_EARLY_HASH=1` `DSV41_ATTN_T2R_DEDUP=1` `DSV41_SWA_META_FUSED=1` `DSV41_MOE_PREP_FUSED=1` `DSV41_CANDIDATE_MASK_BOUNDED=1` `DSV41_INDEXER_WP_GEMV=1` (set one to `0` to turn it off) |
@@ -178,20 +185,20 @@ Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-
 
 ## Measured on 2× DGX Spark
 
-`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median; the round-35 table below pools 9 runs from each of three identical-config boots (52.97 tok/s prose c=1, n=27; the prompt stops naturally at ~78-86 tokens, so the cell forces `ignore_eos` and about 60% of it is post-EOS text). `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2) — this is the real-world-use cell: 42.98 tok/s (n=30), +87% vs the pre-campaign published recipe (23 tok/s). The table pools the round-35 boots `S1024-1`, `S1024-2` and `final-1`, which all ran exactly the current defaults (`results/2026-09-26-serve-r3/round35-headline.json`; round 34's table was 39.52 / 33.68 on `results/2026-09-24-review/campaign/pooled-s8-s13.json`). Default is DSpark-3 with matched cudagraph captures, vision on. These cells are the MCG pack with the lm_head-mxfp8 head (`2.0bpw-mcg-lmhead-mxfp8`) on native p2b `cb=1`. A MUL1 pack measured and lost prose decode at every bit-width tested (see below). The KV pool is 8 GiB. Every accepted/rejected experiment lives in `results/RESULTS.md` (35 rounds); run `benches/micro.sh` and `benches/e2e.sh` to reproduce cells, and `tests/correctness.sh --full` for the quality gate.
+`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median; the round-36 table below pools 9 runs from each of two identical-config boots (50.41 tok/s prose c=1, n=18; the prompt stops naturally at ~78-86 tokens, so the cell forces `ignore_eos` and about 60% of it is post-EOS text). `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2) — this is the real-world-use cell: 42.58 tok/s (n=20), +85% vs the pre-campaign published recipe (23 tok/s). The table pools the round-36 boots `V-1` and `V-2`, which both ran exactly the current defaults (`results/2026-09-27-viterbi-adopt/round36-headline.json`; round 35's table on the previous pack was 52.97 / 42.98 on `results/2026-09-26-serve-r3/round35-headline.json`). Default is DSpark-3 with matched cudagraph captures, vision on. These cells are the Viterbi-re-encoded MCG pack with the lm_head-mxfp8 head (`2.0bpw-mcg-viterbi-lmhead-mxfp8`) on native p2b `cb=1`. A MUL1 pack measured and lost prose decode at every bit-width tested (see below). The KV pool is 8 GiB. Every accepted/rejected experiment lives in `results/RESULTS.md` (36 rounds); run `benches/micro.sh` and `benches/e2e.sh` to reproduce cells, and `tests/correctness.sh --full` for the quality gate.
 
 `MAX_NUM_BATCHED_TOKENS` history: at 12.7k-token prompts 8192 measured −5% vs 2048 (`evidence/pr6-batched-8192/`), but on the campaign's prose/prefill cells 8192 was re-measured across rounds 15–33 as part of the promoted config — every kept lever was A/B'd on top of it. It ships as the default now; 2048 remains available for long-prompt-heavy workloads.
 
-MUL1 + p2b `cb=2` (`2.0bpw-mul1` K=2 on `dsv41-flash-exl3-sm121:cb2`) lost prose decode: 23.52 vs 27.98 MCG. Runs 26.43 / 23.52 / 23.17 vs baseline 26.34 / 27.98 / 31.77. MUL1 median and two of three runs sit below the worst baseline run. 12,712-token prefill 792 vs 797 (flat). Rebuild tools stay. Serve stays on the MCG pack (`2.0bpw-mcg-lmhead-mxfp8`). See `evidence/pr6-mul1-cb2/`.
+MUL1 + p2b `cb=2` (`2.0bpw-mul1` K=2 on `dsv41-flash-exl3-sm121:cb2`) lost prose decode: 23.52 vs 27.98 MCG. Runs 26.43 / 23.52 / 23.17 vs baseline 26.34 / 27.98 / 31.77. MUL1 median and two of three runs sit below the worst baseline run. 12,712-token prefill 792 vs 797 (flat). Rebuild tools stay. Serve stays on the MCG codebook (`2.0bpw-mcg-viterbi-lmhead-mxfp8`). See `evidence/pr6-mul1-cb2/`.
 
 <!-- BEGIN generated measured from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
 |---|---|---:|---:|---:|
-| prose | 1 | 52.97 | 52.96 | 0.23 s |
-| prose | 2 | 42.11 | 81.73 | 0.25 s |
-| structured | 1 | 83.73 | 83.71 | 0.18 s |
-| structured | 2 | 71.84 | 138.34 | 0.20 s |
-| lail_prose | 1 | 42.98 | 42.98 | 0.32 s |
+| prose | 1 | 50.41 | 50.39 | 0.23 s |
+| prose | 2 | 41.57 | 81.02 | 0.25 s |
+| structured | 1 | 84.20 | 84.18 | 0.21 s |
+| structured | 2 | 78.17 | 156.29 | 0.23 s |
+| lail_prose | 1 | 42.58 | 42.58 | 0.32 s |
 <!-- END generated measured -->
 
 ## Rebuild the pack
@@ -201,7 +208,7 @@ If you already downloaded `sfxnz/DeepSeek-V4.1-Flash-EXL3` at revision `2.0bpw-m
 - **MUL1 + p2b `cb=2`** (`2.0bpw-mul1`, K=2): 23.52 vs 27.98 MCG on our kit. Do not serve it. Pack-only MUL1 without p2b `cb=2` drops native fused MoE onto generic `exl3_moe` and is a decode regression.
 - **Her 2.9 bpw mul1 pack** (MiaAI-Lab kit, 4 boots, results/2026-09-20-mul1-lane/): stock k=3 prose 16.35, spec-off 23.64 vs our MCG 34+ — its MTP drafter is quantized to 4-bit EXL3 (`mtp_bits: 4`, acceptance 1.33 vs 2.77 source-precision). Her k=3 numbers are not reproducible on that pack; the deficit is a pack property, not a flag.
 
-The lm_head-mxfp8 pack is the one derivative that **won** (+5.9% L.A.I.L, round 33). It re-encodes only `model-00043` of the stock pack and is published as the Hub branch `2.0bpw-mcg-lmhead-mxfp8`, which `./run.sh` downloads by default. To rebuild it, run the tool on a copy of the stock snapshot (it edits in place; needs torch + safetensors, e.g. inside the image):
+Two derivatives were adopted. The lm_head-mxfp8 pack **won** on speed (+5.9% L.A.I.L, round 33); it re-encodes only `model-00043` of the stock pack and is published as the Hub branch `2.0bpw-mcg-lmhead-mxfp8`. The Viterbi pack (round 36, the default `2.0bpw-mcg-viterbi-lmhead-mxfp8`) builds on it and was adopted on quality: NLL −42%, with L.A.I.L within noise and short-prose c=1 −3.8%. `tools/requant_full.py` re-encodes the 46,080 routed-expert tensors from the MXFP4 source across both Sparks with exllamav3's tail-biting Viterbi and `refit_scales`, and keeps that `model-00043` (round 35 in `results/RESULTS.md`). To rebuild the lm_head pack, run the tool on a copy of the stock snapshot (it edits in place; needs torch + safetensors, e.g. inside the image):
 
 ```bash
 S=~/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots

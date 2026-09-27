@@ -1,0 +1,56 @@
+V-1 boot notes. Round 36, boot 1 of 2 of the new defaults: the round-35 config (canonical-e14, the round-34 set + the
+round-3 kernel bundle + SPARSE_MARKOV_TOPK=1024, KP add-ons off) on the new default pack 2.0bpw-mcg-viterbi-lmhead-mxfp8.
+V-1 also recorded the new quality baseline and goldens (../quality-baseline/, no --baseline, ARMS.md step 6 pack changes).
+Driver: ../boot-procedure.sh.txt (V-1 baseline stop), step log steps.txt.
+- Command: command.txt, `env AUDIT=strict ./run.sh` with SNAPSHOT_SHA and IMAGE unset and no lever env (caller env
+  had none; preconditions.txt). HEAD dcca87e at boot (commit.txt; the defaults commit is 8f94827). docker/patch sha256
+  list (61 files) byte-identical to final-1/patch.sha256. First attempt counted: no fix, no retry.
+- Timeline (UTC): round-35 serve (final-1) stopped 05:50:39Z. Preconditions 05:50:43Z. Unit tests 798 OK (14 skipped)
+  and render --check rc 0 (tests-render.txt). GPUFREE 05:53:13Z (gpufree-spark1.txt). run.sh 05:53:13Z -> rc 0 at
+  06:04:05Z (652 s, strict audit + warmup included). Worker container started 05:53:16Z, head 05:53:47Z. Head model
+  loading 427.04 s (weights 344.30 + 26.99 s, 75.58 GiB), init engine 60.68 s, server start 06:03:21Z (load-times.txt,
+  read from docker logs during the quality phase). Worker model loading 259.10 s. Serve stopped 06:49:22Z.
+- Preconditions (preconditions.txt): requant DONE. No running container on either node except conduit (spark1).
+  magical_blackwell is Created and not running; dsv41-exl3-nfs has exited. pmon spark1 empty, spark2 shows only
+  Xorg/gnome-shell. No microbench. MemAvailable 116/117 GiB. canonical-e14 = 3a002b55c9bc on both nodes. run.sh
+  resolves snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8 on both nodes. Tree clean apart from this dir.
+- spark2 GPU lock: held for the window from 05:50:28Z (remote flock 2539495 / sleep 2539496, LOCK_HELD in
+  preconditions.txt), kept for V-2.
+- Audit: boot.txt "audit ok: every expected patch engaged on head, worker" (AUDIT=strict). The strict re-run on the
+  end-of-boot logs also gives rc 0 (engagement.txt). Every ARMS-r3 section-3 K line appears once per rank.
+  dense GEMV 9, woa 43/43, lm_head mxfp8 1/1, k=1024 head 4 / worker 3 (same as final-1), k=256 0, KP lines 0.
+  LOG_DISARMED hits 0, grep -ci disarm 0/0. DSV41/NCCL/VLLM env is equal on both ranks. Image 3a002b55c9bc on both
+  ranks. Model path snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8 on both ranks. disarm_scan rc 0.
+- gpu_guard rc 0, 0 FOREIGN. spark1 has 1281 samples at 2 s (06:04:05Z-06:49:16Z), all VLLM::Worker_TP. spark2 has
+  250 samples at 10 s (750 process rows: VLLM::Worker_TP, Xorg, gnome-shell each 250). Guards started at run.sh exit,
+  before the smokes. Not VOID.
+- Smokes: chat 323 rc 0, vision "Red" rc 0. Correctness 8/8 rc 0. MemAvailable after smoke 22/24 GiB (floor 8).
+- L.A.I.L x10 (fresh, before any c=2, 06:04:20Z-06:06:35Z): median 42.729 tok/s at 48.811 ms/step, median-run
+  acceptance 2.1072 (range 2.0039-2.2844), finish length, TTFT median 0.301 s. Runs 5 and 6 read 52.69 / 54.18 ms/step
+  with the guards clean; the other 8 read 48.47-49.23. Kept as measured.
+- bench_decode x9 (rc 0), median-run acceptance in brackets:
+    - prose c=1 50.257 tok/s at 48.412 ms/step [2.439]
+    - prose c=2 agg 81.280 at 59.011 ms/step [2.457]
+    - structured c=1 84.372 at 47.409 ms/step [4.0]
+    - structured c=2 agg 156.246 at 51.183 ms/step [4.0]
+- four_numbers (rc 0, partial false):
+    - prose c=1 50.60 tok/s at 47.659 ms/step (median-run acceptance 2.4096)
+    - prose_long c=1 45.169 at 49.051 ms/step (acceptance 2.2222, finish length, post-EOS 0)
+    - prose_long c=2 agg 71.323 at 62.398 ms/step
+    - pp_warm 8k/32k 789.4/776.9 (runs 789.4/789.9/757.5, 776.9/773.4/784.0)
+    - pp_novel 8k/32k 815.7/818.2 (runs 815.7/813.1/825.0, 804.2/818.2/820.9)
+    - L.A.I.L 3x after c=2: 46.06
+    - warm prefix 1.0; ranks_match true; disarmed false
+- e2e rc 0, 3/3 (useful_tok_s 6.05). correctness --full 9/9 rc 0.
+- Quality (baseline recording, no --baseline; only vision and c2 are gated, both pass):
+    - quick: NLL 0.138564, decode median/p99 0.00734/0.95233, greedy-text NLL 0.3336, tools 22/22 json,
+      22/22 exact, 8/8 no-call, needle 6/6, selfcons 5/12 identical (A/A 0.0122), c2, vision Red. 315.3 s.
+    - full: NLL 0.139323 (passes 0.139323 / 0.138198, repeat delta 0.001125), decode 0.00139/0.65392, greedy-text
+      NLL 0.219, tools 22/22 / 22/22 / 8/8, needle 9/9 including 128k, selfcons 6/12 (A/A 0.00968), GSM8K 97/100,
+      thinking 39/40, MMLU 205/228, c2, vision. 1294.3 s.
+  Details and the offline cross-checks (P4 VIT readings pass against these files; the old-pack CUR readings fail)
+  are in ../quality-baseline/README.txt.
+- Order: stop, preconditions, tests/render, gpu_free_wait, run.sh, guards, smokes, mem, correctness, L.A.I.L x10,
+  bench_decode x9, four_numbers, e2e, quality quick, quality full, correctness --full, disarm_scan, engagement +
+  strict audit re-run, mem-end, gpu_guard --check, ./stop.sh.
+- MemAvailable at the end, serve up: 21/23 GiB (mem-end.txt).

@@ -1,0 +1,247 @@
+#!/usr/bin/env python3
+# Round 36 headline: the Viterbi pack adopted as the default.
+#   before = the round-35 final config on the old pack 2.0bpw-mcg-lmhead-mxfp8: S1024-1, S1024-2, final-1
+#            (results/2026-09-26-serve-r3/, the round35-headline.json "final_config" arm);
+#   after  = the round-36 defaults, the same config on 2.0bpw-mcg-viterbi-lmhead-mxfp8: V-1, V-2 (this directory).
+# Same image ID, same docker/patch sha256 list (checked below), same container env apart from the model path.
+# The two sets were not interleaved (round 35 2026-09-27 00:08-03:33Z, V-1/V-2 from 05:50Z), so the before/after
+# delta describes the adoption; the decision is results/2026-09-26-serve-r3/decision-viterbi.json + this round's
+# decision-viterbi-addendum.json. Per-boot cells come from the round-35 readers (decision-bundle-compute.py.txt via
+# round35-headline-compute.py.txt); the paired quality tests reuse decision-viterbi-compute.py.txt's helpers.
+# V-1 recorded the new quality baseline (quality-baseline/{quick,full}.json, no --baseline); V-2 gates against it.
+# Stdlib only, deterministic.   python3 round36-compute.py.txt round36-headline.json
+import hashlib, importlib.util, json, math, os, re, statistics as st, sys
+from importlib.machinery import SourceFileLoader
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+SR = os.path.abspath(os.path.join(HERE, "..", "2026-09-26-serve-r3"))
+W = os.path.abspath(os.path.join(HERE, "..", ".."))
+
+
+def _load(name, path):
+    ld = SourceFileLoader(name, path)
+    m = importlib.util.module_from_spec(importlib.util.spec_from_loader(ld.name, ld))
+    ld.exec_module(m)
+    return m
+
+
+RH = _load("r35_headline", os.path.join(SR, "round35-headline-compute.py.txt"))   # chdirs to SR, loads BC
+BC = RH.BC
+DV = _load("r35_viterbi", os.path.join(SR, "decision-viterbi-compute.py.txt"))    # helpers only (main not run)
+os.chdir(HERE)
+r = BC.r
+
+BEFORE = ["S1024-1", "S1024-2", "final-1"]
+AFTER = ["V-1", "V-2"]
+PATH = {**{b: os.path.join(SR, b) for b in BEFORE}, **{b: os.path.join(HERE, b) for b in AFTER}}
+BL = os.path.join(HERE, "quality-baseline")
+QFILE = {("S1024-1", "quick"): f"{PATH['S1024-1']}/quality_quick.json",
+         ("S1024-2", "quick"): f"{PATH['S1024-2']}/quality_quick.json",
+         ("final-1", "quick"): f"{PATH['final-1']}/quality_quick.json",
+         ("final-1", "full"): f"{PATH['final-1']}/quality_full.json",
+         ("V-1", "quick"): f"{BL}/quick.json", ("V-1", "full"): f"{BL}/full.json",
+         ("V-2", "quick"): f"{PATH['V-2']}/quality_quick.json", ("V-2", "full"): f"{PATH['V-2']}/quality_full.json"}
+Q = {k: json.load(open(v)) for k, v in QFILE.items()}
+PIN_NEW, PIN_OLD = "2.0bpw-mcg-viterbi-lmhead-mxfp8", "2.0bpw-mcg-lmhead-mxfp8"
+TOK, MS, ACC, PP = RH.TOK, RH.MS, RH.ACC, RH.PP
+HIGHER_BETTER = set(TOK) | set(ACC) | set(PP)
+
+
+def boot(name):
+    """decision-bundle-compute's per-boot reader without its quality block (V-1 has no gated quality file)."""
+    q, BC.quality = BC.quality, (lambda p: None)
+    try:
+        m = BC.boot(PATH[name])
+    finally:
+        BC.quality = q
+    m.pop("quality", None)
+    return m
+
+
+def cells(per, boots):
+    out = {}
+    for k in TOK + MS + ACC + PP:
+        vals = [per[b][k] for b in boots]
+        out[k] = dict(per_boot=[r(v, 4) for v in vals], arm_median=r(st.median(vals), 4), spread=r(max(vals) - min(vals), 4))
+    return out
+
+
+def qrow(key):
+    d = Q[key]
+    c = d["components"]
+    g = {x["gate"]: x for x in d.get("gates", [])}
+    row = dict(file=os.path.relpath(QFILE[key], W), pass_=d["pass"], baseline=d.get("baseline"),
+               snapshot=(d["provenance"].get("root") or "").rsplit("/", 1)[-1], image=d["provenance"].get("image"),
+               nll=c["nll"]["mean_nll"], nll_run_means=c["nll"].get("run_means"),
+               nll_repeat_abs_delta=c["nll"].get("repeat_abs_delta"),
+               decode_median_dlp=c["decode"]["median_abs_dlogprob"], gen_nll_prefill=c["decode"]["gen_nll_prefill"],
+               aa_hazard=c["selfcons"]["aa"]["hazard"], selfcons_identical=f"{c['selfcons']['identical']}/{c['selfcons']['prompts']}",
+               golden_hazard=(c["selfcons"].get("golden") or {}).get("hazard"),
+               tools_json=f"{c['tools']['json_valid']['k']}/{c['tools']['json_valid']['n']}",
+               tools_exact=f"{c['tools']['exact_args']['k']}/{c['tools']['exact_args']['n']}",
+               tools_exact_failed=[i["id"] for i in c["tools"]["items"] if "exact" in i and not i["exact"]],
+               tools_no_call=f"{c['tools']['no_call']['k']}/{c['tools']['no_call']['n']}",
+               needle=f"{c['needle']['found']}/{c['needle']['total']}", c2=c["c2"]["pass"], vision=c["vision"].get("content"),
+               elapsed_s=d.get("elapsed_s"),
+               gates={k: dict(value=v["value"], limit=v["limit"], pass_=v["pass"]) for k, v in g.items()},
+               failed_gates=[k for k, v in g.items() if not v["pass"]])
+    for comp in ("gsm8k", "gsm8k_think", "mmlu"):
+        if comp in c:
+            row[comp] = f"{c[comp]['acc']['k']}/{c[comp]['acc']['n']}"
+    return row
+
+
+def paired_nll():
+    ids = [json.loads(l)["id"] for l in open(f"{W}/tests/quality/nll_passages.jsonl")]
+    pp = {k: Q[k]["components"]["nll"]["per_passage"] for k in Q}
+    assert all(set(v) == set(ids) for v in pp.values())
+    arms = {"R35": [k for k in Q if k[0] in BEFORE], "V": [k for k in Q if k[0] in AFTER]}
+    arm_pp = {a: {p: st.mean(pp[k][p] for k in ks) for p in ids} for a, ks in arms.items()}
+    d = [arm_pp["V"][p] - arm_pp["R35"][p] for p in ids]
+    md, sd = st.mean(d), st.stdev(d)
+    se = sd / math.sqrt(len(d))
+    rel = [(arm_pp["V"][p] - arm_pp["R35"][p]) / arm_pp["R35"][p] for p in ids]
+
+    def pairdelta(x, y):
+        dd = [pp[y][p] - pp[x][p] for p in ids]
+        return dict(mean=r(st.mean(dd), 5), sd=r(st.stdev(dd), 5), max_abs=r(max(abs(v) for v in dd), 5),
+                    n_lower=sum(v < 0 for v in dd), n_higher=sum(v > 0 for v in dd))
+    return dict(
+        unit="per-passage mean NLL (nats/token), 40 fixed passages; arm value per passage = mean of the arm's readings "
+             "(R35: S1024-1/quick, S1024-2/quick, final-1/quick, final-1/full; V: V-1/quick, V-1/full, V-2/quick, V-2/full)",
+        readings={a: [f"{b}/{m}" for b, m in ks] for a, ks in arms.items()},
+        R35_mean_of_passages=r(st.mean(arm_pp["R35"].values()), 5), V_mean_of_passages=r(st.mean(arm_pp["V"].values()), 5),
+        paired_delta_V_minus_R35=dict(mean=r(md, 5), median=r(st.median(d), 5), sd=r(sd, 5),
+                                      ci95_t=[r(md - DV.T975_DF39 * se, 5), r(md + DV.T975_DF39 * se, 5)],
+                                      ci95_bootstrap=[r(v, 5) for v in DV.boot_ci_mean(d)],
+                                      relative_mean_pct=r(100 * st.mean(rel), 2),
+                                      passages_lower_on_V=sum(v < 0 for v in d), passages_higher_on_V=sum(v > 0 for v in d),
+                                      sign_test_exact_p=DV.sign_p(sum(v < 0 for v in d), sum(v != 0 for v in d)),
+                                      wilcoxon=DV.wilcoxon_exact(d)),
+        same_arm_AA={"V-2/quick - V-1/quick": pairdelta(("V-1", "quick"), ("V-2", "quick")),
+                     "V-2/full - V-1/full": pairdelta(("V-1", "full"), ("V-2", "full")),
+                     "S1024-2/quick - S1024-1/quick": pairdelta(("S1024-1", "quick"), ("S1024-2", "quick")),
+                     "final-1/quick - S1024-2/quick": pairdelta(("S1024-2", "quick"), ("final-1", "quick"))},
+        p4_reference="decision-viterbi.json: VIT - CUR mean -0.10489 (CI t -0.12856..-0.08122), 39/40 lower")
+
+
+def paired_items():
+    gsm = [json.loads(l)["idx"] for l in open(f"{W}/tests/quality/gsm8k_100.jsonl")]
+    mmlu = [f"{it['subject']}/{it['row']}" for it in map(json.loads, open(f"{W}/tests/quality/mmlu_228.jsonl"))]
+    fulls = [("final-1", "full"), ("V-1", "full"), ("V-2", "full")]
+    ok = {"gsm8k": {k: set(gsm) - {x["idx"] for x in Q[k]["components"]["gsm8k"]["misses"]} for k in fulls},
+          "gsm8k_think": {k: set(gsm[:40]) - {x["idx"] for x in Q[k]["components"]["gsm8k_think"]["misses"]} for k in fulls},
+          "mmlu": {k: set(mmlu) - {x.rsplit(":", 1)[0] for x in Q[k]["components"]["mmlu"]["misses"]} for k in fulls}}
+    tools = {k: {i["id"] for i in Q[k]["components"]["tools"]["items"] if i["id"].startswith("t") and i.get("exact")} for k in Q}
+    t_items = [i["id"] for i in Q[("V-1", "quick")]["components"]["tools"]["items"] if i["id"].startswith("t")]
+    out = {}
+    for comp, universe in (("gsm8k", gsm), ("gsm8k_think", gsm[:40]), ("mmlu", mmlu)):
+        for k in fulls:
+            assert len(ok[comp][k]) == Q[k]["components"][comp]["acc"]["k"], (comp, k)
+        out[comp] = DV.paired_binary(comp, universe, ok[comp],
+                                     [(("final-1", "full"), ("V-1", "full")), (("final-1", "full"), ("V-2", "full"))],
+                                     [(("V-1", "full"), ("V-2", "full"))])
+    out["tools_exact_args"] = DV.paired_binary(
+        "tools exact_args (22)", t_items, tools,
+        [(("S1024-1", "quick"), ("V-1", "quick")), (("S1024-2", "quick"), ("V-2", "quick")),
+         (("final-1", "full"), ("V-1", "full")), (("final-1", "full"), ("V-2", "full"))],
+        [(("V-1", "quick"), ("V-2", "quick")), (("V-1", "full"), ("V-2", "full"))])
+    out["note"] = ("paired_binary labels the before arm CUR and the after arm VIT. R35 has one full reading (final-1), "
+                   "so both full pairs use it; the pooled sign test therefore counts final-1 twice")
+    return out
+
+
+def selfcons():
+    runs = {k: Q[k]["components"]["selfcons"]["runs"] for k in Q}
+    return dict(
+        aa_hazard={f"{b}/{m}": Q[(b, m)]["components"]["selfcons"]["aa"]["hazard"] for b, m in Q},
+        V2_vs_new_baseline_golden={m: (Q[("V-2", m)]["components"]["selfcons"].get("golden") or {}).get("hazard") for m in ("quick", "full")},
+        V2_golden_limit={m: next((g["limit"] for g in Q[("V-2", m)]["gates"] if g["gate"] == "selfcons.golden_hazard"), None)
+                         for m in ("quick", "full")},
+        cross_boot_same_pack={
+            "V-2/quick vs V-1/quick run A": DV.vs_golden(runs[("V-2", "quick")], runs[("V-1", "quick")][0])["hazard"],
+            "V-2/full vs V-1/full run A": DV.vs_golden(runs[("V-2", "full")], runs[("V-1", "full")][0])["hazard"],
+            "S1024-2/quick vs S1024-1/quick run A (old pack)": DV.vs_golden(runs[("S1024-2", "quick")], runs[("S1024-1", "quick")][0])["hazard"],
+            "final-1/quick vs S1024-2/quick run A (old pack)": DV.vs_golden(runs[("final-1", "quick")], runs[("S1024-2", "quick")][0])["hazard"]},
+        cross_pack={"V-1/quick vs final-1/quick run A": DV.vs_golden(runs[("V-1", "quick")], runs[("final-1", "quick")][0])["hazard"],
+                    "V-1/full vs final-1/full run A": DV.vs_golden(runs[("V-1", "full")], runs[("final-1", "full")][0])["hazard"]})
+
+
+def validity(per, b):
+    P = per[b]
+    cf = f"{PATH[b]}/correctness_full.txt"
+    cfm = re.findall(r'CORRECTNESS \{"pass": (\d+), "total": (\d+)\}', open(cf).read()) if os.path.exists(cf) else []
+    return dict(commit=P["commit"][:12], contaminated=P["contaminated"], serve_env_ranks_match=P["serve_env_ranks_match"],
+                lever_disarmed=P["lever_disarmed"], disarm_scan_rc=P["disarm_scan_rc"], gpu_guard_rc=P["gpu_guard_rc"],
+                e2e_rc=P["e2e_rc"], correctness=P["correctness"], correctness_full=(f"{cfm[-1][0]}/{cfm[-1][1]}" if cfm else None),
+                prose_long_c1=f"{P['prose_long_c1_finish']}, post-EOS {P['prose_long_c1_post_eos']}",
+                prose_long_c2=f"{P['prose_long_c2_finish']}, post-EOS {P['prose_long_c2_post_eos']}",
+                lail_finish=P["lail_finish"], memavail_after_smoke_gib=P["memavail_after_smoke_gib"],
+                patch_sha256_list_digest=hashlib.sha256(open(f"{PATH[b]}/patch.sha256", "rb").read()).hexdigest()[:16],
+                serve_image=open(f"{PATH[b]}/four/serve_image.txt").read().strip(),
+                serve_cmd_model=json.load(open(f"{PATH[b]}/four/serve_cmd.json"))[1].rsplit("/", 1)[-1],
+                config_vs_final_1=config_diff(b))
+
+
+def config_diff(b):
+    """Head vLLM argv (model path dropped) and both ranks' recorded container env, against final-1's."""
+    def load(x):
+        argv = json.load(open(f"{PATH[x]}/four/serve_cmd.json"))
+        envs = {n: json.load(open(f"{PATH[x]}/four/serve_env_{n}.json")) for n in ("spark1", "spark2")}
+        return argv[:1] + argv[2:], envs
+    a0, e0 = load("final-1")
+    a1, e1 = load(b)
+    envdiff = {n: sorted(set(map(str, e1[n].items() if isinstance(e1[n], dict) else e1[n])) ^
+                         set(map(str, e0[n].items() if isinstance(e0[n], dict) else e0[n]))) for n in e0}
+    return dict(argv_equal_except_model=a1 == a0, env_symmetric_diff=envdiff)
+
+
+def main(out):
+    per = {b: boot(b) for b in BEFORE + AFTER}
+    before, after = cells(per, BEFORE), cells(per, AFTER)
+    delta = {}
+    for k in TOK + MS + ACC + PP:
+        bv, av = before[k]["arm_median"], after[k]["arm_median"]
+        hb = k in HIGHER_BETTER
+        delta[k] = dict(R35=bv, V=av, delta=r(av - bv, 4), pct=r(100.0 * (av - bv) / bv, 2) if bv else None,
+                        noise=r(max(before[k]["spread"], after[k]["spread"]), 4),
+                        every_V_boot_above_R35_median=all(x > bv for x in after[k]["per_boot"]),
+                        every_V_boot_below_R35_median=all(x < bv for x in after[k]["per_boot"]),
+                        direction="higher is better" if hb else "lower is better")
+    pooled = {name: dict(lail_tok_s_pooled_runs=dict(n=sum(len(RH.lail_runs(PATH[b])) for b in boots),
+                                                     median=r(st.median([x for b in boots for x in RH.lail_runs(PATH[b])]), 3)),
+                         four_prose_c1_tok_s_pooled_runs=dict(n=sum(len(RH.four_prose_runs(PATH[b])) for b in boots),
+                                                              median=r(st.median([x for b in boots for x in RH.four_prose_runs(PATH[b])]), 3)),
+                         bench_decode_pooled=RH.pool_bench([PATH[b] for b in boots]),
+                         lail_pooled=RH.pool_lail([PATH[b] for b in boots]))
+              for name, boots in (("R35", BEFORE), ("V", AFTER))}
+    res = dict(
+        what="Round 36 headline (see the header of round36-compute.py.txt)",
+        arms={"R35_final_config_old_pack": BEFORE, "V_round36_defaults_viterbi_pack": AFTER},
+        cells={"R35": before, "V": after}, R35_to_V=delta, pooled=pooled,
+        ttft={b: RH.ttft(PATH[b]) for b in BEFORE + AFTER},
+        validity={b: validity(per, b) for b in BEFORE + AFTER},
+        quality=dict(readings={f"{b}/{m}": qrow((b, m)) for b, m in Q}, paired_nll=paired_nll(),
+                     paired_items=paired_items(), selfcons=selfcons()),
+        per_boot={b: {k: v for k, v in per[b].items() if k not in ("pp_runs",)} for b in AFTER},
+    )
+    json.dump(res, open(out, "w"), indent=1, default=str)
+    for b in AFTER:   # per-boot summary next to the raw files, as round 35 kept one per boot dir
+        json.dump(dict(arm="V (round-36 defaults)", boot=b, commit=per[b]["commit"],
+                       command=open(f"{PATH[b]}/command.txt").read().strip(),
+                       per_boot={k: r(per[b][k], 4) for k in TOK + MS + ACC + PP},
+                       quality={m: res["quality"]["readings"][f"{b}/{m}"] for m in ("quick", "full")},
+                       quality_role="recorded the new baseline (no --baseline)" if b == "V-1"
+                       else "gated against quality-baseline/{quick,full}.json",
+                       validity=res["validity"][b], headline="../round36-headline.json"),
+                  open(f"{PATH[b]}/summary.json", "w"), indent=1, default=str)
+    return res
+
+
+if __name__ == "__main__":
+    res = main(sys.argv[1])
+    for k, v in res["R35_to_V"].items():
+        print(f"{k:28s} R35 {res['cells']['R35'][k]['per_boot']} V {res['cells']['V'][k]['per_boot']} "
+              f"{v['R35']} -> {v['V']} ({v['delta']:+}, {v['pct']}%) noise {v['noise']}")
+    for name, p in res["pooled"].items():
+        print(name, json.dumps(p["lail_pooled"]), json.dumps(p["bench_decode_pooled"]))

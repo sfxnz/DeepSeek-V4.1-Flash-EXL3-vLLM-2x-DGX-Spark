@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# Round 36 per-boot driver: ARMS-r3 sections 1-3 (results/2026-09-25-kernels/ARMS-r3.txt) + ARMS.md steps 4-6, in the
+# order the round-35 VIT boots used: stop, section-1 preconditions, unit tests + render, gpu_free_wait, AUDIT=strict
+# run.sh with NO lever/pack/image override, gpu guards, smokes, mem, correctness, L.A.I.L x10, bench_decode x9,
+# four_numbers, e2e, quality quick + full, correctness --full, disarm_scan, engagement + strict audit re-run, mem-end,
+# gpu_guard --check, then ./stop.sh or leave the serve up.
+#   bash boot-procedure.sh.txt <L> baseline|gate stop|keep
+#     baseline: quality quick/full with NO --baseline, written to quality-baseline/{quick,full}.json (the new goldens)
+#     gate:     quality quick/full against quality-baseline/{quick,full}.json, written to <L>/quality_{quick,full}.json
+# The spark2 GPU lock must already be held by the caller (ARMS-r3 section 1); this script only checks LOCK_HELD.
+set -uo pipefail
+L=$1 QMODE=$2 END=$3
+W=/home/sfxnz/projects/ai-lab/recipes/.worktrees/kernels-r3
+R=$W/results/2026-09-27-viterbi-adopt
+O=$R/$L
+BL=$R/quality-baseline
+S=$W/results/2026-09-25-kernels/integration/scripts
+P=$W/results/2026-09-25-kernels/profile/scripts
+IMGID=sha256:3a002b55c9bc8086d6e63e3947cd0c6aaa092d415ec7d0305461078240eee675
+SNAP=snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8
+LOCK=/home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock
+cd "$W" || exit 1
+mkdir -p "$O"
+ts() { date -u +%FT%TZ; }
+step() { echo "$(ts) $*" >>"$O/steps.txt"; }
+abort() { step "ABORT: $*"; exit 1; }
+avail_gib() { awk '/^Mem:/{v=$7; sub(/i$/,"",v); u=substr(v,length(v),1); n=substr(v,1,length(v)-1)+0; if(u=="G")print n; else if(u=="M")print n/1024; else if(u=="T")print n*1024; else print 0}'; }
+
+step "start L=$L QMODE=$QMODE END=$END"
+# ---------------------------------------------------------------- stop + section 1 preconditions
+./stop.sh >"$O/stop-pre.txt" 2>&1; echo "stop rc=$?" >>"$O/stop-pre.txt"
+step "stopped"
+{
+  echo "# ARMS-r3 section 1 preconditions, $L, $(ts)"
+  echo "## requant DONE"; test -f /home/sfxnz/projects/data/dsv41-requant-viterbi/state/DONE && echo "DONE present" || echo "DONE MISSING"
+  echo "## containers spark1 (all)"; docker ps -a --format '{{.Names}} {{.Image}} {{.Status}}'
+  echo "## containers spark2 (all)"; ssh -o BatchMode=yes spark2 "docker ps -a --format '{{.Names}} {{.Image}} {{.Status}}'"
+  echo "## spark2 GPU lock"; ssh spark2 "flock -n $LOCK true && echo LOCK_FREE || echo LOCK_HELD"
+  echo "## pmon spark1"; nvidia-smi pmon -c 1
+  echo "## pmon spark2"; ssh spark2 'nvidia-smi pmon -c 1'
+  echo "## microbench processes spark1/spark2"
+  pgrep -af 'kernel_study|bench_r3|nccl_twin_check|requant_full|dsv41-quant' | grep -v pgrep || echo none
+  ssh spark2 "pgrep -af 'kernel_study|bench_r3|nccl_twin_check|requant_full|dsv41-quant' | grep -v pgrep || echo none"
+  echo "## memory spark1"; free -h
+  echo "## memory spark2"; ssh spark2 free -h
+  echo "## image IDs"; echo "want $IMGID"
+  echo "spark1 canonical-e14 $(docker image inspect dsv41-flash-exl3-sm121:canonical-e14 --format '{{.Id}}')"
+  echo "spark2 canonical-e14 $(ssh spark2 "docker image inspect dsv41-flash-exl3-sm121:canonical-e14 --format '{{.Id}}'")"
+  echo "## snapshots (the new default, resolved by run.sh)"
+  env -u SNAPSHOT_SHA RESOLVE_SNAPSHOT_ONLY=1 ./run.sh
+  ssh spark2 'env -u SNAPSHOT_SHA RESOLVE_SNAPSHOT_ONLY=1 bash -s' <run.sh
+  echo "## tree"; echo "HEAD $(git rev-parse HEAD) branch $(git rev-parse --abbrev-ref HEAD)"
+  echo "porcelain lines: $(git status --porcelain | wc -l)"; git status --porcelain
+  echo "## caller env overrides (DSV41_/NCCL_/VLLM_/SNAPSHOT_SHA/IMAGE/AUDIT; expect none)"
+  env | grep -E '^(DSV41_|NCCL_|VLLM_|SNAPSHOT_SHA=|IMAGE=|AUDIT=|MODEL=)' || echo none
+} >"$O/preconditions.txt" 2>&1
+pc=$O/preconditions.txt
+grep -q "DONE present" "$pc" || abort "requant DONE missing"
+grep -q LOCK_HELD "$pc" || abort "spark2 lock not held"
+[ "$(docker ps --format '{{.Names}}' | grep -v '^conduit$' | wc -l)" -eq 0 ] || abort "a container other than conduit runs on spark1"
+[ "$(ssh spark2 "docker ps --format '{{.Names}}'" | wc -l)" -eq 0 ] || abort "a container runs on spark2"
+[ "$(nvidia-smi pmon -c 1 | awk '!/^#/ && $2 != "-"' | wc -l)" -eq 0 ] || abort "a process is on spark1's GPU"
+[ "$(ssh spark2 'nvidia-smi pmon -c 1' | awk '!/^#/ && $2 != "-" && $10 != "Xorg" && $10 != "gnome-shell"' | wc -l)" -eq 0 ] || abort "a non-display process is on spark2's GPU"
+[ "$(grep -c "$IMGID" "$pc")" -eq 3 ] || abort "image ID mismatch"
+[ "$(grep -c "/$SNAP\$" "$pc")" -eq 2 ] || abort "snapshot not resolved on both nodes"
+[ "$(git status --porcelain | grep -v "results/2026-09-27-viterbi-adopt/$L/" | wc -l)" -eq 0 ] || abort "tree not clean"
+a1=$(free -h | avail_gib); a2=$(ssh spark2 free -h | avail_gib)
+awk -v a="$a1" -v b="$a2" 'BEGIN{exit !(a>=12 && b>=12)}' || abort "MemAvailable < 12 GiB before boot ($a1/$a2)"
+step "preconditions ok (MemAvailable $a1/$a2 GiB)"
+{ python3 -m unittest discover -s tests -q >"$O/.ut.tmp" 2>&1; echo "unittest rc=$?"; python3 kit/render.py --check >/dev/null 2>&1; echo "render --check rc=$?"; grep -E '^(Ran|OK|FAILED)' "$O/.ut.tmp"; } >"$O/tests-render.txt"
+rm -f "$O/.ut.tmp"
+grep -q "unittest rc=0" "$O/tests-render.txt" && grep -q "render --check rc=0" "$O/tests-render.txt" || abort "unit tests or render --check failed"
+step "tests + render ok"
+timeout 900 bash "$P/gpu_free_wait.sh" >"$O/gpufree-spark1.txt" 2>&1 || abort "gpu_free_wait did not reach GPUFREE in 15 min (foreign GPU user on spark1?)"
+step "GPUFREE"
+{ free -h; ssh spark2 free -h; } >"$O/mem-at-boot.txt"
+git rev-parse HEAD >"$O/commit.txt"
+sha256sum docker/patch/* >"$O/patch.sha256" 2>/dev/null
+# ---------------------------------------------------------------- boot
+echo "env AUDIT=strict ./run.sh   (arm $L: the round-36 defaults at HEAD $(git rev-parse --short HEAD); IMAGE default dsv41-flash-exl3-sm121:canonical-e14 (sha256:3a002b55c9bc), SNAPSHOT_SHA default 2.0bpw-mcg-viterbi-lmhead-mxfp8, no lever/pack/image env set; started $(ts), output -> boot.txt)" >"$O/command.txt"
+step "run.sh start"
+env -u SNAPSHOT_SHA -u IMAGE AUDIT=strict ./run.sh >"$O/boot.txt" 2>&1
+brc=$?
+echo "run.sh rc=$brc" >>"$O/boot.txt"
+step "run.sh exit rc=$brc"
+[ $brc -eq 0 ] || abort "run.sh rc=$brc (serve left as is for inspection)"
+bash "$S/gpu_guard.sh" local "$O/gpu-spark1.txt" 2 & G1=$!
+bash "$S/gpu_guard.sh" spark2 "$O/gpu-spark2.txt" 10 & G2=$!
+step "guards started ($G1, $G2)"
+# ---------------------------------------------------------------- section 2 procedure
+python3 smoke_chat.py >"$O/smoke_chat.txt" 2>&1; echo "rc=$?" >>"$O/smoke_chat.txt"
+python3 smoke_vision.py >"$O/smoke_vision.txt" 2>&1; echo "rc=$?" >>"$O/smoke_vision.txt"
+{ free -h; ssh spark2 free -h; } >"$O/mem-after-smoke.txt"
+m1=$(sed -n 1,3p "$O/mem-after-smoke.txt" | avail_gib); m2=$(sed -n 4,6p "$O/mem-after-smoke.txt" | avail_gib)
+step "smokes done: chat $(tail -1 "$O/smoke_chat.txt"), vision $(tail -1 "$O/smoke_vision.txt"); MemAvailable $m1/$m2 GiB"
+if ! awk -v a="$m1" -v b="$m2" 'BEGIN{exit !(a>=8 && b>=8)}'; then
+  kill $G1 $G2; ./stop.sh >"$O/stop-end.txt" 2>&1; abort "MemAvailable < 8 GiB after smoke ($m1/$m2): stopped"
+fi
+grep -q "^rc=0" "$O/smoke_chat.txt" && grep -q "^rc=0" "$O/smoke_vision.txt" || step "WARNING: a smoke failed"
+tests/correctness.sh >"$O/correctness.txt" 2>&1; echo "rc=$?" >>"$O/correctness.txt"
+step "correctness $(tail -2 "$O/correctness.txt" | tr '\n' ' ')"
+ts >"$O/lail10-start.txt"
+python3 tools/measure_lail_prose.py --runs 10 >"$O/lail10.txt" 2>&1; echo "rc=$?" >>"$O/lail10.txt"
+ts >>"$O/lail10-start.txt"
+step "lail10 done"
+python3 bench_decode.py --runs 9 >"$O/bench_decode.txt" 2>&1; echo "rc=$?" >>"$O/bench_decode.txt"
+step "bench_decode done"
+tools/four_numbers.sh --arm "$L" --out "$O/four" >"$O/four_numbers.txt" 2>&1; echo "rc=$?" >"$O/four_rc.txt"
+step "four_numbers $(cat "$O/four_rc.txt")"
+python3 benches/e2e.py >"$O/e2e.txt" 2>&1; echo "rc=$?" >>"$O/e2e.txt"
+step "e2e $(tail -1 "$O/e2e.txt")"
+if [ "$QMODE" = baseline ]; then
+  mkdir -p "$BL"
+  python3 tests/quality_eval.py --quick --out "$BL/quick.json" >"$BL/quick.txt" 2>&1; echo "rc=$?" >>"$BL/quick.txt"
+  step "quality quick (baseline record) $(tail -1 "$BL/quick.txt")"
+  python3 tests/quality_eval.py --full --out "$BL/full.json" >"$BL/full.txt" 2>&1; echo "rc=$?" >>"$BL/full.txt"
+  step "quality full (baseline record) $(tail -1 "$BL/full.txt")"
+else
+  python3 tests/quality_eval.py --quick --baseline "results/2026-09-27-viterbi-adopt/quality-baseline/quick.json" \
+    --out "$O/quality_quick.json" >"$O/quality_quick.txt" 2>&1; echo "rc=$?" >>"$O/quality_quick.txt"
+  step "quality quick $(tail -1 "$O/quality_quick.txt")"
+  python3 tests/quality_eval.py --full --baseline "results/2026-09-27-viterbi-adopt/quality-baseline/full.json" \
+    --out "$O/quality_full.json" >"$O/quality_full.txt" 2>&1; echo "rc=$?" >>"$O/quality_full.txt"
+  step "quality full $(tail -1 "$O/quality_full.txt")"
+fi
+tests/correctness.sh --full >"$O/correctness_full.txt" 2>&1; echo "rc=$?" >>"$O/correctness_full.txt"
+step "correctness --full $(tail -2 "$O/correctness_full.txt" | tr '\n' ' ')"
+tools/disarm_scan.sh >"$O/disarm_scan.txt" 2>&1; echo "rc=$?" >>"$O/disarm_scan.txt"
+step "disarm_scan $(tail -1 "$O/disarm_scan.txt")"
+bash "$R/engagement-capture.sh.txt" "$O"; step "engagement + strict audit re-run rc=$?"
+{ ts; free -h; ssh spark2 free -h; } >"$O/mem-end.txt"
+pkill -P $G1 2>/dev/null; pkill -P $G2 2>/dev/null; kill $G1 $G2 2>/dev/null; wait $G1 $G2 2>/dev/null
+{ echo "# check at $(ts) (end of the procedure)"; bash "$S/gpu_guard.sh" --check "$O/gpu-spark1.txt" "$O/gpu-spark2.txt"; echo "rc=$?"
+  for f in gpu-spark1 gpu-spark2; do
+    echo "$f: $(wc -l <"$O/$f.txt") samples $(head -1 "$O/$f.txt" | cut -d' ' -f1)-$(tail -1 "$O/$f.txt" | cut -d' ' -f1); procs: $(awk '{print $NF}' "$O/$f.txt" | sort | uniq -c | tr '\n' ';')"
+  done; } >"$O/gpu_guard.txt" 2>&1
+grep -q "^rc=0" "$O/gpu_guard.txt" || { touch "$O/CONTAMINATED"; step "gpu_guard FOREIGN: CONTAMINATED"; }
+step "gpu_guard $(grep '^rc=' "$O/gpu_guard.txt")"
+if [ "$END" = stop ]; then
+  { echo "stop at $(ts)"; ./stop.sh; echo "stop rc=$?"; } >"$O/stop-end.txt" 2>&1
+  step "stopped (END=stop)"
+else
+  step "serve left UP (END=keep)"
+fi
+step "done"

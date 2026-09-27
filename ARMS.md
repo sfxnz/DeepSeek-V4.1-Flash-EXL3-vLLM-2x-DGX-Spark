@@ -78,17 +78,53 @@ One boot = one lever. Every arm produces the four numbers via
 
    **Quality gate (required before any KEEP)**: after the four numbers,
    serialized and never interleaved with perf capture, the quick eval must
-   pass against the stored baseline:
+   pass against the stored baseline of the pack under test:
    ```bash
    python3 tests/quality_eval.py --quick \
-     --baseline results/2026-09-24-review/quality-baseline/quick.json \
+     --baseline results/2026-09-27-viterbi-adopt/quality-baseline/quick.json \
      --out results/<arm-dir>/quality_quick.json      # exit 0 = pass
    ```
+   Baselines by pack: `results/2026-09-27-viterbi-adopt/quality-baseline/`
+   for `2.0bpw-mcg-viterbi-lmhead-mxfp8` (the default since round 36,
+   recorded on V-1), and `results/2026-09-24-review/quality-baseline/` for
+   `2.0bpw-mcg-lmhead-mxfp8` (rounds 33-35).
    It gates prefill numerics (NLL), decode numerics (decode-vs-prefill
    probe and the golden flip hazard against the A/A control), tool calls,
    needle 8k/32k, c=2 and vision. A lever that changes numerics by design
    (a new pack, lm_head, a kernel format) also runs `--full` against
    `full.json`. A failed gate means no KEEP, even when the perf win is real.
+
+   **Pack changes (amendment, round 36, 2026-09-27; decided by the
+   protocol owner).** The golden flip hazard (`selfcons.golden_hazard`)
+   compares the arm's greedy text with run A of the baseline's
+   `selfcons.runs` (the goldens). That only means something when the
+   baseline was recorded on the SAME pack (the same weights). So the golden
+   gate gates kernel and numerics levers on the pack the baseline ran:
+   kernels, formats, fused paths, lm_head paths. It does not apply to a pack
+   (weights) change. A new pack fails it by construction: round 35 P4 read
+   golden hazard 0.094-0.102 on the Viterbi pack while that pack's own A/A
+   hazard was 0.008-0.016 (`results/2026-09-26-serve-r3/decision-viterbi.json`).
+   A pack change is judged on these, against the current pack, in the same
+   ABAB:
+   - **paired NLL** over the 40 fixed passages: the per-passage delta
+     against the current pack, with its 95% CI and Wilcoxon test. It must
+     not be worse, and the same-arm cross-boot per-passage deltas are the
+     noise;
+   - **paired benchmark tests** over the fixed items: GSM8K, GSM8K-think,
+     MMLU and tools exact_args, with McNemar per interleaved pair and a
+     pooled sign test. No significant loss is allowed;
+   - **A/A self-consistency**: the new pack's own `aa_hazard`, and the
+     cross-boot hazard between its boots, inside the current pack's A/A
+     band;
+   - every other quick/full component in its band: decode probe, needle,
+     tools json/no_call, c=2, vision, `tests/correctness.sh --full`.
+   Speed follows the rest of step 6, as for any arm. Adopting a pack means
+   re-recording the quality baseline and goldens on it. Run quick and full
+   with no `--baseline` on the first boot of the new defaults, store them
+   as the new baseline, and gate every later boot against it (including
+   the second boot of the new defaults, where the golden hazard applies
+   again, within the A/A band). The old baseline stays as the reference for
+   the previous pack.
 7. **Free the box between arms**: `./stop.sh`, confirm no GPU containers on
    either node, then boot the next arm. Never stack levers on a promoted
    arm's boot without re-running the full four numbers.
@@ -108,8 +144,14 @@ One boot = one lever. Every arm produces the four numbers via
    S1024-1, S1024-2 and final-1, `results/2026-09-26-serve-r3/round35-headline.json`):
    fresh L.A.I.L 43.17 at 49.00 ms/step, four prose c=1 52.52 at 48.07 ms/step,
    prose_long c=1 43.73 at 48.98 ms/step, prose_long c=2 65.62 aggregate,
-   pp_novel 8k/32k 821.4/806.3, pp_warm 757.6/768.0. After a change to the
-   defaults, a new ABAB still needs its own A boots.
+   pp_novel 8k/32k 821.4/806.3, pp_warm 757.6/768.0. Round 36 reference (the
+   round-36 defaults, i.e. the round-35 config on the Viterbi pack; medians of
+   the per-boot medians of V-1 and V-2,
+   `results/2026-09-27-viterbi-adopt/round36-headline.json`): fresh L.A.I.L
+   42.58 at 48.78 ms/step (acceptance 2.115), four prose c=1 50.51 at 47.96
+   ms/step, prose_long c=1 43.80 at 49.59 ms/step, prose_long c=2 69.00
+   aggregate, pp_novel 8k/32k 814.4/811.9, pp_warm 772.8/774.9. After a
+   change to the defaults, a new ABAB still needs its own A boots.
    Warm-prefix hits depend on the prompt length: a repeat of N tokens
    missed entirely when N ran only 10-58 tokens past the last 128-token
    boundary, and hit at 68-127 (results/RESULTS.md round 34).
@@ -119,15 +161,21 @@ One boot = one lever. Every arm produces the four numbers via
 
 ## Exact restore sequence
 
-Current serve (round 35) = `dsv41-flash-exl3-sm121:canonical-e14` on both
+Current serve (round 36) = the round-35 defaults below on the default pack
+`2.0bpw-mcg-viterbi-lmhead-mxfp8`, launched with `AUDIT=strict ./run.sh` from
+the kernels-r3 worktree (`results/2026-09-27-viterbi-adopt/V-2/`).
+
+Round 35 (before round 36) = `dsv41-flash-exl3-sm121:canonical-e14` on both
 nodes with the round-35 defaults: the round-34 set below plus the round-3
 kernel bundle (`DSV41_P2B_COOP=2`, `DSV41_DENSE_GEMV=1`,
 `DSV41_MHC_DET_SPLITS=16`, `DSV41_ENGRAM_NATIVE_STAGE=1`,
 `DSV41_ENGRAM_EARLY_HASH=1`, `DSV41_ATTN_T2R_DEDUP=1`,
 `DSV41_SWA_META_FUSED=1`, `DSV41_MOE_PREP_FUSED=1`,
 `DSV41_CANDIDATE_MASK_BOUNDED=1`, `DSV41_INDEXER_WP_GEMV=1`) and
-`DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024`, launched with `AUDIT=strict ./run.sh`
-from the kernels-r3 worktree (`results/2026-09-26-serve-r3/final-1/`). Until
+`DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024` on pack `2.0bpw-mcg-lmhead-mxfp8`, launched
+with `AUDIT=strict ./run.sh` from the kernels-r3 worktree
+(`results/2026-09-26-serve-r3/final-1/`; on round-36 code add
+`SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8`). Until
 perf/kernels-r3 merges, the main checkout keeps older defaults. The round-35
 kernel levers need `canonical-e14` for COOP; every other line below that
 boots an older image must set the ten round-3 levers to `0` (list under
@@ -139,7 +187,8 @@ fails.
   DSV41_P2B_COOP=0 DSV41_DENSE_GEMV=0 DSV41_MHC_DET_SPLITS=0 \
     DSV41_ENGRAM_NATIVE_STAGE=0 DSV41_ENGRAM_EARLY_HASH=0 DSV41_ATTN_T2R_DEDUP=0 \
     DSV41_SWA_META_FUSED=0 DSV41_MOE_PREP_FUSED=0 DSV41_CANDIDATE_MASK_BOUNDED=0 \
-    DSV41_INDEXER_WP_GEMV=0 DSV41_DSPARK_SPARSE_MARKOV_TOPK=256 AUDIT=strict ./run.sh
+    DSV41_INDEXER_WP_GEMV=0 DSV41_DSPARK_SPARSE_MARKOV_TOPK=256 \
+    SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8 AUDIT=strict ./run.sh
   ```
   In a run.sh dry run (tests/run_sh_harness.py) this gives A-2's recorded
   DSV41/NCCL/VLLM container env except `DSV41_P2B_COOP=0` and
@@ -147,10 +196,15 @@ fails.
   in-code 256). On `canonical-e14` with COOP off the p2b kernels are
   canonical-e13's; add `IMAGE=dsv41-flash-exl3-sm121:canonical-e13` to boot the
   round-34 image itself.
-- The Viterbi pack (round 35 P4, rejected as written: golden-hazard gate and
-  L.A.I.L tok/s; local only, not on the Hub) runs on the same code with
-  `SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8 AUDIT=strict ./run.sh`, once
-  the snapshot is assembled on BOTH nodes
+- Round 36 made the Viterbi pack `2.0bpw-mcg-viterbi-lmhead-mxfp8` the
+  default `SNAPSHOT_SHA`. It was rejected as written in round 35 P4 and
+  adopted by the protocol owner (step 6, pack changes). Every line in this
+  section that reproduces a round-35-or-earlier config must also set
+  `SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8`, the round-33..35 pin (the Round-34
+  line above does, and boot-lm.sh exports it). The round-35
+  serve itself is `SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8 AUDIT=strict ./run.sh`
+  on round-36 code. Until the Hub revision exists, the Viterbi snapshot must
+  be assembled on BOTH nodes
   (`/home/sfxnz/projects/data/dsv41-requant-viterbi/PLAN.txt` section 9:
   `python3 .../code/tools/requant_full.py assemble --node spark1`, and on
   spark2 `... assemble --node spark2 --state-host spark1`). `run.sh`

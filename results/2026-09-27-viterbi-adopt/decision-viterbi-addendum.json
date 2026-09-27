@@ -1,0 +1,252 @@
+{
+ "what": "Round 36 addendum to results/2026-09-26-serve-r3/decision-viterbi.json (round 35 P4). Records the protocol owner's decision to adopt the Viterbi pack 2.0bpw-mcg-viterbi-lmhead-mxfp8 as the recipe default and to publish it to the Hub as a new revision, and the protocol amendment that goes with it (ARMS.md step 6, 'Pack changes'). Numbers are copied by decision-viterbi-addendum-build.py.txt from decision-viterbi.json; nothing here was re-measured.",
+ "date": "2026-09-27",
+ "source": "results/2026-09-26-serve-r3/decision-viterbi.json (CUR-1, VIT-1, CUR-2, VIT-2 boot dirs)",
+ "p4_verdict_as_written": {
+  "verdict": "REJECT SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8. Two independent grounds, each sufficient under the rule as written. (1) Quality: quick and full FAIL on both VIT boots, on selfcons.golden_hazard only (ARMS.md step 6 needs quick to pass on every candidate boot; ARMS-r3 s7 needs quick and full to pass with no component outside its band), so 'better or equal on every gate' does not hold even though NLL improves far beyond its CI. (2) Speed: acceptance is not matched, so the s7 gate is tok/s on the honest cells with the noise rule; L.A.I.L tok/s is worse beyond the noise (-1.024 tok/s, -2.38%, noise 0.345; both VIT boots below the CUR median), while prose_long c=1 tok/s is better beyond it (+3.108, +7.04%, noise 2.754). The serve pin stays SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8.",
+  "promote": [],
+  "reject": [
+   "SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8"
+  ],
+  "grounds": {
+   "a_quality_golden_hazard": "quick and full failed on both VIT boots on selfcons.golden_hazard only (every other component passed)",
+   "b_speed_lail": "L.A.I.L tok/s worse beyond noise while prose_long c=1 tok/s was better beyond noise"
+  }
+ },
+ "decision": {
+  "by": "the user (protocol owner)",
+  "adopt": "SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8 becomes the recipe default (recipe.yaml model.revision / serve.env.SNAPSHOT_SHA)",
+  "publish": "publish the pack to sfxnz/DeepSeek-V4.1-Flash-EXL3 as the new Hub revision 2.0bpw-mcg-viterbi-lmhead-mxfp8 (the Publish stage; this PR merges after it)",
+  "golden_hazard_for_pack_changes": "not applicable. The golden hazard compares greedy output with goldens recorded on the same pack, so it gates kernel/numerics levers only.",
+  "speed_ground": "accepted by the protocol owner as a trade: L.A.I.L -2.38% (acceptance lower) against prose_long c=1 +7.04% (acceptance higher), c=1 ms/step equal within noise, and the quality gains below. The measured numbers stand and are not reinterpreted.",
+  "previous_revisions_kept": [
+   "2.0bpw-mcg-lmhead-mxfp8 (round-33..35 serve pin)",
+   "2.0bpw-mcg (stock pack)"
+  ]
+ },
+ "protocol_amendment": {
+  "where": "ARMS.md step 6, paragraph 'Pack changes (amendment, round 36, 2026-09-27)'; tests/quality_eval.py docstring and --baseline help; README quality section",
+  "golden_gate_scope": "selfcons.golden_hazard compares the arm's greedy text with run A of the baseline's selfcons.runs. It gates kernel/numerics levers on the pack the baseline was recorded on. It does not apply to a pack (weights) change.",
+  "pack_change_judged_by": [
+   "paired NLL over the 40 fixed passages (per-passage delta vs the current pack, 95% CI, Wilcoxon; not worse; same-arm cross-boot per-passage deltas are the noise)",
+   "paired benchmark tests over the fixed items (GSM8K, GSM8K-think, MMLU, tools exact_args; McNemar per interleaved pair and a pooled sign test; no significant loss)",
+   "A/A self-consistency (the new pack's aa_hazard and cross-boot hazard inside the current pack's A/A band)",
+   "every other quick/full component in its band (decode probe, needle, tools json/no_call, c2, vision, tests/correctness.sh --full)",
+   "speed per the rest of ARMS.md step 6"
+  ],
+  "on_adoption": "re-record the quality baseline and goldens on the new pack (quick + full, no --baseline, on the first boot of the new defaults), make it the documented baseline, and gate every later boot against it, including the golden hazard within the A/A band; keep the old baseline for the previous pack"
+ },
+ "p4_evidence_under_the_amended_rule": {
+  "paired_nll": {
+   "unit": "per-passage mean NLL (nats/token), 40 fixed passages; arm value per passage = mean of its 4 readings (quick + full first pass, 2 boots)",
+   "CUR_mean_of_passages": 0.24342,
+   "VIT_mean_of_passages": 0.13853,
+   "delta_mean": -0.10489,
+   "ci95_t": [
+    -0.12856,
+    -0.08122
+   ],
+   "ci95_bootstrap": [
+    -0.12851,
+    -0.08311
+   ],
+   "relative_mean_pct": -42.12,
+   "passages_lower_on_VIT": 39,
+   "passages_higher_on_VIT": 1,
+   "wilcoxon_p_two_sided": 5.4569682106375694e-12,
+   "same_arm_AA_control_mean_deltas": {
+    "CUR-2/quick - CUR-1/quick": -0.00155,
+    "CUR-2/full - CUR-1/full": 0.00047,
+    "VIT-2/quick - VIT-1/quick": 0.00117,
+    "VIT-2/full - VIT-1/full": 0.00071
+   },
+   "token_weighted_mean_nll": {
+    "CUR-1/quick": 0.24387,
+    "CUR-1/full": 0.243424,
+    "VIT-1/quick": 0.137498,
+    "VIT-1/full": 0.1386,
+    "CUR-2/quick": 0.24232,
+    "CUR-2/full": 0.24389,
+    "VIT-2/quick": 0.138664,
+    "VIT-2/full": 0.139313
+   },
+   "reading": "better, far beyond the same-arm cross-boot noise"
+  },
+  "paired_benchmarks": {
+   "gsm8k": {
+    "per_pair": {
+     "VIT-1/full vs CUR-1/full": {
+      "CUR_k": 95,
+      "VIT_k": 97,
+      "n": 100,
+      "mcnemar_exact_p": 0.625
+     },
+     "VIT-2/full vs CUR-2/full": {
+      "CUR_k": 94,
+      "VIT_k": 97,
+      "n": 100,
+      "mcnemar_exact_p": 0.25
+     }
+    },
+    "pooled_items_VIT_better": 5,
+    "pooled_items_CUR_better": 1,
+    "pooled_sign_test_exact_p": 0.21875,
+    "CUR_total_correct": 189,
+    "VIT_total_correct": 194,
+    "total_items_scored_per_arm": 200
+   },
+   "gsm8k_think": {
+    "per_pair": {
+     "VIT-1/full vs CUR-1/full": {
+      "CUR_k": 39,
+      "VIT_k": 39,
+      "n": 40,
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-2/full vs CUR-2/full": {
+      "CUR_k": 39,
+      "VIT_k": 39,
+      "n": 40,
+      "mcnemar_exact_p": 1.0
+     }
+    },
+    "pooled_items_VIT_better": 0,
+    "pooled_items_CUR_better": 0,
+    "pooled_sign_test_exact_p": 1.0,
+    "CUR_total_correct": 78,
+    "VIT_total_correct": 78,
+    "total_items_scored_per_arm": 80
+   },
+   "mmlu": {
+    "per_pair": {
+     "VIT-1/full vs CUR-1/full": {
+      "CUR_k": 196,
+      "VIT_k": 206,
+      "n": 228,
+      "mcnemar_exact_p": 0.04139
+     },
+     "VIT-2/full vs CUR-2/full": {
+      "CUR_k": 198,
+      "VIT_k": 204,
+      "n": 228,
+      "mcnemar_exact_p": 0.21011
+     }
+    },
+    "pooled_items_VIT_better": 15,
+    "pooled_items_CUR_better": 7,
+    "pooled_sign_test_exact_p": 0.1338,
+    "CUR_total_correct": 394,
+    "VIT_total_correct": 410,
+    "total_items_scored_per_arm": 456
+   },
+   "tools_exact_args": {
+    "per_pair": {
+     "VIT-1/quick vs CUR-1/quick": {
+      "CUR_k": 21,
+      "VIT_k": 22,
+      "n": 22,
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-1/full vs CUR-1/full": {
+      "CUR_k": 22,
+      "VIT_k": 22,
+      "n": 22,
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-2/quick vs CUR-2/quick": {
+      "CUR_k": 20,
+      "VIT_k": 22,
+      "n": 22,
+      "mcnemar_exact_p": 0.5
+     },
+     "VIT-2/full vs CUR-2/full": {
+      "CUR_k": 21,
+      "VIT_k": 22,
+      "n": 22,
+      "mcnemar_exact_p": 1.0
+     }
+    },
+    "pooled_items_VIT_better": 2,
+    "pooled_items_CUR_better": 0,
+    "pooled_sign_test_exact_p": 0.5,
+    "CUR_total_correct": 84,
+    "VIT_total_correct": 88,
+    "total_items_scored_per_arm": 88
+   },
+   "reading": "no loss on any; GSM8K 97/97 vs 95/94, MMLU 206/204 vs 196/198, tools exact 88/88 vs 84/88 favour VIT but are not significant after pooling"
+  },
+  "aa_self_consistency": {
+   "aa_hazard_per_reading": {
+    "CUR-1/quick": 0.01681,
+    "CUR-1/full": 0.01455,
+    "CUR-2/quick": 0.0274,
+    "CUR-2/full": 0.01232,
+    "VIT-1/quick": 0.01609,
+    "VIT-1/full": 0.00843,
+    "VIT-2/quick": 0.01166,
+    "VIT-2/full": 0.01207
+   },
+   "cross_boot_same_pack": {
+    "CUR-2/quick vs CUR-1/quick run A (same pack, cross-boot)": 0.01825,
+    "VIT-2/quick vs VIT-1/quick run A (same pack, cross-boot)": 0.01341,
+    "CUR-2/full vs CUR-1/full run A (same pack, cross-boot)": 0.01675,
+    "VIT-2/full vs VIT-1/full run A (same pack, cross-boot)": 0.00985
+   },
+   "cross_pack": {
+    "VIT-1/quick vs CUR-1/quick run A (cross-pack, interleaved pair 1)": 0.09756,
+    "VIT-2/quick vs CUR-2/quick run A (cross-pack, interleaved pair 2)": 0.10204,
+    "VIT-1/full vs CUR-1/full run A (cross-pack, interleaved pair 1)": 0.0939,
+    "VIT-2/full vs CUR-2/full run A (cross-pack, interleaved pair 2)": 0.0939
+   },
+   "limits_as_written": {
+    "quick": 0.03206,
+    "full": 0.04348
+   },
+   "reading": "VIT's own A/A hazards (0.00843-0.01609) are at or below CUR's (0.01232-0.0274), and its same-pack cross-boot hazards (0.01341 quick, 0.00985 full) are below CUR's (0.01825, 0.01675). Only the cross-pack hazard (the golden gate against old-pack goldens, 0.0939-0.10204) is high, by construction"
+  },
+  "other_components": {
+   "decode.median_abs_dlogprob": "better (no overlap; aggregates only, no paired test possible)",
+   "decode.gen_nll_prefill": "equal or better (band gate; texts differ per arm so not paired)",
+   "selfcons.aa_hazard": "equal (VIT inside CUR's range)",
+   "tools.exact_args": "equal or better, not significant",
+   "tools.json_valid": "equal",
+   "tools.no_call": "equal",
+   "needle.found": "equal",
+   "gsm8k.acc": "equal or better, not significant",
+   "gsm8k_think.acc": "equal",
+   "mmlu.acc": "equal or better, not significant after pooling",
+   "c2": "equal",
+   "vision": "equal",
+   "correctness --full (s7, VIT only)": "pass"
+  },
+  "golden_hazard_as_run": {
+   "verdict": "WORSE: fails its limit on all 4 VIT readings",
+   "evidence": "CUR [0.01566, 0.01972, 0.01641, 0.0195], VIT [0.09756, 0.0939, 0.10204, 0.0939] (20/24 pairs diverge on every VIT reading); limits quick 0.03206, full 0.04348"
+  },
+  "speed": {
+   "lail_tok_s": "CUR [42.927, 43.123] (median 43.025), VIT [41.829, 42.174] (median 42.001), delta -1.024 (-2.38%), noise 0.345",
+   "prose_long_c1_tok_s": "CUR [44.893, 43.395] (median 44.144), VIT [45.875, 48.629] (median 47.252), delta +3.108 (+7.04%), noise 2.754",
+   "ms_step_c1": "four prose -0.084 (noise 0.185), prose_long -0.032 (noise 0.426), L.A.I.L -0.322 (noise 0.733) ms/step: equal within noise, as s7 expects",
+   "acceptance": "per-boot medians, CUR vs VIT: L.A.I.L [2.118, 2.1225] vs [2.044, 2.0857]; prose_long c=1 [2.2222, 2.117] vs [2.2472, 2.369]; four prose c=1 [2.6184, 2.5443] vs [2.3976, 2.439]; structured c=1 [3.9607843137254903, 3.9607843137254903] vs [4.0, 4.0]",
+   "lail_acceptance_arm_medians": {
+    "CUR": 2.1202,
+    "VIT": 2.0648
+   },
+   "non_inferiority_ok": {
+    "pp_warm_8k": true,
+    "pp_warm_32k": true,
+    "pp_novel_8k": true,
+    "pp_novel_32k": true,
+    "prose_long_c2_agg_tok_s": true,
+    "warm_prefix_hit_fraction": true
+   }
+  }
+ },
+ "follow_up_in_round_36": [
+  "commit k3v protocol amendment (this file)",
+  "recipe default -> 2.0bpw-mcg-viterbi-lmhead-mxfp8 (recipe.yaml, render, README, model-card.md, AGENTS.md, tests)",
+  "V-1: boot the new defaults (AUDIT=strict, no overrides), full ARMS-r3 section 2 procedure, record the new quality baseline (quick + full, no --baseline) in results/2026-09-27-viterbi-adopt/quality-baseline/",
+  "V-2: boot identically, full procedure, quality quick + full against the new baseline",
+  "pool V-1 + V-2 into recipe.yaml measured rows; RESULTS.md round 36; flags.md"
+ ]
+}

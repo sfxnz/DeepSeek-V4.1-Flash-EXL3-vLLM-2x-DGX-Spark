@@ -20,7 +20,12 @@ Components (vendored data in tests/quality/, see tests/quality/README.md):
              0.1/0.5/0.9. Filler is generated here from a seeded RNG, not taken
              from repo text, and a per-run header busts the prefix cache.
   selfcons   greedy control: 12 prompts x 2 runs. Reports the A/A flip rate
-             and, with --baseline, first divergence vs the baseline's run A.
+             and, with --baseline, first divergence vs the baseline's run A
+             (the goldens). The golden hazard only holds against a baseline
+             recorded on the same pack (weights): it gates kernel/numerics
+             levers. A pack change is judged on paired NLL, paired task
+             scores and A/A self-consistency instead, and re-records the
+             baseline on the new pack (ARMS.md step 6, pack changes).
   c2         two concurrent requests that must both be right.
   vision     64x64 solid-red PNG must be answered "red" (whole word).
   gsm8k      GSM8K-100, temperature 0, thinking off            (--full only)
@@ -32,7 +37,7 @@ low} except gsm8k_think. Concurrency never exceeds 2 (MAX_NUM_SEQS=2); nll,
 decode, selfcons and needle run at c=1. Never run this next to a bench.
 
   python3 tests/quality_eval.py --quick --out q.json
-  python3 tests/quality_eval.py --quick --baseline results/2026-09-24-review/quality-baseline/quick.json
+  python3 tests/quality_eval.py --quick --baseline results/2026-09-27-viterbi-adopt/quality-baseline/quick.json
   python3 tests/quality_eval.py --result armB.json --baseline armA.json   # offline re-gate
 """
 
@@ -677,7 +682,9 @@ def main(argv=None) -> int:
     mode.add_argument("--full", action="store_true", help="adds GSM8K, MMLU, 128k needle")
     ap.add_argument("--url", default="http://127.0.0.1:8000")
     ap.add_argument("--model", default=None, help="default: first id in /v1/models")
-    ap.add_argument("--baseline", type=Path, help="JSON from an earlier run to gate against")
+    ap.add_argument("--baseline", type=Path,
+                    help="JSON from an earlier run on the same pack to gate against "
+                         "(its selfcons run A is the golden)")
     ap.add_argument("--out", type=Path, help="write the full result JSON here")
     ap.add_argument("--only", help="comma list of components to run (debugging)")
     ap.add_argument("--result", type=Path,
