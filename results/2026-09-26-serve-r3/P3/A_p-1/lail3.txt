@@ -1,0 +1,22 @@
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=512 temperature=0.2 runs=3 phase=lail_prose c=1
+run=1 {"ttft_s": 0.3267235300736502, "decode_s": 14.73920754599385, "prompt_tokens": 61, "completion_tokens": 512, "finish_reason": "length", "chunks": 237, "lail_tok_s": 34.737281390624204, "recipe_tok_s": 34.66943513790814, "tokens_per_chunk": 2.160337552742616, "repeat_ratio": 0.002347417840375587, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. That inversion matters because it changes what you optimize. In a conventional serving stack, you treat cache occupancy as a tax on the memory budget you would otherwise spend on weigh", "acceptance_len": 2.169491525423729, "draft_acceptance_rate": 0.3898305084745763}
+run=2 {"ttft_s": 0.3582140550715849, "decode_s": 15.451061267987825, "prompt_tokens": 61, "completion_tokens": 512, "finish_reason": "length", "chunks": 249, "lail_tok_s": 33.13688238754083, "recipe_tok_s": 33.07216191412766, "tokens_per_chunk": 2.0562248995983934, "repeat_ratio": 0.002369668246445498, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On a DGX Spark with unified memory, the boundary between \"prompt processing\" and \"generation\" is not a wall but a gradient: the same physical pages that hold the system prompt's encode", "acceptance_len": 2.060483870967742, "draft_acceptance_rate": 0.353494623655914}
+run=3 {"ttft_s": 0.3503179739927873, "decode_s": 16.52104339795187, "prompt_tokens": 61, "completion_tokens": 512, "finish_reason": "length", "chunks": 266, "lail_tok_s": 30.990778709743786, "recipe_tok_s": 30.930249845076318, "tokens_per_chunk": 1.9248120300751879, "repeat_ratio": 0.002325581395348837, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. That inversion matters because it reorders every intuition you brought from discrete GPUs. On a discrete card, memory is a scarce commodity you ration against weights, activations, and", "acceptance_len": 1.9283018867924528, "draft_acceptance_rate": 0.30943396226415093}
+natural phase=lail_prose completion_tokens=512 finish_reason=length
+SUMMARY {
+  "phase": "lail_prose",
+  "concurrency": 1,
+  "max_tokens": 512,
+  "temperature": 0.2,
+  "n": 3,
+  "median_lail_tok_s": 33.13688238754083,
+  "median_recipe_tok_s": 33.07216191412766,
+  "median_ttft_s": 0.3503179739927873,
+  "median_completion_tokens": 512,
+  "natural_completion_tokens": 512,
+  "natural_finish_reason": "length",
+  "post_eos_fraction": 0.0,
+  "median_acceptance_len": 2.060483870967742,
+  "median_draft_acceptance_rate": 0.353494623655914
+}
+rc=0

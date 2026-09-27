@@ -1,0 +1,160 @@
+arm=W-1 ts=2026-09-26T20:48:38Z host=spark1 out=results/2026-09-26-serve-r3/W-1/four
+== spark1 ==
+uptime_s 620920.91
+MemAvailable:   23187036 kB
+Buffers:           41312 kB
+Cached:          4798720 kB
+Active(file):     456272 kB
+Inactive(file):  4113000 kB
+Dirty:               464 kB
+== spark2 ==
+uptime_s 1158278.93
+MemAvailable:   25126840 kB
+Buffers:           20276 kB
+Cached:          6325356 kB
+Active(file):     368696 kB
+Inactive(file):  5710964 kB
+Dirty:              8444 kB
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=200 runs=9 concurrency=[1] phases=['prose']
+phase=prose c=1 run=1 wall=3.97s agg=52.85 tok/s per_stream=[52.86] ttft=[0.204] acc=2.557 ms_step=[48.4]
+phase=prose c=1 run=2 wall=3.92s agg=53.70 tok/s per_stream=[53.71] ttft=[0.211] acc=2.590 ms_step=[48.2]
+phase=prose c=1 run=3 wall=3.83s agg=54.78 tok/s per_stream=[54.80] ttft=[0.201] acc=2.618 ms_step=[47.8]
+phase=prose c=1 run=4 wall=3.98s agg=53.03 tok/s per_stream=[53.04] ttft=[0.231] acc=2.564 ms_step=[48.3]
+phase=prose c=1 run=5 wall=3.91s agg=54.18 tok/s per_stream=[54.19] ttft=[0.233] acc=2.623 ms_step=[48.4]
+phase=prose c=1 run=6 wall=4.00s agg=52.43 tok/s per_stream=[52.43] ttft=[0.203] acc=2.610 ms_step=[49.8]
+phase=prose c=1 run=7 wall=3.90s agg=54.23 tok/s per_stream=[54.25] ttft=[0.229] acc=2.658 ms_step=[49.0]
+phase=prose c=1 run=8 wall=3.92s agg=53.48 tok/s per_stream=[53.49] ttft=[0.202] acc=2.551 ms_step=[47.7]
+phase=prose c=1 run=9 wall=3.86s agg=54.95 tok/s per_stream=[54.96] ttft=[0.237] acc=2.753 ms_step=[50.1]
+natural phase=prose completion_tokens=78 finish_reason=stop
+SUMMARY [
+  {
+    "phase": "prose",
+    "concurrency": 1,
+    "median_decode_tok_s": 53.71407563161044,
+    "median_ttft_s": 0.2114218029892072,
+    "median_agg_tok_s": 53.70403597535577,
+    "median_completion_tokens": 200,
+    "n": 9,
+    "acceptance_len": 2.61271676300578,
+    "draft_acceptance_rate": 0.5375722543352601,
+    "run_acceptance_len": [
+      2.557,
+      2.5897,
+      2.6184,
+      2.5641,
+      2.6234,
+      2.6104,
+      2.6579,
+      2.5513,
+      2.7534
+    ],
+    "median_run_acceptance_len": 2.6103896103896105,
+    "median_ms_per_step": 48.375154894423396,
+    "ttft_s_p50": 0.2114218029892072,
+    "ttft_s_p90": 0.23391117579303683,
+    "ttft_s_p99": 0.23626705108210444,
+    "inter_chunk_ms_p50": 47.573081916198134,
+    "inter_chunk_ms_p90": 50.60832998715341,
+    "inter_chunk_ms_p99": 70.93144963262598,
+    "finish_reasons": {
+      "length": 9
+    },
+    "natural_completion_tokens": 78,
+    "natural_finish_reason": "stop",
+    "natural_covers_max": false,
+    "post_eos_fraction": 0.61
+  }
+]
+ctx=8192 pp_warm run=1 doc=7976 ttft=10.62s rate=751.2 tok/s acc=-
+ctx=8192 pp_warm run=2 doc=8163 ttft=10.28s rate=794.7 tok/s acc=-
+ctx=8192 pp_warm run=3 doc=8121 ttft=10.46s rate=776.9 tok/s acc=-
+ctx=8192 pp_novel run=1 doc=8126 ttft=9.52s rate=854.2 tok/s acc=-
+ctx=8192 pp_novel run=2 doc=8142 ttft=10.46s rate=779.1 tok/s acc=-
+ctx=8192 pp_novel run=3 doc=8164 ttft=9.83s rate=830.6 tok/s acc=-
+ctx=8192 tg run=1 doc=8016 ttft=10.42s rate=46.4 tok/s acc=2.4615384615384617
+ctx=8192 tg run=2 doc=8165 ttft=10.43s rate=36.0 tok/s acc=2.0
+ctx=8192 tg run=3 doc=8042 ttft=10.29s rate=49.9 tok/s acc=2.666666666666667
+ctx=32768 pp_warm run=1 doc=32567 ttft=42.30s rate=770.0 tok/s acc=-
+ctx=32768 pp_warm run=2 doc=32467 ttft=41.49s rate=782.7 tok/s acc=-
+ctx=32768 pp_warm run=3 doc=32270 ttft=42.42s rate=760.9 tok/s acc=-
+ctx=32768 pp_novel run=1 doc=32684 ttft=40.18s rate=813.5 tok/s acc=-
+ctx=32768 pp_novel run=2 doc=32673 ttft=40.16s rate=813.7 tok/s acc=-
+ctx=32768 pp_novel run=3 doc=32655 ttft=40.12s rate=814.1 tok/s acc=-
+ctx=32768 tg run=1 doc=32727 ttft=42.08s rate=54.6 tok/s acc=3.0
+ctx=32768 tg run=2 doc=32061 ttft=41.70s rate=44.5 tok/s acc=2.357142857142857
+ctx=32768 tg run=3 doc=32756 ttft=41.39s rate=46.9 tok/s acc=2.6923076923076925
+SUMMARY [
+ {
+  "ctx": 8192,
+  "phase": "pp_warm",
+  "median_rate_tok_s": 776.9,
+  "median_ttft_s": 10.46,
+  "doc_tokens": 7976,
+  "acceptance_len": 0,
+  "runs": 3
+ },
+ {
+  "ctx": 8192,
+  "phase": "pp_novel",
+  "median_rate_tok_s": 830.6,
+  "median_ttft_s": 9.83,
+  "doc_tokens": 8126,
+  "acceptance_len": 0,
+  "runs": 3
+ },
+ {
+  "ctx": 8192,
+  "phase": "tg",
+  "median_rate_tok_s": 46.4,
+  "median_ttft_s": 10.42,
+  "doc_tokens": 8016,
+  "acceptance_len": 2.46,
+  "runs": 3
+ },
+ {
+  "ctx": 32768,
+  "phase": "pp_warm",
+  "median_rate_tok_s": 770.0,
+  "median_ttft_s": 42.3,
+  "doc_tokens": 32567,
+  "acceptance_len": 0,
+  "runs": 3
+ },
+ {
+  "ctx": 32768,
+  "phase": "pp_novel",
+  "median_rate_tok_s": 813.7,
+  "median_ttft_s": 40.16,
+  "doc_tokens": 32684,
+  "acceptance_len": 0,
+  "runs": 3
+ },
+ {
+  "ctx": 32768,
+  "phase": "tg",
+  "median_rate_tok_s": 46.9,
+  "median_ttft_s": 41.7,
+  "doc_tokens": 32727,
+  "acceptance_len": 2.69,
+  "runs": 3
+ }
+]
+== spark1 spark1 2026-09-26T20:57:07Z ==
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       100Gi       7.8Gi       258Mi        15Gi        21Gi
+Swap:           15Gi       7.4Gi       8.6Gi
+               total        used        free      shared  buff/cache   available
+Mem:     130663170048 107929534464  8394104832   271482880 16327688192 22733635584
+Swap:    17179865088  7931891712  9247973376
+== spark2 ==
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi        98Gi       3.1Gi       253Mi        21Gi        23Gi
+Swap:           15Gi       4.8Gi        11Gi
+               total        used        free      shared  buff/cache   available
+Mem:     130663165952 105901465600  3360096256   265510912 23344844800 24761700352
+Swap:    17179865088  5117202432 12062662656
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=512 temperature=0.2 runs=3 phase=lail_prose c=1
+run=1 {"ttft_s": 0.2961323009803891, "decode_s": 11.226010001031682, "prompt_tokens": 61, "completion_tokens": 512, "finish_reason": "length", "chunks": 226, "lail_tok_s": 45.60836841878341, "recipe_tok_s": 45.51928957421547, "tokens_per_chunk": 2.265486725663717, "repeat_ratio": 0.0024390243902439024, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On a DGX Spark with unified memory, that product is manufactured once and then rented out to every tab that inherits the same system prompt prefix. The economics are straightforward: p", "acceptance_len": 2.2844444444444445, "draft_acceptance_rate": 0.42814814814814817}
+PARTIAL capture: rc=0 at=2026-09-26T20:57:28Z
+Terminated
+rc=124

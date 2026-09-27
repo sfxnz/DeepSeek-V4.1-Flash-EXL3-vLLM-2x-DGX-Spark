@@ -1,0 +1,224 @@
+#!/usr/bin/env python3
+# ARMS-r3 section 5 (P2) bundle decision: ARMS.md step 6 applied to A-1, K-1, KC-1, A-2, K-2, KC-2.
+# Reads only the raw per-boot evidence in this directory (lail10.txt, bench_decode.txt,
+# four/four_numbers.json, four/02-micro.log, quality_*.json, gate files), not the summary.json
+# files the boot stages wrote. Run from this directory:
+#   python3 decision-bundle-compute.py.txt <out.json>   (writes the raw computation to <out.json>)
+import json, os, re, statistics as st, sys
+
+ARMS = {"A": ["A-1", "A-2"], "K": ["K-1", "K-2"], "KC": ["KC-1", "KC-2"]}
+BOOTS = [b for v in ARMS.values() for b in v]
+
+
+def r(x, n=3):
+    return None if x is None else round(x, n)
+
+
+def lail(b):
+    runs = []
+    for line in open(f"{b}/lail10.txt"):
+        m = re.match(r"run=\d+ (\{.*\})$", line.strip())
+        if m:
+            runs.append(json.loads(m.group(1)))
+    assert len(runs) == 10, (b, len(runs))
+    tok = [x["lail_tok_s"] for x in runs]
+    ms = [x["decode_s"] / x["chunks"] * 1000.0 for x in runs]
+    acc = [x["acceptance_len"] for x in runs]
+    fin = {x["finish_reason"] for x in runs}
+    return dict(tok_s=st.median(tok), ms_step=st.median(ms), acc=st.median(acc),
+                acc_range=[min(acc), max(acc)], ms_runs=[r(v, 2) for v in ms],
+                tok_runs=[r(v, 2) for v in tok], finish=sorted(fin), n=len(runs))
+
+
+def bench(b):
+    txt = open(f"{b}/bench_decode.txt").read()
+    js = txt[txt.index("SUMMARY [") + len("SUMMARY "):]
+    js = js[: js.rindex("]") + 1]
+    cells = json.loads(js)
+    out = {}
+    for c in cells:
+        out[f"{c['phase']}_c{c['concurrency']}"] = c
+    return out
+
+
+def micro(b):
+    runs = {}
+    for line in open(f"{b}/four/02-micro.log"):
+        m = re.match(r"ctx=(\d+) (pp_warm|pp_novel) run=\d+ .* rate=([\d.]+) tok/s", line)
+        if m:
+            k = f"{m.group(2)}_{int(m.group(1)) // 1024}k"
+            runs.setdefault(k, []).append(float(m.group(3)))
+    return runs
+
+
+def gate_file_rc(path):
+    rcs = re.findall(r"^rc=(\d+)", open(path).read(), re.M)
+    return [int(x) for x in rcs]
+
+
+def mem_after_smoke(b):
+    av = []
+    for line in open(f"{b}/mem-after-smoke.txt"):
+        if line.startswith("Mem:"):
+            av.append(line.split()[6])
+    return av
+
+
+def quality(path):
+    d = json.load(open(path))
+    g = {x["gate"]: x for x in d["gates"]}
+    it = d["components"]["tools"]["items"]
+    ex = [i for i in it if "exact" in i]
+    return dict(file=os.path.relpath(path), mode=d["mode"], passed=d["pass"],
+                nll=g["nll.mean_nll"]["value"], decode_median_dlp=g["decode.median_abs_dlogprob"]["value"],
+                gen_nll_prefill=g["decode.gen_nll_prefill"]["value"],
+                aa_hazard=g["selfcons.aa_hazard"]["value"], golden_hazard=g["selfcons.golden_hazard"]["value"],
+                hazard_limit=g["selfcons.golden_hazard"]["limit"],
+                selfcons_identical=f"{d['components']['selfcons']['identical']}/{d['components']['selfcons']['prompts']}",
+                tools_exact=f"{sum(1 for i in ex if i['exact'])}/{len(ex)}",
+                tools_exact_failed=[i["id"] for i in ex if not i["exact"]],
+                tools_json=g["tools.json_valid"]["value"], no_call=g["tools.no_call"]["value"],
+                needle=f"{g['needle.found']['value']}/{g['needle.found']['limit']}",
+                failed_gates=[k for k, v in g.items() if not v["pass"]],
+                extra={k: g[k]["value"] for k in ("gsm8k.acc", "gsm8k_think.acc", "mmlu.acc") if k in g})
+
+
+def boot(b):
+    f = json.load(open(f"{b}/four/four_numbers.json"))
+    bd = bench(b)
+    L = lail(b)
+    pl = {c["concurrency"]: c for c in f["prose_long_cells"]}
+    mr = micro(b)
+    q = {"quick": quality(f"{b}/quality_quick.json")}
+    if os.path.exists(f"{b}/quality_quick_rep2.json"):
+        q["quick_rep2_extra"] = quality(f"{b}/quality_quick_rep2.json")
+    if os.path.exists(f"{b}/quality_full.json"):
+        q["full"] = quality(f"{b}/quality_full.json")
+    corr = re.findall(r'CORRECTNESS \{"pass": (\d+), "total": (\d+)\}', open(f"{b}/correctness.txt").read())
+    m = dict(
+        commit=open(f"{b}/commit.txt").read().strip(),
+        contaminated=os.path.exists(f"{b}/CONTAMINATED"),
+        # ms per verify step (lower is better)
+        four_prose_c1_ms_step=f["prose_median_ms_per_step"],
+        prose_long_c1_ms_step=pl[1]["median_ms_per_step"],
+        lail_ms_step=L["ms_step"],
+        bench_prose_c1_ms_step=bd["prose_c1"]["median_ms_per_step"],
+        structured_c1_ms_step=bd["structured_c1"]["median_ms_per_step"],
+        bench_prose_c2_ms_step=bd["prose_c2"]["median_ms_per_step"],
+        structured_c2_ms_step=bd["structured_c2"]["median_ms_per_step"],
+        prose_long_c2_ms_step=pl[2]["median_ms_per_step"],
+        # tok/s (higher is better)
+        lail_tok_s=L["tok_s"],
+        four_prose_c1_tok_s=f["prose_median_tok_s"],
+        bench_prose_c1_tok_s=bd["prose_c1"]["median_decode_tok_s"],
+        structured_c1_tok_s=bd["structured_c1"]["median_decode_tok_s"],
+        prose_long_c1_tok_s=pl[1]["median_decode_tok_s"],
+        bench_prose_c2_agg_tok_s=bd["prose_c2"]["median_agg_tok_s"],
+        structured_c2_agg_tok_s=bd["structured_c2"]["median_agg_tok_s"],
+        prose_long_c2_agg_tok_s=pl[2]["median_agg_tok_s"],
+        lail_after_c2_3x_tok_s=f["lail_prose_median_tok_s"],
+        # non-inferiority rows
+        pp_warm_8k=f["prefill_8k_tok_s"], pp_warm_32k=f["prefill_32k_tok_s"],
+        pp_novel_8k=f["prefill_novel_8k_tok_s"], pp_novel_32k=f["prefill_novel_32k_tok_s"],
+        pp_runs=mr,
+        warm_prefix_hit_fraction=f["warm_prefix"]["hit_fraction_of_expected"],
+        # acceptance (per-boot median_run_acceptance_len and the per-run range)
+        acc_four_prose_c1=f["prose_cell"]["median_run_acceptance_len"],
+        acc_four_prose_c1_runs=f["prose_cell"]["run_acceptance_len"],
+        acc_prose_long_c1=pl[1]["median_run_acceptance_len"],
+        acc_prose_long_c1_runs=pl[1]["run_acceptance_len"],
+        acc_lail=L["acc"], acc_lail_range=L["acc_range"],
+        acc_bench_prose_c1=bd["prose_c1"]["median_run_acceptance_len"],
+        acc_structured_c1=bd["structured_c1"]["median_run_acceptance_len"],
+        lail_ms_runs=L["ms_runs"], lail_tok_runs=L["tok_runs"],
+        # honest cells and gates
+        prose_long_c1_finish=pl[1]["natural_finish_reason"], prose_long_c1_post_eos=pl[1]["post_eos_fraction"],
+        prose_long_c2_finish=pl[2]["natural_finish_reason"], prose_long_c2_post_eos=pl[2]["post_eos_fraction"],
+        lail_finish=L["finish"],
+        serve_env_ranks_match=f["serve_env_ranks_match"], lever_disarmed=f["lever_disarmed"],
+        disarm_lines=f["disarm_lines"],
+        disarm_scan_rc=gate_file_rc(f"{b}/disarm_scan.txt"),
+        gpu_guard_rc=gate_file_rc(f"{b}/gpu_guard.txt"),
+        e2e_rc=gate_file_rc(f"{b}/e2e.txt"),
+        correctness=f"{corr[-1][0]}/{corr[-1][1]}" if corr else None,
+        memavail_after_smoke_gib=mem_after_smoke(b),
+        quality=q,
+    )
+    return m
+
+
+def cmp(data, base, cand, key, lower_better):
+    xa = [data[b][key] for b in ARMS[base]]
+    xb = [data[b][key] for b in ARMS[cand]]
+    ma, mb = st.median(xa), st.median(xb)
+    sa, sb = max(xa) - min(xa), max(xb) - min(xb)
+    noise = max(sa, sb)
+    imp = (ma - mb) if lower_better else (mb - ma)
+    beats = all((v < ma) if lower_better else (v > ma) for v in xb)
+    return dict(base=[r(v) for v in xa], cand=[r(v) for v in xb], base_median=r(ma), cand_median=r(mb),
+                base_spread=r(sa), cand_spread=r(sb), noise=r(noise), improvement=r(imp),
+                improvement_pct=r(100.0 * imp / ma, 2), every_cand_boot_beats_base_median=beats,
+                beyond_noise=imp > noise, gate_pass=(imp > noise and beats))
+
+
+def noninf(data, base, cand, key):
+    xa = [data[b][key] for b in ARMS[base]]
+    xb = [data[b][key] for b in ARMS[cand]]
+    ma, mb = st.median(xa), st.median(xb)
+    sa, sb = max(xa) - min(xa), max(xb) - min(xb)
+    delta = mb - ma
+    return dict(base=[r(v) for v in xa], cand=[r(v) for v in xb], base_median=r(ma), cand_median=r(mb), delta=r(delta),
+                base_spread=r(sa), cand_spread=r(sb), noise=r(max(sa, sb)),
+                ok_vs_larger_spread=(-delta) <= max(sa, sb), ok_vs_base_spread_only=(-delta) <= sa)
+
+
+def acc_overlap(data, base, cand, key, runs_key):
+    pa = [data[b][key] for b in ARMS[base]]
+    pb = [data[b][key] for b in ARMS[cand]]
+    ra = [v for b in ARMS[base] for v in data[b][runs_key]]
+    rb = [v for b in ARMS[cand] for v in data[b][runs_key]]
+    return dict(base_per_boot=[r(v, 4) for v in pa], cand_per_boot=[r(v, 4) for v in pb],
+                per_boot_interval_overlap=max(min(pa), min(pb)) <= min(max(pa), max(pb)),
+                base_run_range=[r(min(ra), 4), r(max(ra), 4)], cand_run_range=[r(min(rb), 4), r(max(rb), 4)],
+                run_range_overlap=max(min(ra), min(rb)) <= min(max(ra), max(rb)))
+
+
+def main():
+    data = {b: boot(b) for b in BOOTS}
+    ms_keys = ["four_prose_c1_ms_step", "prose_long_c1_ms_step", "lail_ms_step", "bench_prose_c1_ms_step",
+               "structured_c1_ms_step", "bench_prose_c2_ms_step", "structured_c2_ms_step", "prose_long_c2_ms_step"]
+    tok_keys = ["lail_tok_s", "four_prose_c1_tok_s", "bench_prose_c1_tok_s", "structured_c1_tok_s",
+                "prose_long_c1_tok_s", "bench_prose_c2_agg_tok_s", "structured_c2_agg_tok_s",
+                "prose_long_c2_agg_tok_s", "lail_after_c2_3x_tok_s"]
+    ni_keys = ["pp_warm_8k", "pp_warm_32k", "pp_novel_8k", "pp_novel_32k", "prose_long_c2_agg_tok_s",
+               "warm_prefix_hit_fraction"]
+    out = {"per_boot": data, "comparisons": {}}
+    for base, cand in (("A", "K"), ("KC", "K"), ("A", "KC")):
+        name = f"{cand}_vs_{base}"
+        out["comparisons"][name] = dict(
+            ms_step={k: cmp(data, base, cand, k, True) for k in ms_keys},
+            tok_s={k: cmp(data, base, cand, k, False) for k in tok_keys},
+            non_inferiority={k: noninf(data, base, cand, k) for k in ni_keys},
+            acceptance=dict(
+                four_prose_c1=acc_overlap(data, base, cand, "acc_four_prose_c1", "acc_four_prose_c1_runs"),
+                prose_long_c1=acc_overlap(data, base, cand, "acc_prose_long_c1", "acc_prose_long_c1_runs"),
+            ),
+        )
+    json.dump(out, open(sys.argv[1], "w"), indent=1, default=str)
+    return out
+
+
+if __name__ == "__main__":
+    o = main()
+    for name, c in o["comparisons"].items():
+        print("==", name)
+        for grp in ("ms_step", "tok_s"):
+            for k, v in c[grp].items():
+                print(f"  {k:28s} base {v['base']} cand {v['cand']} med {v['base_median']}->{v['cand_median']} "
+                      f"imp {v['improvement']} ({v['improvement_pct']}%) noise {v['noise']} "
+                      f"beats {v['every_cand_boot_beats_base_median']} pass {v['gate_pass']}")
+        for k, v in c["non_inferiority"].items():
+            print(f"  NI {k:25s} base {v['base']} cand {v['cand']} delta {v['delta']} noise {v['noise']} "
+                  f"ok {v['ok_vs_larger_spread']} ok_base_only {v['ok_vs_base_spread_only']}")
+        for k, v in c["acceptance"].items():
+            print(f"  ACC {k} {v}")

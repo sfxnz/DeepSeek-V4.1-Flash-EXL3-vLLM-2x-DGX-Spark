@@ -1,0 +1,52 @@
+# final1 engagement check (docker logs of both ranks at 2026-09-27T03:31:20Z), arm final = the round-35 defaults (10 K envs + SPARSE_MARKOV=1 TOPK=1024 + WOA_PREPACK=1), KP add-ons off, pack 2.0bpw-mcg-lmhead-mxfp8
+# ARMS-r3 section 3 expected lines for the K env (must be present)
+widen_p2b_dataflow.py        'dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)'                     head(spark1)=1  worker(spark2)=1
+dense_gemv.py                'dense GEMV armed'                                                               head(spark1)=9  worker(spark2)=9
+mhc_det.py                   'dsv41: mhc det engaged'                                                         head(spark1)=2  worker(spark2)=2
+mhc_det.py(target 81 fn)     'dsv41: mhc det engaged: target: 81 fn packed'                                   head(spark1)=1  worker(spark2)=1
+mhc_det.py(draft 6 fn)       'dsv41: mhc det engaged: draft: 6 fn packed'                                     head(spark1)=1  worker(spark2)=1
+engram_native_stage.py       'dsv41: engram native stage self-check bit-exact'                                head(spark1)=1  worker(spark2)=1
+engram_early_hash.py         'dsv41: engram early hash matches the stock hash'                                head(spark1)=1  worker(spark2)=1
+attn_t2r_dedup.py            'dsv41: attention t2r dedup reuse bit-exact'                                     head(spark1)=1  worker(spark2)=1
+attn_t2r_dedup.py(census)    '[t2r-census]'                                                                   head(spark1)=7  worker(spark2)=7
+moe_prep_fused.py            'dsv41: moe prep fused self-check bit-exact'                                     head(spark1)=1  worker(spark2)=1
+candidate_mask_bounded.py    'dsv41: candidate mask bounded self-check bit-exact'                             head(spark1)=1  worker(spark2)=1
+indexer_wp_gemv.py           'dsv41: indexer weights_proj GEMV self-check bit-exact'                          head(spark1)=1  worker(spark2)=1
+swa_meta_fused.py            'dsv41: swa metadata fused self-check bit-exact'                                 head(spark1)=1  worker(spark2)=1
+# default-on lines (must be present)
+lmhead_mxfp8.py              'dsv41: lm_head mxfp8 enabled'                                                   head(spark1)=1  worker(spark2)=1
+engram_prefetch_v3.py        'dsv41: engram prefetch v3 armed'                                                head(spark1)=1  worker(spark2)=1
+engram_gather_v2.py          'dsv41: engram gather v2 self-check bit-exact'                                   head(spark1)=1  worker(spark2)=1
+fix_o_proj_woa_fp8.py        '[woa-requant] fp8 einsum engaged'                                               head(spark1)=43  worker(spark2)=43
+woa-prepack engaged          '[woa-prepack] packed ue8m0 scale engaged'                                       head(spark1)=43  worker(spark2)=43
+drop_page_cache.py           'dropped page cache of'                                                          head(spark1)=2  worker(spark2)=2
+vllm                         'Breakable CUDA graph enabled'                                                   head(spark1)=1  worker(spark2)=1
+engram_stage_census          '[native-census]'                                                                head(spark1)=551  worker(spark2)=551
+engram_stage_census(stock)   '[stage-census]'                                                                 head(spark1)=0  worker(spark2)=0
+# SPARSE_MARKOV lines
+SPARSE_MARKOV (PRESENT)      'dsv41: DSpark sparse Markov (gathered top-k)'                                   head(spark1)=4  worker(spark2)=3
+SPARSE_MARKOV k=1024 (PRESENT) 'dsv41: DSpark sparse Markov (gathered top-k) k=1024'                            head(spark1)=4  worker(spark2)=3
+SPARSE_MARKOV k=256 (ABSENT) 'dsv41: DSpark sparse Markov (gathered top-k) k=256'                             head(spark1)=0  worker(spark2)=0
+WOA prepack missing (ABSENT) 'DSV41_WOA_PREPACK=1 but this image'                                             head(spark1)=0  worker(spark2)=0
+# KP add-ons (must be absent)
+mhc_det_overlap.py           'dsv41: mhc det overlap engaged'                                                 head(spark1)=0  worker(spark2)=0
+engram_wkv_tp.py             'dsv41: engram wkv column-parallel self-check bit-exact'                         head(spark1)=0  worker(spark2)=0
+pm_qos.py                    'dsv41: pm qos engaged'                                                          head(spark1)=0  worker(spark2)=0
+nccl_eager_twin.py           'dsv41: nccl eager twin engaged'                                                 head(spark1)=0  worker(spark2)=0
+ar_l2_prefetch.py            'dsv41: ar l2 prefetch engaged'                                                  head(spark1)=0  worker(spark2)=0
+# snapshot
+head model path lines:       1 snapshots/2.0bpw-mcg-lmhead-mxfp8;      5 snapshots/2.0bpw-mcg-lmhead-mxfp8',;
+worker model path lines: 
+# disarm markers (LOG_DISARMED-style lines; expect 0)
+grep -ciE "disarm" head=0 worker=0
+known LOG_DISARMED markers 27, hits total 0
+# strict audit re-run on these logs
+==> audit ok: every expected patch engaged on head, worker
+strict audit rc=0
+# container env equality across ranks (DSV41/NCCL/VLLM; VLLM_HOST_IP excluded)
+env equal on both ranks
+round-35 lever envs (head): DSV41_AR_L2_PREFETCH=0 DSV41_ATTN_T2R_DEDUP=1 DSV41_CANDIDATE_MASK_BOUNDED=1 DSV41_DENSE_GEMV=1 DSV41_DSPARK_SPARSE_MARKOV=1 DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024 DSV41_ENGRAM_EARLY_HASH=1 DSV41_ENGRAM_NATIVE_STAGE=1 DSV41_ENGRAM_WKV_TP=0 DSV41_INDEXER_WP_GEMV=1 DSV41_MHC_DET_OVERLAP=0 DSV41_MHC_DET_SPLITS=16 DSV41_MOE_PREP_FUSED=1 DSV41_NCCL_EAGER_TWIN=0 DSV41_P2B_COOP=2 DSV41_SWA_META_FUSED=1 DSV41_WOA_PREPACK=1 
+running image: head sha256:3a002b55c9bc8086d6e63e3947cd0c6aaa092d415ec7d0305461078240eee675 worker sha256:3a002b55c9bc8086d6e63e3947cd0c6aaa092d415ec7d0305461078240eee675
+# model path in container args
+head: snapshots/2.0bpw-mcg-lmhead-mxfp8 
+worker: snapshots/2.0bpw-mcg-lmhead-mxfp8 

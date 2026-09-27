@@ -71,7 +71,7 @@ def _load_tool(rel: str, name: str):
 HUB_MODEL = "sfxnz/DeepSeek-V4.1-Flash-EXL3"
 HUB_REV = "2.0bpw-mcg-lmhead-mxfp8"
 STOCK_REV = "2.0bpw-mcg"
-IMAGE_TAG = "dsv41-flash-exl3-sm121:canonical-e13"
+IMAGE_TAG = "dsv41-flash-exl3-sm121:canonical-e14"
 PROMOTED_BOOT = "results/2026-09-22-endgame2/boot-lm.sh"
 HUB_DIRNAME = "models--sfxnz--DeepSeek-V4.1-Flash-EXL3"
 HUB_PACK_URL = "https://huggingface.co/sfxnz/DeepSeek-V4.1-Flash-EXL3"
@@ -314,6 +314,17 @@ ENGAGED_LOG = "\n".join(
         "(Worker_TP0 pid=1) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)",
         "(Worker_TP0 pid=1) INFO [breakable_cudagraph.py:290] Breakable CUDA graph enabled",
         "(Worker_TP0 pid=1) dsv41: engram gather v2 self-check bit-exact (r=120)",
+        # Round 35 defaults (k3 round-3 kernel bundle)
+        "(Worker_TP0 pid=1) dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)",
+        "(Worker_TP0 pid=1) dsv41: dense GEMV armed: qkv_a",
+        "(Worker_TP0 pid=1) dsv41: mhc det engaged: target: 81 fn packed",
+        "(Worker_TP0 pid=1) dsv41: engram native stage self-check bit-exact",
+        "(Worker_TP0 pid=1) dsv41: engram early hash matches the stock hash",
+        "(Worker_TP0 pid=1) dsv41: attention t2r dedup reuse bit-exact",
+        "(Worker_TP0 pid=1) dsv41: swa metadata fused self-check bit-exact",
+        "(Worker_TP0 pid=1) dsv41: moe prep fused self-check bit-exact",
+        "(Worker_TP0 pid=1) dsv41: candidate mask bounded self-check bit-exact",
+        "(Worker_TP0 pid=1) dsv41: indexer weights_proj GEMV self-check bit-exact",
     ]
 )
 

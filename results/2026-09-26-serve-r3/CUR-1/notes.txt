@@ -1,0 +1,30 @@
+CUR-1 boot notes (arm CUR = promoted config, the 10 K envs on round-34 defaults, on the current pack 2.0bpw-mcg-lmhead-mxfp8;
+image review-e14; P4 boot 1 of CUR#1, VIT#1, CUR#2, VIT#2)
+- Command: see command.txt (nohup, background; boot.txt). HEAD 7db92e9 at boot; docker/patch sha256 identical to K-2/KC-2
+  (61 files). First attempt counted (no fix, no retry). run.sh start 12:02:11Z, vLLM server start 12:12:01Z (590 s),
+  run.sh exit after warmup 12:12:39Z (628 s). Model loading 429.50 s (weights 342.83 + 28.76), init engine 60.01 s.
+- Preconditions (preconditions.txt, 11:59:55Z): requant DONE; no GPU container on either node; pmon spark1 empty, spark2
+  Xorg/gnome-shell only; no microbench; MemAvailable 116/117 GiB; image ID 3a002b55c9bc on both nodes; tree clean apart
+  from this dir; unittest 798 OK (14 skipped) rc 0; render --check rc 0 (tests-render.txt); gpu_free_wait GPUFREE.
+- spark2 lock: held for the boot (flock ... sleep 86400 from 11:59Z; LOCK_HELD before run.sh). After stop, killing the
+  local ssh left the remote flock/sleep running; this session killed its own remote pair and confirmed LOCK_FREE.
+- Audit: "audit ok: every expected patch engaged on head, worker" (boot.txt); strict re-run on the saved logs ok.
+  engagement.txt: every section-3 line for K 1x per rank (COOP=2, mhc det target 81 fn / draft 6 fn, native stage, early
+  hash, t2r dedup + census 9.50 reuses/compute, moe prep, candidate mask, wp gemv, swa meta), dense GEMV 9 lines per rank,
+  lm_head mxfp8 / prefetch v3 / gather v2 1x per rank, woa fp8 43/43; KP add-ons 0; 0 LOG_DISARMED; envs equal on both
+  ranks (only VLLM_HOST_IP differs); running image 3a002b55c9bc on both ranks. disarm_scan rc 0.
+- gpu_guard rc=0 (0 FOREIGN; spark1 1316 samples @2 s, spark2 257 @10 s, 12:12:56Z-12:59:15Z). Not VOID.
+- L.A.I.L x10: median 42.927 tok/s, 49.371 ms/step, acc 2.118. Runs 4, 5, 10 read 52.17/51.40/53.27 ms/step; the rest
+  48.34-50.00. Guard clean. Kept as measured.
+- four_numbers: prose c=1 54.11 tok/s at 47.753 ms/step (acc 2.618); prose_long c=1 44.893 tok/s at 49.101 ms/step (acc
+  2.222, range 2.062-2.247, n=5, finish length, post-EOS 0); prose_long c=2 70.089 agg at 60.197 ms/step; pp_warm 8k/32k
+  762.5/763.0, pp_novel 8k/32k 809.7/811.7; L.A.I.L 3x after c=2 41.17; warm prefix 1.0; ranks_match true; disarmed false.
+- Quality quick: PASS (single run, 316.5 s). nll 0.24387, dlp 0.02058, aa 0.01681, golden 0.01566, exact_args 21/22 (t09).
+- Quality full: PASS (single run, 1310.7 s). nll 0.243424, dlp 0.01595, aa 0.01455, golden 0.01972, exact_args 22/22,
+  needle 9/9, gsm8k 95/100, gsm8k_think 39/40, mmlu 196/228 = 0.8596 (limit 0.864 from 197/228; passes by the one-item
+  Wilson slack; K-2 read 199/228).
+- Order followed: smokes, mem, correctness 8/8, L.A.I.L x10, bench_decode x9, four_numbers, e2e (3/3), quality quick,
+  quality full, disarm_scan (rc 0), engagement check + strict audit re-run, gpu_guard --check (rc 0), mem-end, ./stop.sh
+  (12:59:42Z).
+- Same config as K-1/K-2 (single-boot context, not a verdict): four prose c=1 ms/step K 47.156/48.245, CUR 47.753;
+  prose_long c=1 ms/step K 49.01/48.702, CUR 49.101; L.A.I.L ms/step K 48.328/48.909, CUR 49.371.

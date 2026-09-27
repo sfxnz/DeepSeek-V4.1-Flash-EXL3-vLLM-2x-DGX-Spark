@@ -292,11 +292,12 @@ class WiringTests(unittest.TestCase):
         body = src.split("def apply(self, layer, x, bias=None):", 1)[1]
         self.assertLess(body.index("_gemv_apply(layer, x, bias)"), body.index("mxfp8_e4m3_quantize("))
 
-    def test_envs_forwarded_default_off(self) -> None:
+    def test_envs_forwarded_default_on(self) -> None:
         run = (ROOT / "run.sh").read_text()
         fwd = run.split("FORWARD_ENVS=(", 1)[1].split(")", 1)[0]
         items = re.findall(r"^\s+(\S+)$", fwd, re.M)
-        self.assertIn("DSV41_DENSE_GEMV=0", items)
+        self.assertIn("DSV41_DENSE_GEMV=", items)  # default from the generated block
+        self.assertIn('DSV41_DENSE_GEMV="${DSV41_DENSE_GEMV:-1}"', run.splitlines())  # round 35
         self.assertIn("DSV41_DENSE_GEMV_SHAPES=", items)
 
     def test_audit_expects_the_armed_line_only_when_on(self) -> None:

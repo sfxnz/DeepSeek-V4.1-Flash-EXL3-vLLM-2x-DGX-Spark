@@ -196,17 +196,18 @@ class CoopWiringTests(unittest.TestCase):
         label = re.search(r'LABEL dsv41.recipe.patches="([^"]+)"', df).group(1).split(",")
         self.assertIn("coop", label)
 
-    def test_env_reaches_both_ranks_only_when_set(self) -> None:
+    def test_env_reaches_both_ranks(self) -> None:
         import run_sh_harness as h
 
-        res = h.dry_run()
+        res = h.dry_run()  # round 35 default: the dataflow kernel (=2)
         self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
         for role in ("head", "worker"):
-            self.assertNotIn("DSV41_P2B_COOP", h.container_env(res[role]), role)
-        res = h.dry_run(DSV41_P2B_COOP="1")
-        self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
-        for role in ("head", "worker"):
-            self.assertEqual(h.container_env(res[role]).get("DSV41_P2B_COOP"), "1", role)
+            self.assertEqual(h.container_env(res[role]).get("DSV41_P2B_COOP"), "2", role)
+        for value in ("1", "0"):
+            res = h.dry_run(DSV41_P2B_COOP=value)
+            self.assertEqual(res["returncode"], 0, res["stdout"] + res["stderr"])
+            for role in ("head", "worker"):
+                self.assertEqual(h.container_env(res[role]).get("DSV41_P2B_COOP"), value, role)
 
 
 class CoopMicrobenchSourceTests(unittest.TestCase):

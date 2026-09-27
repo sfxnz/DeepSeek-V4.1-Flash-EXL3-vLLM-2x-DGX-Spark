@@ -1,0 +1,43 @@
+K_p-1 boot notes (ARMS-r3 section 6, P3 profile boot K_p: round-34 defaults + the 10 promoted K envs; image review-e14)
+- Not a counted boot. Its numbers are for attribution by kernel only and are not pooled with P2.
+- Command: see command.txt (nohup, background; boot.txt). HEAD 66d5960 at boot (A_p-1's commit on top of 54ad48e).
+  docker/patch sha256 (61 files) is identical to A_p-1 and KC-2. First attempt counted: no fix and no retry. run.sh started
+  11:18:26Z, API up ("Torch profiler enabled") at 11:28:01Z, and run.sh exited after warmup at about 11:28:50Z. Model
+  loading 419.21 s; init engine 58.18 s.
+- Preconditions (preconditions.txt, 11:15Z): requant DONE. No GPU container on either node. pmon spark1 empty; spark2
+  Xorg/gnome-shell only. No microbench. MemAvailable 116/117 GiB. Image ID 3a002b55c9bc on both nodes. Tree clean apart
+  from P3/K_p-1/. unittest 798 OK (14 skipped), rc 0; render --check rc 0. gpu_free_wait printed GPUFREE. The spark2 GPU
+  lock was still HELD by the P3 holder (started 10:53Z).
+- Audit: "audit ok: every expected patch engaged on head, worker" (boot.txt). engagement.txt (11:29Z) has every section-3 K
+  line on both ranks: COOP dataflow 1, dense GEMV 9 armed lines, mhc det target 81 fn / draft 6 fn, native stage, early
+  hash, t2r dedup, moe prep, candidate mask, wp gemv, swa meta. Default-on lines 1x per rank (lm_head mxfp8, prefetch v3,
+  gather v2, woa fp8 43/43). KP add-ons 0. 0 LOG_DISARMED hits. engagement-end.txt (after the windows): still 0 disarm
+  hits; [t2r-census] 3 and [native-census] 48 lines per rank.
+- Section 2 items run: smokes (chat 323 rc 0, vision "Red" rc 0), mem-after-smoke (MemAvailable 22/24 GiB, floor 8),
+  correctness 8/8, disarm_scan rc 0, gpu_guard --check rc 0. Counted benches were not run (section 6 recipe).
+- gpu_guard: rc 0, 0 FOREIGN. spark1 sampled every 1 s, 340 samples; spark2 every 10 s, 35 samples; 11:28:56Z-11:35:07Z.
+  Only VLLM::Worker_TP / Xorg / gnome-shell appear. Not VOID.
+- Warm, profiler idle: L.A.I.L x3 (lail3.txt). 40.00 / 43.50 / 42.01 tok/s. ms/step (decode_s/chunks) 48.855 / 48.841 /
+  48.749, median 48.841. Acceptance 1.958 / 2.142 / 2.052. In family with K-1 48.328 and K-2 48.909.
+- Window c=1 (profile-window-c1.txt): CONCURRENCY=1 MAX_TOKENS=200. 200 tokens, 107 chunks, wall 5.57 s. MemAvailable
+  went from 21/23 GiB (after lail3) to 14/18 GiB.
+- c=2 warm (c2-warm-bench.txt): bench_decode --concurrency 2 --runs 1 --phase prose. 60.28 ms/step at acceptance 2.548.
+  K-1 read 57.836 and K-2 59.209.
+- Window c=2 (profile-window-c2.txt): CONCURRENCY=2 MAX_TOKENS=80, the same per-stream count as A_p. Chunks 39/37, wall
+  2.97 s. MemAvailable 15/18 GiB after the copy.
+- [native-census] (census.txt): every n=4 window (96 rows/call) shows page-cache misses. Rank 0: miss/call 28.0-47.8
+  (median 34.4), us/call 838-1467 (median 919), 27 windows. Rank 1: miss 42.0-50.8 (median 46.1), us/call 910-1442
+  (median 1018). The fusion-host bench measured 142 us prefetched, 274 hot and 849 cold.
+- Trace integrity: all 4 K_p worker traces (c=1 and c=2, both ranks) contain NUL bytes: 4705 / 4278 / 3739 / 2853. Every
+  one sits at an uncompressed offset = 4095 mod 4096 and right after a newline, where the JSON indentation space belongs.
+  Every page-final byte after a newline is NUL, and no other byte is. The A_p worker traces and the K_p API-server trace
+  have none (in A_p c=1 rank 0, all 7080 such page-final bytes are spaces). ijson rejects the files as they are. They were
+  parsed after a lossless rewrite, zcat | tr '\000' ' ' | gzip -1, into *.nul2space.pt.trace.json.gz beside the originals
+  (both hashed in ../traces.sha256.txt). The cause is in the K_p worker processes' trace export and is not identified.
+- Traces: /home/sfxnz/projects/data/dsv41-traces/p3-K_p-c1-20260926-113034 and p3-K_p-c2-20260926-113255 (rank0 on spark1;
+  rank1 copied from spark2 after stop, sha256 equal). They were extracted on spark1 with the serve down.
+  c=1: 105 steps (graph 644, m=4). Profiled step wall median 49.15 (rank 0) / 49.31 (rank 1) ms.
+  c=2: 34 steps at m=8 (graph 641, 61.87 / 61.74 ms) plus 2 tail steps at m=4.
+  The stock analyzer (c1/, c2/) does not know the round-3 kernel names: p2b_coop_df and mhc_det land in "other", dsv41_gemv
+  in cutlass_bf16_gemm, and m shows as None. The lever-aware numbers are in ../attribution.json.
+- End: disarm_scan rc 0; mem-end.txt; ./stop.sh at 11:35:17Z on both nodes (stop-end.txt).

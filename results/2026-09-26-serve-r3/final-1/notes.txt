@@ -1,0 +1,67 @@
+final-1 boot notes. ARMS-r3 final stage (c): boot the FINAL promoted config and run the full section-2 procedure plus
+tests/quality_eval.py --full and tools/four_numbers.sh. The final config = the round-35 defaults committed in 5da6f21
+("k3: promote: ..."): the 10 K envs (DSV41_P2B_COOP=2, DSV41_DENSE_GEMV=1, DSV41_MHC_DET_SPLITS=16,
+DSV41_ENGRAM_NATIVE_STAGE=1, DSV41_ENGRAM_EARLY_HASH=1, DSV41_ATTN_T2R_DEDUP=1, DSV41_SWA_META_FUSED=1,
+DSV41_MOE_PREP_FUSED=1, DSV41_CANDIDATE_MASK_BOUNDED=1, DSV41_INDEXER_WP_GEMV=1) + DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024 on
+the round-34 defaults (SPARSE_MARKOV=1, WOA_PREPACK=1, ...); KP add-ons off; pack 2.0bpw-mcg-lmhead-mxfp8 (the Viterbi
+pack was rejected in P4, so no SNAPSHOT_SHA override); IMAGE default dsv41-flash-exl3-sm121:canonical-e14 = review-e14
+(sha256:3a002b55c9bc) tagged on both nodes (../promote-image-provenance.txt). No lever env was set on the command line.
+Same container env as S1024-1/S1024-2 (a run.sh dry run of the new defaults differs from S1024-2's recorded env only in
+image-baked VLLM_BUILD_*/VLLM_IMAGE_TAG/VLLM_USAGE_SOURCE/VLLM_ENABLE_CUDA_COMPATIBILITY names that run.sh does not set).
+- Command: command.txt (nohup, background, output in boot.txt). HEAD 5da6f21 at boot (commit.txt). docker/patch sha256
+  (61 files) identical to S1024-2 (and so to S-1..S-4, W-1/W-2, S1024-1, Kp/KP). First attempt counted: no fix, no
+  retry, no lever dropped. run.sh started 02:35:28Z; worker container 02:35:31Z, head 02:36:03Z; vLLM server start
+  02:45:22Z (594 s); run.sh exited after the strict audit and warmup at about 02:46:04Z (boot.txt mtime; ~636 s).
+  Model loading 431.14 s (weights 345.87 + 27.05, 75.58 GiB); init engine 60.94 s. Both ranks' container args load
+  .../snapshots/2.0bpw-mcg-lmhead-mxfp8 (engagement.txt).
+- Preconditions (preconditions.txt, 02:33:11Z): requant DONE. No GPU container on either node (magical_blackwell is
+  Created, not running). pmon spark1 empty, spark2 Xorg/gnome-shell only. No microbench. MemAvailable 116/117 GiB.
+  canonical-e14 = 3a002b55c9bc on both nodes. Tree clean apart from this dir. unittest 798 OK (14 skipped) rc 0, render
+  --check rc 0 (tests-render.txt). gpu_free_wait GPUFREE at 02:35:19Z (gpufree-spark1.txt, no ok=0 sample).
+- spark2 lock: held from 02:32:54Z (remote flock pid 2022304, sleep 2022305; LOCK_HELD before run.sh). Released at
+  03:31:43Z after the last measurement (this session killed its own local ssh and remote pair; LOCK_FREE confirmed).
+  The serve stays UP.
+- Audit: boot.txt "audit ok: every expected patch engaged on head, worker" (AUDIT=strict); the strict audit re-run on
+  the end-of-procedure logs also passed (rc 0, engagement.txt). Every ARMS-r3 section-3 K line 1x per rank (COOP=2,
+  mhc det target 81 fn / draft 6 fn, native stage, early hash, t2r dedup + 7 census lines, moe prep, candidate mask, wp
+  gemv, swa meta), dense GEMV armed 9 per rank, lm_head mxfp8 / prefetch v3 / gather v2 1x per rank, [woa-requant] 43
+  and [woa-prepack] 43 per rank, "DSpark sparse Markov (gathered top-k) k=1024" head 4 / worker 3 (same counts as
+  S1024-1/-2), the k=256 line absent, KP add-on lines 0. grep -ci disarm 0 on both ranks; 0 hits of the 27 LOG_DISARMED
+  markers tools/engagement_audit.py knows. DSV41/NCCL/VLLM container env equal on both ranks (VLLM_HOST_IP excluded).
+  Running image 3a002b55c9bc on both ranks. disarm_scan rc 0.
+- gpu_guard rc=0 (0 FOREIGN). spark1 1279 samples at 2 s (02:46:27Z-03:31:32Z), only VLLM::Worker_TP. spark2 250 at
+  10 s (02:46:27Z-03:31:29Z; VLLM::Worker_TP, Xorg, gnome-shell). Guards started right after run.sh exited, before the
+  smokes. The check ran after quality full, disarm_scan, the engagement capture and mem-end; the first kill hit the
+  guards' nohup wrappers, so the loops sampled on to 03:33:22Z (serve idle, 1332 / 260 samples). The re-check over
+  the complete files is also rc 0, 0 FOREIGN (gpu_guard.txt). Not VOID.
+- Smokes: chat 323 rc 0, vision Red rc 0. Correctness 8/8 rc 0 (sampled prose_sanity ttr 0.70). MemAvailable after
+  smoke 23/25 GiB (floor 8).
+- L.A.I.L x10 (fresh, before any c=2, 02:47:01-02:49:16Z): median 42.737 tok/s (40.018-46.088), 48.732 ms/step
+  (48.538-55.323), median acc 2.1092 (1.9654-2.2555), finish length, TTFT median 0.322 s. Run 4 read 55.32 ms/step
+  (40.06 tok/s); the other 9 read 48.54-49.02. Guards clean. Kept as measured; the median is not affected.
+- bench_decode x9 (rc 0): prose c=1 54.029 tok/s at 48.562 ms/step (median run acc 2.6316); prose c=2 agg 80.605 at
+  59.447; structured c=1 83.896 at 47.211 (acc 3.9608); structured c=2 agg 138.339 at 56.218.
+- four_numbers (four/, partial false, started 02:51:47Z, one run, no timeout wrapper, rc 0 in four_rc.txt): prose c=1
+  52.52 tok/s at 47.921 ms/step (median run acc 2.5125, range 2.3412-2.6447; runs 48.52-55.31); prose_long c=1 43.564
+  at 48.979 ms/step (acc 2.1489, range 2.0404-2.2111, n=5, finish length, post-EOS 0); prose_long c=2 agg 68.047 at
+  62.354 ms/step (median run acc 2.1444); pp_warm 8k/32k 765.0/768.0 (8k runs 765.0/739.8/783.6); pp_novel 8k/32k
+  835.0/810.7 (8k runs 809.1/835.0/840.6; 32k 810.7/812.6/810.5); L.A.I.L 3x after c=2 43.66 (43.66/42.08/45.95);
+  warm prefix 1.0 (1792/1792, TTFT cold/warm 2.428/0.297 s); ranks_match true; disarmed false. MemAvailable after the
+  32k prefill 21.42/23.50 GiB.
+- e2e rc 0, 3/3 (useful_tok_s 7.22).
+- Quality quick: PASS (rc 0, 317.4 s). nll 0.242947 (<=0.25316), dlp 0.02264 (<=0.06794), gen_nll_prefill 0.33845
+  (<=0.50932), golden 0.01697 and aa 0.0201 (both <=0.03206; 4/12 identical), tools json 22/22, exact_args 21/22 =
+  0.9545 (exactly at the limit, as on S-1..S-4/S1024-1/-2), no_call 8/8, needle 6/6, c2, vision Red.
+- Quality full: PASS on every component (rc 0, 1319.3 s). nll 0.242247 (two passes 0.242247/0.243948, repeat delta
+  0.001701; limit 0.2531), dlp 0.01185 (<=0.07242), gen_nll_prefill 0.29669 (<=0.51987), golden 0.02659 and aa 0.01698
+  (limit 0.04348; 3/12 identical), tools 22/22 json, 21/22 exact (at the limit), 8/8 no_call, needle 9/9 including
+  128k, gsm8k 94/100 = 0.94 (exactly at the 0.94 limit; K-2 94, CUR-1 95, CUR-2 94), gsm8k_think 39/40 (limit 0.95),
+  mmlu 199/228 = 0.8728 (limit 0.864; K-2 199, CUR-1 196, CUR-2 198), c2, vision.
+- Order: smokes, mem, correctness, L.A.I.L x10, bench_decode x9, four_numbers, e2e, quality quick, quality full,
+  disarm_scan, engagement + strict audit re-run, mem-end, gpu_guard --check. No ./stop.sh: every gate passed, so the
+  serve is left UP (ARMS-r3 final stage). MemAvailable at the end (serve up) 21/24 GiB. Swap used spark1 3.4 -> 7.3 GiB,
+  spark2 1.6 -> 4.9 GiB (the same rise as every earlier boot).
+- Against the other two boots of the identical config (S1024-1, S1024-2; ../round35-headline.json): L.A.I.L 42.737 vs
+  43.167/43.615 (acc 2.1092 vs 2.1331/2.1856; ms/step 48.732 vs 49.219/49.000); prose_long c=1 43.564 vs 44.174/43.728
+  (48.979 vs 48.802/49.488 ms/step); four prose 52.52 vs 53.67/52.04. All inside the ten-boot K-config range on tok/s
+  (L.A.I.L 41.899-43.567, prose_long c=1 42.195-44.893).

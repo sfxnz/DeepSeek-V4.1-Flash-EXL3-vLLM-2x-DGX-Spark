@@ -1,0 +1,22 @@
+K-1 boot notes (arm K = K_ENV, the bit-exact kernel bundle, on round-34 defaults; image review-e14)
+- Command: see command.txt (nohup, background; boot.txt). Attempt 2 at HEAD ae0255a is the counted boot.
+- Attempt 1 (HEAD 66bc26c, 06:05:25Z): AUDIT=strict failed: DSV41_MHC_DET_SPLITS self-disarmed on both ranks,
+  "prepare failed: RuntimeError('Assertion error (.../deepgemm-src/csrc/apis/hyperconnection.hpp:43):
+  d.scalar_type() == torch::kFloat'); stock kernels stay". Every other K lever engaged on both ranks
+  (attempt1-lever-lines.txt). No measurement was taken; the serve was stopped. Cause: prepare() runs inside
+  vLLM's set_default_torch_dtype(bf16) during load, so the self-tests' bare torch.empty/randn were bf16.
+  Fix ae0255a (self-tests name fp32), GPU repro before/after, unit test, dry-runs: fix-mhc-det/README.txt.
+  Retry 1 of max 2.
+- Attempt 2 (06:34:29Z): "audit ok: every expected patch engaged on head, worker". engagement.txt: COOP=2, dense
+  GEMV (8 shapes + wo_a, per rank), mhc det target 81 fn / draft 6 fn, native stage, early hash, t2r dedup
+  (census 9.50 reuses/compute), moe prep, candidate mask, wp gemv, swa meta, lm_head mxfp8 all 1x per rank;
+  0 LOG_DISARMED hits; KP add-ons absent; the K envs match on both ranks (docker inspect).
+- Deviation from ARMS-r3 section 1 (same as A-1): the spark2 GPU lock holder (ssh spark2 flock ... sleep 86400)
+  was refused by the session's permission layer. The lock was FREE at precheck. The spark2 gpu_guard sampled
+  every 10 s during all measurement and saw only VLLM::Worker_TP / Xorg / gnome-shell.
+- gpu_guard rc=0 (0 FOREIGN; spark1 661 samples @2 s, spark2 129 @10 s, 06:50:07Z-07:13:23Z). Not VOID.
+- Quality quick (section 10): PASS, single run. aa_hazard 0.01562, golden 0.015 (limit 0.03206), nll 0.244407,
+  decode median dlp 0.01473, tools exact_args 0.9545 (= its limit, as in A-1 rep2), needle 6/6, c2, vision.
+- Order followed: smokes, mem, correctness 8/8, L.A.I.L x10, bench_decode x9, four_numbers, e2e (rc 0),
+  quality quick, disarm_scan (rc 0), gpu_guard --check (rc 0), ./stop.sh (07:14:31Z, both nodes).
+- One boot each of A and K so far: the numbers vs A-1 in summary.json are not a promotion verdict.

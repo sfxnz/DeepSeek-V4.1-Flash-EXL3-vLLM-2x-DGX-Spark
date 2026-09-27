@@ -1,0 +1,707 @@
+{
+ "arm": "S-4",
+ "phase": "P6 (SPARSE_MARKOV) second pair, boot S#4 of S#3, S1024#1, S#4, S1024#2 (first pair W#1, S#1, W#2, S#2 done). Arm S = promoted K bundle (10 envs) on the round-34 defaults (DSV41_DSPARK_SPARSE_MARKOV=1, TOPK unset = 256, DSV41_WOA_PREPACK=1); KP add-ons off",
+ "env": "AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e14 DSV41_P2B_COOP=2 DSV41_DENSE_GEMV=1 DSV41_MHC_DET_SPLITS=16 DSV41_ENGRAM_NATIVE_STAGE=1 DSV41_ENGRAM_EARLY_HASH=1 DSV41_ATTN_T2R_DEDUP=1 DSV41_SWA_META_FUSED=1 DSV41_MOE_PREP_FUSED=1 DSV41_CANDIDATE_MASK_BOUNDED=1 DSV41_INDEXER_WP_GEMV=1",
+ "env_note": "identical to S-1/S-2/S-3 and the K-config boots (K-1, K-2, CUR-1, CUR-2, Kp-1, Kp-2); differs from S1024-1 only by DSV41_DSPARK_SPARSE_MARKOV_TOPK unset (256) vs 1024",
+ "head_at_boot": "d6502a8069c4d9fd8e46083bd32f284d0288f10d",
+ "patch_sha256": "61 files, identical to S1024-1/S-3/S-2/W-2/S-1/W-1/KP-2/Kp-2/Kp-1",
+ "snapshot": "2.0bpw-mcg-lmhead-mxfp8 (default), both ranks",
+ "attempts": "1 (first attempt counted; no fix, no retry, no lever dropped)",
+ "lail_fresh_median": 42.871,
+ "lail_fresh_n": 10,
+ "lail_fresh_runs": [
+  44.467,
+  41.082,
+  49.715,
+  43.652,
+  34.59,
+  44.469,
+  41.538,
+  42.089,
+  41.21,
+  44.27
+ ],
+ "lail_fresh_range": [
+  34.59,
+  49.715
+ ],
+ "lail_ms_step": 48.58,
+ "lail_ms_step_range": [
+  48.379,
+  61.676
+ ],
+ "lail_ms_step_runs": [
+  48.379,
+  48.494,
+  48.579,
+  48.467,
+  61.676,
+  48.581,
+  48.72,
+  48.854,
+  48.532,
+  49.006
+ ],
+ "lail_acc": 2.1313,
+ "lail_acc_range": [
+  2.0039,
+  2.4265
+ ],
+ "lail_acc_runs": [
+  2.1603,
+  2.0039,
+  2.4265,
+  2.1203,
+  2.1423,
+  2.1653,
+  2.0317,
+  2.0685,
+  2.0039,
+  2.178
+ ],
+ "lail_ttft_median_s": 0.3158,
+ "lail_finish": [
+  "length"
+ ],
+ "lail_note": "Run 5 read 61.68 ms/step (34.59 tok/s, acc 2.142; about 01:03:0x-01:03:3xZ). The other 9 read 48.38-49.01 ms/step. Both guards were clean: during run 5 spark1 showed only VLLM::Worker_TP at SM 92-93% (2 s sampling) and spark2 only VLLM::Worker_TP/Xorg/gnome-shell. 61.68 is the slowest single L.A.I.L run of the S/W/K boots in this window (previous max 60.46 on S-3). Kept as measured; the median is not affected (the 9 others span 48.38-49.01).",
+ "bench_decode_n9": {
+  "prose_c1": {
+   "decode_tok_s": 52.005,
+   "agg_tok_s": 51.997,
+   "ms_step": 48.79,
+   "acceptance_len": 2.4848,
+   "median_run_acceptance_len": 2.5,
+   "run_acceptance_range": [
+    2.3256,
+    2.5897
+   ],
+   "ttft_p50_s": 0.2289,
+   "natural_finish": "stop",
+   "post_eos_fraction": 0.61,
+   "n": 9
+  },
+  "prose_c2": {
+   "decode_tok_s": 42.817,
+   "agg_tok_s": 82.531,
+   "ms_step": 59.293,
+   "acceptance_len": 2.543,
+   "median_run_acceptance_len": 2.5577,
+   "run_acceptance_range": [
+    2.4753,
+    2.6
+   ],
+   "ttft_p50_s": 0.2474,
+   "natural_finish": "stop",
+   "post_eos_fraction": 0.61,
+   "n": 18
+  },
+  "structured_c1": {
+   "decode_tok_s": 83.535,
+   "agg_tok_s": 83.509,
+   "ms_step": 47.415,
+   "acceptance_len": 3.9608,
+   "median_run_acceptance_len": 3.9608,
+   "run_acceptance_range": [
+    3.9608,
+    3.9608
+   ],
+   "ttft_p50_s": 0.1769,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0,
+   "n": 9
+  },
+  "structured_c2": {
+   "decode_tok_s": 72.166,
+   "agg_tok_s": 138.967,
+   "ms_step": 54.884,
+   "acceptance_len": 3.9608,
+   "median_run_acceptance_len": 3.9608,
+   "run_acceptance_range": [
+    3.9608,
+    3.9608
+   ],
+   "ttft_p50_s": 0.2049,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0,
+   "n": 18
+  }
+ },
+ "four_numbers": {
+  "ts": "2026-09-27T01:06:56Z",
+  "partial": false,
+  "prose_c1": {
+   "tok_s": 53.63,
+   "ms_step": 47.713,
+   "median_run_acceptance_len": 2.519,
+   "run_acceptance_range": [
+    2.4815,
+    2.8986
+   ],
+   "runs": [
+    52.48,
+    60.02,
+    53.63,
+    52.54,
+    51.99,
+    55.22,
+    56.47,
+    54.84,
+    52.14
+   ],
+   "ttft_p50_s": 0.2273
+  },
+  "prose_long_c1": {
+   "decode_tok_s": 42.195,
+   "agg_tok_s": 42.187,
+   "ms_step": 48.986,
+   "acceptance_len": 2.0707,
+   "median_run_acceptance_len": 2.0515,
+   "run_acceptance_range": [
+    1.951,
+    2.2989
+   ],
+   "ttft_p50_s": 0.2428,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0,
+   "n": 5
+  },
+  "prose_long_c2": {
+   "decode_tok_s": 33.777,
+   "agg_tok_s": 65.109,
+   "ms_step": 61.939,
+   "acceptance_len": 2.0856,
+   "median_run_acceptance_len": 2.0725,
+   "run_acceptance_range": [
+    1.9801,
+    2.2402
+   ],
+   "ttft_p50_s": 0.2936,
+   "natural_finish": "length",
+   "post_eos_fraction": 0.0,
+   "n": 10
+  },
+  "pp_warm_8k": 759.6,
+  "pp_warm_8k_runs": [
+   763.4,
+   759.6,
+   720.8
+  ],
+  "pp_novel_8k": 826.3,
+  "pp_novel_8k_runs": [
+   841.5,
+   826.3,
+   785.0
+  ],
+  "pp_warm_32k": 774.2,
+  "pp_warm_32k_runs": [
+   766.6,
+   774.2,
+   775.0
+  ],
+  "pp_novel_32k": 818.6,
+  "pp_novel_32k_runs": [
+   829.8,
+   813.2,
+   818.6
+  ],
+  "lail_after_c2": 42.47,
+  "lail_after_c2_runs": [
+   43.08,
+   42.47,
+   41.98
+  ],
+  "lail_after_c2_ms_step": [
+   48.906,
+   48.614,
+   48.981
+  ],
+  "lail_after_c2_acc": [
+   2.1157,
+   2.0688,
+   2.0685
+  ],
+  "warm_prefix": {
+   "hit_fraction": 1.0,
+   "ttft_cold_s": 2.697,
+   "ttft_warm_s": 0.424
+  },
+  "serve_env_ranks_match": true,
+  "lever_disarmed": false,
+  "memavail_after_micro_gib": [
+   21.09,
+   23.49
+  ]
+ },
+ "correctness": "8/8 rc=0 (sampled prose_sanity ttr=0.70)",
+ "greedy_smoke": "smoke_chat '323' rc 0, smoke_vision 'Red' rc 0",
+ "e2e": "rc=0, 3/3 (useful_tok_s 6.14)",
+ "disarm_scan": "rc=0",
+ "audit": "boot.txt: audit ok (AUDIT=strict); strict re-run on end-of-boot logs rc 0",
+ "engagement": "every section-3 K line 1x per rank (COOP=2, mhc det target 81 fn / draft 6 fn, native stage, early hash, t2r dedup + census 9.50, moe prep, candidate mask, wp gemv, swa meta), dense GEMV armed 9 per rank, lm_head mxfp8 / prefetch v3 / gather v2 1x per rank, [woa-requant] 43/43 and [woa-prepack] 43/43 per rank; arm lever \"dsv41: DSpark sparse Markov (gathered top-k) k=256\" head 4 / worker 3 (same counts as S-1/S-2/S-3 and the k=1024 line on S1024-1), k=1024 line 0 on both ranks; no WOA missing-stage warning; KP add-on lines 0; grep -ci disarm 0 on both ranks and 0 hits of the 18 LOG_DISARMED string constants extracted from docker/patch; DSV41_DSPARK_SPARSE_MARKOV=1 and TOPK unset on both ranks; envs equal on both ranks except VLLM_HOST_IP; running image 3a002b55c9bc on both",
+ "gpu_guard": "rc=0, 0 FOREIGN. spark1 677 samples at 2 s (01:01:39Z-01:25:29Z), only VLLM::Worker_TP. spark2 132 samples at 10 s (01:01:39Z-01:25:22Z): VLLM::Worker_TP, Xorg, gnome-shell. Guards started when run.sh exited (01:01:37-01:01:39Z), before the smokes, and ran through quality, disarm_scan, the engagement capture and mem-end. Not VOID.",
+ "spark2_lock": "held from 00:47:24Z (remote flock 1668397, LOCK_HELD before run.sh). After stop the remote flock/sleep pair (1668397/1668398) outlived the killed local ssh; this session killed its own pair. LOCK_FREE 01:25:47Z",
+ "quality_quick": {
+  "pass": true,
+  "rc": 0,
+  "summary": "PASS, 320.5 s. nll 0.243261 (<=0.25316), dlp 0.01398 (<=0.06794), gen_nll_prefill 0.32692 (<=0.50932), golden 0.01446 / aa 0.01887 (<=0.03206; 4/12 identical), tools json 22/22, exact_args 21/22 = 0.9545 exactly at the limit (t09 calculate_loan_payment called with {}, as on S-1/S-2/S-3/S1024-1), no_call 8/8, needle 6/6, c2, vision Red"
+ },
+ "quality_full": "not run (s9/s10 require quick only, one boot per P6 arm)",
+ "memavail_gib": {
+  "before_boot": [
+   116,
+   117
+  ],
+  "after_smoke": [
+   22,
+   24
+  ],
+  "after_micro": [
+   21.09,
+   23.49
+  ],
+  "end_serve_up": [
+   20,
+   23
+  ],
+  "swap_used_gib": {
+   "spark1": [
+    3.4,
+    7.4
+   ],
+   "spark2": [
+    1.6,
+    4.8
+   ]
+  }
+ },
+ "load": {
+  "run_sh_start": "00:50:59Z",
+  "vllm_server_start": "01:00:55Z",
+  "start_to_server_s": 596,
+  "run_sh_exit": "01:01:37-01:01:39Z (2 s poll)",
+  "incl_warmup_s": "638-640",
+  "model_loading_s": 435.57,
+  "weights_s": [
+   351.9,
+   28.92
+  ],
+  "model_gib": 75.58,
+  "init_engine_s": 59.96
+ },
+ "stop": "./stop.sh rc 0 at 01:25:36Z; neither node has a dsv41 container",
+ "P6_context_not_a_verdict": {
+  "note": "S-4 is S#4 of the second pair (S#3, S1024#1, S#4, S1024#2). S1024#2 is pending, so the noise rule for S1024 vs S cannot be applied yet. pair2_S = [S-3, S-4]; S_1to3 = S-1, S-2, S-3 (same env). K_config = K-1, K-2, CUR-1, CUR-2, Kp-1, Kp-2 (same env, earlier in the window). All values recomputed from raw lail10/bench_decode/four_numbers with the prior method; the extractor reproduces the S-1/S-2/S-3/S1024-1 summary values.",
+  "gate_lail_tok_s": {
+   "S4": 42.871,
+   "S_1to3": [
+    42.791,
+    42.785,
+    42.36
+   ],
+   "vs_S_1to3": "above",
+   "S_1to4_median": 42.788,
+   "S_1to4_spread": 0.511,
+   "pair2_S": [
+    42.36,
+    42.871
+   ],
+   "pair2_S_median": 42.615,
+   "pair2_S_spread": 0.511,
+   "S1024_1": 43.167,
+   "S1024_1_minus_pair2_S_median": 0.552,
+   "K_range": [
+    41.899,
+    43.567
+   ],
+   "vs_K": "inside"
+  },
+  "gate_prose_long_c1_tok_s": {
+   "S4": 42.195,
+   "S_1to3": [
+    44.739,
+    43.336,
+    42.788
+   ],
+   "vs_S_1to3": "below",
+   "S_1to4_median": 43.062,
+   "S_1to4_spread": 2.545,
+   "pair2_S": [
+    42.788,
+    42.195
+   ],
+   "pair2_S_median": 42.491,
+   "pair2_S_spread": 0.593,
+   "S1024_1": 44.174,
+   "S1024_1_minus_pair2_S_median": 1.683,
+   "K_range": [
+    43.395,
+    44.893
+   ],
+   "vs_K": "below"
+  },
+  "lail_acc": {
+   "S4": 2.1313,
+   "S_1to3": [
+    2.1004,
+    2.1381,
+    2.0819
+   ],
+   "vs_S_1to3": "inside",
+   "S_1to4_median": 2.1159,
+   "S_1to4_spread": 0.0563,
+   "pair2_S": [
+    2.0819,
+    2.1313
+   ],
+   "pair2_S_median": 2.1066,
+   "pair2_S_spread": 0.0494,
+   "S1024_1": 2.1331,
+   "S1024_1_minus_pair2_S_median": 0.0265,
+   "K_range": [
+    2.0727,
+    2.1269
+   ],
+   "vs_K": "above"
+  },
+  "prose_long_c1_acc": {
+   "S4": 2.0515,
+   "S_1to3": [
+    2.1978,
+    2.1277,
+    2.0729
+   ],
+   "vs_S_1to3": "below",
+   "S_1to4_median": 2.1003,
+   "S_1to4_spread": 0.1463,
+   "pair2_S": [
+    2.0729,
+    2.0515
+   ],
+   "pair2_S_median": 2.0622,
+   "pair2_S_spread": 0.0214,
+   "S1024_1": 2.163,
+   "S1024_1_minus_pair2_S_median": 0.1008,
+   "K_range": [
+    2.117,
+    2.2222
+   ],
+   "vs_K": "below"
+  },
+  "four_prose_c1_acc": {
+   "S4": 2.519,
+   "S_1to3": [
+    2.5316,
+    2.519,
+    2.557
+   ],
+   "vs_S_1to3": "inside",
+   "S_1to4_median": 2.5253,
+   "S_1to4_spread": 0.038,
+   "pair2_S": [
+    2.557,
+    2.519
+   ],
+   "pair2_S_median": 2.538,
+   "pair2_S_spread": 0.038,
+   "S1024_1": 2.5769,
+   "S1024_1_minus_pair2_S_median": 0.0389,
+   "K_range": [
+    2.5316,
+    2.6184
+   ],
+   "vs_K": "below"
+  },
+  "bench_prose_c1_acc": {
+   "S4": 2.5,
+   "S_1to3": [
+    2.5316,
+    2.6579,
+    2.5443
+   ],
+   "vs_S_1to3": "below",
+   "S_1to4_median": 2.538,
+   "S_1to4_spread": 0.1579,
+   "pair2_S": [
+    2.5443,
+    2.5
+   ],
+   "pair2_S_median": 2.5222,
+   "pair2_S_spread": 0.0443,
+   "S1024_1": 2.5513,
+   "S1024_1_minus_pair2_S_median": 0.0291,
+   "K_range": [
+    2.5125,
+    2.5897
+   ],
+   "vs_K": "below"
+  },
+  "prose_long_c2_acc": {
+   "S4": 2.0725,
+   "S_1to3": [
+    2.1111,
+    2.1223,
+    2.1277
+   ],
+   "vs_S_1to3": "below",
+   "S_1to4_median": 2.1167,
+   "S_1to4_spread": 0.0551,
+   "pair2_S": [
+    2.1277,
+    2.0725
+   ],
+   "pair2_S_median": 2.1001,
+   "pair2_S_spread": 0.0551,
+   "S1024_1": 2.0619,
+   "S1024_1_minus_pair2_S_median": -0.0382,
+   "K_range": [
+    2.0947,
+    2.1283
+   ],
+   "vs_K": "below"
+  },
+  "ms_step": {
+   "lail": {
+    "S4": 48.58,
+    "S_1to3": [
+     48.897,
+     48.827,
+     48.694
+    ],
+    "vs_S_1to3": "below",
+    "S_1to4_median": 48.761,
+    "S_1to4_spread": 0.317,
+    "pair2_S": [
+     48.694,
+     48.58
+    ],
+    "pair2_S_median": 48.637,
+    "pair2_S_spread": 0.115,
+    "S1024_1": 49.219,
+    "S1024_1_minus_pair2_S_median": 0.582,
+    "K_range": [
+     48.328,
+     49.371
+    ],
+    "vs_K": "inside"
+   },
+   "prose_long_c1": {
+    "S4": 48.986,
+    "S_1to3": [
+     49.177,
+     48.987,
+     49.125
+    ],
+    "vs_S_1to3": "below",
+    "S_1to4_median": 49.056,
+    "S_1to4_spread": 0.191,
+    "pair2_S": [
+     49.125,
+     48.986
+    ],
+    "pair2_S_median": 49.056,
+    "pair2_S_spread": 0.139,
+    "S1024_1": 48.802,
+    "S1024_1_minus_pair2_S_median": -0.253,
+    "K_range": [
+     48.675,
+     49.101
+    ],
+    "vs_K": "inside"
+   },
+   "four_prose_c1": {
+    "S4": 47.713,
+    "S_1to3": [
+     48.061,
+     47.726,
+     48.096
+    ],
+    "vs_S_1to3": "below",
+    "S_1to4_median": 47.893,
+    "S_1to4_spread": 0.384,
+    "pair2_S": [
+     48.096,
+     47.713
+    ],
+    "pair2_S_median": 47.904,
+    "pair2_S_spread": 0.384,
+    "S1024_1": 48.104,
+    "S1024_1_minus_pair2_S_median": 0.2,
+    "K_range": [
+     47.156,
+     48.245
+    ],
+    "vs_K": "inside"
+   },
+   "bench_prose_c1": {
+    "S4": 48.79,
+    "S_1to3": [
+     49.027,
+     48.72,
+     48.476
+    ],
+    "vs_S_1to3": "inside",
+    "S_1to4_median": 48.755,
+    "S_1to4_spread": 0.552,
+    "pair2_S": [
+     48.476,
+     48.79
+    ],
+    "pair2_S_median": 48.633,
+    "pair2_S_spread": 0.314,
+    "S1024_1": 48.637,
+    "S1024_1_minus_pair2_S_median": 0.004,
+    "K_range": [
+     48.214,
+     48.764
+    ],
+    "vs_K": "above"
+   },
+   "structured_c1": {
+    "S4": 47.415,
+    "S_1to3": [
+     47.304,
+     47.588,
+     47.374
+    ],
+    "vs_S_1to3": "inside",
+    "S_1to4_median": 47.394,
+    "S_1to4_spread": 0.284,
+    "pair2_S": [
+     47.374,
+     47.415
+    ],
+    "pair2_S_median": 47.394,
+    "pair2_S_spread": 0.04,
+    "S1024_1": 47.258,
+    "S1024_1_minus_pair2_S_median": -0.136,
+    "K_range": [
+     46.877,
+     47.313
+    ],
+    "vs_K": "above"
+   },
+   "prose_long_c2": {
+    "S4": 61.939,
+    "S_1to3": [
+     61.037,
+     62.597,
+     61.128
+    ],
+    "vs_S_1to3": "inside",
+    "S_1to4_median": 61.533,
+    "S_1to4_spread": 1.56,
+    "pair2_S": [
+     61.128,
+     61.939
+    ],
+    "pair2_S_median": 61.533,
+    "pair2_S_spread": 0.811,
+    "S1024_1": 61.37,
+    "S1024_1_minus_pair2_S_median": -0.164,
+    "K_range": [
+     60.197,
+     62.2
+    ],
+    "vs_K": "inside"
+   }
+  },
+  "four_prose_c1_tok_s": {
+   "S4": 53.633,
+   "S_1to3": [
+    52.462,
+    52.719,
+    53.26
+   ],
+   "vs_S_1to3": "above",
+   "S_1to4_median": 52.989,
+   "S_1to4_spread": 1.171,
+   "pair2_S": [
+    53.26,
+    53.633
+   ],
+   "pair2_S_median": 53.446,
+   "pair2_S_spread": 0.373,
+   "S1024_1": 53.668,
+   "S1024_1_minus_pair2_S_median": 0.221,
+   "K_range": [
+    53.344,
+    54.853
+   ],
+   "vs_K": "inside"
+  },
+  "bench_prose_c1_tok_s": {
+   "S4": 52.005,
+   "S_1to3": [
+    51.781,
+    53.658,
+    52.437
+   ],
+   "vs_S_1to3": "inside",
+   "S_1to4_median": 52.221,
+   "S_1to4_spread": 1.878,
+   "pair2_S": [
+    52.437,
+    52.005
+   ],
+   "pair2_S_median": 52.221,
+   "pair2_S_spread": 0.432,
+   "S1024_1": 51.986,
+   "S1024_1_minus_pair2_S_median": -0.236,
+   "K_range": [
+    51.953,
+    53.688
+   ],
+   "vs_K": "inside"
+  },
+  "prose_long_c2_agg": {
+   "S4": 65.109,
+   "S_1to3": [
+    67.276,
+    66.872,
+    69.325
+   ],
+   "vs_S_1to3": "below",
+   "S_1to4_median": 67.074,
+   "S_1to4_spread": 4.217,
+   "pair2_S": [
+    69.325,
+    65.109
+   ],
+   "pair2_S_median": 67.217,
+   "pair2_S_spread": 4.217,
+   "S1024_1": 65.239,
+   "S1024_1_minus_pair2_S_median": -1.978,
+   "K_range": [
+    66.093,
+    70.089
+   ],
+   "vs_K": "below"
+  },
+  "structured_c2_agg": {
+   "S4": 138.967,
+   "S_1to3": [
+    138.044,
+    137.801,
+    139.166
+   ],
+   "vs_S_1to3": "inside",
+   "S_1to4_median": 138.506,
+   "S_1to4_spread": 1.364,
+   "pair2_S": [
+    139.166,
+    138.967
+   ],
+   "pair2_S_median": 139.067,
+   "pair2_S_spread": 0.198,
+   "S1024_1": 138.597,
+   "S1024_1_minus_pair2_S_median": -0.469,
+   "K_range": [
+    138.839,
+    139.836
+   ],
+   "vs_K": "inside"
+  },
+  "prefill": "pp_warm 8k/32k 759.6/774.2 (runs 763.4/759.6/720.8, 766.6/774.2/775.0); pp_novel 8k/32k 826.3/818.6 (runs 841.5/826.3/785.0, 829.8/813.2/818.6). Against the K ranges: pp_warm 8k inside (743.1-784.4), pp_warm 32k above (758.9-772.0), pp_novel 8k 0.7 above (803.7-825.6), pp_novel 32k inside (799.5-821.0). pp_warm 8k run 3 read 720.8, the lowest run of this boot.",
+  "reading": "On the gate cells, S-4 reads L.A.I.L 42.871 tok/s (above S-1..S-3, inside K) and prose_long c=1 42.195 (below all S boots and the K range). The prose_long c=1 drop follows acceptance, not per-step time: median-run acc 2.0515 is the lowest of the S/K boots (S-1..S-3 2.1978/2.1277/2.0729, K 2.117-2.2222), while ms/step 48.986 is below S-1..S-3 and inside K. Second pair so far: S=[S-3, S-4] reads L.A.I.L 42.36/42.871 (median 42.615, spread 0.511) and prose_long c=1 42.788/42.195 (median 42.491, spread 0.593). S1024-1 reads 43.167 and 44.174, above both S boots on both gate cells (+0.552 and +1.683 vs the pair-2 S median). The s9 rule (every S1024 boot beats the S median by more than the noise = the larger within-arm spread) needs S1024#2 for the S1024 spread and the second S1024 boot, so there is no verdict."
+ }
+}

@@ -1,0 +1,28 @@
+import sys, collections, json
+src=open('/home/sfxnz/projects/ai-lab/recipes/.worktrees/kernels-r3/results/2026-09-26-serve-r3/P3/p3_attribution.py.txt').read().split("def main():")[0]
+exec(src)
+D='/home/sfxnz/projects/data/dsv41-traces/'
+def tab(p):
+    L=load(D+p); dev,names=L['dev'],L['names']; sidx=step_index(L); n=len(L['steps'])
+    c=collections.Counter(); t=collections.Counter()
+    for j in range(n):
+        for i in sidx[j]:
+            where=L['kind'].get(L['launch_of'].get(i),'eager')
+            key=(where, dt._short(names[dev[i][2]])[:58], L['cat'][i][:24])
+            c[key]+=1; t[key]+=dev[i][1]
+    return {k:(c[k]/n, t[k]/n/1e3) for k in c}
+out={}
+for w,(pa,pk) in {'c1':('p3-A_p-c1-20260926-110737/c1-rank0.pkl','p3-K_p-c1-20260926-113034/c1-rank0.pkl'),'c2':('p3-A_p-c2-20260926-111110/c2-rank0.pkl','p3-K_p-c2-20260926-113255/c2-rank0.pkl')}.items():
+    A,K=tab(pa),tab(pk)
+    keys=set(A)|set(K)
+    rows=[]
+    for k in keys:
+        a=A.get(k,(0,0)); b=K.get(k,(0,0))
+        rows.append({'where':k[0],'kernel':k[1],'cat':k[2],'A_n':round(a[0],2),'K_n':round(b[0],2),'A_ms':round(a[1],4),'K_ms':round(b[1],4),'d_n':round(b[0]-a[0],2),'d_ms':round(b[1]-a[1],4)})
+    rows.sort(key=lambda r: abs(r['d_n'])*0.004+abs(r['d_ms']), reverse=True)
+    out[w]=rows
+    if w=='c1':
+        print(f"{'where':7}{'kernel':60}{'cat':26}{'A n':>7}{'K n':>7}{'A ms':>8}{'K ms':>8}{'d ms':>8}")
+        for r in rows[:70]:
+            print(f"{r['where']:7}{r['kernel']:60}{r['cat']:26}{r['A_n']:7.2f}{r['K_n']:7.2f}{r['A_ms']:8.3f}{r['K_ms']:8.3f}{r['d_ms']:8.3f}")
+json.dump(out, open(sys.argv[1],'w'), indent=0)

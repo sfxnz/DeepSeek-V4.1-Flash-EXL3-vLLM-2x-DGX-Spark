@@ -1,0 +1,3952 @@
+{
+ "what": "ARMS-r3 section 7 (P4) Viterbi pack decision: quality first (paired tests over the fixed eval items, greedy self-consistency control), then speed (ARMS.md step 6 noise rule) on the four counted boots CUR-1, VIT-1, CUR-2, VIT-2 (results/2026-09-26-serve-r3/). Computed by decision-viterbi-compute.py.txt from the raw per-boot files (lail10.txt, bench_decode.txt, four/four_numbers.json, four/02-micro.log, four/06-prose-long.log, quality_{quick,full}.json, gate files) through the same per-boot readers as decision-bundle-compute.py.txt; stdlib statistics only.",
+ "date": "2026-09-26",
+ "inputs": {
+  "image": "dsv41-flash-exl3-sm121:review-e14 = sha256:3a002b55c9bc... on both ranks, every boot",
+  "config": "the promoted config on every boot: round-34 defaults + the 10 K envs (DSV41_P2B_COOP=2 ... DSV41_INDEXER_WP_GEMV=1); KP add-ons off; AUDIT=strict",
+  "arms": {
+   "CUR": "SNAPSHOT_SHA default = 2.0bpw-mcg-lmhead-mxfp8 (serve pin)",
+   "VIT": "SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8"
+  },
+  "order": "CUR-1, VIT-1, CUR-2, VIT-2 (s7 order), each the first attempt, no fix or retry",
+  "commits_at_boot": {
+   "CUR-1": "7db92e93a10c",
+   "VIT-1": "8bf97c5f645b",
+   "CUR-2": "fcfb092461ee",
+   "VIT-2": "ebeec5ed1962"
+  },
+  "code_between_boots": "git diff --stat 7db92e93a10c..ebeec5ed1962 outside results/: empty (only evidence and the viterbi-precheck results were committed between boots)",
+  "docker_patch": "sha256 list digest adaaac7a0f40a2a1 on all four boots (61 files)",
+  "snapshots_loaded": "quality provenance root and four/serve_cmd.json name the intended snapshot on every boot; boot.txt shows only that snapshot",
+  "viterbi_kernel_precheck": "results/2026-09-25-kernels/integration/viterbi-precheck (commit 8bf97c5): l20 --ref and l33 tp-rank 1, 24/24 checks each, pass",
+  "quality_baselines": "results/2026-09-24-review/quality-baseline/{quick,full}.json (09-24, canonical-e12, snapshot 2.0bpw-mcg-lmhead-mxfp8 = the CUR pack)"
+ },
+ "rule": {
+  "sources": [
+   "ARMS-r3 section 7 (P4)",
+   "ARMS-r3 section 10 (quality gates)",
+   "ARMS.md step 6 (promote rule, quality gate)",
+   "stage task: promote only if quality is better or equal on every gate with at least one significant improvement (NLL expected) and speed is not worse beyond noise; else reject"
+  ],
+  "quality": [
+   "quick AND full pass on both VIT boots, no component outside its band (s7); quick must pass on every candidate boot (ARMS.md step 6)",
+   "every gate better or equal vs CUR (paired where the data allow: NLL per passage, GSM8K/MMLU/tools/needle per item)",
+   "at least one significant improvement (NLL expected)"
+  ],
+  "speed": [
+   "primary: ms/step at matched acceptance (per-boot median_run_acceptance_len intervals overlap); if not matched, the arm changed drafting and the gate is tok/s with the same noise rule",
+   "s7: gate on prose_long c=1 tok/s and L.A.I.L tok/s with the noise rule; ms/step at matched kernels should be equal within noise",
+   "noise = larger boot-to-boot spread (max-min of per-boot values) of the two arms; 'worse beyond noise' = VIT median below the CUR median by more than the noise",
+   "non-inferiority: pp_warm/pp_novel 8k/32k, prose_long c=2 aggregate, warm-prefix not worse by more than the noise"
+  ]
+ },
+ "validity": {
+  "all_four_valid": true,
+  "snapshots_as_intended": true,
+  "patch_identical_all_four": true,
+  "per_boot": {
+   "CUR-1": {
+    "commit": "7db92e93a10c",
+    "snapshot_in_quality_provenance": {
+     "quick": "2.0bpw-mcg-lmhead-mxfp8",
+     "full": "2.0bpw-mcg-lmhead-mxfp8"
+    },
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "correctness_full": null,
+    "memavail_after_smoke_spark1_spark2": [
+     "23Gi",
+     "24Gi"
+    ]
+   },
+   "VIT-1": {
+    "commit": "8bf97c5f645b",
+    "snapshot_in_quality_provenance": {
+     "quick": "2.0bpw-mcg-viterbi-lmhead-mxfp8",
+     "full": "2.0bpw-mcg-viterbi-lmhead-mxfp8"
+    },
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "correctness_full": "9/9",
+    "memavail_after_smoke_spark1_spark2": [
+     "23Gi",
+     "25Gi"
+    ]
+   },
+   "CUR-2": {
+    "commit": "fcfb092461ee",
+    "snapshot_in_quality_provenance": {
+     "quick": "2.0bpw-mcg-lmhead-mxfp8",
+     "full": "2.0bpw-mcg-lmhead-mxfp8"
+    },
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "correctness_full": null,
+    "memavail_after_smoke_spark1_spark2": [
+     "23Gi",
+     "24Gi"
+    ]
+   },
+   "VIT-2": {
+    "commit": "ebeec5ed1962",
+    "snapshot_in_quality_provenance": {
+     "quick": "2.0bpw-mcg-viterbi-lmhead-mxfp8",
+     "full": "2.0bpw-mcg-viterbi-lmhead-mxfp8"
+    },
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "correctness_full": "9/9",
+    "memavail_after_smoke_spark1_spark2": [
+     "22Gi",
+     "25Gi"
+    ]
+   }
+  },
+  "notes": [
+   "No boot is VOID: gpu_guard --check rc=0 (0 FOREIGN) on all four; no CONTAMINATED marker; disarm_scan rc 0; strict audit ok with COOP=2 and lm_head mxfp8 engaged once per rank on every boot (engagement.txt).",
+   "CUR-1 e2e rc was not captured directly (e2e.py ran in the background); e2e.txt records pass_rate 3/3, and main() returns 0 only when every phase passes.",
+   "VIT-2: the guards started after run.sh exited and before the smokes; nothing was measured in between.",
+   "Slow L.A.I.L runs inside clean boots were kept as measured (CUR-1 runs 4/5/10, CUR-2 run 3, VIT-2 runs 5/8); the per-boot medians are the gate values.",
+   "VIT-1 side reading, not scored: the main checkout's smoke_vision.py (1x1 'red' JPEG, pass rule = no HTTP 400) answered 'Gray' 3/3 on VIT-1. No CUR reading of that image exists, so it cannot be paired. The 64x64 red PNG reads 'Red' on all 8 CUR/VIT quality readings and in every worktree smoke."
+  ]
+ },
+ "quality": {
+  "gates_as_written": {
+   "per_reading": {
+    "CUR-1/quick": {
+     "pass_": true,
+     "failed": [],
+     "values": {
+      "vision": [
+       "Red",
+       "red",
+       true
+      ],
+      "c2": [
+       [
+        "323",
+        "252"
+       ],
+       null,
+       true
+      ],
+      "nll.mean_nll": [
+       0.24387,
+       0.25316,
+       true
+      ],
+      "decode.median_abs_dlogprob": [
+       0.02058,
+       0.06794,
+       true
+      ],
+      "decode.gen_nll_prefill": [
+       0.35987,
+       0.50932,
+       true
+      ],
+      "selfcons.golden_hazard": [
+       0.01566,
+       0.03206,
+       true
+      ],
+      "selfcons.aa_hazard": [
+       0.01681,
+       0.03206,
+       true
+      ],
+      "tools.json_valid": [
+       1.0,
+       1.0,
+       true
+      ],
+      "tools.exact_args": [
+       0.9545,
+       0.9545,
+       true
+      ],
+      "tools.no_call": [
+       1.0,
+       1.0,
+       true
+      ],
+      "needle.found": [
+       6,
+       6,
+       true
+      ]
+     }
+    },
+    "CUR-1/full": {
+     "pass_": true,
+     "failed": [],
+     "values": {
+      "vision": [
+       "Red",
+       "red",
+       true
+      ],
+      "c2": [
+       [
+        "323",
+        "252"
+       ],
+       null,
+       true
+      ],
+      "nll.mean_nll": [
+       0.243424,
+       0.2531,
+       true
+      ],
+      "decode.median_abs_dlogprob": [
+       0.01595,
+       0.07242,
+       true
+      ],
+      "decode.gen_nll_prefill": [
+       0.33078,
+       0.51987,
+       true
+      ],
+      "selfcons.golden_hazard": [
+       0.01972,
+       0.04348,
+       true
+      ],
+      "selfcons.aa_hazard": [
+       0.01455,
+       0.04348,
+       true
+      ],
+      "tools.json_valid": [
+       1.0,
+       1.0,
+       true
+      ],
+      "tools.exact_args": [
+       1.0,
+       0.9545,
+       true
+      ],
+      "tools.no_call": [
+       1.0,
+       1.0,
+       true
+      ],
+      "gsm8k.acc": [
+       0.95,
+       0.94,
+       true
+      ],
+      "gsm8k_think.acc": [
+       0.975,
+       0.95,
+       true
+      ],
+      "mmlu.acc": [
+       0.8596,
+       0.864,
+       true
+      ],
+      "needle.found": [
+       9,
+       9,
+       true
+      ]
+     }
+    },
+    "VIT-1/quick": {
+     "pass_": false,
+     "failed": [
+      "selfcons.golden_hazard"
+     ],
+     "values": {
+      "vision": [
+       "Red",
+       "red",
+       true
+      ],
+      "c2": [
+       [
+        "323",
+        "252"
+       ],
+       null,
+       true
+      ],
+      "nll.mean_nll": [
+       0.137498,
+       0.25316,
+       true
+      ],
+      "decode.median_abs_dlogprob": [
+       0.00203,
+       0.06794,
+       true
+      ],
+      "decode.gen_nll_prefill": [
+       0.25038,
+       0.50932,
+       true
+      ],
+      "selfcons.golden_hazard": [
+       0.09756,
+       0.03206,
+       false
+      ],
+      "selfcons.aa_hazard": [
+       0.01609,
+       0.03206,
+       true
+      ],
+      "tools.json_valid": [
+       1.0,
+       1.0,
+       true
+      ],
+      "tools.exact_args": [
+       1.0,
+       0.9545,
+       true
+      ],
+      "tools.no_call": [
+       1.0,
+       1.0,
+       true
+      ],
+      "needle.found": [
+       6,
+       6,
+       true
+      ]
+     }
+    },
+    "VIT-1/full": {
+     "pass_": false,
+     "failed": [
+      "selfcons.golden_hazard"
+     ],
+     "values": {
+      "vision": [
+       "Red",
+       "red",
+       true
+      ],
+      "c2": [
+       [
+        "323",
+        "252"
+       ],
+       null,
+       true
+      ],
+      "nll.mean_nll": [
+       0.1386,
+       0.2531,
+       true
+      ],
+      "decode.median_abs_dlogprob": [
+       0.00631,
+       0.07242,
+       true
+      ],
+      "decode.gen_nll_prefill": [
+       0.30782,
+       0.51987,
+       true
+      ],
+      "selfcons.golden_hazard": [
+       0.0939,
+       0.04348,
+       false
+      ],
+      "selfcons.aa_hazard": [
+       0.00843,
+       0.04348,
+       true
+      ],
+      "tools.json_valid": [
+       1.0,
+       1.0,
+       true
+      ],
+      "tools.exact_args": [
+       1.0,
+       0.9545,
+       true
+      ],
+      "tools.no_call": [
+       1.0,
+       1.0,
+       true
+      ],
+      "gsm8k.acc": [
+       0.97,
+       0.94,
+       true
+      ],
+      "gsm8k_think.acc": [
+       0.975,
+       0.95,
+       true
+      ],
+      "mmlu.acc": [
+       0.9035,
+       0.864,
+       true
+      ],
+      "needle.found": [
+       9,
+       9,
+       true
+      ]
+     }
+    },
+    "CUR-2/quick": {
+     "pass_": true,
+     "failed": [],
+     "values": {
+      "vision": [
+       "Red",
+       "red",
+       true
+      ],
+      "c2": [
+       [
+        "323",
+        "252"
+       ],
+       null,
+       true
+      ],
+      "nll.mean_nll": [
+       0.24232,
+       0.25316,
+       true
+      ],
+      "decode.median_abs_dlogprob": [
+       0.00847,
+       0.06794,
+       true
+      ],
+      "decode.gen_nll_prefill": [
+       0.27689,
+       0.50932,
+       true
+      ],
+      "selfcons.golden_hazard": [
+       0.01641,
+       0.03206,
+       true
+      ],
+      "selfcons.aa_hazard": [
+       0.0274,
+       0.03206,
+       true
+      ],
+      "tools.json_valid": [
+       1.0,
+       1.0,
+       true
+      ],
+      "tools.exact_args": [
+       0.9091,
+       0.9545,
+       true
+      ],
+      "tools.no_call": [
+       1.0,
+       1.0,
+       true
+      ],
+      "needle.found": [
+       6,
+       6,
+       true
+      ]
+     }
+    },
+    "CUR-2/full": {
+     "pass_": true,
+     "failed": [],
+     "values": {
+      "vision": [
+       "Red",
+       "red",
+       true
+      ],
+      "c2": [
+       [
+        "323",
+        "252"
+       ],
+       null,
+       true
+      ],
+      "nll.mean_nll": [
+       0.24389,
+       0.2531,
+       true
+      ],
+      "decode.median_abs_dlogprob": [
+       0.00995,
+       0.07242,
+       true
+      ],
+      "decode.gen_nll_prefill": [
+       0.2746,
+       0.51987,
+       true
+      ],
+      "selfcons.golden_hazard": [
+       0.0195,
+       0.04348,
+       true
+      ],
+      "selfcons.aa_hazard": [
+       0.01232,
+       0.04348,
+       true
+      ],
+      "tools.json_valid": [
+       1.0,
+       1.0,
+       true
+      ],
+      "tools.exact_args": [
+       0.9545,
+       0.9545,
+       true
+      ],
+      "tools.no_call": [
+       1.0,
+       1.0,
+       true
+      ],
+      "gsm8k.acc": [
+       0.94,
+       0.94,
+       true
+      ],
+      "gsm8k_think.acc": [
+       0.975,
+       0.95,
+       true
+      ],
+      "mmlu.acc": [
+       0.8684,
+       0.864,
+       true
+      ],
+      "needle.found": [
+       9,
+       9,
+       true
+      ]
+     }
+    },
+    "VIT-2/quick": {
+     "pass_": false,
+     "failed": [
+      "selfcons.golden_hazard"
+     ],
+     "values": {
+      "vision": [
+       "Red",
+       "red",
+       true
+      ],
+      "c2": [
+       [
+        "323",
+        "252"
+       ],
+       null,
+       true
+      ],
+      "nll.mean_nll": [
+       0.138664,
+       0.25316,
+       true
+      ],
+      "decode.median_abs_dlogprob": [
+       0.00294,
+       0.06794,
+       true
+      ],
+      "decode.gen_nll_prefill": [
+       0.25052,
+       0.50932,
+       true
+      ],
+      "selfcons.golden_hazard": [
+       0.10204,
+       0.03206,
+       false
+      ],
+      "selfcons.aa_hazard": [
+       0.01166,
+       0.03206,
+       true
+      ],
+      "tools.json_valid": [
+       1.0,
+       1.0,
+       true
+      ],
+      "tools.exact_args": [
+       1.0,
+       0.9545,
+       true
+      ],
+      "tools.no_call": [
+       1.0,
+       1.0,
+       true
+      ],
+      "needle.found": [
+       6,
+       6,
+       true
+      ]
+     }
+    },
+    "VIT-2/full": {
+     "pass_": false,
+     "failed": [
+      "selfcons.golden_hazard"
+     ],
+     "values": {
+      "vision": [
+       "Red",
+       "red",
+       true
+      ],
+      "c2": [
+       [
+        "323",
+        "252"
+       ],
+       null,
+       true
+      ],
+      "nll.mean_nll": [
+       0.139313,
+       0.2531,
+       true
+      ],
+      "decode.median_abs_dlogprob": [
+       0.0022,
+       0.07242,
+       true
+      ],
+      "decode.gen_nll_prefill": [
+       0.25107,
+       0.51987,
+       true
+      ],
+      "selfcons.golden_hazard": [
+       0.0939,
+       0.04348,
+       false
+      ],
+      "selfcons.aa_hazard": [
+       0.01207,
+       0.04348,
+       true
+      ],
+      "tools.json_valid": [
+       1.0,
+       1.0,
+       true
+      ],
+      "tools.exact_args": [
+       1.0,
+       0.9545,
+       true
+      ],
+      "tools.no_call": [
+       1.0,
+       1.0,
+       true
+      ],
+      "gsm8k.acc": [
+       0.97,
+       0.94,
+       true
+      ],
+      "gsm8k_think.acc": [
+       0.975,
+       0.95,
+       true
+      ],
+      "mmlu.acc": [
+       0.8947,
+       0.864,
+       true
+      ],
+      "needle.found": [
+       9,
+       9,
+       true
+      ]
+     }
+    }
+   },
+   "quick_pass_both_VIT": false,
+   "full_pass_both_VIT": false,
+   "CUR_pass_all_four": true
+  },
+  "nll": {
+   "unit": "per-passage mean NLL (nats/token), 40 fixed passages; arm value per passage = mean of its 4 readings (quick + full first pass, 2 boots)",
+   "CUR_mean_of_passages": 0.24342,
+   "VIT_mean_of_passages": 0.13853,
+   "paired_delta_VIT_minus_CUR": {
+    "mean": -0.10489,
+    "median": -0.08811,
+    "sd": 0.07403,
+    "ci95_t": [
+     -0.12856,
+     -0.08122
+    ],
+    "ci95_bootstrap": [
+     -0.12851,
+     -0.08311
+    ],
+    "relative_mean_pct": -42.12,
+    "relative_ci95_bootstrap_pct": [
+     -47.41,
+     -36.68
+    ],
+    "passages_lower_on_VIT": 39,
+    "passages_higher_on_VIT": 1,
+    "sign_test_exact_p": 7.457856554538012e-11,
+    "wilcoxon": {
+     "n_nonzero": 40,
+     "w_plus": 2.0,
+     "w_minus": 818.0,
+     "p_two_sided": 5.4569682106375694e-12
+    },
+    "least_improved": [
+     [
+      "pg2701-2",
+      -0.01974
+     ],
+     [
+      "pg84-2",
+      -0.00795
+     ],
+     [
+      "pg98-0",
+      0.01679
+     ]
+    ]
+   },
+   "interleaved_pairs": {
+    "VIT-1/quick - CUR-1/quick": {
+     "mean": -0.1064,
+     "sd": 0.07509,
+     "max_abs": 0.34206,
+     "n_lower": 39,
+     "n_higher": 1
+    },
+    "VIT-1/full - CUR-1/full": {
+     "mean": -0.10486,
+     "sd": 0.07542,
+     "max_abs": 0.34606,
+     "n_lower": 39,
+     "n_higher": 1
+    },
+    "VIT-2/quick - CUR-2/quick": {
+     "mean": -0.10369,
+     "sd": 0.07404,
+     "max_abs": 0.3392,
+     "n_lower": 39,
+     "n_higher": 1
+    },
+    "VIT-2/full - CUR-2/full": {
+     "mean": -0.10461,
+     "sd": 0.07247,
+     "max_abs": 0.3564,
+     "n_lower": 39,
+     "n_higher": 1
+    }
+   },
+   "same_arm_AA_control": {
+    "CUR-2/quick - CUR-1/quick": {
+     "mean": -0.00155,
+     "sd": 0.00569,
+     "max_abs": 0.01407,
+     "n_lower": 25,
+     "n_higher": 15
+    },
+    "CUR-2/full - CUR-1/full": {
+     "mean": 0.00047,
+     "sd": 0.01001,
+     "max_abs": 0.02766,
+     "n_lower": 15,
+     "n_higher": 25
+    },
+    "VIT-2/quick - VIT-1/quick": {
+     "mean": 0.00117,
+     "sd": 0.00635,
+     "max_abs": 0.01573,
+     "n_lower": 23,
+     "n_higher": 17
+    },
+    "VIT-2/full - VIT-1/full": {
+     "mean": 0.00071,
+     "sd": 0.00646,
+     "max_abs": 0.01497,
+     "n_lower": 17,
+     "n_higher": 23
+    }
+   },
+   "within_run_repeat": {
+    "CUR-1/full": {
+     "repeat_abs_delta": 0.000608,
+     "repeat_max_passage_delta": 0.0204
+    },
+    "VIT-1/full": {
+     "repeat_abs_delta": 0.000642,
+     "repeat_max_passage_delta": 0.012531
+    },
+    "CUR-2/full": {
+     "repeat_abs_delta": 0.001486,
+     "repeat_max_passage_delta": 0.021407
+    },
+    "VIT-2/full": {
+     "repeat_abs_delta": 0.000407,
+     "repeat_max_passage_delta": 0.022593
+    }
+   },
+   "token_weighted_mean_nll": {
+    "CUR-1/quick": 0.24387,
+    "CUR-1/full": 0.243424,
+    "VIT-1/quick": 0.137498,
+    "VIT-1/full": 0.1386,
+    "CUR-2/quick": 0.24232,
+    "CUR-2/full": 0.24389,
+    "VIT-2/quick": 0.138664,
+    "VIT-2/full": 0.139313
+   },
+   "full_two_pass_run_means": {
+    "CUR-1/full": [
+     0.243424,
+     0.242816
+    ],
+    "VIT-1/full": [
+     0.1386,
+     0.139243
+    ],
+    "CUR-2/full": [
+     0.24389,
+     0.242404
+    ],
+    "VIT-2/full": [
+     0.139313,
+     0.138906
+    ]
+   },
+   "gate_limits": {
+    "quick": 0.25316,
+    "full": 0.2531
+   }
+  },
+  "paired_item_tests": {
+   "gsm8k": {
+    "component": "gsm8k (100, thinking off)",
+    "n_items": 100,
+    "per_pair": {
+     "VIT-1/full vs CUR-1/full": {
+      "CUR_k": 95,
+      "VIT_k": 97,
+      "n": 100,
+      "CUR_only": 1,
+      "VIT_only": 3,
+      "CUR_only_items": [
+       1001
+      ],
+      "VIT_only_items": [
+       234,
+       494,
+       689
+      ],
+      "mcnemar_exact_p": 0.625
+     },
+     "VIT-2/full vs CUR-2/full": {
+      "CUR_k": 94,
+      "VIT_k": 97,
+      "n": 100,
+      "CUR_only": 0,
+      "VIT_only": 3,
+      "CUR_only_items": [],
+      "VIT_only_items": [
+       234,
+       611,
+       754
+      ],
+      "mcnemar_exact_p": 0.25
+     }
+    },
+    "pooled": {
+     "readings_per_arm": 2,
+     "items_VIT_better": 5,
+     "items_CUR_better": 1,
+     "VIT_better_items": [
+      234,
+      494,
+      611,
+      689,
+      754
+     ],
+     "CUR_better_items": [
+      1001
+     ],
+     "sign_test_exact_p": 0.21875,
+     "CUR_total_correct": 189,
+     "VIT_total_correct": 194,
+     "total_items_scored_per_arm": 200
+    },
+    "same_arm_AA_discordance": {
+     "CUR-2/full vs CUR-1/full": {
+      "discordant": 5,
+      "items": [
+       494,
+       611,
+       689,
+       754,
+       1001
+      ]
+     },
+     "VIT-2/full vs VIT-1/full": {
+      "discordant": 0,
+      "items": []
+     }
+    }
+   },
+   "gsm8k_think": {
+    "component": "gsm8k_think (first 40, thinking on)",
+    "n_items": 40,
+    "per_pair": {
+     "VIT-1/full vs CUR-1/full": {
+      "CUR_k": 39,
+      "VIT_k": 39,
+      "n": 40,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-2/full vs CUR-2/full": {
+      "CUR_k": 39,
+      "VIT_k": 39,
+      "n": 40,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     }
+    },
+    "pooled": {
+     "readings_per_arm": 2,
+     "items_VIT_better": 0,
+     "items_CUR_better": 0,
+     "VIT_better_items": [],
+     "CUR_better_items": [],
+     "sign_test_exact_p": 1.0,
+     "CUR_total_correct": 78,
+     "VIT_total_correct": 78,
+     "total_items_scored_per_arm": 80
+    },
+    "same_arm_AA_discordance": {
+     "CUR-2/full vs CUR-1/full": {
+      "discordant": 0,
+      "items": []
+     },
+     "VIT-2/full vs VIT-1/full": {
+      "discordant": 0,
+      "items": []
+     }
+    }
+   },
+   "mmlu": {
+    "component": "mmlu (228)",
+    "n_items": 228,
+    "per_pair": {
+     "VIT-1/full vs CUR-1/full": {
+      "CUR_k": 196,
+      "VIT_k": 206,
+      "n": 228,
+      "CUR_only": 5,
+      "VIT_only": 15,
+      "CUR_only_items": [
+       "abstract_algebra/1",
+       "college_mathematics/2",
+       "global_facts/1",
+       "human_sexuality/1",
+       "moral_scenarios/3"
+      ],
+      "VIT_only_items": [
+       "abstract_algebra/2",
+       "college_chemistry/2",
+       "college_mathematics/0",
+       "college_mathematics/3",
+       "formal_logic/1",
+       "high_school_european_history/3",
+       "high_school_macroeconomics/1",
+       "high_school_mathematics/2",
+       "high_school_mathematics/3",
+       "high_school_microeconomics/0",
+       "high_school_physics/3",
+       "high_school_statistics/1",
+       "miscellaneous/3",
+       "moral_disputes/2",
+       "professional_accounting/0"
+      ],
+      "mcnemar_exact_p": 0.04139
+     },
+     "VIT-2/full vs CUR-2/full": {
+      "CUR_k": 198,
+      "VIT_k": 204,
+      "n": 228,
+      "CUR_only": 5,
+      "VIT_only": 11,
+      "CUR_only_items": [
+       "abstract_algebra/1",
+       "college_mathematics/2",
+       "formal_logic/0",
+       "high_school_macroeconomics/3",
+       "human_sexuality/1"
+      ],
+      "VIT_only_items": [
+       "abstract_algebra/2",
+       "college_mathematics/3",
+       "formal_logic/1",
+       "high_school_european_history/3",
+       "high_school_macroeconomics/1",
+       "high_school_mathematics/3",
+       "high_school_microeconomics/0",
+       "high_school_physics/3",
+       "high_school_statistics/1",
+       "miscellaneous/3",
+       "moral_disputes/2"
+      ],
+      "mcnemar_exact_p": 0.21011
+     }
+    },
+    "pooled": {
+     "readings_per_arm": 2,
+     "items_VIT_better": 15,
+     "items_CUR_better": 7,
+     "VIT_better_items": [
+      "abstract_algebra/2",
+      "college_chemistry/2",
+      "college_mathematics/0",
+      "college_mathematics/3",
+      "formal_logic/1",
+      "high_school_european_history/3",
+      "high_school_macroeconomics/1",
+      "high_school_mathematics/2",
+      "high_school_mathematics/3",
+      "high_school_microeconomics/0",
+      "high_school_physics/3",
+      "high_school_statistics/1",
+      "miscellaneous/3",
+      "moral_disputes/2",
+      "professional_accounting/0"
+     ],
+     "CUR_better_items": [
+      "abstract_algebra/1",
+      "college_mathematics/2",
+      "formal_logic/0",
+      "global_facts/1",
+      "high_school_macroeconomics/3",
+      "human_sexuality/1",
+      "moral_scenarios/3"
+     ],
+     "sign_test_exact_p": 0.1338,
+     "CUR_total_correct": 394,
+     "VIT_total_correct": 410,
+     "total_items_scored_per_arm": 456
+    },
+    "same_arm_AA_discordance": {
+     "CUR-2/full vs CUR-1/full": {
+      "discordant": 4,
+      "items": [
+       "college_chemistry/2",
+       "college_mathematics/0",
+       "global_facts/1",
+       "high_school_mathematics/2"
+      ]
+     },
+     "VIT-2/full vs VIT-1/full": {
+      "discordant": 4,
+      "items": [
+       "formal_logic/0",
+       "high_school_macroeconomics/3",
+       "moral_scenarios/3",
+       "professional_accounting/0"
+      ]
+     }
+    }
+   },
+   "tools_exact_args": {
+    "component": "tools exact_args (22)",
+    "n_items": 22,
+    "per_pair": {
+     "VIT-1/quick vs CUR-1/quick": {
+      "CUR_k": 21,
+      "VIT_k": 22,
+      "n": 22,
+      "CUR_only": 0,
+      "VIT_only": 1,
+      "CUR_only_items": [],
+      "VIT_only_items": [
+       "t09"
+      ],
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-1/full vs CUR-1/full": {
+      "CUR_k": 22,
+      "VIT_k": 22,
+      "n": 22,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-2/quick vs CUR-2/quick": {
+      "CUR_k": 20,
+      "VIT_k": 22,
+      "n": 22,
+      "CUR_only": 0,
+      "VIT_only": 2,
+      "CUR_only_items": [],
+      "VIT_only_items": [
+       "t01",
+       "t09"
+      ],
+      "mcnemar_exact_p": 0.5
+     },
+     "VIT-2/full vs CUR-2/full": {
+      "CUR_k": 21,
+      "VIT_k": 22,
+      "n": 22,
+      "CUR_only": 0,
+      "VIT_only": 1,
+      "CUR_only_items": [],
+      "VIT_only_items": [
+       "t09"
+      ],
+      "mcnemar_exact_p": 1.0
+     }
+    },
+    "pooled": {
+     "readings_per_arm": 4,
+     "items_VIT_better": 2,
+     "items_CUR_better": 0,
+     "VIT_better_items": [
+      "t01",
+      "t09"
+     ],
+     "CUR_better_items": [],
+     "sign_test_exact_p": 0.5,
+     "CUR_total_correct": 84,
+     "VIT_total_correct": 88,
+     "total_items_scored_per_arm": 88
+    },
+    "same_arm_AA_discordance": {
+     "CUR-2/quick vs CUR-1/quick": {
+      "discordant": 1,
+      "items": [
+       "t01"
+      ]
+     },
+     "CUR-2/full vs CUR-1/full": {
+      "discordant": 1,
+      "items": [
+       "t09"
+      ]
+     },
+     "VIT-2/quick vs VIT-1/quick": {
+      "discordant": 0,
+      "items": []
+     },
+     "VIT-2/full vs VIT-1/full": {
+      "discordant": 0,
+      "items": []
+     }
+    }
+   },
+   "tools_json_valid": {
+    "component": "tools json_valid (22)",
+    "n_items": 22,
+    "per_pair": {
+     "VIT-1/quick vs CUR-1/quick": {
+      "CUR_k": 22,
+      "VIT_k": 22,
+      "n": 22,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-1/full vs CUR-1/full": {
+      "CUR_k": 22,
+      "VIT_k": 22,
+      "n": 22,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-2/quick vs CUR-2/quick": {
+      "CUR_k": 22,
+      "VIT_k": 22,
+      "n": 22,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-2/full vs CUR-2/full": {
+      "CUR_k": 22,
+      "VIT_k": 22,
+      "n": 22,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     }
+    },
+    "pooled": {
+     "readings_per_arm": 4,
+     "items_VIT_better": 0,
+     "items_CUR_better": 0,
+     "VIT_better_items": [],
+     "CUR_better_items": [],
+     "sign_test_exact_p": 1.0,
+     "CUR_total_correct": 88,
+     "VIT_total_correct": 88,
+     "total_items_scored_per_arm": 88
+    },
+    "same_arm_AA_discordance": {
+     "CUR-2/quick vs CUR-1/quick": {
+      "discordant": 0,
+      "items": []
+     },
+     "CUR-2/full vs CUR-1/full": {
+      "discordant": 0,
+      "items": []
+     },
+     "VIT-2/quick vs VIT-1/quick": {
+      "discordant": 0,
+      "items": []
+     },
+     "VIT-2/full vs VIT-1/full": {
+      "discordant": 0,
+      "items": []
+     }
+    }
+   },
+   "tools_no_call": {
+    "component": "tools no_call (8)",
+    "n_items": 8,
+    "per_pair": {
+     "VIT-1/quick vs CUR-1/quick": {
+      "CUR_k": 8,
+      "VIT_k": 8,
+      "n": 8,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-1/full vs CUR-1/full": {
+      "CUR_k": 8,
+      "VIT_k": 8,
+      "n": 8,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-2/quick vs CUR-2/quick": {
+      "CUR_k": 8,
+      "VIT_k": 8,
+      "n": 8,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-2/full vs CUR-2/full": {
+      "CUR_k": 8,
+      "VIT_k": 8,
+      "n": 8,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     }
+    },
+    "pooled": {
+     "readings_per_arm": 4,
+     "items_VIT_better": 0,
+     "items_CUR_better": 0,
+     "VIT_better_items": [],
+     "CUR_better_items": [],
+     "sign_test_exact_p": 1.0,
+     "CUR_total_correct": 32,
+     "VIT_total_correct": 32,
+     "total_items_scored_per_arm": 32
+    },
+    "same_arm_AA_discordance": {
+     "CUR-2/quick vs CUR-1/quick": {
+      "discordant": 0,
+      "items": []
+     },
+     "CUR-2/full vs CUR-1/full": {
+      "discordant": 0,
+      "items": []
+     },
+     "VIT-2/quick vs VIT-1/quick": {
+      "discordant": 0,
+      "items": []
+     },
+     "VIT-2/full vs VIT-1/full": {
+      "discordant": 0,
+      "items": []
+     }
+    }
+   },
+   "needle_quick": {
+    "component": "needle quick (8k/32k x 3 depths)",
+    "n_items": 6,
+    "per_pair": {
+     "VIT-1/quick vs CUR-1/quick": {
+      "CUR_k": 6,
+      "VIT_k": 6,
+      "n": 6,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-2/quick vs CUR-2/quick": {
+      "CUR_k": 6,
+      "VIT_k": 6,
+      "n": 6,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     }
+    },
+    "pooled": {
+     "readings_per_arm": 2,
+     "items_VIT_better": 0,
+     "items_CUR_better": 0,
+     "VIT_better_items": [],
+     "CUR_better_items": [],
+     "sign_test_exact_p": 1.0,
+     "CUR_total_correct": 12,
+     "VIT_total_correct": 12,
+     "total_items_scored_per_arm": 12
+    },
+    "same_arm_AA_discordance": {
+     "CUR-2/quick vs CUR-1/quick": {
+      "discordant": 0,
+      "items": []
+     },
+     "VIT-2/quick vs VIT-1/quick": {
+      "discordant": 0,
+      "items": []
+     }
+    }
+   },
+   "needle_full": {
+    "component": "needle full (8k/32k/128k x 3 depths)",
+    "n_items": 9,
+    "per_pair": {
+     "VIT-1/full vs CUR-1/full": {
+      "CUR_k": 9,
+      "VIT_k": 9,
+      "n": 9,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     },
+     "VIT-2/full vs CUR-2/full": {
+      "CUR_k": 9,
+      "VIT_k": 9,
+      "n": 9,
+      "CUR_only": 0,
+      "VIT_only": 0,
+      "CUR_only_items": [],
+      "VIT_only_items": [],
+      "mcnemar_exact_p": 1.0
+     }
+    },
+    "pooled": {
+     "readings_per_arm": 2,
+     "items_VIT_better": 0,
+     "items_CUR_better": 0,
+     "VIT_better_items": [],
+     "CUR_better_items": [],
+     "sign_test_exact_p": 1.0,
+     "CUR_total_correct": 18,
+     "VIT_total_correct": 18,
+     "total_items_scored_per_arm": 18
+    },
+    "same_arm_AA_discordance": {
+     "CUR-2/full vs CUR-1/full": {
+      "discordant": 0,
+      "items": []
+     },
+     "VIT-2/full vs VIT-1/full": {
+      "discordant": 0,
+      "items": []
+     }
+    }
+   }
+  },
+  "decode_probe": {
+   "CUR-1/quick": {
+    "median_abs_dlogprob": 0.02058,
+    "p99_abs_dlogprob": 0.91136,
+    "mean_abs_dlogprob": 0.09912,
+    "gen_nll_prefill": 0.35987,
+    "gen_nll_decode": 0.31117
+   },
+   "CUR-1/full": {
+    "median_abs_dlogprob": 0.01595,
+    "p99_abs_dlogprob": 0.6691,
+    "mean_abs_dlogprob": 0.08039,
+    "gen_nll_prefill": 0.33078,
+    "gen_nll_decode": 0.29448
+   },
+   "VIT-1/quick": {
+    "median_abs_dlogprob": 0.00203,
+    "p99_abs_dlogprob": 0.83268,
+    "mean_abs_dlogprob": 0.06168,
+    "gen_nll_prefill": 0.25038,
+    "gen_nll_decode": 0.22136
+   },
+   "VIT-1/full": {
+    "median_abs_dlogprob": 0.00631,
+    "p99_abs_dlogprob": 0.82354,
+    "mean_abs_dlogprob": 0.07867,
+    "gen_nll_prefill": 0.30782,
+    "gen_nll_decode": 0.277
+   },
+   "CUR-2/quick": {
+    "median_abs_dlogprob": 0.00847,
+    "p99_abs_dlogprob": 0.8467,
+    "mean_abs_dlogprob": 0.0779,
+    "gen_nll_prefill": 0.27689,
+    "gen_nll_decode": 0.24944
+   },
+   "CUR-2/full": {
+    "median_abs_dlogprob": 0.00995,
+    "p99_abs_dlogprob": 0.779,
+    "mean_abs_dlogprob": 0.07837,
+    "gen_nll_prefill": 0.2746,
+    "gen_nll_decode": 0.24894
+   },
+   "VIT-2/quick": {
+    "median_abs_dlogprob": 0.00294,
+    "p99_abs_dlogprob": 0.79558,
+    "mean_abs_dlogprob": 0.06588,
+    "gen_nll_prefill": 0.25052,
+    "gen_nll_decode": 0.22617
+   },
+   "VIT-2/full": {
+    "median_abs_dlogprob": 0.0022,
+    "p99_abs_dlogprob": 0.62005,
+    "mean_abs_dlogprob": 0.06016,
+    "gen_nll_prefill": 0.25107,
+    "gen_nll_decode": 0.23471
+   }
+  },
+  "c2_vision": {
+   "CUR-1/quick": {
+    "c2": true,
+    "vision": "Red"
+   },
+   "CUR-1/full": {
+    "c2": true,
+    "vision": "Red"
+   },
+   "VIT-1/quick": {
+    "c2": true,
+    "vision": "Red"
+   },
+   "VIT-1/full": {
+    "c2": true,
+    "vision": "Red"
+   },
+   "CUR-2/quick": {
+    "c2": true,
+    "vision": "Red"
+   },
+   "CUR-2/full": {
+    "c2": true,
+    "vision": "Red"
+   },
+   "VIT-2/quick": {
+    "c2": true,
+    "vision": "Red"
+   },
+   "VIT-2/full": {
+    "c2": true,
+    "vision": "Red"
+   }
+  },
+  "selfcons": {
+   "limits": {
+    "quick": 0.03206,
+    "full": 0.04348
+   },
+   "per_reading_vs_09_24_old_pack_golden": {
+    "CUR-1/quick": {
+     "aa_hazard": 0.01681,
+     "aa_diverged": 8,
+     "golden_old_pack_hazard": 0.01566,
+     "golden_diverged": 16,
+     "golden_first_div": [
+      122,
+      null,
+      11,
+      null,
+      null,
+      null,
+      3,
+      6,
+      99,
+      70,
+      0,
+      62,
+      62,
+      null,
+      11,
+      null,
+      null,
+      null,
+      3,
+      15,
+      5,
+      91,
+      10,
+      20
+     ]
+    },
+    "CUR-1/full": {
+     "aa_hazard": 0.01455,
+     "aa_diverged": 7,
+     "golden_old_pack_hazard": 0.01972,
+     "golden_diverged": 18,
+     "golden_first_div": [
+      123,
+      38,
+      7,
+      null,
+      null,
+      null,
+      3,
+      6,
+      111,
+      23,
+      10,
+      20,
+      123,
+      102,
+      7,
+      null,
+      null,
+      null,
+      98,
+      6,
+      5,
+      23,
+      10,
+      20
+     ]
+    },
+    "VIT-1/quick": {
+     "aa_hazard": 0.01609,
+     "aa_diverged": 7,
+     "golden_old_pack_hazard": 0.09756,
+     "golden_diverged": 20,
+     "golden_first_div": [
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      20,
+      0,
+      0,
+      0,
+      1,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      3,
+      0,
+      0
+     ]
+    },
+    "VIT-1/full": {
+     "aa_hazard": 0.00843,
+     "aa_diverged": 5,
+     "golden_old_pack_hazard": 0.0939,
+     "golden_diverged": 20,
+     "golden_first_div": [
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      20,
+      0,
+      0,
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      3,
+      0,
+      0
+     ]
+    },
+    "CUR-2/quick": {
+     "aa_hazard": 0.0274,
+     "aa_diverged": 8,
+     "golden_old_pack_hazard": 0.01641,
+     "golden_diverged": 15,
+     "golden_first_div": [
+      62,
+      null,
+      null,
+      null,
+      null,
+      null,
+      3,
+      6,
+      5,
+      25,
+      10,
+      20,
+      26,
+      38,
+      null,
+      null,
+      null,
+      null,
+      18,
+      6,
+      99,
+      95,
+      10,
+      58
+     ]
+    },
+    "CUR-2/full": {
+     "aa_hazard": 0.01232,
+     "aa_diverged": 6,
+     "golden_old_pack_hazard": 0.0195,
+     "golden_diverged": 18,
+     "golden_first_div": [
+      123,
+      102,
+      7,
+      null,
+      null,
+      null,
+      98,
+      6,
+      44,
+      23,
+      29,
+      20,
+      123,
+      102,
+      7,
+      null,
+      null,
+      null,
+      3,
+      6,
+      9,
+      23,
+      0,
+      20
+     ]
+    },
+    "VIT-2/quick": {
+     "aa_hazard": 0.01166,
+     "aa_diverged": 8,
+     "golden_old_pack_hazard": 0.10204,
+     "golden_diverged": 20,
+     "golden_first_div": [
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      3,
+      0,
+      0,
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      3,
+      0,
+      0
+     ]
+    },
+    "VIT-2/full": {
+     "aa_hazard": 0.01207,
+     "aa_diverged": 7,
+     "golden_old_pack_hazard": 0.0939,
+     "golden_diverged": 20,
+     "golden_first_div": [
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      20,
+      0,
+      0,
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      3,
+      0,
+      0
+     ]
+    }
+   },
+   "recomputed_equals_stored": true,
+   "cross_boot_and_cross_pack_hazard": {
+    "CUR-2/quick vs CUR-1/quick run A (same pack, cross-boot)": {
+     "hazard": 0.01825,
+     "diverged": 15,
+     "pairs": 24,
+     "first_div": [
+      62,
+      null,
+      11,
+      null,
+      null,
+      null,
+      32,
+      null,
+      5,
+      25,
+      0,
+      20,
+      26,
+      38,
+      11,
+      null,
+      null,
+      null,
+      3,
+      12,
+      null,
+      70,
+      0,
+      58
+     ]
+    },
+    "VIT-2/quick vs VIT-1/quick run A (same pack, cross-boot)": {
+     "hazard": 0.01341,
+     "diverged": 14,
+     "pairs": 24,
+     "first_div": [
+      81,
+      62,
+      75,
+      null,
+      null,
+      null,
+      25,
+      null,
+      null,
+      3,
+      38,
+      22,
+      null,
+      62,
+      71,
+      null,
+      null,
+      null,
+      11,
+      null,
+      69,
+      3,
+      38,
+      22
+     ]
+    },
+    "VIT-1/quick vs CUR-1/quick run A (cross-pack, interleaved pair 1)": {
+     "hazard": 0.09756,
+     "diverged": 20,
+     "pairs": 24,
+     "first_div": [
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      20,
+      0,
+      0,
+      0,
+      1,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      3,
+      0,
+      0
+     ]
+    },
+    "VIT-2/quick vs CUR-2/quick run A (cross-pack, interleaved pair 2)": {
+     "hazard": 0.10204,
+     "diverged": 20,
+     "pairs": 24,
+     "first_div": [
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      3,
+      0,
+      0,
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      3,
+      0,
+      0
+     ]
+    },
+    "CUR-1/quick vs 09-24 baseline/quick run A (golden gate as run)": {
+     "hazard": 0.01566,
+     "diverged": 16,
+     "pairs": 24,
+     "first_div": [
+      122,
+      null,
+      11,
+      null,
+      null,
+      null,
+      3,
+      6,
+      99,
+      70,
+      0,
+      62,
+      62,
+      null,
+      11,
+      null,
+      null,
+      null,
+      3,
+      15,
+      5,
+      91,
+      10,
+      20
+     ]
+    },
+    "CUR-2/full vs CUR-1/full run A (same pack, cross-boot)": {
+     "hazard": 0.01675,
+     "diverged": 16,
+     "pairs": 24,
+     "first_div": [
+      null,
+      38,
+      9,
+      null,
+      null,
+      null,
+      3,
+      12,
+      44,
+      91,
+      10,
+      73,
+      null,
+      38,
+      9,
+      null,
+      null,
+      null,
+      71,
+      12,
+      9,
+      64,
+      0,
+      40
+     ]
+    },
+    "VIT-2/full vs VIT-1/full run A (same pack, cross-boot)": {
+     "hazard": 0.00985,
+     "diverged": 12,
+     "pairs": 24,
+     "first_div": [
+      null,
+      62,
+      null,
+      null,
+      null,
+      null,
+      11,
+      null,
+      null,
+      68,
+      43,
+      78,
+      null,
+      62,
+      71,
+      null,
+      null,
+      null,
+      11,
+      null,
+      69,
+      3,
+      38,
+      22
+     ]
+    },
+    "VIT-1/full vs CUR-1/full run A (cross-pack, interleaved pair 1)": {
+     "hazard": 0.0939,
+     "diverged": 20,
+     "pairs": 24,
+     "first_div": [
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      20,
+      0,
+      0,
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      3,
+      0,
+      0
+     ]
+    },
+    "VIT-2/full vs CUR-2/full run A (cross-pack, interleaved pair 2)": {
+     "hazard": 0.0939,
+     "diverged": 20,
+     "pairs": 24,
+     "first_div": [
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      20,
+      0,
+      0,
+      0,
+      9,
+      7,
+      null,
+      1,
+      null,
+      0,
+      1,
+      5,
+      3,
+      0,
+      0
+     ]
+    },
+    "CUR-1/full vs 09-24 baseline/full run A (golden gate as run)": {
+     "hazard": 0.01972,
+     "diverged": 18,
+     "pairs": 24,
+     "first_div": [
+      123,
+      38,
+      7,
+      null,
+      null,
+      null,
+      3,
+      6,
+      111,
+      23,
+      10,
+      20,
+      123,
+      102,
+      7,
+      null,
+      null,
+      null,
+      98,
+      6,
+      5,
+      23,
+      10,
+      20
+     ]
+    }
+   },
+   "VIT_first_div_vs_old_golden_by_prompt": {
+    "0": [
+     [
+      0,
+      0
+     ]
+    ],
+    "1": [
+     [
+      9,
+      1
+     ],
+     [
+      9,
+      9
+     ]
+    ],
+    "2": [
+     [
+      7,
+      7
+     ]
+    ],
+    "3": [
+     [
+      null,
+      null
+     ]
+    ],
+    "4": [
+     [
+      1,
+      1
+     ]
+    ],
+    "5": [
+     [
+      null,
+      null
+     ]
+    ],
+    "6": [
+     [
+      0,
+      0
+     ]
+    ],
+    "7": [
+     [
+      1,
+      1
+     ]
+    ],
+    "8": [
+     [
+      5,
+      5
+     ]
+    ],
+    "9": [
+     [
+      20,
+      3
+     ],
+     [
+      3,
+      3
+     ]
+    ],
+    "10": [
+     [
+      0,
+      0
+     ]
+    ],
+    "11": [
+     [
+      0,
+      0
+     ]
+    ]
+   },
+   "checkable_answers_in_greedy_text": {
+    "note": "Decoded offline from token ids with tokenizer.json (byte-level BPE). Readings: baseline 2 modes x 2 runs; each arm 2 boots x 2 modes x 2 runs. Prompts 0 (17*19), 8 (quadratic) and 11 (IEEE 754) are cut by the 128-token cap before their final answer in every reading of every arm, the 09-24 baseline included, so they are not scored.",
+    "per_prompt": {
+     "first 20 primes": {
+      "09-24 baseline (old pack, e12)": "4/4",
+      "CUR": "8/8",
+      "VIT": "8/8"
+     },
+     "French: renard + chien": {
+      "09-24 baseline (old pack, e12)": "4/4",
+      "CUR": "8/8",
+      "VIT": "8/8"
+     },
+     "capital of Australia -> Canberra": {
+      "09-24 baseline (old pack, e12)": "4/4",
+      "CUR": "8/8",
+      "VIT": "8/8"
+     }
+    }
+   },
+   "previews_run_A_quick": {
+    "0": {
+     "baseline": "Alright, let\u2019s work through \\(17 \\times 19\\) step by step.\n\nWe can use the **distributive method**:\n\n\\[\n17 \\ti",
+     "CUR-1": "Alright, let\u2019s work through \\(17 \\times 19\\) step by step.\n\nWe can use the **distributive method**:\n\n\\[\n17 \\ti",
+     "VIT-1": "Let\u2019s solve \\( 17 \\times 19 \\) step by step.\n\n---\n\n**Step 1: Break down the numbers**  \nWe can write \\( 19 \\) "
+    },
+    "1": {
+     "baseline": "# Reversing a Linked List Iteratively in Python\n\nHere's a complete implementation with a `Node` class and an i",
+     "CUR-1": "# Reversing a Linked List Iteratively in Python\n\nHere's a complete implementation with a `Node` class and an i",
+     "VIT-1": "# Reversing a Linked List Iteratively\n\nHere's a Python implementation that reverses a singly linked list itera"
+    },
+    "2": {
+     "baseline": "Sunlight contains all colors, but blue light is scattered by air molecules much more than red light because bl",
+     "CUR-1": "Sunlight contains all colors, but blue light is scattered more than other colors by the small molecules in Ear",
+     "VIT-1": "Sunlight contains all colors, but Earth's atmosphere scatters the shorter, blue wavelengths far more than the "
+    },
+    "3": {
+     "baseline": "2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71<\uff5cend\u2581of\u2581sentence\uff5c>",
+     "CUR-1": "2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71<\uff5cend\u2581of\u2581sentence\uff5c>",
+     "VIT-1": "2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71<\uff5cend\u2581of\u2581sentence\uff5c>"
+    },
+    "4": {
+     "baseline": "Le renard brun rapide saute par-dessus le chien paresseux.<\uff5cend\u2581of\u2581sentence\uff5c>",
+     "CUR-1": "Le renard brun rapide saute par-dessus le chien paresseux.<\uff5cend\u2581of\u2581sentence\uff5c>",
+     "VIT-1": "Le rapide renard brun saute par-dessus le chien paresseux.<\uff5cend\u2581of\u2581sentence\uff5c>"
+    },
+    "5": {
+     "baseline": "Canberra<\uff5cend\u2581of\u2581sentence\uff5c>",
+     "CUR-1": "Canberra<\uff5cend\u2581of\u2581sentence\uff5c>",
+     "VIT-1": "Canberra<\uff5cend\u2581of\u2581sentence\uff5c>"
+    },
+    "6": {
+     "baseline": "- **Ghost\u2019s revelation:** Prince Hamlet learns from the ghost of his murdered father that Claudius killed him,",
+     "CUR-1": "- **Ghostly revelation:** Prince Hamlet learns from the ghost of his murdered father that his uncle Claudius k",
+     "VIT-1": "1. **Ghostly Revelation:** Prince Hamlet learns from the ghost of his dead father that his uncle Claudius murd"
+    },
+    "7": {
+     "baseline": "Silent lanes of light,\nBytes surge through the memory,\nFrames bloom instantly.<\uff5cend\u2581of\u2581sentence\uff5c>",
+     "CUR-1": "Silent lanes of light,\nfeeding hungry cores with speed\u2014\nno waiting for data.<\uff5cend\u2581of\u2581sentence\uff5c>",
+     "VIT-1": "Silicon pathways\u2014\ndata floods through memory banks,\nspeed defines the frame.<\uff5cend\u2581of\u2581sentence\uff5c>"
+    },
+    "8": {
+     "baseline": "Alright, let's solve \\(3x^2 - 12x + 9 = 0\\) step by step.\n\n---\n\n**Step 1: Identify coefficients**\n\nThis is a q",
+     "CUR-1": "Alright, let's solve \\(3x^2 - 12x + 9 = 0\\) step by step.\n\n---\n\n**Step 1: Identify coefficients**\n\nThis is a q",
+     "VIT-1": "Alright, let's solve step-by-step.\n\nWe have:\n\n\\[\n3x^2 - 12x + 9 = 0\n\\]\n\n---\n\n### Step 1: Factor out the common"
+    },
+    "9": {
+     "baseline": "Here are three key uses of **safetensors** in ML infrastructure:\n\n1. **Secure and fast model weight storage/lo",
+     "CUR-1": "Here are three key uses of **safetensors** in ML infrastructure:\n\n1. **Secure and fast model weight storage/lo",
+     "VIT-1": "Here are three key uses of **safetensors** in ML infrastructure:\n\n1. **Secure model checkpoint storage and dis"
+    },
+    "10": {
+     "baseline": "...there lived a cluster of servers who dreamed of becoming one cohesive cloud. Each night, as the cooling fan",
+     "CUR-1": "there lived a cluster of servers who dreamed of electric sheep. Every night, their blinking LEDs pulsed in rhy",
+     "VIT-1": "Once upon a time in a datacenter far away, there lived a cluster of servers who hummed day and night, keeping "
+    },
+    "11": {
+     "baseline": "In IEEE 754 floating-point arithmetic, division by zero does **not** throw an exception or crash the program. ",
+     "CUR-1": "In IEEE 754 floating-point arithmetic, division by zero does **not** throw an exception or crash the program. ",
+     "VIT-1": "# Dividing by Zero in IEEE 754 Floating Point\n\nUnlike integer division (which typically raises a hardware exce"
+    }
+   }
+  }
+ },
+ "speed": {
+  "ms_step": {
+   "four_prose_c1_ms_step": {
+    "CUR": [
+     47.753,
+     47.715
+    ],
+    "VIT": [
+     47.558,
+     47.743
+    ],
+    "CUR_median": 47.734,
+    "VIT_median": 47.65,
+    "delta_VIT_minus_CUR": -0.084,
+    "delta_pct": -0.18,
+    "CUR_spread": 0.037,
+    "VIT_spread": 0.185,
+    "noise": 0.185,
+    "improvement": 0.084,
+    "every_VIT_boot_beats_CUR_median": false,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   },
+   "prose_long_c1_ms_step": {
+    "CUR": [
+     49.101,
+     48.675
+    ],
+    "VIT": [
+     48.985,
+     48.728
+    ],
+    "CUR_median": 48.888,
+    "VIT_median": 48.856,
+    "delta_VIT_minus_CUR": -0.032,
+    "delta_pct": -0.06,
+    "CUR_spread": 0.426,
+    "VIT_spread": 0.257,
+    "noise": 0.426,
+    "improvement": 0.032,
+    "every_VIT_boot_beats_CUR_median": false,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   },
+   "lail_ms_step": {
+    "CUR": [
+     49.371,
+     48.638
+    ],
+    "VIT": [
+     48.685,
+     48.679
+    ],
+    "CUR_median": 49.004,
+    "VIT_median": 48.682,
+    "delta_VIT_minus_CUR": -0.322,
+    "delta_pct": -0.66,
+    "CUR_spread": 0.733,
+    "VIT_spread": 0.006,
+    "noise": 0.733,
+    "improvement": 0.322,
+    "every_VIT_boot_beats_CUR_median": true,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   },
+   "bench_prose_c1_ms_step": {
+    "CUR": [
+     48.28,
+     48.355
+    ],
+    "VIT": [
+     47.992,
+     48.396
+    ],
+    "CUR_median": 48.318,
+    "VIT_median": 48.194,
+    "delta_VIT_minus_CUR": -0.124,
+    "delta_pct": -0.26,
+    "CUR_spread": 0.075,
+    "VIT_spread": 0.404,
+    "noise": 0.404,
+    "improvement": 0.124,
+    "every_VIT_boot_beats_CUR_median": false,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   },
+   "structured_c1_ms_step": {
+    "CUR": [
+     46.992,
+     47.313
+    ],
+    "VIT": [
+     47.568,
+     47.38
+    ],
+    "CUR_median": 47.153,
+    "VIT_median": 47.474,
+    "delta_VIT_minus_CUR": 0.321,
+    "delta_pct": 0.68,
+    "CUR_spread": 0.321,
+    "VIT_spread": 0.188,
+    "noise": 0.321,
+    "improvement": -0.321,
+    "every_VIT_boot_beats_CUR_median": false,
+    "every_VIT_boot_worse_than_CUR_median": true,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": true,
+    "within_noise": false
+   },
+   "bench_prose_c2_ms_step": {
+    "CUR": [
+     60.666,
+     59.17
+    ],
+    "VIT": [
+     60.662,
+     59.144
+    ],
+    "CUR_median": 59.918,
+    "VIT_median": 59.903,
+    "delta_VIT_minus_CUR": -0.015,
+    "delta_pct": -0.03,
+    "CUR_spread": 1.496,
+    "VIT_spread": 1.519,
+    "noise": 1.519,
+    "improvement": 0.015,
+    "every_VIT_boot_beats_CUR_median": false,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   },
+   "structured_c2_ms_step": {
+    "CUR": [
+     56.38,
+     56.18
+    ],
+    "VIT": [
+     50.836,
+     50.965
+    ],
+    "CUR_median": 56.28,
+    "VIT_median": 50.9,
+    "delta_VIT_minus_CUR": -5.38,
+    "delta_pct": -9.56,
+    "CUR_spread": 0.2,
+    "VIT_spread": 0.129,
+    "noise": 0.2,
+    "improvement": 5.38,
+    "every_VIT_boot_beats_CUR_median": true,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": true,
+    "worse_beyond_noise": false,
+    "within_noise": false
+   },
+   "prose_long_c2_ms_step": {
+    "CUR": [
+     60.197,
+     62.2
+    ],
+    "VIT": [
+     60.4,
+     61.109
+    ],
+    "CUR_median": 61.199,
+    "VIT_median": 60.754,
+    "delta_VIT_minus_CUR": -0.445,
+    "delta_pct": -0.73,
+    "CUR_spread": 2.003,
+    "VIT_spread": 0.709,
+    "noise": 2.003,
+    "improvement": 0.445,
+    "every_VIT_boot_beats_CUR_median": true,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   }
+  },
+  "tok_s": {
+   "prose_long_c1_tok_s": {
+    "CUR": [
+     44.893,
+     43.395
+    ],
+    "VIT": [
+     45.875,
+     48.629
+    ],
+    "CUR_median": 44.144,
+    "VIT_median": 47.252,
+    "delta_VIT_minus_CUR": 3.108,
+    "delta_pct": 7.04,
+    "CUR_spread": 1.499,
+    "VIT_spread": 2.754,
+    "noise": 2.754,
+    "improvement": 3.108,
+    "every_VIT_boot_beats_CUR_median": true,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": true,
+    "worse_beyond_noise": false,
+    "within_noise": false
+   },
+   "lail_tok_s": {
+    "CUR": [
+     42.927,
+     43.123
+    ],
+    "VIT": [
+     41.829,
+     42.174
+    ],
+    "CUR_median": 43.025,
+    "VIT_median": 42.001,
+    "delta_VIT_minus_CUR": -1.024,
+    "delta_pct": -2.38,
+    "CUR_spread": 0.195,
+    "VIT_spread": 0.345,
+    "noise": 0.345,
+    "improvement": -1.024,
+    "every_VIT_boot_beats_CUR_median": false,
+    "every_VIT_boot_worse_than_CUR_median": true,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": true,
+    "within_noise": false
+   },
+   "four_prose_c1_tok_s": {
+    "CUR": [
+     54.11,
+     53.34
+    ],
+    "VIT": [
+     50.79,
+     51.42
+    ],
+    "CUR_median": 53.725,
+    "VIT_median": 51.105,
+    "delta_VIT_minus_CUR": -2.62,
+    "delta_pct": -4.88,
+    "CUR_spread": 0.77,
+    "VIT_spread": 0.63,
+    "noise": 0.77,
+    "improvement": -2.62,
+    "every_VIT_boot_beats_CUR_median": false,
+    "every_VIT_boot_worse_than_CUR_median": true,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": true,
+    "within_noise": false
+   },
+   "bench_prose_c1_tok_s": {
+    "CUR": [
+     53.688,
+     52.363
+    ],
+    "VIT": [
+     49.363,
+     48.914
+    ],
+    "CUR_median": 53.026,
+    "VIT_median": 49.139,
+    "delta_VIT_minus_CUR": -3.887,
+    "delta_pct": -7.33,
+    "CUR_spread": 1.325,
+    "VIT_spread": 0.45,
+    "noise": 1.325,
+    "improvement": -3.887,
+    "every_VIT_boot_beats_CUR_median": false,
+    "every_VIT_boot_worse_than_CUR_median": true,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": true,
+    "within_noise": false
+   },
+   "structured_c1_tok_s": {
+    "CUR": [
+     84.286,
+     83.715
+    ],
+    "VIT": [
+     84.091,
+     84.424
+    ],
+    "CUR_median": 84.0,
+    "VIT_median": 84.258,
+    "delta_VIT_minus_CUR": 0.257,
+    "delta_pct": 0.31,
+    "CUR_spread": 0.571,
+    "VIT_spread": 0.333,
+    "noise": 0.571,
+    "improvement": 0.257,
+    "every_VIT_boot_beats_CUR_median": true,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   },
+   "bench_prose_c2_agg_tok_s": {
+    "CUR": [
+     81.626,
+     84.659
+    ],
+    "VIT": [
+     78.315,
+     78.263
+    ],
+    "CUR_median": 83.143,
+    "VIT_median": 78.289,
+    "delta_VIT_minus_CUR": -4.853,
+    "delta_pct": -5.84,
+    "CUR_spread": 3.033,
+    "VIT_spread": 0.051,
+    "noise": 3.033,
+    "improvement": -4.853,
+    "every_VIT_boot_beats_CUR_median": false,
+    "every_VIT_boot_worse_than_CUR_median": true,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": true,
+    "within_noise": false
+   },
+   "structured_c2_agg_tok_s": {
+    "CUR": [
+     138.839,
+     139.219
+    ],
+    "VIT": [
+     157.32,
+     156.916
+    ],
+    "CUR_median": 139.029,
+    "VIT_median": 157.118,
+    "delta_VIT_minus_CUR": 18.089,
+    "delta_pct": 13.01,
+    "CUR_spread": 0.379,
+    "VIT_spread": 0.404,
+    "noise": 0.404,
+    "improvement": 18.089,
+    "every_VIT_boot_beats_CUR_median": true,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": true,
+    "worse_beyond_noise": false,
+    "within_noise": false
+   },
+   "prose_long_c2_agg_tok_s": {
+    "CUR": [
+     70.089,
+     66.093
+    ],
+    "VIT": [
+     68.184,
+     69.337
+    ],
+    "CUR_median": 68.091,
+    "VIT_median": 68.761,
+    "delta_VIT_minus_CUR": 0.669,
+    "delta_pct": 0.98,
+    "CUR_spread": 3.996,
+    "VIT_spread": 1.154,
+    "noise": 3.996,
+    "improvement": 0.669,
+    "every_VIT_boot_beats_CUR_median": true,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   },
+   "lail_after_c2_3x_tok_s": {
+    "CUR": [
+     41.17,
+     43.66
+    ],
+    "VIT": [
+     42.26,
+     43.09
+    ],
+    "CUR_median": 42.415,
+    "VIT_median": 42.675,
+    "delta_VIT_minus_CUR": 0.26,
+    "delta_pct": 0.61,
+    "CUR_spread": 2.49,
+    "VIT_spread": 0.83,
+    "noise": 2.49,
+    "improvement": 0.26,
+    "every_VIT_boot_beats_CUR_median": false,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   }
+  },
+  "non_inferiority": {
+   "pp_warm_8k": {
+    "CUR": [
+     762.5,
+     743.1
+    ],
+    "VIT": [
+     762.2,
+     775.7
+    ],
+    "CUR_median": 752.8,
+    "VIT_median": 768.95,
+    "delta_VIT_minus_CUR": 16.15,
+    "delta_pct": 2.15,
+    "CUR_spread": 19.4,
+    "VIT_spread": 13.5,
+    "noise": 19.4,
+    "improvement": 16.15,
+    "every_VIT_boot_beats_CUR_median": true,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   },
+   "pp_warm_32k": {
+    "CUR": [
+     763.0,
+     772.0
+    ],
+    "VIT": [
+     768.0,
+     760.4
+    ],
+    "CUR_median": 767.5,
+    "VIT_median": 764.2,
+    "delta_VIT_minus_CUR": -3.3,
+    "delta_pct": -0.43,
+    "CUR_spread": 9.0,
+    "VIT_spread": 7.6,
+    "noise": 9.0,
+    "improvement": -3.3,
+    "every_VIT_boot_beats_CUR_median": false,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   },
+   "pp_novel_8k": {
+    "CUR": [
+     809.7,
+     810.2
+    ],
+    "VIT": [
+     826.7,
+     814.2
+    ],
+    "CUR_median": 809.95,
+    "VIT_median": 820.45,
+    "delta_VIT_minus_CUR": 10.5,
+    "delta_pct": 1.3,
+    "CUR_spread": 0.5,
+    "VIT_spread": 12.5,
+    "noise": 12.5,
+    "improvement": 10.5,
+    "every_VIT_boot_beats_CUR_median": true,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   },
+   "pp_novel_32k": {
+    "CUR": [
+     811.7,
+     821.0
+    ],
+    "VIT": [
+     818.2,
+     794.2
+    ],
+    "CUR_median": 816.35,
+    "VIT_median": 806.2,
+    "delta_VIT_minus_CUR": -10.15,
+    "delta_pct": -1.24,
+    "CUR_spread": 9.3,
+    "VIT_spread": 24.0,
+    "noise": 24.0,
+    "improvement": -10.15,
+    "every_VIT_boot_beats_CUR_median": false,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   },
+   "prose_long_c2_agg_tok_s": {
+    "CUR": [
+     70.089,
+     66.093
+    ],
+    "VIT": [
+     68.184,
+     69.337
+    ],
+    "CUR_median": 68.091,
+    "VIT_median": 68.761,
+    "delta_VIT_minus_CUR": 0.669,
+    "delta_pct": 0.98,
+    "CUR_spread": 3.996,
+    "VIT_spread": 1.154,
+    "noise": 3.996,
+    "improvement": 0.669,
+    "every_VIT_boot_beats_CUR_median": true,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   },
+   "warm_prefix_hit_fraction": {
+    "CUR": [
+     1.0,
+     1.0
+    ],
+    "VIT": [
+     1.0,
+     1.0
+    ],
+    "CUR_median": 1.0,
+    "VIT_median": 1.0,
+    "delta_VIT_minus_CUR": 0.0,
+    "delta_pct": 0.0,
+    "CUR_spread": 0.0,
+    "VIT_spread": 0.0,
+    "noise": 0.0,
+    "improvement": 0.0,
+    "every_VIT_boot_beats_CUR_median": false,
+    "every_VIT_boot_worse_than_CUR_median": false,
+    "better_beyond_noise": false,
+    "worse_beyond_noise": false,
+    "within_noise": true
+   }
+  },
+  "acceptance": {
+   "four_prose_c1": {
+    "CUR_per_boot": [
+     2.6184,
+     2.5443
+    ],
+    "VIT_per_boot": [
+     2.3976,
+     2.439
+    ],
+    "per_boot_interval_overlap": false,
+    "CUR_run_range": [
+     2.3976,
+     2.9412
+    ],
+    "VIT_run_range": [
+     2.236,
+     2.7534
+    ],
+    "run_range_overlap": true,
+    "mwu_runs": {
+     "n_cur": 18,
+     "n_vit": 18,
+     "U_vit": 81.5,
+     "z": -2.533,
+     "p_two_sided_normal": 0.01131,
+     "hodges_lehmann_vit_minus_cur": -0.1274
+    }
+   },
+   "prose_long_c1": {
+    "CUR_per_boot": [
+     2.2222,
+     2.117
+    ],
+    "VIT_per_boot": [
+     2.2472,
+     2.369
+    ],
+    "per_boot_interval_overlap": false,
+    "CUR_run_range": [
+     1.932,
+     2.2472
+    ],
+    "VIT_run_range": [
+     2.051,
+     2.5
+    ],
+    "run_range_overlap": true,
+    "mwu_runs": {
+     "n_cur": 10,
+     "n_vit": 10,
+     "U_vit": 82.0,
+     "z": 2.392,
+     "p_two_sided_normal": 0.01676,
+     "hodges_lehmann_vit_minus_cur": 0.1468
+    }
+   },
+   "lail": {
+    "CUR_per_boot": [
+     2.118,
+     2.1225
+    ],
+    "VIT_per_boot": [
+     2.044,
+     2.0857
+    ],
+    "per_boot_interval_overlap": false,
+    "CUR_run_range": [
+     2.0078,
+     2.2915
+    ],
+    "VIT_run_range": [
+     1.9213,
+     2.2165
+    ],
+    "run_range_overlap": true,
+    "mwu_runs": {
+     "n_cur": 20,
+     "n_vit": 20,
+     "U_vit": 122.0,
+     "z": -2.098,
+     "p_two_sided_normal": 0.03593,
+     "hodges_lehmann_vit_minus_cur": -0.0553
+    }
+   },
+   "structured_c1": {
+    "CUR": [
+     3.9607843137254903,
+     3.9607843137254903
+    ],
+    "VIT": [
+     4.0,
+     4.0
+    ]
+   }
+  },
+  "cell_honesty": {
+   "CUR-1": {
+    "four_prose_c1_post_eos": 0.57,
+    "four_prose_natural_tokens": 86,
+    "prose_long_c1_post_eos": 0.0,
+    "lail_finish": [
+     "length"
+    ]
+   },
+   "VIT-1": {
+    "four_prose_c1_post_eos": 0.64,
+    "four_prose_natural_tokens": 72,
+    "prose_long_c1_post_eos": 0.0,
+    "lail_finish": [
+     "length"
+    ]
+   },
+   "CUR-2": {
+    "four_prose_c1_post_eos": 0.565,
+    "four_prose_natural_tokens": 87,
+    "prose_long_c1_post_eos": 0.0,
+    "lail_finish": [
+     "length"
+    ]
+   },
+   "VIT-2": {
+    "four_prose_c1_post_eos": 0.585,
+    "four_prose_natural_tokens": 83,
+    "prose_long_c1_post_eos": 0.0,
+    "lail_finish": [
+     "length"
+    ]
+   }
+  },
+  "run_level_supplementary": {
+   "note": "Pooled runs per arm (2 boots). Not the gate: ARMS.md step 6 gates on per-boot medians and the boot-to-boot spread.",
+   "lail_tok_s": {
+    "n_cur": 20,
+    "n_vit": 20,
+    "U_vit": 150.0,
+    "z": -1.339,
+    "p_two_sided_normal": 0.18058,
+    "hodges_lehmann_vit_minus_cur": -0.7857
+   },
+   "lail_acceptance": {
+    "n_cur": 20,
+    "n_vit": 20,
+    "U_vit": 122.0,
+    "z": -2.098,
+    "p_two_sided_normal": 0.03593,
+    "hodges_lehmann_vit_minus_cur": -0.0553
+   },
+   "prose_long_c1_tok_s": {
+    "n_cur": 10,
+    "n_vit": 10,
+    "U_vit": 85.0,
+    "z": 2.608,
+    "p_two_sided_normal": 0.00911,
+    "hodges_lehmann_vit_minus_cur": 3.06
+   },
+   "prose_long_c1_acceptance": {
+    "n_cur": 10,
+    "n_vit": 10,
+    "U_vit": 82.0,
+    "z": 2.392,
+    "p_two_sided_normal": 0.01676,
+    "hodges_lehmann_vit_minus_cur": 0.147
+   }
+  },
+  "c2_admission": {
+   "CUR-1": {
+    "structured_c2_median_ttft_gap_s": 0.233,
+    "structured_c2_runs_with_both_streams_same_ms_step": 0,
+    "prose_c2_median_ttft_gap_s": 0.253,
+    "prose_c2_runs_with_both_streams_same_ms_step": 1,
+    "structured_c1_median_ttft_s": 0.177
+   },
+   "VIT-1": {
+    "structured_c2_median_ttft_gap_s": 0.0,
+    "structured_c2_runs_with_both_streams_same_ms_step": 8,
+    "prose_c2_median_ttft_gap_s": 0.001,
+    "prose_c2_runs_with_both_streams_same_ms_step": 0,
+    "structured_c1_median_ttft_s": 0.209
+   },
+   "CUR-2": {
+    "structured_c2_median_ttft_gap_s": 0.228,
+    "structured_c2_runs_with_both_streams_same_ms_step": 0,
+    "prose_c2_median_ttft_gap_s": 0.255,
+    "prose_c2_runs_with_both_streams_same_ms_step": 1,
+    "structured_c1_median_ttft_s": 0.177
+   },
+   "VIT-2": {
+    "structured_c2_median_ttft_gap_s": 0.0,
+    "structured_c2_runs_with_both_streams_same_ms_step": 9,
+    "prose_c2_median_ttft_gap_s": 0.0,
+    "prose_c2_runs_with_both_streams_same_ms_step": 0,
+    "structured_c1_median_ttft_s": 0.21
+   }
+  }
+ },
+ "decision": {
+  "checks": {
+   "validity_all_four_boots": true,
+   "quality_gates_as_written_pass_on_both_VIT_boots": false,
+   "quality_quick_pass": [
+    false,
+    false
+   ],
+   "quality_full_pass": [
+    false,
+    false
+   ],
+   "quality_every_gate_better_or_equal": false,
+   "quality_significant_improvement_NLL": true,
+   "acceptance_matched_per_boot": {
+    "four_prose_c1": false,
+    "prose_long_c1": false,
+    "lail": false
+   },
+   "ms_step_c1_equal_within_noise": {
+    "four_prose_c1_ms_step": true,
+    "prose_long_c1_ms_step": true,
+    "lail_ms_step": true,
+    "bench_prose_c1_ms_step": true
+   },
+   "speed_gate_prose_long_c1_tok_s": {
+    "better_beyond_noise": true,
+    "worse_beyond_noise": false
+   },
+   "speed_gate_lail_tok_s": {
+    "better_beyond_noise": false,
+    "worse_beyond_noise": true
+   },
+   "non_inferiority_ok": {
+    "pp_warm_8k": true,
+    "pp_warm_32k": true,
+    "pp_novel_8k": true,
+    "pp_novel_32k": true,
+    "prose_long_c2_agg_tok_s": true,
+    "warm_prefix_hit_fraction": true
+   },
+   "speed_not_worse_beyond_noise": false
+  },
+  "quality_per_gate": {
+   "nll.mean_nll": {
+    "verdict": "better, significant",
+    "evidence": "paired over 40 passages: mean delta -0.10489 nats/token, 95% CI t [-0.12856, -0.08122], bootstrap [-0.12851, -0.08311]; 39/40 passages lower; Wilcoxon exact p 5.46e-12; relative -42.12% ([-47.41, -36.68]). Token-weighted mean_nll CUR [0.24387, 0.243424, 0.24232, 0.24389], VIT [0.137498, 0.1386, 0.138664, 0.139313]."
+   },
+   "decode.median_abs_dlogprob": {
+    "verdict": "better (no overlap; aggregates only, no paired test possible)",
+    "evidence": "CUR [0.02058, 0.01595, 0.00847, 0.00995], VIT [0.00203, 0.00631, 0.00294, 0.0022]"
+   },
+   "decode.gen_nll_prefill": {
+    "verdict": "equal or better (band gate; texts differ per arm so not paired)",
+    "evidence": "CUR [0.35987, 0.33078, 0.27689, 0.2746], VIT [0.25038, 0.30782, 0.25052, 0.25107]"
+   },
+   "selfcons.aa_hazard": {
+    "verdict": "equal (VIT inside CUR's range)",
+    "evidence": "CUR [0.01681, 0.01455, 0.0274, 0.01232], VIT [0.01609, 0.00843, 0.01166, 0.01207]; limits quick 0.03206, full 0.04348"
+   },
+   "selfcons.golden_hazard": {
+    "verdict": "WORSE: fails its limit on all 4 VIT readings",
+    "evidence": "CUR [0.01566, 0.01972, 0.01641, 0.0195], VIT [0.09756, 0.0939, 0.10204, 0.0939] (20/24 pairs diverge on every VIT reading); limits quick 0.03206, full 0.04348"
+   },
+   "tools.exact_args": {
+    "verdict": "equal or better, not significant",
+    "evidence": "CUR 84/88, VIT 88/88 over 4 readings each; items VIT better ['t01', 't09'], CUR better []; sign test p 0.5"
+   },
+   "tools.json_valid": {
+    "verdict": "equal",
+    "evidence": "88/88 on both arms"
+   },
+   "tools.no_call": {
+    "verdict": "equal",
+    "evidence": "32/32 on both arms"
+   },
+   "needle.found": {
+    "verdict": "equal",
+    "evidence": "quick 6/6 and full 9/9 (incl. 128k) on every reading of both arms"
+   },
+   "gsm8k.acc": {
+    "verdict": "equal or better, not significant",
+    "evidence": "CUR 95/100, 94/100; VIT 97/100, 97/100; pooled items VIT better 5, CUR better 1, sign test p 0.21875; McNemar per pair p [0.625, 0.25]"
+   },
+   "gsm8k_think.acc": {
+    "verdict": "equal",
+    "evidence": "39/40 on all four boots, same miss (idx 403)"
+   },
+   "mmlu.acc": {
+    "verdict": "equal or better, not significant after pooling",
+    "evidence": "CUR 196/228, 198/228; VIT 206/228, 204/228; McNemar per pair p [0.04139, 0.21011]; pooled items VIT better 15, CUR better 7, sign test p 0.1338. Same-arm A/A discordance is 4 items on each arm."
+   },
+   "c2": {
+    "verdict": "equal",
+    "evidence": "pass on all 8 readings"
+   },
+   "vision": {
+    "verdict": "equal",
+    "evidence": "'Red' on all 8 readings"
+   },
+   "correctness --full (s7, VIT only)": {
+    "verdict": "pass",
+    "evidence": "VIT-1 9/9, VIT-2 9/9"
+   }
+  },
+  "promote": [],
+  "reject": [
+   "SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8"
+  ],
+  "verdict": "REJECT SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8. Two independent grounds, each sufficient under the rule as written. (1) Quality: quick and full FAIL on both VIT boots, on selfcons.golden_hazard only (ARMS.md step 6 needs quick to pass on every candidate boot; ARMS-r3 s7 needs quick and full to pass with no component outside its band), so 'better or equal on every gate' does not hold even though NLL improves far beyond its CI. (2) Speed: acceptance is not matched, so the s7 gate is tok/s on the honest cells with the noise rule; L.A.I.L tok/s is worse beyond the noise (-1.024 tok/s, -2.38%, noise 0.345; both VIT boots below the CUR median), while prose_long c=1 tok/s is better beyond it (+3.108, +7.04%, noise 2.754). The serve pin stays SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8.",
+  "summary_numbers": {
+   "nll": "per-passage paired delta VIT-CUR -0.10489 nats/token (95% CI [-0.12856, -0.08122]), -42.12%, 39/40 lower, Wilcoxon p 5.5e-12; same-arm cross-boot per-passage deltas average [-0.00155, 0.00047, 0.00117, 0.00071]",
+   "golden": "golden hazard CUR [0.01566, 0.01972, 0.01641, 0.0195], VIT [0.09756, 0.0939, 0.10204, 0.0939]; limits 0.03206 quick / 0.04348 full",
+   "prose_long_c1_tok_s": "CUR [44.893, 43.395] (median 44.144), VIT [45.875, 48.629] (median 47.252), delta +3.108 (+7.04%), noise 2.754",
+   "lail_tok_s": "CUR [42.927, 43.123] (median 43.025), VIT [41.829, 42.174] (median 42.001), delta -1.024 (-2.38%), noise 0.345",
+   "ms_step_c1": "four prose -0.084 (noise 0.185), prose_long -0.032 (noise 0.426), L.A.I.L -0.322 (noise 0.733) ms/step: equal within noise, as s7 expects",
+   "acceptance": "per-boot medians, CUR vs VIT: L.A.I.L [2.118, 2.1225] vs [2.044, 2.0857]; prose_long c=1 [2.2222, 2.117] vs [2.2472, 2.369]; four prose c=1 [2.6184, 2.5443] vs [2.3976, 2.439]; structured c=1 [3.9607843137254903, 3.9607843137254903] vs [4.0, 4.0]"
+  },
+  "reading": [
+   "Quality apart from the golden gate is equal or better on every component. NLL drops by 42.12% per passage on average (39/40 passages lower); the one passage that rises (pg98-0, +0.01679) is comparable to the largest same-arm cross-boot per-passage deltas (max |delta| 0.01407-0.02766). MMLU (+10/+6 items per pair), GSM8K (+2/+3), tools exact_args (+1/+0/+2/+1 per reading pair) all move toward VIT, but none of them is significant after pooling the two pairs (sign tests p 0.1338, 0.21875, 0.5). GSM8K-think, needle, json_valid, no_call, c2 and vision are identical.",
+   "The golden gate compares greedy text with the 09-24 baseline, which ran the old pack (canonical-e12, 2.0bpw-mcg-lmhead-mxfp8). 8 of 12 prompts diverge from it at the identical token on all 16 VIT sequences (first_div [0, 1, 5, 7]); prompts [3, 5] never diverge; prompts [1, 9] diverge at varying tokens ({1: [1, 9], 9: [3, 20]}). VIT diverges from CUR's own run A in the same way (0.09756-0.10204 quick). Against itself VIT is as stable as CUR: cross-boot hazard VIT-2 vs VIT-1 0.01341 quick / 0.00985 full, CUR-2 vs CUR-1 0.01825 / 0.01675. The decoded VIT texts are coherent and differ in wording and format from token 0; answers that fit in 128 tokens: first 20 primes: baseline 4/4, CUR 8/8, VIT 8/8; French: renard + chien: baseline 4/4, CUR 8/8, VIT 8/8; capital of Australia -> Canberra: baseline 4/4, CUR 8/8, VIT 8/8. So the gate fails because the pack is different, not because the output is unstable. The rule as written does not exempt a pack change; changing that is for the protocol owner.",
+   "Speed moves only through acceptance: c=1 ms/step is equal within the noise on every c=1 cell. Acceptance moved in opposite directions by prompt: prose_long c=1 up (run-level MWU p 0.01676), L.A.I.L down (p 0.03593), short prose down (a cell that is 57-64% post-EOS text), structured at 4.0 on every VIT run. At run level (pooled, not the gate) the L.A.I.L tok/s drop has MWU p 0.18058 (Hodges-Lehmann -0.7857 tok/s) and the prose_long gain p 0.00911 (HL +3.06). The L.A.I.L 3x after c=2 cell reads [41.17, 43.66] vs [42.26, 43.09] (inside its noise 2.49). The net speed effect on a mixed workload is not settled by two prompts.",
+   "structured c=2 is -5.38 ms/step (+13.01% aggregate), beyond its noise 0.2. On both CUR boots the two c=2 streams start staggered (median TTFT gap 0.233/0.228 s); on both VIT boots they start together (gap 0.0/0.0 s) and, at acceptance 4.0, run in lockstep (equal per-stream ms/step on 8/9 and 9/9 runs). Prose c=2 shows the same start pattern (gap 0.253/0.255 vs 0.001/0.0 s) with ms/step unchanged. Structured c=1 TTFT is 0.209/0.21 s on VIT vs 0.177/0.177 s on CUR. This is a request-admission/batch-phase difference, not a decode kernel change; its cause is not established (s7: 'a ms/step change means something else moved').",
+   "structured c=1 ms/step reads +0.321 against a noise of 0.321 (at the noise edge; tok/s +0.257, inside its noise). It is not a gate metric."
+  ]
+ },
+ "open_items": [
+  "For the protocol owner: selfcons.golden_hazard compares with the old pack's greedy text, so a pack change fails it by construction. If pack changes are to be judged on NLL, task scores and VIT's own A/A plus cross-boot hazard (all equal or better here), the rule has to change first. That change does not happen in this decision.",
+  "Even with that change, s7's speed gate needs L.A.I.L tok/s not worse beyond noise. Acceptance moved in opposite directions by prompt (prose_long up, L.A.I.L down). With n=2 boots per arm the noise is one range per arm (L.A.I.L CUR 0.195, VIT 0.345), and the pooled run-level test (not the gate) gives p 0.18058 for L.A.I.L tok/s. A broader prompt set for acceptance, or more CUR/VIT boots, would settle the net speed effect.",
+  "The structured and prose c=2 start pattern (staggered on CUR, together on VIT) and the +0.03 s structured c=1 TTFT on VIT are unexplained.",
+  "If the pack is reconsidered: a paired CUR/VIT reading of the main-checkout 1x1 JPEG smoke (VIT-1 answered 'Gray') would show whether that answer depends on the pack."
+ ],
+ "serve_state_at_decision": "down on both nodes (docker ps on spark1 and spark2 show no dsv41 container; only matrix-conduit on spark1). This stage booted nothing.",
+ "per_boot_raw": {
+  "CUR-1": {
+   "commit": "7db92e93a10cd457968f4105293aac01a560e086",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 47.75260039452022,
+   "prose_long_c1_ms_step": 49.100899430577364,
+   "lail_ms_step": 49.37074582934551,
+   "bench_prose_c1_ms_step": 48.280295980370326,
+   "structured_c1_ms_step": 46.9923140063125,
+   "bench_prose_c2_ms_step": 60.66636137042894,
+   "structured_c2_ms_step": 56.3796294062949,
+   "prose_long_c2_ms_step": 60.19700558000798,
+   "lail_tok_s": 42.92744602947299,
+   "four_prose_c1_tok_s": 54.11,
+   "bench_prose_c1_tok_s": 53.688386934820336,
+   "structured_c1_tok_s": 84.28579008034029,
+   "prose_long_c1_tok_s": 44.89324633390732,
+   "bench_prose_c2_agg_tok_s": 81.62613285101664,
+   "structured_c2_agg_tok_s": 138.83927364063365,
+   "prose_long_c2_agg_tok_s": 70.08897611108246,
+   "lail_after_c2_3x_tok_s": 41.17,
+   "pp_warm_8k": 762.5,
+   "pp_warm_32k": 763.0,
+   "pp_novel_8k": 809.7,
+   "pp_novel_32k": 811.7,
+   "pp_runs": {
+    "pp_warm_8k": [
+     744.5,
+     779.6,
+     762.5
+    ],
+    "pp_novel_8k": [
+     807.5,
+     809.7,
+     817.4
+    ],
+    "pp_warm_32k": [
+     763.0,
+     760.1,
+     763.3
+    ],
+    "pp_novel_32k": [
+     811.0,
+     813.8,
+     811.7
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.6184210526315788,
+   "acc_four_prose_c1_runs": [
+    2.6316,
+    2.4875,
+    2.6184,
+    2.519,
+    2.6447,
+    2.4875,
+    2.6579,
+    2.6892,
+    2.4268
+   ],
+   "acc_prose_long_c1": 2.2222222222222223,
+   "acc_prose_long_c1_runs": [
+    2.0619,
+    2.2222,
+    2.2472,
+    2.0825,
+    2.2472
+   ],
+   "acc_lail": 2.1180257878673574,
+   "acc_lail_range": [
+    2.007843137254902,
+    2.291479820627803
+   ],
+   "acc_bench_prose_c1": 2.5844155844155843,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.34,
+    50.0,
+    48.4,
+    52.17,
+    51.4,
+    48.99,
+    49.73,
+    49.01,
+    48.86,
+    53.27
+   ],
+   "lail_tok_runs": [
+    42.03,
+    44.72,
+    43.53,
+    41.24,
+    40.17,
+    43.91,
+    40.22,
+    43.16,
+    42.95,
+    42.91
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "24Gi"
+   ],
+   "prose_long_c1_runs": [
+    {
+     "tok_s": [
+      42.1
+     ],
+     "ttft": [
+      0.238
+     ],
+     "acc": 2.062,
+     "ms_step": [
+      49.0
+     ]
+    },
+    {
+     "tok_s": [
+      45.26
+     ],
+     "ttft": [
+      0.24
+     ],
+     "acc": 2.222,
+     "ms_step": [
+      49.1
+     ]
+    },
+    {
+     "tok_s": [
+      45.78
+     ],
+     "ttft": [
+      0.273
+     ],
+     "acc": 2.247,
+     "ms_step": [
+      49.1
+     ]
+    },
+    {
+     "tok_s": [
+      42.25
+     ],
+     "ttft": [
+      0.271
+     ],
+     "acc": 2.082,
+     "ms_step": [
+      49.3
+     ]
+    },
+    {
+     "tok_s": [
+      44.89
+     ],
+     "ttft": [
+      0.241
+     ],
+     "acc": 2.247,
+     "ms_step": [
+      50.1
+     ]
+    }
+   ]
+  },
+  "VIT-1": {
+   "commit": "8bf97c5f645ba56ba849cab3f098c6489d382a1a",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 47.557791507535306,
+   "prose_long_c1_ms_step": 48.985012025968274,
+   "lail_ms_step": 48.684719489102136,
+   "bench_prose_c1_ms_step": 47.99192884543334,
+   "structured_c1_ms_step": 47.56753774940144,
+   "bench_prose_c2_ms_step": 60.66233996595412,
+   "structured_c2_ms_step": 50.83560242186577,
+   "prose_long_c2_ms_step": 60.399562182385374,
+   "lail_tok_s": 41.828709741794064,
+   "four_prose_c1_tok_s": 50.79,
+   "bench_prose_c1_tok_s": 49.36345914909076,
+   "structured_c1_tok_s": 84.09096180409998,
+   "prose_long_c1_tok_s": 45.875073176355635,
+   "bench_prose_c2_agg_tok_s": 78.31475645060472,
+   "structured_c2_agg_tok_s": 157.32032977522982,
+   "prose_long_c2_agg_tok_s": 68.18382619408574,
+   "lail_after_c2_3x_tok_s": 42.26,
+   "pp_warm_8k": 762.2,
+   "pp_warm_32k": 768.0,
+   "pp_novel_8k": 826.7,
+   "pp_novel_32k": 818.2,
+   "pp_runs": {
+    "pp_warm_8k": [
+     754.1,
+     776.8,
+     762.2
+    ],
+    "pp_novel_8k": [
+     806.4,
+     826.7,
+     833.2
+    ],
+    "pp_warm_32k": [
+     768.0,
+     769.1,
+     759.8
+    ],
+    "pp_novel_32k": [
+     796.8,
+     818.2,
+     820.6
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.397590361445783,
+   "acc_four_prose_c1_runs": [
+    2.7534,
+    2.5844,
+    2.3765,
+    2.3412,
+    2.2472,
+    2.439,
+    2.3976,
+    2.236,
+    2.3976
+   ],
+   "acc_prose_long_c1": 2.247191011235955,
+   "acc_prose_long_c1_runs": [
+    2.2472,
+    2.051,
+    2.4096,
+    2.2472,
+    2.236
+   ],
+   "acc_lail": 2.0439854656722125,
+   "acc_lail_range": [
+    1.950570342205323,
+    2.1375
+   ],
+   "acc_bench_prose_c1": 2.376470588235294,
+   "acc_structured_c1": 4.0,
+   "lail_ms_runs": [
+    48.3,
+    48.35,
+    48.75,
+    48.54,
+    48.81,
+    48.73,
+    48.92,
+    48.45,
+    48.64,
+    48.96
+   ],
+   "lail_tok_runs": [
+    41.41,
+    43.94,
+    40.39,
+    42.88,
+    41.63,
+    42.03,
+    39.65,
+    43.13,
+    42.62,
+    41.01
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "25Gi"
+   ],
+   "prose_long_c1_runs": [
+    {
+     "tok_s": [
+      45.99
+     ],
+     "ttft": [
+      0.244
+     ],
+     "acc": 2.247,
+     "ms_step": [
+      48.9
+     ]
+    },
+    {
+     "tok_s": [
+      41.75
+     ],
+     "ttft": [
+      0.275
+     ],
+     "acc": 2.051,
+     "ms_step": [
+      49.1
+     ]
+    },
+    {
+     "tok_s": [
+      48.7
+     ],
+     "ttft": [
+      0.239
+     ],
+     "acc": 2.41,
+     "ms_step": [
+      49.5
+     ]
+    },
+    {
+     "tok_s": [
+      45.88
+     ],
+     "ttft": [
+      0.273
+     ],
+     "acc": 2.247,
+     "ms_step": [
+      49.0
+     ]
+    },
+    {
+     "tok_s": [
+      45.84
+     ],
+     "ttft": [
+      0.276
+     ],
+     "acc": 2.236,
+     "ms_step": [
+      48.8
+     ]
+    }
+   ]
+  },
+  "CUR-2": {
+   "commit": "fcfb092461ee4a80ebee4672a785c90da64876b9",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 47.715380925837586,
+   "prose_long_c1_ms_step": 48.67531853010199,
+   "lail_ms_step": 48.63760307082137,
+   "bench_prose_c1_ms_step": 48.355495678170364,
+   "structured_c1_ms_step": 47.312848776826115,
+   "bench_prose_c2_ms_step": 59.17040849672389,
+   "structured_c2_ms_step": 56.17998220107338,
+   "prose_long_c2_ms_step": 62.20024223006184,
+   "lail_tok_s": 43.12289227988116,
+   "four_prose_c1_tok_s": 53.34,
+   "bench_prose_c1_tok_s": 52.36341078413534,
+   "structured_c1_tok_s": 83.71477127510205,
+   "prose_long_c1_tok_s": 43.394579443445245,
+   "bench_prose_c2_agg_tok_s": 84.65901446724939,
+   "structured_c2_agg_tok_s": 139.2185716428146,
+   "prose_long_c2_agg_tok_s": 66.09344902354401,
+   "lail_after_c2_3x_tok_s": 43.66,
+   "pp_warm_8k": 743.1,
+   "pp_warm_32k": 772.0,
+   "pp_novel_8k": 810.2,
+   "pp_novel_32k": 821.0,
+   "pp_runs": {
+    "pp_warm_8k": [
+     740.3,
+     743.1,
+     750.3
+    ],
+    "pp_novel_8k": [
+     810.2,
+     802.4,
+     813.2
+    ],
+    "pp_warm_32k": [
+     772.0,
+     759.9,
+     779.6
+    ],
+    "pp_novel_32k": [
+     824.3,
+     793.0,
+     821.0
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.5443037974683547,
+   "acc_four_prose_c1_runs": [
+    2.5443,
+    2.4938,
+    2.9412,
+    2.3976,
+    2.5641,
+    2.4512,
+    2.5897,
+    2.525,
+    2.6184
+   ],
+   "acc_prose_long_c1": 2.117021276595745,
+   "acc_prose_long_c1_runs": [
+    2.2222,
+    2.0833,
+    2.117,
+    2.1398,
+    1.932
+   ],
+   "acc_lail": 2.122451790633609,
+   "acc_lail_range": [
+    2.044,
+    2.2314410480349345
+   ],
+   "acc_bench_prose_c1": 2.518987341772152,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.32,
+    48.49,
+    55.82,
+    48.67,
+    48.54,
+    48.64,
+    48.47,
+    48.65,
+    48.63,
+    48.73
+   ],
+   "lail_tok_runs": [
+    42.56,
+    43.46,
+    38.38,
+    43.65,
+    44.32,
+    42.79,
+    45.33,
+    42.1,
+    41.94,
+    45.68
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "24Gi"
+   ],
+   "prose_long_c1_runs": [
+    {
+     "tok_s": [
+      45.69
+     ],
+     "ttft": [
+      0.243
+     ],
+     "acc": 2.222,
+     "ms_step": [
+      48.6
+     ]
+    },
+    {
+     "tok_s": [
+      42.8
+     ],
+     "ttft": [
+      0.268
+     ],
+     "acc": 2.083,
+     "ms_step": [
+      48.7
+     ]
+    },
+    {
+     "tok_s": [
+      43.39
+     ],
+     "ttft": [
+      0.246
+     ],
+     "acc": 2.117,
+     "ms_step": [
+      48.8
+     ]
+    },
+    {
+     "tok_s": [
+      44.11
+     ],
+     "ttft": [
+      0.269
+     ],
+     "acc": 2.14,
+     "ms_step": [
+      48.5
+     ]
+    },
+    {
+     "tok_s": [
+      39.65
+     ],
+     "ttft": [
+      0.242
+     ],
+     "acc": 1.932,
+     "ms_step": [
+      48.7
+     ]
+    }
+   ]
+  },
+  "VIT-2": {
+   "commit": "ebeec5ed19629cf1bdb7d59efcca85392772ffc9",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 47.742703660085674,
+   "prose_long_c1_ms_step": 48.72770297647963,
+   "lail_ms_step": 48.67873810497008,
+   "bench_prose_c1_ms_step": 48.39570622566847,
+   "structured_c1_ms_step": 47.37976985052228,
+   "bench_prose_c2_ms_step": 59.14369170710981,
+   "structured_c2_ms_step": 50.9647746434688,
+   "prose_long_c2_ms_step": 61.1085722393578,
+   "lail_tok_s": 42.173737435917715,
+   "four_prose_c1_tok_s": 51.42,
+   "bench_prose_c1_tok_s": 48.91393027056787,
+   "structured_c1_tok_s": 84.42421760636532,
+   "prose_long_c1_tok_s": 48.62903638683817,
+   "bench_prose_c2_agg_tok_s": 78.26340972573611,
+   "structured_c2_agg_tok_s": 156.91599297975685,
+   "prose_long_c2_agg_tok_s": 69.3374949510552,
+   "lail_after_c2_3x_tok_s": 43.09,
+   "pp_warm_8k": 775.7,
+   "pp_warm_32k": 760.4,
+   "pp_novel_8k": 814.2,
+   "pp_novel_32k": 794.2,
+   "pp_runs": {
+    "pp_warm_8k": [
+     765.1,
+     775.7,
+     789.3
+    ],
+    "pp_novel_8k": [
+     814.2,
+     797.8,
+     841.2
+    ],
+    "pp_warm_32k": [
+     760.4,
+     752.1,
+     782.7
+    ],
+    "pp_novel_32k": [
+     791.7,
+     795.3,
+     794.2
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.4390243902439024,
+   "acc_four_prose_c1_runs": [
+    2.314,
+    2.2614,
+    2.6104,
+    2.3647,
+    2.439,
+    2.6892,
+    2.5641,
+    2.4268,
+    2.6104
+   ],
+   "acc_prose_long_c1": 2.369047619047619,
+   "acc_prose_long_c1_runs": [
+    2.369,
+    2.2614,
+    2.5,
+    2.369,
+    2.1277
+   ],
+   "acc_lail": 2.0857490337198454,
+   "acc_lail_range": [
+    1.9213483146067416,
+    2.2164502164502164
+   ],
+   "acc_bench_prose_c1": 2.3488372093023253,
+   "acc_structured_c1": 4.0,
+   "lail_ms_runs": [
+    48.25,
+    49.18,
+    48.42,
+    48.32,
+    52.12,
+    48.53,
+    48.68,
+    55.68,
+    48.68,
+    48.73
+   ],
+   "lail_tok_runs": [
+    42.96,
+    42.15,
+    43.69,
+    44.89,
+    40.93,
+    42.2,
+    42.07,
+    37.53,
+    39.25,
+    45.29
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "22Gi",
+    "25Gi"
+   ],
+   "prose_long_c1_runs": [
+    {
+     "tok_s": [
+      48.69
+     ],
+     "ttft": [
+      0.246
+     ],
+     "acc": 2.369,
+     "ms_step": [
+      48.7
+     ]
+    },
+    {
+     "tok_s": [
+      46.41
+     ],
+     "ttft": [
+      0.277
+     ],
+     "acc": 2.261,
+     "ms_step": [
+      48.7
+     ]
+    },
+    {
+     "tok_s": [
+      50.94
+     ],
+     "ttft": [
+      0.274
+     ],
+     "acc": 2.5,
+     "ms_step": [
+      49.1
+     ]
+    },
+    {
+     "tok_s": [
+      48.63
+     ],
+     "ttft": [
+      0.273
+     ],
+     "acc": 2.369,
+     "ms_step": [
+      48.7
+     ]
+    },
+    {
+     "tok_s": [
+      43.06
+     ],
+     "ttft": [
+      0.244
+     ],
+     "acc": 2.128,
+     "ms_step": [
+      49.4
+     ]
+    }
+   ]
+  }
+ }
+}

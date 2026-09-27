@@ -1,0 +1,123 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip ar_l2_prefetch: DSV41_AR_L2_PREFETCH is not 1
+dsv41-patch skip pm_qos: DSV41_PM_QOS_US is not set
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+dsv41: mhc det armed (DSV41_MHC_DET_SPLITS=16): packs and self-tests mHC weights after load
+INFO 09-26 06:27:43 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-26 06:27:43 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+[06:28:02] : Warning: T.vectorized loop over `i_hci` with extent 4 is lowered as a serial loop because TileLang could not find a valid vectorization plan. Scalar accumulator updates inside the loop are a common cause; move reductions to T.unroll or T.serial if this is intended.
+2026-09-26 06:27:45  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-26 06:27:50  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-26 06:27:50  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-26 06:27:55  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-26 06:27:57  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-26 06:28:02  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-26 06:28:02  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_post_tilelang` with `out_idx=None`
+2026-09-26 06:28:03  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_post_tilelang`
+dsv41: mhc det engaged: smoke: 5 fn packed (5.0 MiB); det GEMM, fused norm and post bitwise equal to stock on 6 pre self-tests (DeepGEMM 16-split, TileLang); T <= 16
+prepare under default torch.bfloat16 -> on = True failed = False
+dsv41: mhc det lever is OFF for an unpacked fn (24, 20480) during graph capture (stock path used)
+{
+ "patched": [
+  true,
+  true,
+  true
+ ],
+ "on": true,
+ "dispatch": [
+  {
+   "T": 1,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 2,
+   "det_post_calls": 1
+  },
+  {
+   "T": 3,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 2,
+   "det_post_calls": 1
+  },
+  {
+   "T": 4,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 2,
+   "det_post_calls": 1
+  },
+  {
+   "T": 6,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 2,
+   "det_post_calls": 1
+  },
+  {
+   "T": 8,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 2,
+   "det_post_calls": 1
+  },
+  {
+   "T": 16,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 2,
+   "det_post_calls": 1
+  },
+  {
+   "T": 17,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 0,
+   "det_post_calls": 0
+  },
+  {
+   "T": 64,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 0,
+   "det_post_calls": 0
+  }
+ ],
+ "capture": {
+  "det_gemm_calls_captured": 1,
+  "misses_logged": 1,
+  "mismatching_replays_of_50": 0
+ }
+}
+PASS

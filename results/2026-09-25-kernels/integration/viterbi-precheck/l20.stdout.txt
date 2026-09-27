@@ -1,0 +1,70 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip ar_l2_prefetch: DSV41_AR_L2_PREFETCH is not 1
+dsv41-patch skip pm_qos: DSV41_PM_QOS_US is not set
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[13:05:38Z] loaded layer 20 rank 0 in 7.1 s
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[13:05:38Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v1": {"grid": 192, "blocks_per_sm": 4.0}, "v2": {"grid": 144, "blocks_per_sm": 3.0}}
+[13:05:39Z] [check] v1 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00012183235958218575, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0012113275279596858, "p2b_ref_max_rel": 0.0012113275279596858, "ref_rms_rel": 0.0009486640464410782, "p2b_ref_rms_rel": 0.0009486496534248521}
+[13:05:39Z] [check] v2 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00012183235958218575, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0012113275279596858, "p2b_ref_max_rel": 0.0012113275279596858, "ref_rms_rel": 0.0009486640464410782, "p2b_ref_rms_rel": 0.0009486496534248521}
+[13:05:39Z] [check] v1 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 3.1079063774086535e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011089204112396927, "p2b_ref_max_rel": 0.0011089204112396927, "ref_rms_rel": 0.0009550512368186499, "p2b_ref_rms_rel": 0.0009550503300636813}
+[13:05:39Z] [check] v2 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 3.1079063774086535e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011089204112396927, "p2b_ref_max_rel": 0.0011089204112396927, "ref_rms_rel": 0.0009550512368186499, "p2b_ref_rms_rel": 0.0009550503300636813}
+[13:05:40Z] [check] v1 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 1.4995201127021573e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011862091332636533, "p2b_ref_max_rel": 0.0011862091332636533, "ref_rms_rel": 0.0009476501180314355, "p2b_ref_rms_rel": 0.00094765076834029}
+[13:05:40Z] [check] v2 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 1.4995201127021573e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011862091332636533, "p2b_ref_max_rel": 0.0011862091332636533, "ref_rms_rel": 0.0009476501180314355, "p2b_ref_rms_rel": 0.00094765076834029}
+[13:05:40Z] [check] v1 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00012315271305851638, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011195487380023818, "p2b_ref_max_rel": 0.0011195487380023818, "ref_rms_rel": 0.0009581297004501096, "p2b_ref_rms_rel": 0.0009581332621451458}
+[13:05:40Z] [check] v2 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00012315271305851638, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011195487380023818, "p2b_ref_max_rel": 0.0011195487380023818, "ref_rms_rel": 0.0009581297004501096, "p2b_ref_rms_rel": 0.0009581332621451458}
+[13:05:41Z] [check] v1 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 5.835667616338469e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0010488627441811152, "p2b_ref_max_rel": 0.0010488627441811152, "ref_rms_rel": 0.0009470523225307962, "p2b_ref_rms_rel": 0.0009470528090354634}
+[13:05:41Z] [check] v2 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 5.835667616338469e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0010488627441811152, "p2b_ref_max_rel": 0.0010488627441811152, "ref_rms_rel": 0.0009470523225307962, "p2b_ref_rms_rel": 0.0009470528090354634}
+[13:05:41Z] [check] v1 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00010530749568715692, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0010963467741793534, "p2b_ref_max_rel": 0.0010963467741793534, "ref_rms_rel": 0.0009588907509048236, "p2b_ref_rms_rel": 0.000958893044286421}
+[13:05:41Z] [check] v2 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00010530749568715692, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0010963467741793534, "p2b_ref_max_rel": 0.0010963467741793534, "ref_rms_rel": 0.0009588907509048236, "p2b_ref_rms_rel": 0.000958893044286421}
+[13:05:42Z] [check] v1 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011848341091535985, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0010127489847760493, "p2b_ref_max_rel": 0.0010127489847760493, "ref_rms_rel": 0.0009532339863743939, "p2b_ref_rms_rel": 0.0009532331771618308}
+[13:05:42Z] [check] v2 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011848341091535985, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0010127489847760493, "p2b_ref_max_rel": 0.0010127489847760493, "ref_rms_rel": 0.0009532339863743939, "p2b_ref_rms_rel": 0.0009532331771618308}
+[13:05:42Z] [check] v1 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00023364486696664244, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011958707135905947, "p2b_ref_max_rel": 0.0011958707135905947, "ref_rms_rel": 0.0009618431673594834, "p2b_ref_rms_rel": 0.0009618426858725793}
+[13:05:42Z] [check] v2 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00023364486696664244, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011958707135905947, "p2b_ref_max_rel": 0.0011958707135905947, "ref_rms_rel": 0.0009618431673594834, "p2b_ref_rms_rel": 0.0009618426858725793}
+[13:05:43Z] [check] v1 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00020627063349820673, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011554047041113884, "p2b_ref_max_rel": 0.0011554047041113884, "ref_rms_rel": 0.0009403823189402448, "p2b_ref_rms_rel": 0.0009403794510553887}
+[13:05:43Z] [check] v2 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00020627063349820673, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011554047041113884, "p2b_ref_max_rel": 0.0011554047041113884, "ref_rms_rel": 0.0009403823189402448, "p2b_ref_rms_rel": 0.0009403794510553887}
+[13:05:43Z] [check] v1 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0003709198790602386, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0012024297850260865, "p2b_ref_max_rel": 0.0012024297850260865, "ref_rms_rel": 0.0009481093626662642, "p2b_ref_rms_rel": 0.0009481016050391198}
+[13:05:43Z] [check] v2 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0003709198790602386, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0012024297850260865, "p2b_ref_max_rel": 0.0012024297850260865, "ref_rms_rel": 0.0009481093626662642, "p2b_ref_rms_rel": 0.0009481016050391198}
+[13:05:44Z] [check] v1 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00021588946401607245, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011078894825576778, "p2b_ref_max_rel": 0.0011078894825576778, "ref_rms_rel": 0.000953589187811861, "p2b_ref_rms_rel": 0.0009535837161108636}
+[13:05:44Z] [check] v2 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00021588946401607245, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011078894825576778, "p2b_ref_max_rel": 0.0011078894825576778, "ref_rms_rel": 0.000953589187811861, "p2b_ref_rms_rel": 0.0009535837161108636}
+[13:05:45Z] [check] v1 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0004132231406401843, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011871491923145943, "p2b_ref_max_rel": 0.0011871491923145943, "ref_rms_rel": 0.0009502890549683642, "p2b_ref_rms_rel": 0.0009502824067127824}
+[13:05:45Z] [check] v2 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0004132231406401843, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011871491923145943, "p2b_ref_max_rel": 0.0011871491923145943, "ref_rms_rel": 0.0009502890549683642, "p2b_ref_rms_rel": 0.0009502824067127824}
+[13:05:45Z] [capture] v1 m=1: replay_equals_eager=True (16 replays)
+[13:05:45Z] [capture] v1 m=3: replay_equals_eager=True (16 replays)
+[13:05:45Z] [capture] v1 m=4: replay_equals_eager=True (16 replays)
+[13:05:45Z] [capture] v1 m=6: replay_equals_eager=True (16 replays)
+[13:05:45Z] [capture] v1 m=8: replay_equals_eager=True (16 replays)
+[13:05:45Z] [capture] v2 m=1: replay_equals_eager=True (16 replays)
+[13:05:45Z] [capture] v2 m=3: replay_equals_eager=True (16 replays)
+[13:05:45Z] [capture] v2 m=4: replay_equals_eager=True (16 replays)
+[13:05:45Z] [capture] v2 m=6: replay_equals_eager=True (16 replays)
+[13:05:45Z] [capture] v2 m=8: replay_equals_eager=True (16 replays)
+[13:05:45Z] pass=True
+rc=0

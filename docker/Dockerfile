@@ -13,9 +13,10 @@ RUN python3 /opt/dsv41-patch/apply_engram_disk.py \
 # Plugin source is cloned at build so the pin is in the RUN line, not a floating latest.
 # Native p2b CUDA is parameterized by hidden/inter in 128-wide tiles. The
 # host gate used to allow only 4096 x {1024,2048}; widen_p2b_shapes.py also
-# allows V4.1 TP=2 5120x1152. coop + dataflow (DSV41_P2B_COOP=1|2, default off,
-# SORT=0/1 kernels byte-identical when off) are the k3 round-3 stages that
-# docker/Dockerfile.e14 layers on canonical-e13 as review-e14.
+# allows V4.1 TP=2 5120x1152. coop + dataflow (DSV41_P2B_COOP=1|2; run.sh defaults to 2
+# since round 35; unset or 0 runs the SORT=0/1 kernels, byte-identical to canonical-e13's)
+# are the k3 round-3 stages that docker/Dockerfile.e14 layers on canonical-e13 as
+# canonical-e14 (the round-3 serve arms' review-e14, same image ID).
 ARG VLLM_EXL3_REF=d3cfd394920360d69f820d2dc96f8292a9e10283
 ARG EXLLAMAV3_REF=5be886578ec80324c2c715269387be2058724b6e
 RUN apt-get update \

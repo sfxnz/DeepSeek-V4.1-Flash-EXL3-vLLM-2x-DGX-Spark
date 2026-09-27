@@ -1,0 +1,107 @@
+# S1024-1 engagement check (docker logs of both ranks at 2026-09-27T00:43:10Z), arm S1024 = promoted K bundle on the round-34 defaults (DSV41_DSPARK_SPARSE_MARKOV=1, WOA_PREPACK=1) with DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024, KP add-ons off, current pack
+# ARMS-r3 section 3 expected lines for the K env (must be present)
+widen_p2b_dataflow.py        'dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)'                     head(spark1)=1  worker(spark2)=1
+dense_gemv.py                'dense GEMV armed'                                                               head(spark1)=9  worker(spark2)=9
+mhc_det.py                   'dsv41: mhc det engaged'                                                         head(spark1)=2  worker(spark2)=2
+mhc_det.py(target 81 fn)     'dsv41: mhc det engaged: target: 81 fn packed'                                   head(spark1)=1  worker(spark2)=1
+mhc_det.py(draft 6 fn)       'dsv41: mhc det engaged: draft: 6 fn packed'                                     head(spark1)=1  worker(spark2)=1
+engram_native_stage.py       'dsv41: engram native stage self-check bit-exact'                                head(spark1)=1  worker(spark2)=1
+engram_early_hash.py         'dsv41: engram early hash matches the stock hash'                                head(spark1)=1  worker(spark2)=1
+attn_t2r_dedup.py            'dsv41: attention t2r dedup reuse bit-exact'                                     head(spark1)=1  worker(spark2)=1
+attn_t2r_dedup.py(census)    '[t2r-census]'                                                                   head(spark1)=6  worker(spark2)=6
+moe_prep_fused.py            'dsv41: moe prep fused self-check bit-exact'                                     head(spark1)=1  worker(spark2)=1
+candidate_mask_bounded.py    'dsv41: candidate mask bounded self-check bit-exact'                             head(spark1)=1  worker(spark2)=1
+indexer_wp_gemv.py           'dsv41: indexer weights_proj GEMV self-check bit-exact'                          head(spark1)=1  worker(spark2)=1
+swa_meta_fused.py            'dsv41: swa metadata fused self-check bit-exact'                                 head(spark1)=1  worker(spark2)=1
+# default-on lines (must be present)
+lmhead_mxfp8.py              'dsv41: lm_head mxfp8 enabled'                                                   head(spark1)=1  worker(spark2)=1
+engram_prefetch_v3.py        'dsv41: engram prefetch v3 armed'                                                head(spark1)=1  worker(spark2)=1
+engram_gather_v2.py          'dsv41: engram gather v2 self-check bit-exact'                                   head(spark1)=1  worker(spark2)=1
+fix_o_proj_woa_fp8.py        '[woa-requant] fp8 einsum engaged'                                               head(spark1)=43  worker(spark2)=43
+drop_page_cache.py           'dropped page cache of'                                                          head(spark1)=2  worker(spark2)=2
+vllm                         'Breakable CUDA graph enabled'                                                   head(spark1)=1  worker(spark2)=1
+engram_stage_census          '[native-census]'                                                                head(spark1)=319  worker(spark2)=319
+engram_stage_census(stock)   '[stage-census]'                                                                 head(spark1)=0  worker(spark2)=0
+# arm S1024 lever lines
+decode_levers.py(SPARSE_MARKOV, must be PRESENT) 'dsv41: DSpark sparse Markov (gathered top-k)'                                   head(spark1)=4  worker(spark2)=3
+decode_levers.py(SPARSE_MARKOV k=1024, must be PRESENT) 'dsv41: DSpark sparse Markov (gathered top-k) k=1024'                            head(spark1)=4  worker(spark2)=3
+decode_levers.py(k=256, must be ABSENT) 'dsv41: DSpark sparse Markov (gathered top-k) k=256'                             head(spark1)=0  worker(spark2)=0
+woa-prepack engaged          '[woa-prepack] packed ue8m0 scale engaged'                                       head(spark1)=43  worker(spark2)=43
+decode_levers.py(WOA prepack missing, must be ABSENT) 'DSV41_WOA_PREPACK=1 but this image'                                             head(spark1)=0  worker(spark2)=0
+woa any line                 'woa'                                                                            head(spark1)=86  worker(spark2)=86
+# KP add-ons (must be absent)
+mhc_det_overlap.py           'dsv41: mhc det overlap engaged'                                                 head(spark1)=0  worker(spark2)=0
+engram_wkv_tp.py             'dsv41: engram wkv column-parallel self-check bit-exact'                         head(spark1)=0  worker(spark2)=0
+pm_qos.py                    'dsv41: pm qos engaged'                                                          head(spark1)=0  worker(spark2)=0
+nccl_eager_twin.py           'dsv41: nccl eager twin engaged'                                                 head(spark1)=0  worker(spark2)=0
+ar_l2_prefetch.py            'dsv41: ar l2 prefetch engaged'                                                  head(spark1)=0  worker(spark2)=0
+# disarm markers (LOG_DISARMED-style lines; expect 0)
+grep -ciE "disarm" head=0 worker=0
+known LOG_DISARMED markers 18, hits total 0
+# COOP lines:
+s1024-head.txt:(Worker_TP0 pid=648) Capturing CUDA graphs (PIECEWISE):   0%|          | 0/5 [00:00<?, ?it/s]dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+s1024-worker.txt:dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+# mhc det engaged lines:
+s1024-head.txt:(Worker_TP0 pid=648) dsv41: mhc det engaged: target: 81 fn packed (94.0 MiB); det GEMM, fused norm and post bitwise equal to stock on 82 pre self-tests (DeepGEMM 16-split, TileLang); T <= 16
+s1024-head.txt:(Worker_TP0 pid=648) dsv41: mhc det engaged: draft: 6 fn packed (7.0 MiB); det GEMM, fused norm and post bitwise equal to stock on 7 pre self-tests (DeepGEMM 16-split, TileLang); T <= 16
+s1024-worker.txt:(Worker_TP1 pid=465) dsv41: mhc det engaged: target: 81 fn packed (94.0 MiB); det GEMM, fused norm and post bitwise equal to stock on 82 pre self-tests (DeepGEMM 16-split, TileLang); T <= 16
+s1024-worker.txt:(Worker_TP1 pid=465) dsv41: mhc det engaged: draft: 6 fn packed (7.0 MiB); det GEMM, fused norm and post bitwise equal to stock on 7 pre self-tests (DeepGEMM 16-split, TileLang); T <= 16
+# lm_head line:
+s1024-head.txt:(Worker_TP0 pid=648) dsv41: lm_head mxfp8 enabled (b12x, (64640, 5120))
+s1024-worker.txt:(Worker_TP1 pid=465) dsv41: lm_head mxfp8 enabled (b12x, (64640, 5120))
+# sparse Markov lines:
+s1024-head.txt:dsv41: DSpark sparse Markov (gathered top-k) k=1024
+s1024-head.txt:dsv41: DSpark sparse Markov (gathered top-k) k=1024
+s1024-head.txt:dsv41: DSpark sparse Markov (gathered top-k) k=1024
+s1024-head.txt:dsv41: DSpark sparse Markov (gathered top-k) k=1024
+s1024-worker.txt:dsv41: DSpark sparse Markov (gathered top-k) k=1024
+s1024-worker.txt:dsv41: DSpark sparse Markov (gathered top-k) k=1024
+s1024-worker.txt:dsv41: DSpark sparse Markov (gathered top-k) k=1024
+# [t2r-census] last 1 per rank:
+(Worker_TP0 pid=648) [t2r-census] steady computes=16384 reuses=155721 reuses/compute=9.50
+(Worker_TP1 pid=465) [t2r-census] steady computes=16384 reuses=155721 reuses/compute=9.50
+# [native-census] last 2 per rank:
+(Worker_TP0 pid=648) [native-census] calls=32 rows/call=96.0 miss/call=26.88 syscalls/call=299.5 us/call=894.0
+(Worker_TP0 pid=648) [native-census] calls=32 rows/call=106.5 miss/call=7.59 syscalls/call=243.4 us/call=873.4
+(Worker_TP1 pid=465) [native-census] calls=32 rows/call=96.0 miss/call=39.19 syscalls/call=348.8 us/call=1059.5
+(Worker_TP1 pid=465) [native-census] calls=32 rows/call=106.5 miss/call=12.94 syscalls/call=264.8 us/call=1191.6
+# envs on both ranks (docker inspect of the serve containers):
+DSV41_P2B_COOP spark1= 2 spark2= 2
+DSV41_DENSE_GEMV spark1= 1 spark2= 1
+DSV41_MHC_DET_SPLITS spark1= 16 spark2= 16
+DSV41_ENGRAM_NATIVE_STAGE spark1= 1 spark2= 1
+DSV41_ENGRAM_EARLY_HASH spark1= 1 spark2= 1
+DSV41_ATTN_T2R_DEDUP spark1= 1 spark2= 1
+DSV41_SWA_META_FUSED spark1= 1 spark2= 1
+DSV41_MOE_PREP_FUSED spark1= 1 spark2= 1
+DSV41_CANDIDATE_MASK_BOUNDED spark1= 1 spark2= 1
+DSV41_INDEXER_WP_GEMV spark1= 1 spark2= 1
+DSV41_WOA_PREPACK spark1= 1 spark2= 1
+DSV41_DSPARK_SPARSE_MARKOV spark1= 1 spark2= 1
+DSV41_DSPARK_SPARSE_MARKOV_TOPK spark1= 1024 spark2= 1024
+DSV41_MHC_DET_OVERLAP spark1= 0 spark2= 0
+DSV41_ENGRAM_WKV_TP spark1= 0 spark2= 0
+DSV41_PM_QOS_US spark1= <unset> spark2= <unset>
+DSV41_NCCL_EAGER_TWIN spark1= 0 spark2= 0
+DSV41_AR_L2_PREFETCH spark1= 0 spark2= 0
+DSV41_LMHEAD_MXFP8 spark1= 1 spark2= 1
+DSV41_ENGRAM_CENSUS spark1= 1 spark2= 1
+DSV41_ENGRAM_WILLNEED spark1= 1 spark2= 1
+DSV41_STREAM_FEED spark1= 1 spark2= 1
+# full DSV41_/NCCL_/VLLM_ env diff between ranks (expected: rank-specific only):
+73c73
+< VLLM_HOST_IP=10.100.8.1
+---
+> VLLM_HOST_IP=10.100.8.2
+# model path:
+model='/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8'
+# worker (spark2) container Cmd/Args snapshot:  2 snapshots/2.0bpw-mcg-lmhead-mxfp8
+# running image: spark1=sha256:3a002b55c9bc8086d6e63e3947cd0c6aaa092d415ec7d0305461078240eee675 spark2=sha256:3a002b55c9bc8086d6e63e3947cd0c6aaa092d415ec7d0305461078240eee675
+# audit (strict) re-run on these logs:
+==> audit ok: every expected patch engaged on head, worker
+audit rc=0
+# weights / load (head):
+(Worker_TP0 pid=648) INFO 09-27 00:15:42 [default_loader.py:430] Loading weights took 346.34 seconds
+(Worker_TP0 pid=648) INFO 09-27 00:16:43 [default_loader.py:430] Loading weights took 22.72 seconds
+(Worker_TP0 pid=648) INFO 09-27 00:16:58 [model_runner.py:408] Model loading took 75.58 GiB memory and 426.668539 seconds
+(EngineCore pid=453) INFO 09-27 00:18:03 [core.py:379] init engine (profile, create kv cache, warmup model) took 60.26 s

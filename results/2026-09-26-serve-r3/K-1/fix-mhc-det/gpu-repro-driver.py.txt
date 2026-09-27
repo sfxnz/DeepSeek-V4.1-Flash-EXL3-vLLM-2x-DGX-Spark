@@ -1,0 +1,19 @@
+"""lever_smoke.main() with mhc_det.prepare() run under torch default dtype bf16, as vLLM's
+loader runs finalize_mhc_broadcast_weights / DSpark load_weights (set_default_torch_dtype)."""
+import sys
+import torch
+sys.path.insert(0, "/repo/kernel_study/mhc_det")
+import lever_smoke
+import mhc_det
+
+orig = mhc_det.prepare
+def prepare_bf16(model, label):
+    prev = torch.get_default_dtype()
+    torch.set_default_dtype(torch.bfloat16)
+    try:
+        orig(model, label)
+    finally:
+        torch.set_default_dtype(prev)
+    print("prepare under default", torch.bfloat16, "-> on =", mhc_det._S.on, "failed =", mhc_det._S.failed, flush=True)
+mhc_det.prepare = prepare_bf16
+sys.exit(lever_smoke.main())

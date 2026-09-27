@@ -1,0 +1,203 @@
+## head (spark1) docker logs: dsv41 / lever lines
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/mxfp8/flashinfer.py
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+dsv41: g8 stream feed installed
+dsv41: mhc det armed (DSV41_MHC_DET_SPLITS=16): packs and self-tests mHC weights after load
+dsv41: DSpark sparse Markov (gathered top-k) k=256
+dsv41: engram native stage: EngramDiskStager wrapped (max_tokens=64, verify=8); early hash armed (verify=8)
+dsv41: attention t2r dedup: CommonAttentionMetadata.token_to_req_indices wrapped (verify=8)
+dsv41: moe prep fused: vllm_exl3 _apply_native_fused_moe glue fused, p2b output cast once (verify=16)
+dsv41: candidate mask bounded: sparse_attn_indexer._apply_candidate_mask wrapped (decode calls, verify=4)
+dsv41: indexer weights_proj: DeepseekV4Indexer.weights_proj GEMV armed (2<=m<=8, verify=8)
+dsv41: swa metadata fused: DeepseekSparseSWAMetadataBuilder.build fused decode path (verify=8)
+dsv41: g8 stream feed already present
+dsv41: mhc det armed (DSV41_MHC_DET_SPLITS=16): packs and self-tests mHC weights after load
+dsv41: DSpark sparse Markov (gathered top-k) k=256
+dsv41: engram native stage: EngramDiskStager wrapped (max_tokens=64, verify=8); early hash armed (verify=8)
+dsv41: attention t2r dedup: CommonAttentionMetadata.token_to_req_indices wrapped (verify=8)
+dsv41: moe prep fused: vllm_exl3 _apply_native_fused_moe glue fused, p2b output cast once (verify=16)
+dsv41: candidate mask bounded: sparse_attn_indexer._apply_candidate_mask wrapped (decode calls, verify=4)
+dsv41: indexer weights_proj: DeepseekV4Indexer.weights_proj GEMV armed (2<=m<=8, verify=8)
+dsv41: swa metadata fused: DeepseekSparseSWAMetadataBuilder.build fused decode path (verify=8)
+dsv41: g8 stream feed already present
+dsv41: mhc det armed (DSV41_MHC_DET_SPLITS=16): packs and self-tests mHC weights after load
+dsv41: DSpark sparse Markov (gathered top-k) k=256
+dsv41: engram native stage: EngramDiskStager wrapped (max_tokens=64, verify=8); early hash armed (verify=8)
+dsv41: attention t2r dedup: CommonAttentionMetadata.token_to_req_indices wrapped (verify=8)
+dsv41: moe prep fused: vllm_exl3 _apply_native_fused_moe glue fused, p2b output cast once (verify=16)
+dsv41: candidate mask bounded: sparse_attn_indexer._apply_candidate_mask wrapped (decode calls, verify=4)
+dsv41: indexer weights_proj: DeepseekV4Indexer.weights_proj GEMV armed (2<=m<=8, verify=8)
+dsv41: swa metadata fused: DeepseekSparseSWAMetadataBuilder.build fused decode path (verify=8)
+dsv41: g8 stream feed already present
+dsv41: mhc det armed (DSV41_MHC_DET_SPLITS=16): packs and self-tests mHC weights after load
+dsv41: DSpark sparse Markov (gathered top-k) k=256
+dsv41: engram native stage: EngramDiskStager wrapped (max_tokens=64, verify=8); early hash armed (verify=8)
+dsv41: attention t2r dedup: CommonAttentionMetadata.token_to_req_indices wrapped (verify=8)
+dsv41: moe prep fused: vllm_exl3 _apply_native_fused_moe glue fused, p2b output cast once (verify=16)
+dsv41: candidate mask bounded: sparse_attn_indexer._apply_candidate_mask wrapped (decode calls, verify=4)
+dsv41: indexer weights_proj: DeepseekV4Indexer.weights_proj GEMV armed (2<=m<=8, verify=8)
+dsv41: swa metadata fused: DeepseekSparseSWAMetadataBuilder.build fused decode path (verify=8)
+(Worker_TP0 pid=675) dsv41: lm_head mxfp8 enabled (b12x, (64640, 5120))
+(Worker_TP0 pid=675) dsv41: mhc det lever is OFF: target: prepare failed: RuntimeError('Assertion error (/workspace/.deps/deepgemm-src/csrc/apis/hyperconnection.hpp:43): d.scalar_type() == torch::kFloat'); stock kernels stay
+(Worker_TP0 pid=675) [dense-gemv] rank0 K5120xN1792 (qkv_a) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid28, M<=8 W3 S2 MR8 grid38; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP0 pid=675) [dense-gemv] rank0 K1280xN16384 (wq_b) dense GEMV armed: KC640 M<=8 W2 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP0 pid=675) [dense-gemv] rank0 K4096xN5120 (wo_b) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid48, M<=8 W4 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP0 pid=675) [dense-gemv] rank0 K5120xN2304 (shared_gate_up) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48, M<=8 W2 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP0 pid=675) [dense-gemv] rank0 K1152xN5120 (shared_down) dense GEMV armed: KC384 M<=8 W4 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP0 pid=675) [dense-gemv] rank0 K6144xN25600 (engram_wkv) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48, M<=8 W2 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP0 pid=675) [dense-gemv] rank0 K5120xN64640 (lm_head) dense GEMV armed: KC512 M<=8 W3 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP0 pid=675) [dense-gemv] rank0 K15360xN5120 (main_proj) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48; self-test M=1..4 x 3 dist bitwise, graph replay ok
+(Worker_TP0 pid=675) dsv41: engram prefetch v3 armed (ngram=4 heads=8 depth=3 layers=[0, 1] mult=(2, 4) primes=(2, 3, 8) offsets=(2, 24))
+(Worker_TP0 pid=675) dsv41: engram native stage armed (2 tables, max_tokens=64, verify=8)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) dsv41: moe prep fused self-check bit-exact (synthetic, m=1..8)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) dsv41: indexer weights_proj GEMV self-check bit-exact (m=2..8, n=32, k=5120)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [dense-gemv] rank0 K1280xN16384 (wq_b) pre-quantized input checked bitwise vs b12x (M=6)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [dense-gemv] rank0 wo_a (4x1024x4096) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid48, M<=8 W4 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise vs fp8_einsum; in-situ bitwise (M=6)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP0 pid=675) dsv41: swa metadata fused self-check bit-exact (decode tokens 8, width 128)
+(Worker_TP0 pid=675) dsv41: attention t2r dedup reuse bit-exact (tokens 8; 1 computes, 1 reuses so far)
+(Worker_TP0 pid=675) [t2r-census] verified computes=1 reuses=8 reuses/compute=8.00
+(Worker_TP0 pid=675) Capturing CUDA graphs (PIECEWISE):   0%|          | 0/5 [00:00<?, ?it/s]                                                                        Capturing CUDA graphs (PIECEWISE):   0%|          | 0/5 [00:02<?, ?it/s]                                                                        Capturing CUDA graphs (PIECEWISE):   0%|          | 0/5 [00:06<?, ?it/s]dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+(Worker_TP0 pid=675) dsv41: candidate mask bounded self-check bit-exact (rows 1/4/8, width 65536)
+(Worker_TP0 pid=675) dsv41: engram early hash matches the stock hash (n=10)
+(Worker_TP0 pid=675) dsv41: engram gather v2 self-check bit-exact (r=120)
+(Worker_TP0 pid=675) dsv41: engram native stage self-check bit-exact (2 tables, n=10, max_tokens=64)
+## worker (spark2) docker logs: dsv41 / lever lines
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/mxfp8/flashinfer.py
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+dsv41: g8 stream feed installed
+dsv41: mhc det armed (DSV41_MHC_DET_SPLITS=16): packs and self-tests mHC weights after load
+dsv41: DSpark sparse Markov (gathered top-k) k=256
+dsv41: engram native stage: EngramDiskStager wrapped (max_tokens=64, verify=8); early hash armed (verify=8)
+dsv41: attention t2r dedup: CommonAttentionMetadata.token_to_req_indices wrapped (verify=8)
+dsv41: moe prep fused: vllm_exl3 _apply_native_fused_moe glue fused, p2b output cast once (verify=16)
+dsv41: candidate mask bounded: sparse_attn_indexer._apply_candidate_mask wrapped (decode calls, verify=4)
+dsv41: indexer weights_proj: DeepseekV4Indexer.weights_proj GEMV armed (2<=m<=8, verify=8)
+dsv41: swa metadata fused: DeepseekSparseSWAMetadataBuilder.build fused decode path (verify=8)
+dsv41: g8 stream feed already present
+dsv41: mhc det armed (DSV41_MHC_DET_SPLITS=16): packs and self-tests mHC weights after load
+dsv41: DSpark sparse Markov (gathered top-k) k=256
+dsv41: engram native stage: EngramDiskStager wrapped (max_tokens=64, verify=8); early hash armed (verify=8)
+dsv41: attention t2r dedup: CommonAttentionMetadata.token_to_req_indices wrapped (verify=8)
+dsv41: moe prep fused: vllm_exl3 _apply_native_fused_moe glue fused, p2b output cast once (verify=16)
+dsv41: candidate mask bounded: sparse_attn_indexer._apply_candidate_mask wrapped (decode calls, verify=4)
+dsv41: indexer weights_proj: DeepseekV4Indexer.weights_proj GEMV armed (2<=m<=8, verify=8)
+dsv41: swa metadata fused: DeepseekSparseSWAMetadataBuilder.build fused decode path (verify=8)
+dsv41: g8 stream feed already present
+dsv41: mhc det armed (DSV41_MHC_DET_SPLITS=16): packs and self-tests mHC weights after load
+dsv41: DSpark sparse Markov (gathered top-k) k=256
+dsv41: engram native stage: EngramDiskStager wrapped (max_tokens=64, verify=8); early hash armed (verify=8)
+dsv41: attention t2r dedup: CommonAttentionMetadata.token_to_req_indices wrapped (verify=8)
+dsv41: moe prep fused: vllm_exl3 _apply_native_fused_moe glue fused, p2b output cast once (verify=16)
+dsv41: candidate mask bounded: sparse_attn_indexer._apply_candidate_mask wrapped (decode calls, verify=4)
+dsv41: indexer weights_proj: DeepseekV4Indexer.weights_proj GEMV armed (2<=m<=8, verify=8)
+dsv41: swa metadata fused: DeepseekSparseSWAMetadataBuilder.build fused decode path (verify=8)
+(Worker_TP1 pid=467) dsv41: lm_head mxfp8 enabled (b12x, (64640, 5120))
+(Worker_TP1 pid=467) dsv41: mhc det lever is OFF: target: prepare failed: RuntimeError('Assertion error (/workspace/.deps/deepgemm-src/csrc/apis/hyperconnection.hpp:43): d.scalar_type() == torch::kFloat'); stock kernels stay
+(Worker_TP1 pid=467) [dense-gemv] rank1 K5120xN1792 (qkv_a) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid28, M<=8 W3 S2 MR8 grid38; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP1 pid=467) [dense-gemv] rank1 K1280xN16384 (wq_b) dense GEMV armed: KC640 M<=8 W2 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP1 pid=467) [dense-gemv] rank1 K4096xN5120 (wo_b) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid48, M<=8 W4 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP1 pid=467) [dense-gemv] rank1 K5120xN2304 (shared_gate_up) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48, M<=8 W2 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP1 pid=467) [dense-gemv] rank1 K1152xN5120 (shared_down) dense GEMV armed: KC384 M<=8 W4 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP1 pid=467) [dense-gemv] rank1 K6144xN25600 (engram_wkv) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48, M<=8 W2 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP1 pid=467) [dense-gemv] rank1 K5120xN64640 (lm_head) dense GEMV armed: KC512 M<=8 W3 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+(Worker_TP1 pid=467) [dense-gemv] rank1 K15360xN5120 (main_proj) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48; self-test M=1..4 x 3 dist bitwise, graph replay ok
+(Worker_TP1 pid=467) dsv41: engram prefetch v3 armed (ngram=4 heads=8 depth=3 layers=[0, 1] mult=(2, 4) primes=(2, 3, 8) offsets=(2, 24))
+(Worker_TP1 pid=467) dsv41: engram native stage armed (2 tables, max_tokens=64, verify=8)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) dsv41: moe prep fused self-check bit-exact (synthetic, m=1..8)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) dsv41: indexer weights_proj GEMV self-check bit-exact (m=2..8, n=32, k=5120)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [dense-gemv] rank1 K1280xN16384 (wq_b) pre-quantized input checked bitwise vs b12x (M=6)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [dense-gemv] rank1 wo_a (4x1024x4096) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid48, M<=8 W4 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise vs fp8_einsum; in-situ bitwise (M=6)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=467) dsv41: swa metadata fused self-check bit-exact (decode tokens 8, width 128)
+(Worker_TP1 pid=467) dsv41: attention t2r dedup reuse bit-exact (tokens 8; 1 computes, 1 reuses so far)
+(Worker_TP1 pid=467) [t2r-census] verified computes=1 reuses=8 reuses/compute=8.00
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+(Worker_TP1 pid=467) dsv41: candidate mask bounded self-check bit-exact (rows 1/4/8, width 65536)
+(Worker_TP1 pid=467) dsv41: engram early hash matches the stock hash (n=10)
+(Worker_TP1 pid=467) dsv41: engram gather v2 self-check bit-exact (r=120)
+(Worker_TP1 pid=467) dsv41: engram native stage self-check bit-exact (2 tables, n=10, max_tokens=64)

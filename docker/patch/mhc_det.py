@@ -291,6 +291,14 @@ def _bits(t):
     return t.contiguous().view(torch.int16 if t.element_size() == 2 else torch.int32)
 
 
+def _randn(g, *shape):
+    """fp32 self-test input whatever the default dtype: the load hooks run inside vLLM's
+    set_default_torch_dtype(model dtype = bf16), where a bare randn/empty would be bf16."""
+    import torch
+
+    return torch.randn(*shape, device=g.device, generator=g, dtype=torch.float32)
+
+
 def _selftest_gemm(fn, packed) -> str | None:
     import torch
     from vllm.utils.deep_gemm import tf32_hc_prenorm_gemm
@@ -298,8 +306,9 @@ def _selftest_gemm(fn, packed) -> str | None:
     k = fn.shape[1]
     for t in (1, 4, 8, 16):
         g = torch.Generator(device=fn.device).manual_seed(1000 * t + k)
-        x = (torch.randn(t, k, device=fn.device, generator=g) * 3).to(torch.bfloat16)
-        ref = (torch.empty(SPLITS, t, 24, device=fn.device), torch.empty(SPLITS, t, device=fn.device))
+        x = (_randn(g, t, k) * 3).to(torch.bfloat16)
+        ref = (torch.empty(SPLITS, t, 24, device=fn.device, dtype=torch.float32),
+               torch.empty(SPLITS, t, device=fn.device, dtype=torch.float32))
         got = (torch.full_like(ref[0], float("nan")), torch.full_like(ref[1], float("nan")))
         tf32_hc_prenorm_gemm(x, fn, ref[0], ref[1], SPLITS)
         _S.dk.gemm_pk(x, packed, got[0], got[1])
@@ -321,11 +330,11 @@ def _selftest_pre(layer, sub, fn, packed, broadcast: bool, carried: bool, tokens
         g = torch.Generator(device=dev).manual_seed(31 * t + fn.shape[1])
         x = None
         if broadcast:
-            x = (torch.randn(t, 5120, device=dev, generator=g)).to(torch.bfloat16)
+            x = (_randn(g, t, 5120)).to(torch.bfloat16)
             residual = x.unsqueeze(1).expand(-1, 4, -1).contiguous()
         else:
-            residual = (torch.randn(t, 4, 5120, device=dev, generator=g) * 4).to(torch.bfloat16)
-        pre_mix = torch.softmax(torch.randn(t, 4, device=dev, generator=g), -1).contiguous() if carried else None
+            residual = (_randn(g, t, 4, 5120) * 4).to(torch.bfloat16)
+        pre_mix = torch.softmax(_randn(g, t, 4), -1).contiguous() if carried else None
         kw = dict(pre_mix=pre_mix, x=x, norm_weight=norm.weight, norm_eps=norm.variance_epsilon)
         ref = _S.stock_pre(residual, fn, *args, **kw)
         got = det_pre_delayed(_S.dk, packed, residual, fn, *args, **kw)
@@ -340,10 +349,10 @@ def _selftest_post(device) -> str | None:
 
     for t in (1, 4, 16):
         g = torch.Generator(device=device).manual_seed(77 + t)
-        residual = (torch.randn(t, 4, 5120, device=device, generator=g) * 4).to(torch.bfloat16)
-        x = (torch.randn(t, 5120, device=device, generator=g) * 2).to(torch.bfloat16)
-        post_mix = (2 * torch.sigmoid(torch.randn(t, 4, 1, device=device, generator=g))).contiguous()
-        comb = torch.softmax(torch.randn(t, 4, 4, device=device, generator=g) * 3, -1).contiguous()
+        residual = (_randn(g, t, 4, 5120) * 4).to(torch.bfloat16)
+        x = (_randn(g, t, 5120) * 2).to(torch.bfloat16)
+        post_mix = (2 * torch.sigmoid(_randn(g, t, 4, 1))).contiguous()
+        comb = torch.softmax(_randn(g, t, 4, 4) * 3, -1).contiguous()
         ref = _S.stock_post(x, residual, post_mix, comb)
         got = det_post(_S.dk, x, residual, post_mix, comb)
         if not torch.equal(_bits(ref), _bits(got)):
@@ -363,8 +372,8 @@ def _selftest_overlap(layer, fn, packed, tokens) -> str | None:
     dev = fn.device
     for t in tokens:
         g = torch.Generator(device=dev).manual_seed(57 * t + 3)
-        residual = (torch.randn(t, 4, 5120, device=dev, generator=g) * 4).to(torch.bfloat16)
-        pre_mix = torch.softmax(torch.randn(t, 4, device=dev, generator=g), -1).contiguous()
+        residual = (_randn(g, t, 4, 5120) * 4).to(torch.bfloat16)
+        pre_mix = torch.softmax(_randn(g, t, 4), -1).contiguous()
         kw = dict(pre_mix=pre_mix, norm_weight=norm.weight, norm_eps=norm.variance_epsilon)
         ref = _S.stock_pre(residual, fn, *args, **kw)
         for how in ("fork", "in_place"):

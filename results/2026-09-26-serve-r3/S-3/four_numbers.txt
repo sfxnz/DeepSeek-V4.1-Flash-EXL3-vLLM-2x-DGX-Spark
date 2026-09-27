@@ -1,0 +1,624 @@
+arm=S-3 ts=2026-09-26T23:42:07Z host=spark1 out=results/2026-09-26-serve-r3/S-3/four
+== spark1 ==
+uptime_s 631330.34
+MemAvailable:   22984684 kB
+Buffers:           14492 kB
+Cached:          4941380 kB
+Active(file):     406380 kB
+Inactive(file):  4278620 kB
+Dirty:               264 kB
+== spark2 ==
+uptime_s 1168688.40
+MemAvailable:   25159332 kB
+Buffers:           14060 kB
+Cached:          5690340 kB
+Active(file):     394736 kB
+Inactive(file):  5043864 kB
+Dirty:              7248 kB
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=200 runs=9 concurrency=[1] phases=['prose']
+phase=prose c=1 run=1 wall=3.99s agg=52.66 tok/s per_stream=[52.67] ttft=[0.206] acc=2.513 ms_step=[47.7]
+phase=prose c=1 run=2 wall=4.00s agg=52.79 tok/s per_stream=[52.80] ttft=[0.228] acc=2.525 ms_step=[47.8]
+phase=prose c=1 run=3 wall=3.87s agg=54.30 tok/s per_stream=[54.31] ttft=[0.206] acc=2.557 ms_step=[47.1]
+phase=prose c=1 run=4 wall=3.78s agg=55.64 tok/s per_stream=[55.65] ttft=[0.200] acc=2.689 ms_step=[48.3]
+phase=prose c=1 run=5 wall=4.00s agg=52.74 tok/s per_stream=[52.75] ttft=[0.231] acc=2.500 ms_step=[47.4]
+phase=prose c=1 run=6 wall=3.97s agg=53.25 tok/s per_stream=[53.26] ttft=[0.232] acc=2.597 ms_step=[48.8]
+phase=prose c=1 run=7 wall=3.44s agg=62.05 tok/s per_stream=[62.06] ttft=[0.237] acc=2.985 ms_step=[48.1]
+phase=prose c=1 run=8 wall=4.49s agg=46.71 tok/s per_stream=[46.72] ttft=[0.227] acc=2.270 ms_step=[48.6]
+phase=prose c=1 run=9 wall=3.67s agg=57.33 tok/s per_stream=[57.34] ttft=[0.203] acc=2.764 ms_step=[48.2]
+natural phase=prose completion_tokens=78 finish_reason=stop
+SUMMARY [
+  {
+    "phase": "prose",
+    "concurrency": 1,
+    "median_decode_tok_s": 53.259718446721294,
+    "median_ttft_s": 0.22681410901714116,
+    "median_agg_tok_s": 53.25060593253828,
+    "median_completion_tokens": 200,
+    "n": 9,
+    "acceptance_len": 2.5859598853868198,
+    "draft_acceptance_rate": 0.5286532951289399,
+    "run_acceptance_len": [
+      2.5125,
+      2.525,
+      2.557,
+      2.6892,
+      2.5,
+      2.5974,
+      2.9851,
+      2.2697,
+      2.7639
+    ],
+    "median_run_acceptance_len": 2.556962025316456,
+    "median_ms_per_step": 48.09634163285588,
+    "ttft_s_p50": 0.22681410901714116,
+    "ttft_s_p90": 0.23268714179284872,
+    "ttft_s_p99": 0.23644943631254137,
+    "inter_chunk_ms_p50": 47.16229299083352,
+    "inter_chunk_ms_p90": 49.89956598728895,
+    "inter_chunk_ms_p99": 64.6353839198135,
+    "finish_reasons": {
+      "length": 9
+    },
+    "natural_completion_tokens": 78,
+    "natural_finish_reason": "stop",
+    "natural_covers_max": false,
+    "post_eos_fraction": 0.61
+  }
+]
+ctx=8192 pp_warm run=1 doc=8027 ttft=10.49s rate=765.7 tok/s acc=-
+ctx=8192 pp_warm run=2 doc=7977 ttft=10.51s rate=759.3 tok/s acc=-
+ctx=8192 pp_warm run=3 doc=8165 ttft=10.86s rate=752.0 tok/s acc=-
+ctx=8192 pp_novel run=1 doc=8170 ttft=10.14s rate=806.3 tok/s acc=-
+ctx=8192 pp_novel run=2 doc=8049 ttft=9.63s rate=836.0 tok/s acc=-
+ctx=8192 pp_novel run=3 doc=8016 ttft=10.09s rate=794.8 tok/s acc=-
+ctx=8192 tg run=1 doc=8104 ttft=10.69s rate=47.3 tok/s acc=2.5384615384615383
+ctx=8192 tg run=2 doc=8021 ttft=10.29s rate=36.9 tok/s acc=1.8823529411764706
+ctx=8192 tg run=3 doc=8049 ttft=10.66s rate=51.1 tok/s acc=2.666666666666667
+ctx=32768 pp_warm run=1 doc=32440 ttft=42.36s rate=765.9 tok/s acc=-
+ctx=32768 pp_warm run=2 doc=32030 ttft=42.09s rate=761.0 tok/s acc=-
+ctx=32768 pp_warm run=3 doc=32459 ttft=42.15s rate=770.1 tok/s acc=-
+ctx=32768 pp_novel run=1 doc=32663 ttft=41.03s rate=796.2 tok/s acc=-
+ctx=32768 pp_novel run=2 doc=32714 ttft=40.47s rate=808.4 tok/s acc=-
+ctx=32768 pp_novel run=3 doc=32680 ttft=39.91s rate=818.9 tok/s acc=-
+ctx=32768 tg run=1 doc=31802 ttft=41.28s rate=54.3 tok/s acc=3.1818181818181817
+ctx=32768 tg run=2 doc=31934 ttft=41.97s rate=45.0 tok/s acc=2.357142857142857
+ctx=32768 tg run=3 doc=31955 ttft=41.78s rate=33.0 tok/s acc=1.6
+SUMMARY [
+ {
+  "ctx": 8192,
+  "phase": "pp_warm",
+  "median_rate_tok_s": 759.3,
+  "median_ttft_s": 10.51,
+  "doc_tokens": 8027,
+  "acceptance_len": 0,
+  "runs": 3
+ },
+ {
+  "ctx": 8192,
+  "phase": "pp_novel",
+  "median_rate_tok_s": 806.3,
+  "median_ttft_s": 10.09,
+  "doc_tokens": 8170,
+  "acceptance_len": 0,
+  "runs": 3
+ },
+ {
+  "ctx": 8192,
+  "phase": "tg",
+  "median_rate_tok_s": 47.3,
+  "median_ttft_s": 10.66,
+  "doc_tokens": 8104,
+  "acceptance_len": 2.54,
+  "runs": 3
+ },
+ {
+  "ctx": 32768,
+  "phase": "pp_warm",
+  "median_rate_tok_s": 765.9,
+  "median_ttft_s": 42.15,
+  "doc_tokens": 32440,
+  "acceptance_len": 0,
+  "runs": 3
+ },
+ {
+  "ctx": 32768,
+  "phase": "pp_novel",
+  "median_rate_tok_s": 808.4,
+  "median_ttft_s": 40.47,
+  "doc_tokens": 32663,
+  "acceptance_len": 0,
+  "runs": 3
+ },
+ {
+  "ctx": 32768,
+  "phase": "tg",
+  "median_rate_tok_s": 45.0,
+  "median_ttft_s": 41.78,
+  "doc_tokens": 31802,
+  "acceptance_len": 2.36,
+  "runs": 3
+ }
+]
+== spark1 spark1 2026-09-26T23:50:38Z ==
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       100Gi       8.0Gi       259Mi        15Gi        21Gi
+Swap:           15Gi       7.4Gi       8.6Gi
+               total        used        free      shared  buff/cache   available
+Mem:     130663170048 107690156032  8552902656   271765504 16407826432 22973014016
+Swap:    17179865088  7992995840  9186869248
+== spark2 ==
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi        98Gi       4.3Gi       253Mi        21Gi        23Gi
+Swap:           15Gi       5.1Gi        10Gi
+               total        used        free      shared  buff/cache   available
+Mem:     130663165952 105438007296  4569231360   265334784 22590222336 25225158656
+Swap:    17179865088  5456621568 11723243520
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=512 temperature=0.2 runs=3 phase=lail_prose c=1
+run=1 {"ttft_s": 0.29527543601579964, "decode_s": 11.044963518972509, "prompt_tokens": 61, "completion_tokens": 512, "finish_reason": "length", "chunks": 228, "lail_tok_s": 46.35597022303523, "recipe_tok_s": 46.265431218693365, "tokens_per_chunk": 2.245614035087719, "repeat_ratio": 0.002457002457002457, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On a DGX Spark with unified memory, the boundary between \"what the model knows\" and \"what the model has already computed\" collapses into a single addressable pool. There is no host-to-", "acceptance_len": 2.251101321585903, "draft_acceptance_rate": 0.4170337738619677}
+run=2 {"ttft_s": 0.2946131459902972, "decode_s": 10.628371297963895, "prompt_tokens": 61, "completion_tokens": 512, "finish_reason": "length", "chunks": 219, "lail_tok_s": 48.17295008296193, "recipe_tok_s": 48.07886228983114, "tokens_per_chunk": 2.3378995433789953, "repeat_ratio": 0.004629629629629629, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On a DGX Spark with unified memory, the boundary between \"what the model remembers\" and \"what the machine stores\" is not a wall but a gradient. A long system prompt shared across tabs ", "acceptance_len": 2.3440366972477067, "draft_acceptance_rate": 0.44801223241590216}
+run=3 {"ttft_s": 0.291797311976552, "decode_s": 11.79747456801124, "prompt_tokens": 61, "completion_tokens": 512, "finish_reason": "length", "chunks": 242, "lail_tok_s": 43.3991187731215, "recipe_tok_s": 43.314354869267746, "tokens_per_chunk": 2.115702479338843, "repeat_ratio": 0.0023752969121140144, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On a DGX Spark with unified memory, the boundary between \"what the model remembers\" and \"what the machine stores\" dissolves into a single addressable pool, and the economics of serving", "acceptance_len": 2.120331950207469, "draft_acceptance_rate": 0.37344398340248963}
+natural phase=lail_prose completion_tokens=512 finish_reason=length
+SUMMARY {
+  "phase": "lail_prose",
+  "concurrency": 1,
+  "max_tokens": 512,
+  "temperature": 0.2,
+  "n": 3,
+  "median_lail_tok_s": 46.35597022303523,
+  "median_recipe_tok_s": 46.265431218693365,
+  "median_ttft_s": 0.2946131459902972,
+  "median_completion_tokens": 512,
+  "natural_completion_tokens": 512,
+  "natural_finish_reason": "length",
+  "post_eos_fraction": 0.0,
+  "median_acceptance_len": 2.251101321585903,
+  "median_draft_acceptance_rate": 0.4170337738619677
+}
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=200 runs=5 concurrency=[1, 2] phases=['prose_long']
+phase=prose_long c=1 run=1 wall=4.89s agg=42.78 tok/s per_stream=[42.79] ttft=[0.240] acc=2.073 ms_step=[48.4]
+phase=prose_long c=1 run=2 wall=4.93s agg=42.70 tok/s per_stream=[42.71] ttft=[0.270] acc=2.073 ms_step=[48.5]
+phase=prose_long c=1 run=3 wall=4.91s agg=42.85 tok/s per_stream=[42.86] ttft=[0.265] acc=2.105 ms_step=[49.1]
+phase=prose_long c=1 run=4 wall=5.00s agg=42.04 tok/s per_stream=[42.05] ttft=[0.268] acc=2.072 ms_step=[49.3]
+phase=prose_long c=1 run=5 wall=4.80s agg=43.98 tok/s per_stream=[43.99] ttft=[0.273] acc=2.172 ms_step=[49.4]
+phase=prose_long c=2 run=1 wall=6.34s agg=66.90 tok/s per_stream=[33.80,34.30] ttft=[0.240,0.532] acc=2.128 ms_step=[62.9,62.0]
+phase=prose_long c=2 run=2 wall=6.36s agg=65.68 tok/s per_stream=[33.44,32.85] ttft=[0.305,0.304] acc=2.000 ms_step=[59.8,60.9]
+phase=prose_long c=2 run=3 wall=6.08s agg=69.86 tok/s per_stream=[37.88,34.07] ttft=[0.527,0.238] acc=2.222 ms_step=[58.7,65.2]
+phase=prose_long c=2 run=4 wall=6.02s agg=69.65 tok/s per_stream=[34.83,34.83] ttft=[0.306,0.306] acc=2.100 ms_step=[60.3,60.3]
+phase=prose_long c=2 run=5 wall=6.06s agg=69.33 tok/s per_stream=[35.03,34.67] ttft=[0.317,0.317] acc=2.150 ms_step=[61.4,62.0]
+natural phase=prose_long completion_tokens=200 finish_reason=length
+SUMMARY [
+  {
+    "phase": "prose_long",
+    "concurrency": 1,
+    "median_decode_tok_s": 42.78767183788487,
+    "median_ttft_s": 0.26789190992712975,
+    "median_agg_tok_s": 42.78288148542347,
+    "median_completion_tokens": 200,
+    "n": 5,
+    "acceptance_len": 2.09853249475891,
+    "draft_acceptance_rate": 0.36617749825296997,
+    "run_acceptance_len": [
+      2.0729,
+      2.0729,
+      2.1053,
+      2.0722,
+      2.172
+    ],
+    "median_run_acceptance_len": 2.072916666666667,
+    "median_ms_per_step": 49.12503359997456,
+    "ttft_s_p50": 0.26789190992712975,
+    "ttft_s_p90": 0.2716604176675901,
+    "ttft_s_p99": 0.2724510086234659,
+    "inter_chunk_ms_p50": 48.32043906208128,
+    "inter_chunk_ms_p90": 50.5107756704092,
+    "inter_chunk_ms_p99": 58.71758492663503,
+    "finish_reasons": {
+      "length": 5
+    },
+    "natural_completion_tokens": 200,
+    "natural_finish_reason": "length",
+    "natural_covers_max": true,
+    "post_eos_fraction": 0.0
+  },
+  {
+    "phase": "prose_long",
+    "concurrency": 2,
+    "median_decode_tok_s": 34.483498827337336,
+    "median_ttft_s": 0.30620827700477093,
+    "median_agg_tok_s": 69.32542883036785,
+    "median_completion_tokens": 200.0,
+    "n": 10,
+    "acceptance_len": 2.1174603174603175,
+    "draft_acceptance_rate": 0.3724867724867725,
+    "run_acceptance_len": [
+      2.1277,
+      2.0,
+      2.2222,
+      2.1,
+      2.1497
+    ],
+    "median_run_acceptance_len": 2.127659574468085,
+    "median_ms_per_step": 61.12789481355495,
+    "ttft_s_p50": 0.30620827700477093,
+    "ttft_s_p90": 0.5278991433558986,
+    "ttft_s_p99": 0.5318214087816887,
+    "inter_chunk_ms_p50": 60.86137401871383,
+    "inter_chunk_ms_p90": 64.53823675401509,
+    "inter_chunk_ms_p99": 72.72959331516176,
+    "finish_reasons": {
+      "length": 10
+    },
+    "natural_completion_tokens": 200,
+    "natural_finish_reason": "length",
+    "natural_covers_max": true,
+    "post_eos_fraction": 0.0
+  }
+]
+cold ttft=2.707s prompt_tokens=2034 hits=0.0
+warm ttft=0.423s prompt_tokens=2034 hits=1920.0
+SUMMARY {
+ "cell": "warm_prefix",
+ "prompt_tokens": 2034,
+ "hit_block": 128,
+ "tail_tokens": 114,
+ "ttft_cold_s": 2.7067922349087894,
+ "ttft_warm_s": 0.4227124889148399,
+ "hits_cold": 0.0,
+ "hits_warm": 1920.0,
+ "expected_hits": 1920,
+ "hit_fraction_of_expected": 1.0
+}
+== spark1 ==
+== spark2 ==
+wrote results/2026-09-26-serve-r3/S-3/four/four_numbers.json (mode=complete)
+{
+  "arm": "S-3",
+  "ts": "2026-09-26T23:42:07Z",
+  "host": "spark1",
+  "serve_image": "dsv41-flash-exl3-sm121:review-e14",
+  "serve_cmd_digest": "107dc9387d0912015e8ae242ecc7e0ec53c06d0aa95819a1210ab7ff235cb43d",
+  "prose_median_tok_s": 53.26,
+  "prose_runs": [
+    52.67,
+    52.8,
+    54.31,
+    55.65,
+    52.75,
+    53.26,
+    62.06,
+    46.72,
+    57.34
+  ],
+  "acceptance": 2.586,
+  "prefill_8k_tok_s": 759.3,
+  "prefill_32k_tok_s": 765.9,
+  "lail_prose_median_tok_s": 46.36,
+  "lail_runs": [
+    46.36,
+    48.17,
+    43.4
+  ],
+  "lail_post_eos_fraction": 0.0,
+  "memavail_after_prefill_gib_spark1": 21.4,
+  "memavail_after_prefill_gib_spark2": 23.49,
+  "prefill_novel_8k_tok_s": 806.3,
+  "prefill_novel_32k_tok_s": 808.4,
+  "prose_cell": {
+    "phase": "prose",
+    "concurrency": 1,
+    "median_decode_tok_s": 53.259718446721294,
+    "median_ttft_s": 0.22681410901714116,
+    "median_agg_tok_s": 53.25060593253828,
+    "median_completion_tokens": 200,
+    "n": 9,
+    "acceptance_len": 2.5859598853868198,
+    "draft_acceptance_rate": 0.5286532951289399,
+    "run_acceptance_len": [
+      2.5125,
+      2.525,
+      2.557,
+      2.6892,
+      2.5,
+      2.5974,
+      2.9851,
+      2.2697,
+      2.7639
+    ],
+    "median_run_acceptance_len": 2.556962025316456,
+    "median_ms_per_step": 48.09634163285588,
+    "ttft_s_p50": 0.22681410901714116,
+    "ttft_s_p90": 0.23268714179284872,
+    "ttft_s_p99": 0.23644943631254137,
+    "inter_chunk_ms_p50": 47.16229299083352,
+    "inter_chunk_ms_p90": 49.89956598728895,
+    "inter_chunk_ms_p99": 64.6353839198135,
+    "finish_reasons": {
+      "length": 9
+    },
+    "natural_completion_tokens": 78,
+    "natural_finish_reason": "stop",
+    "natural_covers_max": false,
+    "post_eos_fraction": 0.61
+  },
+  "prose_post_eos_fraction": 0.61,
+  "prose_median_ms_per_step": 48.09634163285588,
+  "prose_long_cells": [
+    {
+      "phase": "prose_long",
+      "concurrency": 1,
+      "median_decode_tok_s": 42.78767183788487,
+      "median_ttft_s": 0.26789190992712975,
+      "median_agg_tok_s": 42.78288148542347,
+      "median_completion_tokens": 200,
+      "n": 5,
+      "acceptance_len": 2.09853249475891,
+      "draft_acceptance_rate": 0.36617749825296997,
+      "run_acceptance_len": [
+        2.0729,
+        2.0729,
+        2.1053,
+        2.0722,
+        2.172
+      ],
+      "median_run_acceptance_len": 2.072916666666667,
+      "median_ms_per_step": 49.12503359997456,
+      "ttft_s_p50": 0.26789190992712975,
+      "ttft_s_p90": 0.2716604176675901,
+      "ttft_s_p99": 0.2724510086234659,
+      "inter_chunk_ms_p50": 48.32043906208128,
+      "inter_chunk_ms_p90": 50.5107756704092,
+      "inter_chunk_ms_p99": 58.71758492663503,
+      "finish_reasons": {
+        "length": 5
+      },
+      "natural_completion_tokens": 200,
+      "natural_finish_reason": "length",
+      "natural_covers_max": true,
+      "post_eos_fraction": 0.0
+    },
+    {
+      "phase": "prose_long",
+      "concurrency": 2,
+      "median_decode_tok_s": 34.483498827337336,
+      "median_ttft_s": 0.30620827700477093,
+      "median_agg_tok_s": 69.32542883036785,
+      "median_completion_tokens": 200.0,
+      "n": 10,
+      "acceptance_len": 2.1174603174603175,
+      "draft_acceptance_rate": 0.3724867724867725,
+      "run_acceptance_len": [
+        2.1277,
+        2.0,
+        2.2222,
+        2.1,
+        2.1497
+      ],
+      "median_run_acceptance_len": 2.127659574468085,
+      "median_ms_per_step": 61.12789481355495,
+      "ttft_s_p50": 0.30620827700477093,
+      "ttft_s_p90": 0.5278991433558986,
+      "ttft_s_p99": 0.5318214087816887,
+      "inter_chunk_ms_p50": 60.86137401871383,
+      "inter_chunk_ms_p90": 64.53823675401509,
+      "inter_chunk_ms_p99": 72.72959331516176,
+      "finish_reasons": {
+        "length": 10
+      },
+      "natural_completion_tokens": 200,
+      "natural_finish_reason": "length",
+      "natural_covers_max": true,
+      "post_eos_fraction": 0.0
+    }
+  ],
+  "warm_prefix": {
+    "cell": "warm_prefix",
+    "prompt_tokens": 2034,
+    "hit_block": 128,
+    "tail_tokens": 114,
+    "ttft_cold_s": 2.7067922349087894,
+    "ttft_warm_s": 0.4227124889148399,
+    "hits_cold": 0.0,
+    "hits_warm": 1920.0,
+    "expected_hits": 1920,
+    "hit_fraction_of_expected": 1.0
+  },
+  "serve_env": {
+    "spark1": [
+      "DSV41_ALLOW_CUDA_GRAPHS=1",
+      "DSV41_AR_L2_PREFETCH=0",
+      "DSV41_ATTN_T2R_DEDUP=1",
+      "DSV41_CANDIDATE_MASK_BOUNDED=1",
+      "DSV41_DENSE_DG_SMALLM=0",
+      "DSV41_DENSE_GEMV=1",
+      "DSV41_DROP_PAGE_CACHE=1",
+      "DSV41_DSPARK_CONF_GATE=0",
+      "DSV41_DSPARK_DRAFT_TOPK=0",
+      "DSV41_DSPARK_MARKOV_SCALE=1",
+      "DSV41_DSPARK_REFINE_PASS=0",
+      "DSV41_DSPARK_SOFTMAX_VERIFY=0",
+      "DSV41_DSPARK_SPARSE_MARKOV=1",
+      "DSV41_DSPARK_TAIL_NGRAM=0",
+      "DSV41_DSPARK_TAIL_NGRAM_POS=3",
+      "DSV41_ENGRAM_CACHE=0",
+      "DSV41_ENGRAM_CENSUS=1",
+      "DSV41_ENGRAM_CPU_HASH=0",
+      "DSV41_ENGRAM_DEFER=0",
+      "DSV41_ENGRAM_DISK=1",
+      "DSV41_ENGRAM_EARLY_HASH=1",
+      "DSV41_ENGRAM_FAST_STAGE=1",
+      "DSV41_ENGRAM_GATHER_V2=1",
+      "DSV41_ENGRAM_NATIVE_STAGE=1",
+      "DSV41_ENGRAM_PF_DUMP=0",
+      "DSV41_ENGRAM_PREFETCH=1",
+      "DSV41_ENGRAM_PREFETCH_DEBUG=0",
+      "DSV41_ENGRAM_STAGE_THREADS=16",
+      "DSV41_ENGRAM_WILLNEED=1",
+      "DSV41_ENGRAM_WILLNEED_MIN_ROWS=512",
+      "DSV41_ENGRAM_WKV_TP=0",
+      "DSV41_INDEXER_PREFILL_FACTOR=1",
+      "DSV41_INDEXER_WP_GEMV=1",
+      "DSV41_INDEX_TOPK=0",
+      "DSV41_LMHEAD_MXFP8=1",
+      "DSV41_LOAD_PF_G8=0",
+      "DSV41_MHC_DECODE_SPLITS=0",
+      "DSV41_MHC_DET_OVERLAP=0",
+      "DSV41_MHC_DET_SPLITS=16",
+      "DSV41_MHC_NO_DEEPGEMM=0",
+      "DSV41_MLA_CHUNKS_PER_BLOCK=0",
+      "DSV41_MLA_IO_WARPS=0",
+      "DSV41_MOE_PREP_FUSED=1",
+      "DSV41_NCCL_EAGER_TWIN=0",
+      "DSV41_P2B_COOP=2",
+      "DSV41_PATCH_STRICT=1",
+      "DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=2.5",
+      "DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192",
+      "DSV41_STEP_CENSUS=0",
+      "DSV41_STREAM_FEED=1",
+      "DSV41_SWA_META_FUSED=1",
+      "DSV41_WOA_PREPACK=1",
+      "NCCL_BUFFSIZE=1048576",
+      "NCCL_CROSS_NIC=1",
+      "NCCL_CUMEM_ENABLE=0",
+      "NCCL_DEBUG=WARN",
+      "NCCL_IB_DISABLE=0",
+      "NCCL_IB_HCA=rocep1s0f1",
+      "NCCL_LL128_BUFFSIZE=262144",
+      "NCCL_MAX_NCHANNELS=8",
+      "NCCL_NET=IB",
+      "NCCL_NVLS_ENABLE=0",
+      "NCCL_PROTO=^LL128",
+      "NCCL_SOCKET_IFNAME=enp1s0f1np1",
+      "VLLM_ADAPTIVE_VERIFICATION_PROFILE_CONTEXT_LEN=256",
+      "VLLM_BUILD_COMMIT=unknown",
+      "VLLM_BUILD_PIPELINE=local",
+      "VLLM_BUILD_URL=",
+      "VLLM_ENABLE_CUDA_COMPATIBILITY=0",
+      "VLLM_ENGINE_READY_TIMEOUT_S=3600",
+      "VLLM_EXL3_MOE_KERNEL=native",
+      "VLLM_HOST_IP=10.100.8.1",
+      "VLLM_IMAGE_TAG=local/vllm-openai:dev",
+      "VLLM_PLUGINS=vllm_exl3",
+      "VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=256",
+      "VLLM_USAGE_SOURCE=production-docker-image",
+      "VLLM_USE_BREAKABLE_CUDAGRAPH=1"
+    ],
+    "spark2": [
+      "DSV41_ALLOW_CUDA_GRAPHS=1",
+      "DSV41_AR_L2_PREFETCH=0",
+      "DSV41_ATTN_T2R_DEDUP=1",
+      "DSV41_CANDIDATE_MASK_BOUNDED=1",
+      "DSV41_DENSE_DG_SMALLM=0",
+      "DSV41_DENSE_GEMV=1",
+      "DSV41_DROP_PAGE_CACHE=1",
+      "DSV41_DSPARK_CONF_GATE=0",
+      "DSV41_DSPARK_DRAFT_TOPK=0",
+      "DSV41_DSPARK_MARKOV_SCALE=1",
+      "DSV41_DSPARK_REFINE_PASS=0",
+      "DSV41_DSPARK_SOFTMAX_VERIFY=0",
+      "DSV41_DSPARK_SPARSE_MARKOV=1",
+      "DSV41_DSPARK_TAIL_NGRAM=0",
+      "DSV41_DSPARK_TAIL_NGRAM_POS=3",
+      "DSV41_ENGRAM_CACHE=0",
+      "DSV41_ENGRAM_CENSUS=1",
+      "DSV41_ENGRAM_CPU_HASH=0",
+      "DSV41_ENGRAM_DEFER=0",
+      "DSV41_ENGRAM_DISK=1",
+      "DSV41_ENGRAM_EARLY_HASH=1",
+      "DSV41_ENGRAM_FAST_STAGE=1",
+      "DSV41_ENGRAM_GATHER_V2=1",
+      "DSV41_ENGRAM_NATIVE_STAGE=1",
+      "DSV41_ENGRAM_PF_DUMP=0",
+      "DSV41_ENGRAM_PREFETCH=1",
+      "DSV41_ENGRAM_PREFETCH_DEBUG=0",
+      "DSV41_ENGRAM_STAGE_THREADS=16",
+      "DSV41_ENGRAM_WILLNEED=1",
+      "DSV41_ENGRAM_WILLNEED_MIN_ROWS=512",
+      "DSV41_ENGRAM_WKV_TP=0",
+      "DSV41_INDEXER_PREFILL_FACTOR=1",
+      "DSV41_INDEXER_WP_GEMV=1",
+      "DSV41_INDEX_TOPK=0",
+      "DSV41_LMHEAD_MXFP8=1",
+      "DSV41_LOAD_PF_G8=0",
+      "DSV41_MHC_DECODE_SPLITS=0",
+      "DSV41_MHC_DET_OVERLAP=0",
+      "DSV41_MHC_DET_SPLITS=16",
+      "DSV41_MHC_NO_DEEPGEMM=0",
+      "DSV41_MLA_CHUNKS_PER_BLOCK=0",
+      "DSV41_MLA_IO_WARPS=0",
+      "DSV41_MOE_PREP_FUSED=1",
+      "DSV41_NCCL_EAGER_TWIN=0",
+      "DSV41_P2B_COOP=2",
+      "DSV41_PATCH_STRICT=1",
+      "DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=2.5",
+      "DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192",
+      "DSV41_STEP_CENSUS=0",
+      "DSV41_STREAM_FEED=1",
+      "DSV41_SWA_META_FUSED=1",
+      "DSV41_WOA_PREPACK=1",
+      "NCCL_BUFFSIZE=1048576",
+      "NCCL_CROSS_NIC=1",
+      "NCCL_CUMEM_ENABLE=0",
+      "NCCL_DEBUG=WARN",
+      "NCCL_IB_DISABLE=0",
+      "NCCL_IB_HCA=rocep1s0f1",
+      "NCCL_LL128_BUFFSIZE=262144",
+      "NCCL_MAX_NCHANNELS=8",
+      "NCCL_NET=IB",
+      "NCCL_NVLS_ENABLE=0",
+      "NCCL_PROTO=^LL128",
+      "NCCL_SOCKET_IFNAME=enp1s0f1np1",
+      "VLLM_ADAPTIVE_VERIFICATION_PROFILE_CONTEXT_LEN=256",
+      "VLLM_BUILD_COMMIT=unknown",
+      "VLLM_BUILD_PIPELINE=local",
+      "VLLM_BUILD_URL=",
+      "VLLM_ENABLE_CUDA_COMPATIBILITY=0",
+      "VLLM_ENGINE_READY_TIMEOUT_S=3600",
+      "VLLM_EXL3_MOE_KERNEL=native",
+      "VLLM_HOST_IP=10.100.8.2",
+      "VLLM_IMAGE_TAG=local/vllm-openai:dev",
+      "VLLM_PLUGINS=vllm_exl3",
+      "VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=256",
+      "VLLM_USAGE_SOURCE=production-docker-image",
+      "VLLM_USE_BREAKABLE_CUDAGRAPH=1"
+    ]
+  },
+  "serve_env_digest": {
+    "spark1": "52fad0e637c1ec7bf598e21c2c27029be58fe567c3b0cc927e98502604aebcf7",
+    "spark2": "5f8d683f982f25bd6815a90b958d6aab3eb5d369624d4c877406d2218452dc3b"
+  },
+  "serve_env_ranks_match": true,
+  "serve_env_rank_diff": [],
+  "serve_started_at": {
+    "spark1": "2026-09-26T23:26:36.926597+00:00",
+    "spark2": "2026-09-26T23:26:11.390060+00:00"
+  },
+  "serve_uptime_s": 930.1,
+  "host_state": {
+    "spark1": {
+      "uptime_s": 631330.34,
+      "MemAvailable_gib": 21.92,
+      "Buffers_gib": 0.01,
+      "Cached_gib": 4.71,
+      "Active_file_gib": 0.39,
+      "Inactive_file_gib": 4.08,
+      "Dirty_gib": 0.0
+    },
+    "spark2": {
+      "uptime_s": 1168688.4,
+      "MemAvailable_gib": 23.99,
+      "Buffers_gib": 0.01,
+      "Cached_gib": 5.43,
+      "Active_file_gib": 0.38,
+      "Inactive_file_gib": 4.81,
+      "Dirty_gib": 0.01
+    }
+  },
+  "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+  },
+  "lever_disarmed": false,
+  "notes": "number 3 (MoE/attention ms per layer at shipped chunk) NOT captured: no live probe exists; documented fallback = boot knobs DSV41_STEP_CENSUS=1 / DSV41_ENGRAM_CENSUS=1 (decode-side only; E0 prefill-flush caveat), real profiling is a separate gated step (TODO). serve_cmd_digest = sha256(json.dumps(Config.Cmd list)); serve_env_digest = sha256(json.dumps(sorted NCCL_/DSV41_/VLLM_ env, secrets dropped)) per rank; serve_env_ranks_match ignores VLLM_HOST_IP. host_state is read before the benches. MemAvailable read on both nodes right after benches/micro.py ends (its last phase is 32k tg: fresh ~32k prompts, 32 decode tokens each), before the L.A.I.L runs.",
+  "partial": false
+}
+four-numbers capture complete: results/2026-09-26-serve-r3/S-3/four/four_numbers.json

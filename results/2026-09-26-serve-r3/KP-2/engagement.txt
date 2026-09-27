@@ -1,0 +1,164 @@
+# KP-2 engagement check (docker logs of both ranks at 2026-09-26T20:11:45Z), arm KP env (K + 5 add-ons) on the current pack
+# ARMS-r3 section 3 expected lines for the K levers (must be present)
+widen_p2b_dataflow.py        'dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)'                     head(spark1)=1  worker(spark2)=1
+dense_gemv.py                'dense GEMV armed'                                                               head(spark1)=8  worker(spark2)=8
+mhc_det.py                   'dsv41: mhc det engaged'                                                         head(spark1)=2  worker(spark2)=2
+mhc_det.py(target 81 fn)     'dsv41: mhc det engaged: target: 81 fn packed'                                   head(spark1)=1  worker(spark2)=1
+mhc_det.py(draft 6 fn)       'dsv41: mhc det engaged: draft: 6 fn packed'                                     head(spark1)=1  worker(spark2)=1
+engram_native_stage.py       'dsv41: engram native stage self-check bit-exact'                                head(spark1)=1  worker(spark2)=1
+engram_early_hash.py         'dsv41: engram early hash matches the stock hash'                                head(spark1)=1  worker(spark2)=1
+attn_t2r_dedup.py            'dsv41: attention t2r dedup reuse bit-exact'                                     head(spark1)=1  worker(spark2)=1
+attn_t2r_dedup.py(census)    '[t2r-census]'                                                                   head(spark1)=6  worker(spark2)=6
+moe_prep_fused.py            'dsv41: moe prep fused self-check bit-exact'                                     head(spark1)=1  worker(spark2)=1
+candidate_mask_bounded.py    'dsv41: candidate mask bounded self-check bit-exact'                             head(spark1)=1  worker(spark2)=1
+indexer_wp_gemv.py           'dsv41: indexer weights_proj GEMV self-check bit-exact'                          head(spark1)=1  worker(spark2)=1
+swa_meta_fused.py            'dsv41: swa metadata fused self-check bit-exact'                                 head(spark1)=1  worker(spark2)=1
+# default-on lines (must be present on both arms)
+lmhead_mxfp8.py              'dsv41: lm_head mxfp8 enabled'                                                   head(spark1)=1  worker(spark2)=1
+engram_prefetch_v3.py        'dsv41: engram prefetch v3 armed'                                                head(spark1)=1  worker(spark2)=1
+engram_gather_v2.py          'dsv41: engram gather v2 self-check bit-exact'                                   head(spark1)=1  worker(spark2)=1
+fix_o_proj_woa_fp8.py        '[woa-requant] fp8 einsum engaged'                                               head(spark1)=43  worker(spark2)=43
+drop_page_cache.py           'dropped page cache of'                                                          head(spark1)=2  worker(spark2)=2
+vllm                         'Breakable CUDA graph enabled'                                                   head(spark1)=1  worker(spark2)=1
+engram_stage_census          '[native-census]'                                                                head(spark1)=322  worker(spark2)=322
+engram_stage_census(stock)   '[stage-census]'                                                                 head(spark1)=0  worker(spark2)=0
+# KP add-ons (must be present: section 3)
+mhc_det_overlap.py           'dsv41: mhc det overlap engaged'                                                 head(spark1)=2  worker(spark2)=2
+mhc_det_overlap.py(target)   'dsv41: mhc det overlap engaged: target:'                                        head(spark1)=1  worker(spark2)=1
+mhc_det_overlap.py(draft)    'dsv41: mhc det overlap engaged: draft:'                                         head(spark1)=1  worker(spark2)=1
+engram_wkv_tp.py             'dsv41: engram wkv column-parallel self-check bit-exact'                         head(spark1)=2  worker(spark2)=2
+engram_wkv_tp.py(armed)      'dsv41: engram wkv column-parallel armed'                                        head(spark1)=2  worker(spark2)=2
+pm_qos.py                    'dsv41: pm qos engaged'                                                          head(spark1)=4  worker(spark2)=3
+nccl_eager_twin.py           'dsv41: nccl eager twin engaged'                                                 head(spark1)=1  worker(spark2)=1
+nccl_eager_twin.py(routing)  'dsv41: nccl eager twin routing on tp:0'                                         head(spark1)=1  worker(spark2)=1
+nccl_eager_twin.py(guard)    'dsv41: nccl eager twin guard'                                                   head(spark1)=1  worker(spark2)=1
+NCCL graphUsageMode (expected) 'graphUsageMode is set to 0 but the user is capturing graphs'                    head(spark1)=0  worker(spark2)=0
+ar_l2_prefetch.py            'dsv41: ar l2 prefetch engaged: 37/40 layers'                                    head(spark1)=1  worker(spark2)=1
+NCCL version                 'NCCL version 2.30.7'                                                            head(spark1)=1  worker(spark2)=0
+# KP add-on lines (both ranks):
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 1
+dsv41: mhc det overlap armed (DSV41_MHC_DET_OVERLAP=1): the next all-reduce runs the det prenorm GEMM + sinkhorn of each decode pre on a side stream
+dsv41: engram wkv column-parallel: Engram.__init__ wrapped (wkv column-parallel, checked after loading)
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 448
+dsv41: mhc det overlap armed (DSV41_MHC_DET_OVERLAP=1): the next all-reduce runs the det prenorm GEMM + sinkhorn of each decode pre on a side stream
+dsv41: engram wkv column-parallel: Engram.__init__ wrapped (wkv column-parallel, checked after loading)
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 447
+dsv41: mhc det overlap armed (DSV41_MHC_DET_OVERLAP=1): the next all-reduce runs the det prenorm GEMM + sinkhorn of each decode pre on a side stream
+dsv41: engram wkv column-parallel: Engram.__init__ wrapped (wkv column-parallel, checked after loading)
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 633
+dsv41: mhc det overlap armed (DSV41_MHC_DET_OVERLAP=1): the next all-reduce runs the det prenorm GEMM + sinkhorn of each decode pre on a side stream
+dsv41: engram wkv column-parallel: Engram.__init__ wrapped (wkv column-parallel, checked after loading)
+(Worker pid=633) dsv41: nccl eager twin engaged on tp:0: captured collectives -> stock comm, eager -> twin; NCCL_GRAPH_MIXING_SUPPORT=0
+(Worker pid=633) dsv41: nccl eager twin guard on ep:0: eager-only, a captured call raises
+(Worker_TP0 pid=633) dsv41: engram wkv column-parallel armed (language_model.model.layers.1.engram.wkv: 12800 of 25600 rows per rank, gathered)
+(Worker_TP0 pid=633) dsv41: engram wkv column-parallel armed (language_model.model.layers.14.engram.wkv: 12800 of 25600 rows per rank, gathered)
+(Worker_TP0 pid=633) dsv41: mhc det overlap engaged: target: layer_input right after the post; prenorm GEMM + sinkhorn forked under the next all-reduce; split path bitwise equal to stock (fork and in place, T 1/4/16)
+(Worker_TP0 pid=633) dsv41: engram wkv column-parallel self-check bit-exact (language_model.model.layers.1.engram.wkv: 12800 of 25600 rows per rank, M 1/4/8/64)
+(Worker_TP0 pid=633) dsv41: engram wkv column-parallel self-check bit-exact (language_model.model.layers.14.engram.wkv: 12800 of 25600 rows per rank, M 1/4/8/64)
+(Worker_TP0 pid=633) dsv41: mhc det overlap engaged: draft: layer_input right after the post; prenorm GEMM + sinkhorn forked under the next all-reduce; split path bitwise equal to stock (fork and in place, T 1/4/16)
+(Worker_TP0 pid=633) dsv41: ar l2 prefetch engaged: 37/40 layers, 9.02 MiB per MoE all-reduce window (next layer fused_wqa_wkv)
+(Worker_TP0 pid=633) dsv41: nccl eager twin routing on tp:0: 84 captured calls on the graph comm, eager calls on the twin (189 so far)
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 1
+dsv41: mhc det overlap armed (DSV41_MHC_DET_OVERLAP=1): the next all-reduce runs the det prenorm GEMM + sinkhorn of each decode pre on a side stream
+dsv41: engram wkv column-parallel: Engram.__init__ wrapped (wkv column-parallel, checked after loading)
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 464
+dsv41: mhc det overlap armed (DSV41_MHC_DET_OVERLAP=1): the next all-reduce runs the det prenorm GEMM + sinkhorn of each decode pre on a side stream
+dsv41: engram wkv column-parallel: Engram.__init__ wrapped (wkv column-parallel, checked after loading)
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 463
+dsv41: mhc det overlap armed (DSV41_MHC_DET_OVERLAP=1): the next all-reduce runs the det prenorm GEMM + sinkhorn of each decode pre on a side stream
+dsv41: engram wkv column-parallel: Engram.__init__ wrapped (wkv column-parallel, checked after loading)
+(Worker pid=464) dsv41: nccl eager twin engaged on tp:0: captured collectives -> stock comm, eager -> twin; NCCL_GRAPH_MIXING_SUPPORT=0
+(Worker pid=464) dsv41: nccl eager twin guard on ep:0: eager-only, a captured call raises
+(Worker_TP1 pid=464) dsv41: engram wkv column-parallel armed (language_model.model.layers.1.engram.wkv: 12800 of 25600 rows per rank, gathered)
+(Worker_TP1 pid=464) dsv41: engram wkv column-parallel armed (language_model.model.layers.14.engram.wkv: 12800 of 25600 rows per rank, gathered)
+(Worker_TP1 pid=464) dsv41: mhc det overlap engaged: target: layer_input right after the post; prenorm GEMM + sinkhorn forked under the next all-reduce; split path bitwise equal to stock (fork and in place, T 1/4/16)
+(Worker_TP1 pid=464) dsv41: engram wkv column-parallel self-check bit-exact (language_model.model.layers.1.engram.wkv: 12800 of 25600 rows per rank, M 1/4/8/64)
+(Worker_TP1 pid=464) dsv41: engram wkv column-parallel self-check bit-exact (language_model.model.layers.14.engram.wkv: 12800 of 25600 rows per rank, M 1/4/8/64)
+(Worker_TP1 pid=464) dsv41: mhc det overlap engaged: draft: layer_input right after the post; prenorm GEMM + sinkhorn forked under the next all-reduce; split path bitwise equal to stock (fork and in place, T 1/4/16)
+(Worker_TP1 pid=464) dsv41: ar l2 prefetch engaged: 37/40 layers, 9.02 MiB per MoE all-reduce window (next layer fused_wqa_wkv)
+(Worker_TP1 pid=464) dsv41: nccl eager twin routing on tp:0: 84 captured calls on the graph comm, eager calls on the twin (189 so far)
+# WKV_TP order check (self-check lines must follow armed lines; s8 hang window)
+KP2-head.dockerlog: armed at lines 210 212  self-check at lines 309 323 
+KP2-worker.dockerlog: armed at lines 155 157  self-check at lines 184 198 
+# LOG_DISARMED markers seen (any patch):
+disarm_markers_known 27
+disarm_hits_total 0
+# dense GEMV lines (both ranks):
+(Worker_TP0 pid=633) [dense-gemv] rank0 K5120xN1792 (qkv_a) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid28, M<=
+(Worker_TP0 pid=633) [dense-gemv] rank0 K1280xN16384 (wq_b) dense GEMV armed: KC640 M<=8 W2 S2 MR8 grid48; sel
+(Worker_TP0 pid=633) [dense-gemv] rank0 K4096xN5120 (wo_b) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid48, M<=8
+(Worker_TP0 pid=633) [dense-gemv] rank0 K5120xN2304 (shared_gate_up) dense GEMV armed: KC512 M<=4 W2 S2 MR4 gr
+(Worker_TP0 pid=633) [dense-gemv] rank0 K1152xN5120 (shared_down) dense GEMV armed: KC384 M<=8 W4 S2 MR8 grid4
+(Worker_TP0 pid=633) [dense-gemv] rank0 K5120xN64640 (lm_head) dense GEMV armed: KC512 M<=8 W3 S2 MR8 grid48; 
+(Worker_TP0 pid=633) [dense-gemv] rank0 K15360xN5120 (main_proj) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48
+(Worker_TP0 pid=633) [dense-gemv] rank0 K1280xN16384 (wq_b) pre-quantized input checked bitwise vs b12x (M=6)
+(Worker_TP0 pid=633) [dense-gemv] rank0 wo_a (4x1024x4096) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid48, M<=8
+(Worker_TP1 pid=464) [dense-gemv] rank1 K5120xN1792 (qkv_a) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid28, M<=
+(Worker_TP1 pid=464) [dense-gemv] rank1 K1280xN16384 (wq_b) dense GEMV armed: KC640 M<=8 W2 S2 MR8 grid48; sel
+(Worker_TP1 pid=464) [dense-gemv] rank1 K4096xN5120 (wo_b) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid48, M<=8
+(Worker_TP1 pid=464) [dense-gemv] rank1 K5120xN2304 (shared_gate_up) dense GEMV armed: KC512 M<=4 W2 S2 MR4 gr
+(Worker_TP1 pid=464) [dense-gemv] rank1 K1152xN5120 (shared_down) dense GEMV armed: KC384 M<=8 W4 S2 MR8 grid4
+(Worker_TP1 pid=464) [dense-gemv] rank1 K5120xN64640 (lm_head) dense GEMV armed: KC512 M<=8 W3 S2 MR8 grid48; 
+(Worker_TP1 pid=464) [dense-gemv] rank1 K15360xN5120 (main_proj) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48
+(Worker_TP1 pid=464) [dense-gemv] rank1 K1280xN16384 (wq_b) pre-quantized input checked bitwise vs b12x (M=6)
+(Worker_TP1 pid=464) [dense-gemv] rank1 wo_a (4x1024x4096) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid48, M<=8
+# [native-census] last 3 per rank:
+(Worker_TP0 pid=633) [native-census] calls=32 rows/call=96.0 miss/call=30.53 syscalls/call=314.1 us/call=782.5
+(Worker_TP0 pid=633) [native-census] calls=32 rows/call=106.5 miss/call=24.69 syscalls/call=311.8 us/call=704.8
+(Worker_TP0 pid=633) [native-census] calls=32 rows/call=96.0 miss/call=8.59 syscalls/call=226.4 us/call=1612.0
+(Worker_TP1 pid=464) [native-census] calls=32 rows/call=96.0 miss/call=40.47 syscalls/call=353.9 us/call=799.3
+(Worker_TP1 pid=464) [native-census] calls=32 rows/call=106.5 miss/call=32.75 syscalls/call=344.0 us/call=768.3
+(Worker_TP1 pid=464) [native-census] calls=32 rows/call=96.0 miss/call=15.31 syscalls/call=253.2 us/call=1394.7
+# [t2r-census] last 2 per rank:
+(Worker_TP0 pid=633) [t2r-census] steady computes=8192 reuses=77897 reuses/compute=9.51
+(Worker_TP0 pid=633) [t2r-census] steady computes=16384 reuses=155721 reuses/compute=9.50
+(Worker_TP1 pid=464) [t2r-census] steady computes=8192 reuses=77897 reuses/compute=9.51
+(Worker_TP1 pid=464) [t2r-census] steady computes=16384 reuses=155721 reuses/compute=9.50
+# K lever lines (both ranks):
+dsv41: lm_head mxfp8 enabled (b12x, (64640, 5120))
+dsv41: mhc det engaged: target: 81 fn packed (94.0 MiB); det GEMM, fused norm and post bitwise equal to stock on 82 pre self-tests (DeepGEMM 16-split, TileLang); T <= 16
+dsv41: mhc det engaged: draft: 6 fn packed (7.0 MiB); det GEMM, fused norm and post bitwise equal to stock on 7 pre self-tests (DeepGEMM 16-split, TileLang); T <= 16
+dsv41: moe prep fused self-check bit-exact (synthetic, m=1..8)
+dsv41: indexer weights_proj GEMV self-check bit-exact (m=2..8, n=32, k=5120)
+dsv41: swa metadata fused self-check bit-exact (decode tokens 8, width 128)
+dsv41: attention t2r dedup reuse bit-exact (tokens 8; 1 computes, 1 reuses so far)
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+dsv41: candidate mask bounded self-check bit-exact (rows 1/4/8, width 65536)
+dsv41: engram early hash matches the stock hash (n=10)
+dsv41: engram native stage self-check bit-exact (2 tables, n=10, max_tokens=64)
+dsv41: lm_head mxfp8 enabled (b12x, (64640, 5120))
+dsv41: mhc det engaged: target: 81 fn packed (94.0 MiB); det GEMM, fused norm and post bitwise equal to stock on 82 pre self-tests (DeepGEMM 16-split, TileLang); T <= 16
+dsv41: mhc det engaged: draft: 6 fn packed (7.0 MiB); det GEMM, fused norm and post bitwise equal to stock on 7 pre self-tests (DeepGEMM 16-split, TileLang); T <= 16
+dsv41: moe prep fused self-check bit-exact (synthetic, m=1..8)
+dsv41: indexer weights_proj GEMV self-check bit-exact (m=2..8, n=32, k=5120)
+dsv41: swa metadata fused self-check bit-exact (decode tokens 8, width 128)
+dsv41: attention t2r dedup reuse bit-exact (tokens 8; 1 computes, 1 reuses so far)
+dsv41: candidate mask bounded self-check bit-exact (rows 1/4/8, width 65536)
+dsv41: engram early hash matches the stock hash (n=10)
+dsv41: engram native stage self-check bit-exact (2 tables, n=10, max_tokens=64)
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+# weights / load
+(APIServer pid=1) INFO 09-26 19:39:05 [api_utils.py:347]   █▄█▀ █     █     █     █  model   /cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8
+(APIServer pid=1) INFO 09-26 19:39:05 [api_utils.py:286] non-default args: {'model_tag': '/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8', 'default_chat_template_kwargs':
+(EngineCore pid=448) INFO 09-26 19:39:25 [core.py:123] Initializing a V1 LLM engine (v0.1.dev20904+g179dd0fa9) with config: model='/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhea
+(Worker_TP0 pid=633) Loading safetensors checkpoint shards:   0% Completed | 0/48 [00:00<?, ?it/s]
+(Worker_TP0 pid=633) Loading safetensors checkpoint shards:   6% Completed | 3/48 [00:00<00:06,  7.25it/s]
+(Worker_TP0 pid=633) Loading safetensors checkpoint shards:   8% Completed | 4/48 [00:00<00:09,  4.79it/s]
+(Worker_TP0 pid=633) Loading safetensors checkpoint shards:  10% Completed | 5/48 [00:01<00:15,  2.77it/s]
+(Worker_TP0 pid=633) Loading safetensors checkpoint shards:  12% Completed | 6/48 [00:02<00:18,  2.22it/s]
+# serve env on both ranks (DSV41_ add-on envs)
+DSV41_MHC_DET_OVERLAP head=1 worker=1
+DSV41_ENGRAM_WKV_TP head=1 worker=1
+DSV41_PM_QOS_US head=20 worker=20
+DSV41_NCCL_EAGER_TWIN head=1 worker=1
+DSV41_AR_L2_PREFETCH head=1 worker=1
+DSV41_AR_L2_PREFETCH_MIB head= worker=
+DSV41_P2B_COOP head=2 worker=2
+SNAPSHOT_SHA head= worker=
+# running image
+head sha256:3a002b55c9bc8086d6e63e3947cd0c6aaa092d415ec7d0305461078240eee675 worker sha256:3a002b55c9bc8086d6e63e3947cd0c6aaa092d415ec7d0305461078240eee675
+# devices (PM_QOS needs /dev/cpu_dma_latency)
+head [{"PathOnHost":"/dev/infiniband","PathInContainer":"/dev/infiniband","CgroupPermissions":"rwm"},{"PathOnHost":"/dev/cpu_dma_latency","PathInContainer":"/dev/cpu_dma_latency","CgroupPermissions":"rwm"}] worker [{"PathOnHost":"/dev/infiniband","PathInContainer":"/dev/infiniband","CgroupPermissions":"rwm"},{"PathOnHost":"/dev/cpu_dma_latency","PathInContainer":"/dev/cpu_dma_latency","CgroupPermissions":"rwm"}]
+# strict audit re-run on these logs
+==> audit ok: every expected patch engaged on head, worker
+audit rc=0

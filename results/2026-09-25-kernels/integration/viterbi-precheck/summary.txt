@@ -1,0 +1,17 @@
+Viterbi-pack kernel pre-check (ARMS-r3 section 7), run 2026-09-26 13:05-13:06Z before VIT-1
+- Where: spark2 GPU, serve down on both nodes, spark2 GPU lock held by the VIT-1 stage (LOCK_HELD 13:03:48Z).
+  pmon before: Xorg / gnome-shell only.
+- Build: kernel_study/p2b_coop/prebuild_r3.sh dsv41-flash-exl3-sm121:review-e14 on spark1 (CPU, 65 s), then rsync of
+  kernel_study/ tools/ tests/ docker/ and the s10 census_npy to .worktrees-spark2/kernels-r3 (widen_p2b_*.py sha256 equal).
+- Command: the section-7 docker run (review-e14, --memory 16g, --network none), with the Viterbi snapshot bind-mounted over
+  /hf/snapshots/2.0bpw-mcg-lmhead-mxfp8. bench_r3.py --mode check,capture --variants 0,1,2 --ms 1,3,4,6,8 --check-routings 8
+    l20.json   : --ref (layer 20, tp-rank 0)
+    l33r1.json : --layer 33 --tp-rank 1, no --ref
+  The run was not wrapped in flock -w, because this stage already held the lock.
+- Mount check: inside the same mounts, /hf/snapshots/2.0bpw-mcg-lmhead-mxfp8/model-00023 has inode 3694467, which is the
+  Viterbi shard's inode (the stock shard is 15478435), and requant-viterbi-manifest.json is present.
+- Result: rc=0 and pass=True on both.
+    l20  : 24/24 checks pass. onehot bitexact vs p2b on all; v2 (DSV41_P2B_COOP=2) bitwise equal to v1 with full weights on
+           all; repeat bitexact; full-weight max_rel 4.13e-4 (gate 1e-3), max 1 ulp; fp64 ref max_rel 1.2113e-3 for both
+           the coop variant and p2b (equal); capture replay == eager on 10/10 (v1, v2 x m 1,3,4,6,8; 16 replays each).
+    l33r1: 24/24 checks pass. Same flags; full-weight max_rel 3.31e-4, max 1 ulp; capture 10/10.

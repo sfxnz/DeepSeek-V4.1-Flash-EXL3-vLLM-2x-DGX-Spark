@@ -1,6 +1,6 @@
 # AGENTS.md — DeepSeek-V4.1-Flash EXL3 · 2× DGX Spark
 
-Serve an EXL3 pack of `deepseek-ai/DeepSeek-V4.1-Flash` at TP=2. Local image `dsv41-flash-exl3-sm121:canonical-e13`, built by `docker/Dockerfile` from the pinned `vllm/vllm-openai:deepseekv41-flash-0909` digest. Engram stays on NVMe. Stock ExLlamaV3 and stock vLLM wheels do not load `deepseek_v41` / CED / CSA2 / Engram.
+Serve an EXL3 pack of `deepseek-ai/DeepSeek-V4.1-Flash` at TP=2. Local image `dsv41-flash-exl3-sm121:canonical-e14`, built by `docker/Dockerfile` from the pinned `vllm/vllm-openai:deepseekv41-flash-0909` digest. Engram stays on NVMe. Stock ExLlamaV3 and stock vLLM wheels do not load `deepseek_v41` / CED / CSA2 / Engram.
 
 Humans read [README.md](README.md).
 
@@ -19,6 +19,7 @@ The public path is clone, `hf download` of `sfxnz/DeepSeek-V4.1-Flash-EXL3` at `
 - `--max-num-batched-tokens` defaults to 8192. E1 measured 2048 at pp@16k −28%. PR 6 measured 8192 at 12,712-token prompts as 755 vs 797 tok/s (−5%) against 2048. `MAX_NUM_BATCHED_TOKENS=2048` is the override for that workload.
 - The serve pin is `SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8`: the MCG codebook plus lm_head MXFP8 (R33 +5.9% L.A.I.L). Do not switch to MUL1. MUL1 + p2b `cb=2` measured 23.52 vs 27.98 prose decode. Prefill 792 vs 797 is flat and does not change the call.
 - Round 34 defaults (2026-09-24 review campaign, `results/RESULTS.md`): `DSV41_ENGRAM_WILLNEED=1`, `DSV41_STREAM_FEED=1`, `DSV41_WOA_PREPACK=1` and `DSV41_DSPARK_SPARSE_MARKOV=1`. `DSV41_WOA_PREPACK=1` needs `canonical-e13`: on `canonical-e12` it logs `the lever is OFF` and `AUDIT=strict` fails. To turn a lever off, set it to `0`; an empty value keeps the default. `DSV41_MHC_DECODE_SPLITS` stays 0 (quick quality failed at 40). `DSV41_P2B_SRC_SORT`, `DSV41_DENSE_DG_SMALLM` and dual-rail NCCL stay off (flags.md).
+- Round 35 defaults (k3 round-3 kernels, `results/RESULTS.md` round 35): `DSV41_P2B_COOP=2`, `DSV41_DENSE_GEMV=1`, `DSV41_MHC_DET_SPLITS=16`, `DSV41_ENGRAM_NATIVE_STAGE=1`, `DSV41_ENGRAM_EARLY_HASH=1`, `DSV41_ATTN_T2R_DEDUP=1`, `DSV41_SWA_META_FUSED=1`, `DSV41_MOE_PREP_FUSED=1`, `DSV41_CANDIDATE_MASK_BOUNDED=1`, `DSV41_INDEXER_WP_GEMV=1` and `DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024`. `DSV41_P2B_COOP=2` needs `canonical-e14` (`docker/Dockerfile.e14` on `canonical-e13`): on `canonical-e13` it logs `the lever is OFF` and `AUDIT=strict` fails. `DSV41_ENGRAM_EARLY_HASH=1` needs `DSV41_ENGRAM_NATIVE_STAGE=1`, and the native stage refuses to arm under `DSV41_ENGRAM_CPU_HASH=1` or `DSV41_ENGRAM_DEFER=1`. Set a lever to `0` to turn it off (`DSV41_DSPARK_SPARSE_MARKOV_TOPK=256` restores the round-34 top-k). The round-34 configuration is all ten set to `0` plus `TOPK=256`. The KP add-ons (`DSV41_MHC_DET_OVERLAP`, `DSV41_ENGRAM_WKV_TP`, `DSV41_PM_QOS_US`, `DSV41_NCCL_EAGER_TWIN`, `DSV41_AR_L2_PREFETCH`) stay off: their ABAB did not pass step 6 (flags.md). The serve pin stays `2.0bpw-mcg-lmhead-mxfp8`: the Viterbi pack `2.0bpw-mcg-viterbi-lmhead-mxfp8` failed the golden-hazard gate and lost L.A.I.L tok/s beyond noise (flags.md round 35); it is local only, not on the Hub.
 - Never pull, merge or check out in the main checkout (`~/projects/ai-lab/recipes/DeepSeek-V4.1-Flash-EXL3-vLLM-2x-DGX-Spark`) while the serve is up. The head container bind-mounts its `docker/patch` and `sitecustomize.py` read-only, so a pull changes head patch code under a running serve and skews it from the worker's `~/.cache/dsv41-patch` copy. Work in a worktree.
 - Every env var a `docker/patch/*.py` file reads goes in `FORWARD_ENVS` in `run.sh`. That one list feeds `docker run -e` on the head and the worker ssh line. `tests/test_recipe_ops.py` enforces it. `python3 tests/run_sh_harness.py` prints both `docker run` commands with docker and ssh stubbed.
 
@@ -48,7 +49,7 @@ Torch-gated tests skip on the host. Run them CPU-only in the image, from `tests/
 
 ```bash
 docker run --rm --network none --memory 8g --cpus 4 -v "$PWD":/w -w /w/tests --entrypoint python3 \
-  dsv41-flash-exl3-sm121:canonical-e13 -m unittest test_lmhead_mxfp8 test_engram_gather_v2 test_fix_o_proj_woa_fp8 -q
+  dsv41-flash-exl3-sm121:canonical-e14 -m unittest test_lmhead_mxfp8 test_engram_gather_v2 test_fix_o_proj_woa_fp8 -q
 ```
 
 After `./run.sh` is up:

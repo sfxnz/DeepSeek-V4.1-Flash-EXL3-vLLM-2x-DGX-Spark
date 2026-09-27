@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""Render attribution.json as attribution.txt (cd results/2026-09-26-serve-r3/P3 && python3 p3_render.py.txt)."""
+import json
+import textwrap
+
+o = json.load(open("attribution.json"))
+L = []
+P = L.append
+
+
+def f2(v):
+    return "/".join(f"{x:.3f}" if isinstance(x, (int, float)) else str(x) for x in v)
+
+
+def wrap(s, ind="    "):
+    return textwrap.fill(s, width=108, initial_indent=ind, subsequent_indent=ind)
+
+
+P("P3 attribution: A_p (round-34 defaults) vs K_p (defaults + the 10 promoted K envs), review-e14, both ranks")
+P("=" * 104)
+P(wrap(o["what"], ""))
+for k, v in o["boots"].items():
+    P(f"  {k}: {v}")
+P(f"  windows: " + "; ".join(f"{w}: A {v['A_steps']} steps (graph {v['A_graph']}), K {v['K_steps']} steps (graph {v['K_graph']})"
+                             for w, v in o["windows"].items()))
+P(f"  units: {o['units']}")
+P("")
+P("1. Step level (profiled window; medians unless marked; segments = per-layer mean x 40)")
+P("-" * 104)
+for w in ("c1", "c2"):
+    P(f"  [{w}]" + " " * 60 + "A r0/r1           K r0/r1           K-A r0/r1")
+    for k, v in o["step_level_profiled"][w].items():
+        P(f"    {k[:62]:62} {f2(v['A']):17} {f2(v['K']):17} {f2(v['K_minus_A'])}")
+P(wrap(o["step_level_note"]))
+P("")
+P("2. Device ms/step per kernel category (all streams, counted decode steps)")
+P("-" * 104)
+for w in ("c1", "c2"):
+    P(f"  [{w}] {'category':30} {'A r0/r1':>15} {'K r0/r1':>15} {'K-A r0/r1':>17}   launches/step A->K (r0)")
+    for c, v in o["device_ms_per_step_by_category"][w].items():
+        if max(v["A"] + v["K"]) < 0.03:
+            continue
+        P(f"       {c:30} {f2(v['A']):>15} {f2(v['K']):>15} {f2(v['K_minus_A']):>17}   {v['launches_A_r0']} -> {v['launches_K_r0']}")
+P(wrap(o["category_note"]))
+P("")
+P("3. Per-lever attribution (projection = the workstream microbench; measured = this P3 pair)")
+P("-" * 104)
+for r in o["levers"]:
+    P(f"  {r['env']}")
+    P(wrap("expected in profile: " + r["expected_in_profile (ARMS-r3 s6)"]))
+    pj = r["projected_ms_per_step"]
+    P(f"    projected: c1 {pj['c1']}, c2 {pj['c2']}  ({pj['basis']})")
+    P(wrap("metric: " + r["metric"]))
+    for w in ("c1", "c2"):
+        P(f"    {w}: A {f2(r[w]['A'])}  K {f2(r[w]['K'])}  K-A {f2(r[w]['K_minus_A'])}")
+    P(wrap("critical path: " + r["on_critical_path"]))
+    P(wrap("VERDICT: " + r["verdict"]))
+    P(wrap("why: " + r["why"]))
+    for extra in ("act_quant_ms_per_step", "router_gate_interaction_us_per_layer", "kernel_sum_ms_per_step",
+                  "per_call_us_mean", "ops_moved_under_stage_K", "gpu_work_under_stage_ms_K", "eager_ops_per_step",
+                  "prologue_kernels_per_layer", "wp_kernel_ms_per_step"):
+        if extra in r:
+            P(wrap(f"{extra}: {json.dumps(r[extra])}"))
+    P("")
+P("4. Dense GEMV roles, K_p (us median per call; A_p = b12x/einsum in the same role)")
+P("-" * 104)
+for w in ("c1", "c2"):
+    P(f"  [{w}]")
+    for role, v in o["dense_gemm_roles"][w].items():
+        if "note" in v:
+            P(f"    {role:16} {v['note']}")
+            continue
+        rf = o["dense_gemv_roofline_K"][w].get(role)
+        pct = "/".join(str(x["pct_of_250"]) for x in rf) if rf else "-"
+        P(f"    {role:16} us A {f2(v['us_median_A']):>15} K {f2(v['us_median_K']):>15}  ms/step K-A {f2(v['K_minus_A']):>13}  K %of250 {pct}")
+    P(f"    sum of K gaps to the 250 GB/s roofline: {f2(o['dense_gemv_roofline_K'][w]['sum_gap_ms_per_step'])} ms/step")
+P("")
+P("5. Reconciliation: where the K-A step delta went (ms/step)")
+P("-" * 104)
+for w in ("c1", "c2"):
+    rr = o["reconciliation_K_minus_A_ms_per_step"][w]
+    P(f"  [{w}] {'':96} r0 / r1")
+    for k in rr["rank0"]:
+        P(f"    {k[:94]:94} {rr['rank0'][k]:7.3f} / {rr['rank1'][k]:7.3f}")
+P(wrap(o["reconciliation_note"]))
+P("")
+P("6. Top 3 remaining in K_p")
+P("-" * 104)
+for t in o["top3_remaining_K_p"]:
+    P(f"  #{t['rank']} {t['item']}")
+    P(wrap("size: " + json.dumps(t["size"])))
+    if "floor_note" in t:
+        P(wrap("note: " + t["floor_note"]))
+    P(wrap("why it is left: " + t["why_left"]))
+    P(wrap("next: " + t["next"]))
+    P("")
+P("  Also measured, not in the top 3:")
+for k, v in o["also_measured_not_top3"].items():
+    P(wrap(f"{k}: {v}"))
+P("")
+P("7. Interaction P3 cannot place")
+P("-" * 104)
+P(wrap(o["unexplained_interaction"]))
+P("")
+P("8. Caveats")
+P("-" * 104)
+for c in o["caveats"]:
+    P(wrap("- " + c))
+open("attribution.txt", "w").write("\n".join(L) + "\n")
+print("wrote attribution.txt", len(L), "lines")

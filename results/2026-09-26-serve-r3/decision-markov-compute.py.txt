@@ -1,0 +1,534 @@
+#!/usr/bin/env python3
+# ARMS-r3 section 9 (P6) SPARSE_MARKOV decision: ARMS.md step 6 and the s9 rule applied to the counted boots
+#   pair 1 (W vs S):     W-1 (W#1), S-1 (S#1), W-2 (W#2), S-2 (S#2)
+#   pair 2 (S1024 vs S): S-3 (S#3), S1024-1 (S1024#1), S-4 (S#4), S1024-2 (S1024#2)
+# The earlier boots of the same S config in this window (K-1, K-2, CUR-1, CUR-2, Kp-1, Kp-2) and the S boots of the
+# other pair appear only as labelled robustness context, never pooled into the gate.
+# Reads only raw per-boot evidence in this directory, through the per-boot readers of decision-bundle-compute.py.txt
+# (lail10.txt, bench_decode.txt, four/four_numbers.json, four/02-micro.log, quality_quick.json, gate files) and the
+# helpers of decision-addons-compute.py.txt (serve env, engagement.txt, rank tests, greedy hazard), plus
+# four/serve_cmd.json, patch.sha256, preconditions.txt. Stdlib only, deterministic. Run from this directory:
+#   python3 decision-markov-compute.py.txt decision-markov.json
+import hashlib, importlib.util, itertools, json, os, re, statistics as st, subprocess, sys
+from importlib.machinery import SourceFileLoader
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+os.chdir(HERE)
+WT = os.path.abspath(os.path.join(HERE, "..", ".."))
+
+
+def _load(name, path):
+    ld = SourceFileLoader(name, path)
+    m = importlib.util.module_from_spec(importlib.util.spec_from_loader(ld.name, ld))
+    ld.exec_module(m)
+    return m
+
+
+BC = _load("bundle_compute_m", "decision-bundle-compute.py.txt")
+AD = _load("addons_compute_m", "decision-addons-compute.py.txt")
+r = BC.r
+
+W, S12, S34, S1024 = ["W-1", "W-2"], ["S-1", "S-2"], ["S-3", "S-4"], ["S1024-1", "S1024-2"]
+ORDER1 = ["W-1", "S-1", "W-2", "S-2"]
+ORDER2 = ["S-3", "S1024-1", "S-4", "S1024-2"]
+P6 = ORDER1 + ORDER2
+KCFG = ["K-1", "K-2", "CUR-1", "CUR-2", "Kp-1", "Kp-2"]  # same env as S (SPARSE_MARKOV=1, TOPK unset), earlier in the window
+SCFG = KCFG + S12 + S34                                     # every boot of the S config on this pack, image and patch
+BC.ARMS = {"W": W, "S": S12, "S34": S34, "S1024": S1024, "S1to4": S12 + S34, "Scfg10": SCFG}
+ARM_OF = {**{b: "W" for b in W}, **{b: "S" for b in S12 + S34}, **{b: "S1024" for b in S1024}}
+
+SM = "dsv41: DSpark sparse Markov (gathered top-k)"
+ARM_ENV = {  # None = unset or empty (an unset lever keeps its default)
+    "W": {"DSV41_DSPARK_SPARSE_MARKOV": "0", "DSV41_DSPARK_SPARSE_MARKOV_TOPK": None, "DSV41_WOA_PREPACK": "1"},
+    "S": {"DSV41_DSPARK_SPARSE_MARKOV": "1", "DSV41_DSPARK_SPARSE_MARKOV_TOPK": None, "DSV41_WOA_PREPACK": "1"},
+    "S1024": {"DSV41_DSPARK_SPARSE_MARKOV": "1", "DSV41_DSPARK_SPARSE_MARKOV_TOPK": "1024", "DSV41_WOA_PREPACK": "1"},
+}
+K_LINES = ["dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)", "dense GEMV armed",
+           "dsv41: mhc det engaged: target: 81 fn packed", "dsv41: mhc det engaged: draft: 6 fn packed",
+           "dsv41: engram native stage self-check bit-exact", "dsv41: engram early hash matches the stock hash",
+           "dsv41: attention t2r dedup reuse bit-exact", "dsv41: moe prep fused self-check bit-exact",
+           "dsv41: candidate mask bounded self-check bit-exact",
+           "dsv41: indexer weights_proj GEMV self-check bit-exact", "dsv41: swa metadata fused self-check bit-exact",
+           "[woa-requant] fp8 einsum engaged"]
+KP_LINES = ["dsv41: mhc det overlap engaged", "dsv41: engram wkv column-parallel self-check bit-exact",
+            "dsv41: pm qos engaged", "dsv41: nccl eager twin engaged", "dsv41: ar l2 prefetch engaged"]
+
+# cell -> (tok/s key, ms/step key, per-boot median_run_acceptance_len key)
+CELLS = {
+    "lail": ("lail_tok_s", "lail_ms_step", "acc_lail"),
+    "prose_long_c1": ("prose_long_c1_tok_s", "prose_long_c1_ms_step", "acc_prose_long_c1"),
+    "four_prose_c1": ("four_prose_c1_tok_s", "four_prose_c1_ms_step", "acc_four_prose_c1"),
+    "bench_prose_c1": ("bench_prose_c1_tok_s", "bench_prose_c1_ms_step", "acc_bench_prose_c1"),
+    "structured_c1": ("structured_c1_tok_s", "structured_c1_ms_step", "acc_structured_c1"),
+    "prose_long_c2": ("prose_long_c2_agg_tok_s", "prose_long_c2_ms_step", "acc_prose_long_c2"),
+    "bench_prose_c2": ("bench_prose_c2_agg_tok_s", "bench_prose_c2_ms_step", "acc_bench_prose_c2"),
+    "structured_c2": ("structured_c2_agg_tok_s", "structured_c2_ms_step", "acc_structured_c2"),
+}
+GATE = ["lail", "prose_long_c1"]  # s9: gate on L.A.I.L tok/s and prose_long c=1 tok/s with the noise rule
+NI_KEYS = ["pp_warm_8k", "pp_warm_32k", "pp_novel_8k", "pp_novel_32k", "prose_long_c2_agg_tok_s",
+           "warm_prefix_hit_fraction"]
+TEMPS = "four prose c=1, prose_long c=1/c=2 and bench_decode cells send temperature 0 (bench_decode.py); L.A.I.L runs at t=0.2 (tools/measure_lail_prose.py)"
+
+
+# ------------------------------------------------------------------ per-boot data
+def boot(b):
+    d = BC.boot(b)
+    f = json.load(open(f"{b}/four/four_numbers.json"))
+    pl = {c["concurrency"]: c for c in f["prose_long_cells"]}
+    bd = BC.bench(b)
+    d["acc_prose_long_c2"] = pl[2]["median_run_acceptance_len"]
+    d["acc_bench_prose_c2"] = bd["prose_c2"]["median_run_acceptance_len"]
+    d["acc_structured_c2"] = bd["structured_c2"]["median_run_acceptance_len"]
+    d["acc_lail_runs"] = AD.lail_acc_runs(b)
+    d["lail_tok_runs_full"] = [json.loads(m.group(1))["lail_tok_s"]
+                               for m in (re.match(r"run=\d+ (\{.*\})$", l.strip()) for l in open(f"{b}/lail10.txt")) if m]
+    d["four_partial"] = f.get("partial")
+    return d
+
+
+def mem_avail(path):
+    return [line.split()[6] for line in open(path) if line.startswith("Mem:")]
+
+
+def unset(v):
+    return v in (None, "")
+
+
+def validity(b, P):
+    arm = ARM_OF[b]
+    envs = {n: AD.env_of(b, n) for n in (1, 2)}
+    k_ok = all(envs[n].get(k) == v for n in (1, 2) for k, v in AD.K_ENV.items())
+    kp_off = all(envs[n].get(k) in (None, "", "0") for n in (1, 2) for k in AD.ADDONS)
+    arm_state = {k: [envs[1].get(k), envs[2].get(k)] for k in ARM_ENV[arm]}
+    arm_ok = all((unset(envs[n].get(k)) if v is None else envs[n].get(k) == v) for n in (1, 2) for k, v in ARM_ENV[arm].items())
+    eng = AD.engagement(b)
+    sm_total = eng.get(SM)
+    k256, k1024 = eng.get(SM + " k=256"), eng.get(SM + " k=1024")
+    absent = lambda c: c is None or c == [0, 0]
+    present = lambda c: c is not None and c[0] >= 1 and c[1] >= 1
+    if arm == "W":
+        sm_ok = absent(sm_total) and absent(k256) and absent(k1024)
+    elif arm == "S":
+        sm_ok = present(k256) and sm_total == k256 and absent(k1024)
+    else:
+        sm_ok = present(k1024) and sm_total == k1024 and absent(k256)
+    k_eng_ok = all(present(eng.get(ln)) for ln in K_LINES)
+    kp_eng_off = all(absent(eng.get(ln)) for ln in KP_LINES)
+    woa_missing = eng.get("DSV41_WOA_PREPACK=1 but this image")
+    snap = [a.split("/snapshots/")[1] for a in json.load(open(f"{b}/four/serve_cmd.json")) if "/snapshots/" in a]
+    v = dict(
+        arm=arm, commit=P["commit"][:12],
+        patch_sha256_list_digest=hashlib.sha256(open(f"{b}/patch.sha256", "rb").read()).hexdigest()[:16],
+        snapshot=snap, k_envs_both_ranks_as_promoted=k_ok, kp_addons_off_both_ranks=kp_off,
+        arm_envs_both_ranks=arm_state, arm_envs_as_arm=arm_ok,
+        sparse_markov_line_head_worker={"any": sm_total, "k=256": k256, "k=1024": k1024}, sparse_markov_engagement_as_arm=sm_ok,
+        k_lines_engaged_both_ranks=k_eng_ok, kp_lines_absent=kp_eng_off, woa_prepack_missing_warning=woa_missing,
+        prose_long_c1=f"{P['prose_long_c1_finish']}, post-EOS {P['prose_long_c1_post_eos']}",
+        prose_long_c2=f"{P['prose_long_c2_finish']}, post-EOS {P['prose_long_c2_post_eos']}",
+        lail_finish=P["lail_finish"], serve_env_ranks_match=P["serve_env_ranks_match"],
+        lever_disarmed=P["lever_disarmed"], disarm_scan_rc=P["disarm_scan_rc"], gpu_guard_rc=P["gpu_guard_rc"],
+        contaminated=P["contaminated"], e2e_rc=P["e2e_rc"], correctness=P["correctness"],
+        memavail_preconditions_spark1_spark2=mem_avail(f"{b}/preconditions.txt")[:2],
+        memavail_after_smoke_spark1_spark2=P["memavail_after_smoke_gib"],
+        four_numbers_partial=P["four_partial"],
+    )
+    v["valid"] = (k_ok and kp_off and arm_ok and sm_ok and k_eng_ok and kp_eng_off and absent(woa_missing)
+                  and v["prose_long_c1"] == "length, post-EOS 0.0" and v["prose_long_c2"].startswith("length")
+                  and v["lail_finish"] == ["length"] and v["serve_env_ranks_match"] and not v["lever_disarmed"]
+                  and v["disarm_scan_rc"] == [0] and v["gpu_guard_rc"] == [0] and not v["contaminated"]
+                  and v["e2e_rc"] == [0] and v["correctness"] == "8/8" and snap == ["2.0bpw-mcg-lmhead-mxfp8"]
+                  and not v["four_numbers_partial"]
+                  and all(int(x.rstrip("Gi")) >= 8 for x in v["memavail_after_smoke_spark1_spark2"]))
+    return v
+
+
+# ------------------------------------------------------------------ comparisons
+def cmp(D, base, cand, key, lower_better, nd=3):
+    """decision-bundle-compute.py.txt cmp() (same noise rule and fields), with a rounding digit count and the s9
+    per-boot reading added: 'every S1024 boot beats the S median by more than the noise'."""
+    xa, xb = [D[b][key] for b in BC.ARMS[base]], [D[b][key] for b in BC.ARMS[cand]]
+    ma, mb = st.median(xa), st.median(xb)
+    sa, sb = max(xa) - min(xa), max(xb) - min(xb)
+    noise = max(sa, sb)
+    imp = (ma - mb) if lower_better else (mb - ma)
+    margins = [((ma - v) if lower_better else (v - ma)) for v in xb]
+    return dict(base=[r(v, nd) for v in xa], cand=[r(v, nd) for v in xb], base_median=r(ma, nd), cand_median=r(mb, nd),
+                base_spread=r(sa, nd), cand_spread=r(sb, nd), noise=r(noise, nd), improvement=r(imp, nd),
+                improvement_pct=r(100.0 * imp / ma, 2), per_boot_margin_vs_base_median=[r(m, nd) for m in margins],
+                every_cand_boot_beats_base_median=min(margins) > 0, beyond_noise=imp > noise,
+                gate_pass=(imp > noise and min(margins) > 0), every_cand_boot_margin_gt_noise=min(margins) > noise,
+                _raw=dict(ma=ma, mb=mb))
+
+
+def overlap(D, base, cand, key):
+    pa, pb = [D[b][key] for b in BC.ARMS[base]], [D[b][key] for b in BC.ARMS[cand]]
+    return max(min(pa), min(pb)) <= min(max(pa), max(pb))
+
+
+def cell_block(D, base, cand, cell):
+    tk, mk, ak = CELLS[cell]
+    tok, ms, acc = cmp(D, base, cand, tk, False), cmp(D, base, cand, mk, True), cmp(D, base, cand, ak, False, 4)
+    def pct(c):  # candidate arm median vs base arm median, unrounded
+        raw = c.pop("_raw")
+        return 100.0 * (raw["mb"] / raw["ma"] - 1.0)
+    acc_p, ms_p, tok_p = pct(acc), pct(ms), pct(tok)
+    return dict(
+        tok_s=tok, ms_step=ms, acceptance=acc,
+        acceptance_per_boot_intervals_overlap=overlap(D, base, cand, ak),
+        pct_cand_vs_base=dict(acceptance=r(acc_p, 2), ms_step=r(ms_p, 2), tok_s=r(tok_p, 2),
+                              tok_s_from_acc_and_ms=r(100.0 * ((1 + acc_p / 100) / (1 + ms_p / 100) - 1), 2),
+                              note="arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"),
+    )
+
+
+def comparison(D, base, cand):
+    return {cell: cell_block(D, base, cand, cell) for cell in CELLS}
+
+
+def gate(comp):
+    g = {}
+    for cell in GATE:
+        t = comp[cell]["tok_s"]
+        g[cell + "_tok_s"] = dict(base=t["base"], cand=t["cand"], base_median=t["base_median"], cand_median=t["cand_median"],
+                                  improvement=t["improvement"], noise=t["noise"],
+                                  per_boot_margin_vs_base_median=t["per_boot_margin_vs_base_median"],
+                                  armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median=t["gate_pass"],
+                                  s9_rule_every_boot_margin_gt_noise=t["every_cand_boot_margin_gt_noise"] and t["every_cand_boot_beats_base_median"])
+    return g
+
+
+def noninf(D, base, cand):
+    return {k: BC.noninf(D, base, cand, k) for k in NI_KEYS}
+
+
+# ------------------------------------------------------------------ robustness context (not the gate)
+def rank_ctx(D, pop_boots, sub, key, higher_better):
+    pop = {b: (-D[b][key] if higher_better else D[b][key]) for b in pop_boots + sub}
+    res = AD.exact_rank_sum_low(pop, sub)
+    order = sorted(pop, key=lambda b: pop[b])
+    res["rank_of_sub_best_first"] = [order.index(b) + 1 for b in sub]
+    res["direction"] = "best = highest" if higher_better else "best = lowest"
+    return res
+
+
+def mwu_runs(D, xs, ys, key):
+    return AD.mwu([v for b in xs for v in D[b][key]], [v for b in ys for v in D[b][key]])
+
+
+def selfcons(b):
+    return AD.selfcons_runs(b)
+
+
+def main():
+    ALL = P6 + KCFG
+    D = {b: boot(b) for b in ALL}
+    val = {b: validity(b, D[b]) for b in P6}
+    patch_same = len({val[b]["patch_sha256_list_digest"] for b in P6}) == 1
+    patch_same_scfg = len({hashlib.sha256(open(f"{b}/patch.sha256", "rb").read()).hexdigest()[:16] for b in SCFG + P6}) == 1
+    code_diff = subprocess.run(["git", "-C", WT, "diff", "--stat", D[P6[0]]["commit"], D[P6[-1]]["commit"], "--", ".", ":!results"],
+                               capture_output=True, text=True, check=True).stdout.strip()
+    kcfg_env = {b: [AD.env_of(b, n).get("DSV41_DSPARK_SPARSE_MARKOV") for n in (1, 2)]
+                + [AD.env_of(b, n).get("DSV41_DSPARK_SPARSE_MARKOV_TOPK") for n in (1, 2)] for b in KCFG}
+
+    c1 = comparison(D, "S", "W")          # counted pair 1: cand W (revert) vs base S (incumbent default)
+    c1_s = comparison(D, "W", "S")        # same boots, S as the candidate: S's ms/step gain vs its acceptance cost
+    c2 = comparison(D, "S34", "S1024")    # counted pair 2
+    ctx = {
+        "W_vs_S1to4": gate(comparison(D, "S1to4", "W")),
+        "W_vs_Scfg10": gate(comparison(D, "Scfg10", "W")),
+        "S1024_vs_S1to4": gate(comparison(D, "S1to4", "S1024")),
+        "S1024_vs_Scfg10": gate(comparison(D, "Scfg10", "S1024")),
+    }
+    s1024_scfg = comparison(D, "Scfg10", "S1024")
+    ctx_cells = {f"S1024_vs_Scfg10_{c}": {k: s1024_scfg[c][k] for k in ("acceptance", "ms_step")} for c in GATE}
+    ranks = {}
+    for name, sub in (("W", W), ("S1024", S1024)):
+        for cell in GATE:
+            tk, mk, ak = CELLS[cell]
+            ranks[f"{name}_in_Scfg10_{cell}_tok_s"] = rank_ctx(D, SCFG, sub, tk, True)
+            ranks[f"{name}_in_Scfg10_{cell}_acceptance"] = rank_ctx(D, SCFG, sub, ak, True)
+            ranks[f"{name}_in_Scfg10_{cell}_ms_step"] = rank_ctx(D, SCFG, sub, mk, False)
+    runs = dict(
+        note="per-run Mann-Whitney U, y = the candidate arm; L.A.I.L 10 runs per boot, prose_long c=1 5 runs, four prose c=1 9 runs",
+        W_vs_S_lail_tok=mwu_runs(D, S12, W, "lail_tok_runs_full"),
+        W_vs_S_lail_acc=mwu_runs(D, S12, W, "acc_lail_runs"),
+        W_vs_S_prose_long_c1_acc=mwu_runs(D, S12, W, "acc_prose_long_c1_runs"),
+        W_vs_S_four_prose_c1_acc=mwu_runs(D, S12, W, "acc_four_prose_c1_runs"),
+        S1024_vs_S34_lail_tok=mwu_runs(D, S34, S1024, "lail_tok_runs_full"),
+        S1024_vs_S34_lail_acc=mwu_runs(D, S34, S1024, "acc_lail_runs"),
+        S1024_vs_S34_prose_long_c1_acc=mwu_runs(D, S34, S1024, "acc_prose_long_c1_runs"),
+        S1024_vs_S34_four_prose_c1_acc=mwu_runs(D, S34, S1024, "acc_four_prose_c1_runs"),
+        S1024_vs_Scfg10_lail_tok=mwu_runs(D, SCFG, S1024, "lail_tok_runs_full"),
+        S1024_vs_Scfg10_lail_acc=mwu_runs(D, SCFG, S1024, "acc_lail_runs"),
+        S1024_vs_Scfg10_prose_long_c1_acc=mwu_runs(D, SCFG, S1024, "acc_prose_long_c1_runs"),
+        W_vs_Scfg10_lail_acc=mwu_runs(D, SCFG, W, "acc_lail_runs"),
+        W_vs_Scfg10_prose_long_c1_acc=mwu_runs(D, SCFG, W, "acc_prose_long_c1_runs"),
+        S1024_vs_S34_pp_warm_8k=AD.mwu([v for b in S34 for v in D[b]["pp_runs"]["pp_warm_8k"]],
+                                       [v for b in S1024 for v in D[b]["pp_runs"]["pp_warm_8k"]]),
+        S1024_vs_Scfg10_pp_warm_8k=AD.mwu([v for b in SCFG for v in D[b]["pp_runs"]["pp_warm_8k"]],
+                                          [v for b in S1024 for v in D[b]["pp_runs"]["pp_warm_8k"]]),
+        pp_warm_8k_runs={b: D[b]["pp_runs"]["pp_warm_8k"] for b in S34 + S1024},
+        pp_warm_8k_per_boot_Scfg10_range=[min(D[b]["pp_warm_8k"] for b in SCFG), max(D[b]["pp_warm_8k"] for b in SCFG)],
+    )
+
+    # greedy output: SPARSE_MARKOV/TOPK change drafting only; greedy verify keeps the target output exact
+    sc = {b: selfcons(b) for b in ALL}
+
+    def pool(pairs_boots):
+        pairs = []
+        for x, y in pairs_boots:
+            for rx in sc[x]:
+                for ry in sc[y]:
+                    pairs += list(zip(rx, ry))
+        return AD.hazard(pairs)
+    greedy = dict(
+        note="quality_quick selfcons: 12 greedy prompts x 128 tokens, 2 runs per boot. Hazard = first-divergence events / tokens at risk, pooled over every run pair of the named boots (decision-addons-compute.py.txt hazard()). If an arm changed the greedy output, arm-vs-S would diverge more than S-vs-S across boots.",
+        within_boot_aa={b: AD.hazard(list(zip(sc[b][0], sc[b][1]))) for b in P6},
+        counted_pair1=dict(W_x_S=pool([(a, c) for a in W for c in S12]), S_x_S=pool([("S-1", "S-2")]), W_x_W=pool([("W-1", "W-2")])),
+        counted_pair2=dict(S1024_x_S=pool([(a, c) for a in S1024 for c in S34]), S_x_S=pool([("S-3", "S-4")]),
+                           S1024_x_S1024=pool([("S1024-1", "S1024-2")])),
+        Scfg10_x_Scfg10_cross_boot=pool(list(itertools.combinations(SCFG, 2))),
+        W_x_Scfg10=pool([(a, c) for a in W for c in SCFG]),
+        S1024_x_Scfg10=pool([(a, c) for a in S1024 for c in SCFG]),
+    )
+    qual = {b: D[b]["quality"]["quick"] for b in P6}
+    return dict(D=D, val=val, patch_same=patch_same, patch_same_scfg=patch_same_scfg, code_diff=code_diff, kcfg_env=kcfg_env,
+                c1=c1, c1_s=c1_s, c2=c2, ctx=ctx, ctx_cells=ctx_cells, ranks=ranks, runs=runs, greedy=greedy, qual=qual,
+                ni1=noninf(D, "S", "W"), ni2=noninf(D, "S34", "S1024"))
+
+
+# ------------------------------------------------------------------ composition of decision-markov.json
+SERVE_STATE = ("down on both nodes (2026-09-27T02:14:36Z: docker ps on spark1 shows only the unrelated conduit container; "
+               "spark2 shows no container). This stage booted nothing.")
+
+
+def slim(comp):
+    keep = ("base", "cand", "base_median", "cand_median", "base_spread", "cand_spread", "noise", "improvement",
+            "improvement_pct", "per_boot_margin_vs_base_median", "every_cand_boot_beats_base_median", "beyond_noise",
+            "gate_pass", "every_cand_boot_margin_gt_noise")
+    out = {}
+    for cell, blk in comp.items():
+        out[cell] = {m: {k: blk[m][k] for k in keep if k in blk[m]} for m in ("tok_s", "ms_step", "acceptance")}
+        out[cell]["acceptance_per_boot_intervals_overlap"] = blk["acceptance_per_boot_intervals_overlap"]
+        out[cell]["pct_cand_vs_base"] = blk["pct_cand_vs_base"]
+    return out
+
+
+def pr(v):
+    return "/".join(f"{x:g}" for x in v)
+
+
+def compose(c):
+    D, val = c["D"], c["val"]
+    g1, g2 = gate(c["c1"]), gate(c["c2"])
+    A = "armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median"
+    B = "s9_rule_every_boot_margin_gt_noise"
+    valid_all = all(v["valid"] for v in val.values())
+    q_all = all(q["passed"] for q in c["qual"].values())
+    ni2_ok = all(v["ok_vs_larger_spread"] for v in c["ni2"].values())
+    revert_both = all(g1[k][A] for k in g1)
+    revert_any = any(g1[k][A] for k in g1)
+    topk_rule = all(g2[k][A] and g2[k][B] for k in g2)
+    promote_topk = (topk_rule and ni2_ok and valid_all and all(c["qual"][b]["passed"] for b in S1024)
+                    and c["patch_same"] and c["code_diff"] == "")
+    promote = ["DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024"] if promote_topk else []
+    reject = (["DSV41_DSPARK_SPARSE_MARKOV=0"] if not revert_both else []) + ([] if promote_topk else ["DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024"])
+    s1, s2 = slim(c["c1_s"]), slim(c["c2"])  # s1: S as candidate vs W (S's gain and cost), s2: S1024 vs S-3/S-4
+    w1 = slim(c["c1"])
+    L, P = g1["lail_tok_s"], g1["prose_long_c1_tok_s"]
+    L2, P2 = g2["lail_tok_s"], g2["prose_long_c1_tok_s"]
+    ctx = c["ctx"]
+    rk = c["ranks"]
+
+    def low_rank(key):  # ranks of S-3 and S-4 among the 10 S-config boots, 1 = lowest
+        order = sorted(SCFG, key=lambda b: D[b][key])
+        return "/".join(str(order.index(b) + 1) for b in S34) + " of 10"
+
+    sm_verdict = (
+        f"KEEP DSV41_DSPARK_SPARSE_MARKOV=1 (the round-34 default); the revert DSV41_DSPARK_SPARSE_MARKOV=0 is rejected. "
+        f"s9 gate, W minus S tok/s on the counted pair (noise = larger boot-to-boot spread): L.A.I.L W {pr(L['cand'])} vs S "
+        f"{pr(L['base'])}, {L['improvement']:+g} against noise {L['noise']:g}; prose_long c=1 W {pr(P['cand'])} vs S {pr(P['base'])}, "
+        f"{P['improvement']:+g} against noise {P['noise']:g}. Both W boots sit above the S median on both cells, but neither "
+        f"improvement exceeds the noise, so 'W beats S beyond the noise' does not hold and S stays. The trade the task asks "
+        f"about, S relative to W at the same workloads (arm medians): L.A.I.L acceptance {s1['lail']['pct_cand_vs_base']['acceptance']:+g}% "
+        f"({s1['lail']['acceptance']['improvement']:+g}, noise {s1['lail']['acceptance']['noise']:g}), ms/step "
+        f"{s1['lail']['pct_cand_vs_base']['ms_step']:+g}% ({-s1['lail']['ms_step']['improvement']:+g} ms, noise {s1['lail']['ms_step']['noise']:g}), "
+        f"tok/s {s1['lail']['pct_cand_vs_base']['tok_s']:+g}%; prose_long c=1 acceptance {s1['prose_long_c1']['pct_cand_vs_base']['acceptance']:+g}% "
+        f"(per-boot intervals overlap, so matched), ms/step {-s1['prose_long_c1']['ms_step']['improvement']:+g} ms against noise "
+        f"{s1['prose_long_c1']['ms_step']['noise']:g} with both S boots below the W median, tok/s {s1['prose_long_c1']['pct_cand_vs_base']['tok_s']:+g}%. "
+        f"The acceptance cost roughly cancels the step saving on the two gate cells, and the remaining point difference "
+        f"(W ahead by {-s1['lail']['pct_cand_vs_base']['tok_s']:g}% and {-s1['prose_long_c1']['pct_cand_vs_base']['tok_s']:g}%) is inside the noise. Where acceptance is matched, ARMS.md's primary metric favours S: "
+        f"the prose_long c=1 ms/step reading above, and structured c=1 (acceptance 3.9608 on every boot) "
+        f"{-s1['structured_c1']['ms_step']['improvement']:+g} ms/step (noise {s1['structured_c1']['ms_step']['noise']:g}) and "
+        f"{s1['structured_c1']['tok_s']['improvement']:+g} tok/s (noise {s1['structured_c1']['tok_s']['noise']:g}), both beyond the noise."
+    )
+    topk_verdict = (
+        f"PROMOTE DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024 under s9 as written. Counted pair S-3, S1024-1, S-4, S1024-2: L.A.I.L "
+        f"S {pr(L2['base'])} (median {L2['base_median']:g}) vs S1024 {pr(L2['cand'])}, per-boot margins "
+        f"{pr(L2['per_boot_margin_vs_base_median'])} against noise {L2['noise']:g}; prose_long c=1 S {pr(P2['base'])} (median "
+        f"{P2['base_median']:g}) vs S1024 {pr(P2['cand'])}, margins {pr(P2['per_boot_margin_vs_base_median'])} against noise "
+        f"{P2['noise']:g}. Every S1024 boot beats the S median by more than the noise on both gate cells, so both the s9 "
+        f"per-boot reading and the ARMS.md median reading pass. The gain comes through acceptance: prose_long c=1 "
+        f"{s2['prose_long_c1']['acceptance']['improvement']:+g} ({s2['prose_long_c1']['pct_cand_vs_base']['acceptance']:+g}%, noise "
+        f"{s2['prose_long_c1']['acceptance']['noise']:g}), L.A.I.L {s2['lail']['acceptance']['improvement']:+g} "
+        f"({s2['lail']['pct_cand_vs_base']['acceptance']:+g}%, noise {s2['lail']['acceptance']['noise']:g}, so at the noise, not beyond it). "
+        f"The top-1024 gather costs L.A.I.L {-s2['lail']['ms_step']['improvement']:+g} ms/step (noise {s2['lail']['ms_step']['noise']:g}); "
+        f"the other c=1 ms/step cells move inside the noise. Four prose c=1, the one primary cell with matched per-boot "
+        f"acceptance, shows no change ({-s2['four_prose_c1']['ms_step']['improvement']:+g} ms/step against noise "
+        f"{s2['four_prose_c1']['ms_step']['noise']:g}; {s2['four_prose_c1']['tok_s']['improvement']:+g} tok/s against "
+        f"{s2['four_prose_c1']['tok_s']['noise']:g}). Non-inferiority holds on every row against the larger spread; the "
+        f"closest is pp_warm_8k ({c['ni2']['pp_warm_8k']['delta']:+g} against {c['ni2']['pp_warm_8k']['noise']:g}). Quality "
+        f"quick passes on both S1024 boots, and the greedy S1024-vs-S divergence hazard "
+        f"({c['greedy']['counted_pair2']['S1024_x_S']['hazard']:g}) is at the cross-boot level of the S config itself "
+        f"(S-3 vs S-4 {c['greedy']['counted_pair2']['S_x_S']['hazard']:g}; all 10 S-config boots "
+        f"{c['greedy']['Scfg10_x_Scfg10_cross_boot']['hazard']:g})."
+    )
+    caveat = [
+        (f"The TOPK pass depends on the pair's own S baseline. Among the 10 S-config boots of this window, S-3 and S-4 rank "
+         f"{low_rank('prose_long_c1_tok_s')} from the bottom on prose_long c=1 tok/s "
+         f"({pr([r(D['S-3']['prose_long_c1_tok_s']), r(D['S-4']['prose_long_c1_tok_s'])])}) and {low_rank('acc_prose_long_c1')} on its "
+         f"per-boot acceptance ({pr([r(D['S-3']['acc_prose_long_c1'], 4), r(D['S-4']['acc_prose_long_c1'], 4)])}). "
+         f"Against S-1..S-4 the rule is not met on prose_long c=1 ({ctx['S1024_vs_S1to4']['prose_long_c1_tok_s']['improvement']:+g} "
+         f"against noise {ctx['S1024_vs_S1to4']['prose_long_c1_tok_s']['noise']:g}); L.A.I.L passes the ARMS.md median reading "
+         f"({ctx['S1024_vs_S1to4']['lail_tok_s']['improvement']:+g} against {ctx['S1024_vs_S1to4']['lail_tok_s']['noise']:g}) but not the "
+         f"s9 per-boot one (margins {pr(ctx['S1024_vs_S1to4']['lail_tok_s']['per_boot_margin_vs_base_median'])}). Against all 10 S-config "
+         f"boots neither cell meets it (L.A.I.L {ctx['S1024_vs_Scfg10']['lail_tok_s']['improvement']:+g} against "
+         f"{ctx['S1024_vs_Scfg10']['lail_tok_s']['noise']:g}; prose_long c=1 {ctx['S1024_vs_Scfg10']['prose_long_c1_tok_s']['improvement']:+g} "
+         f"against {ctx['S1024_vs_Scfg10']['prose_long_c1_tok_s']['noise']:g})."),
+        (f"Per-boot ranks of the two S1024 boots among 12 (10 S-config + 2 S1024), best first: L.A.I.L acceptance "
+         f"{rk['S1024_in_Scfg10_lail_acceptance']['rank_of_sub_best_first']} (exact one-sided p {rk['S1024_in_Scfg10_lail_acceptance']['p_one_sided_low']:g}), "
+         f"L.A.I.L tok/s {rk['S1024_in_Scfg10_lail_tok_s']['rank_of_sub_best_first']} (p {rk['S1024_in_Scfg10_lail_tok_s']['p_one_sided_low']:g}), "
+         f"prose_long c=1 acceptance {rk['S1024_in_Scfg10_prose_long_c1_acceptance']['rank_of_sub_best_first']} (p "
+         f"{rk['S1024_in_Scfg10_prose_long_c1_acceptance']['p_one_sided_low']:g}), prose_long c=1 tok/s "
+         f"{rk['S1024_in_Scfg10_prose_long_c1_tok_s']['rank_of_sub_best_first']} (p {rk['S1024_in_Scfg10_prose_long_c1_tok_s']['p_one_sided_low']:g}). "
+         f"Per run, L.A.I.L acceptance S1024 vs the 10 S-config boots: Hodges-Lehmann {c['runs']['S1024_vs_Scfg10_lail_acc']['hodges_lehmann_y_minus_x']:+g}, "
+         f"p {c['runs']['S1024_vs_Scfg10_lail_acc']['p_two_sided_normal']:g}. So the L.A.I.L acceptance gain, the mechanism s9 expects "
+         f"(a winner outside the top 1024 is rarer than outside the top 256), holds up across the window's S population, while the "
+         f"prose_long c=1 tok/s gain does not separate from S's own boot-to-boot range outside the pair. No multiple-testing correction is applied."),
+        ("The rule and its baseline (the S boots interleaved with S1024, ARMS.md: 'the reference is the A boots of the same ABAB "
+         "sequence') were fixed before the data. Re-baselining after seeing the result is the post-hoc choice the fixed rule exists "
+         "to prevent, and the P5 decision applied the same principle in the other direction. The measured downside is small either "
+         f"way: {-s2['lail']['ms_step']['improvement']:+g} ms/step on L.A.I.L from the gather, greedy output unchanged, quality quick "
+         "PASS. After this promotion the next window's A boots carry TOPK=1024 (ARMS-r3 s0), which will add same-config readings."),
+        (f"W-1's counted four_numbers ran about 9 min later in the boot than planned (the first capture was killed by a timeout "
+         f"wrapper, W-1/notes.txt DEVIATION), so W-1's four prose and prose_long cells came after extra traffic. The fresh L.A.I.L "
+         f"(lail10.txt, before any four_numbers) is unaffected, and the L.A.I.L gate cell alone already fails the revert "
+         f"({L['improvement']:+g} against {L['noise']:g}), so the SPARSE_MARKOV verdict does not depend on it."),
+        (f"If W were a promotion candidate it would also fail non-inferiority on pp_novel_8k (W minus S "
+         f"{c['ni1']['pp_novel_8k']['delta']:+g} against the larger spread {c['ni1']['pp_novel_8k']['noise']:g}). Recorded only; the "
+         f"revert already fails the speed gate."),
+    ]
+    checks = dict(
+        validity_all_eight_counted_boots=valid_all,
+        docker_patch_identical_all_P6_and_S_config_boots=c["patch_same"] and c["patch_same_scfg"],
+        code_diff_between_first_and_last_counted_boot_outside_results=c["code_diff"] or "empty",
+        quality_quick_every_P6_boot=q_all,
+        W_vs_S_revert_gate={k: g1[k][A] for k in g1},
+        W_vs_S_revert_gate_either_cell=revert_any,
+        S1024_vs_S_gate_s9_per_boot={k: g2[k][B] for k in g2},
+        S1024_vs_S_gate_armsmd_median={k: g2[k][A] for k in g2},
+        S1024_non_inferiority_vs_larger_spread={k: v["ok_vs_larger_spread"] for k, v in c["ni2"].items()},
+        S1024_non_inferiority_vs_S_spread_only={k: v["ok_vs_base_spread_only"] for k, v in c["ni2"].items()},
+        quality_quick_both_S1024_boots=all(c["qual"][b]["passed"] for b in S1024),
+        quality_quick_both_W_boots=all(c["qual"][b]["passed"] for b in W),
+    )
+    promoted_before = ["DSV41_P2B_COOP=2", "DSV41_DENSE_GEMV=1", "DSV41_MHC_DET_SPLITS=16", "DSV41_ENGRAM_NATIVE_STAGE=1",
+                       "DSV41_ENGRAM_EARLY_HASH=1", "DSV41_ATTN_T2R_DEDUP=1", "DSV41_SWA_META_FUSED=1",
+                       "DSV41_MOE_PREP_FUSED=1", "DSV41_CANDIDATE_MASK_BOUNDED=1", "DSV41_INDEXER_WP_GEMV=1"]
+    out = {
+        "what": ("ARMS-r3 section 9 (P6) SPARSE_MARKOV decision: the s9 rule and ARMS.md step 6 applied to the counted boots "
+                 "W-1, S-1, W-2, S-2 (W vs S) and S-3, S1024-1, S-4, S1024-2 (S1024 vs S) in results/2026-09-26-serve-r3/. The six "
+                 "earlier boots of the same S config (K-1, K-2, CUR-1, CUR-2, Kp-1, Kp-2) and the S boots of the other pair appear "
+                 "only as labelled robustness context. Computed by decision-markov-compute.py.txt from the raw per-boot files through "
+                 "the readers of decision-bundle-compute.py.txt and the helpers of decision-addons-compute.py.txt; stdlib only."),
+        "date": "2026-09-27",
+        "inputs": {
+            "image": "dsv41-flash-exl3-sm121:review-e14 = sha256:3a002b55c9bc... on both ranks, every boot",
+            "snapshot": "2.0bpw-mcg-lmhead-mxfp8 (serve pin) on every boot (four/serve_cmd.json)",
+            "arms": {
+                "W": "AUDIT=strict + round-34 defaults + the 10 promoted K envs + DSV41_WOA_PREPACK=1 DSV41_DSPARK_SPARSE_MARKOV=0",
+                "S": "AUDIT=strict + round-34 defaults (DSV41_DSPARK_SPARSE_MARKOV=1, TOPK unset = 256, WOA_PREPACK=1) + the 10 promoted K envs",
+                "S1024": "S + DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024",
+                "all": "KP add-ons MHC_DET_OVERLAP/ENGRAM_WKV_TP/NCCL_EAGER_TWIN/AR_L2_PREFETCH=0, PM_QOS_US unset, on both ranks",
+            },
+            "order": "W-1, S-1, W-2, S-2, then S-3, S1024-1, S-4, S1024-2 (s9 order). Each counted boot is its first attempt; no fix, retry or dropped lever.",
+            "commits_at_boot": {b: val[b]["commit"] for b in P6},
+            "code_between_counted_boots": f"git diff --stat {D[P6[0]]['commit'][:12]}..{D[P6[-1]]['commit'][:12]} outside results/: {c['code_diff'] or 'empty'}",
+            "docker_patch": f"sha256 list digest {val['W-1']['patch_sha256_list_digest']} on all 8 P6 boots: {c['patch_same']}; also on the 6 K-config context boots: {c['patch_same_scfg']}",
+            "context_boots_S_config": {b: dict(commit=D[b]["commit"][:12], SPARSE_MARKOV_spark1_spark2_TOPK_spark1_spark2=c["kcfg_env"][b]) for b in KCFG},
+            "temperatures": TEMPS,
+        },
+        "rule": {
+            "sources": [
+                "ARMS-r3 s9: 'Acceptance moves by design, so gate on prose_long c=1 tok/s and L.A.I.L tok/s with the noise rule, and report per boot median_run_acceptance_len and ms/step. Quality quick on one boot per arm.'",
+                "ARMS-r3 s9: 'W vs S: revert the default to SPARSE_MARKOV=0 only if W beats S beyond the noise (every W boot beats the S median). Otherwise S stays and S1024 decides.'",
+                "ARMS-r3 s9: 'S1024 vs S: promote TOPK=1024 when every S1024 boot beats the S median by more than the noise.'",
+                "ARMS.md step 6: primary metric ms/step only at matched acceptance (per-boot median_run_acceptance_len intervals overlap); otherwise 'the arm changed drafting; gate on prose_long c=1 tok/s instead with the same noise rule'. Noise = the larger boot-to-boot spread (max-min of per-boot medians) of the two arms; pass = median improvement > noise AND every B boot beats the A median. Non-inferiority, honest cells, e2e, boot floors, and quality quick before any KEEP.",
+            ],
+            "baselines": "W vs S uses S-1, S-2 (the S boots interleaved with W). S1024 vs S uses S-3, S-4 (the S boots interleaved with S1024). ARMS.md: 'the reference is the A boots of the same ABAB sequence'.",
+            "gate_cells": ["L.A.I.L tok/s (lail10.txt, 10 runs, t=0.2)", "prose_long c=1 tok/s (four/four_numbers.json, 5 runs, t=0)"],
+            "readings_recorded": {
+                "armsmd": "median improvement > noise AND every candidate boot beats the base median",
+                "s9_per_boot": "every candidate boot beats the base median by more than the noise (used for S1024; stricter)",
+            },
+            "both_gate_cells_required": True,
+        },
+        "validity": {"all_eight_counted_boots_valid": valid_all, "per_boot": val},
+        "pair1_W_vs_S": {
+            "gate_W_minus_S_tok_s": g1,
+            "S_relative_to_W_all_cells": s1,
+            "W_relative_to_S_all_cells": w1,
+            "non_inferiority_W_vs_S_context": c["ni1"],
+        },
+        "pair2_S1024_vs_S": {
+            "gate_S1024_minus_S_tok_s": g2,
+            "S1024_relative_to_S_all_cells": s2,
+            "non_inferiority": c["ni2"],
+        },
+        "quality": {
+            "quick_pass": {b: c["qual"][b]["passed"] for b in P6},
+            "per_boot": c["qual"],
+            "greedy_output": c["greedy"],
+            "context_tools_exact_failed_K_config_boots": {b: [D[b]["quality"]["quick"]["tools_exact"], D[b]["quality"]["quick"]["tools_exact_failed"]] for b in KCFG},
+            "reading": [
+                f"Quality quick passes on every component on all 8 P6 boots (failed_gates empty on each; s9 requires one boot per arm): {all(not c['qual'][b]['failed_gates'] for b in P6)}.",
+                "tools.exact_args: " + "; ".join(f"{b} {c['qual'][b]['tools_exact']} {c['qual'][b]['tools_exact_failed']}" for b in P6)
+                + ". 21/22 sits exactly at the 0.9545 limit and 20/22 passes by the gate's one-item slack. The same t09 (and t01) misses show on the 6 earlier K-config boots of the S config (context_tools_exact_failed_K_config_boots), so they are not an arm effect.",
+                "Greedy output: W-vs-S and S1024-vs-S cross-arm divergence hazards are at the S-vs-S and all-S-config cross-boot level, consistent with s9's 'greedy verify keeps the output exact, only acceptance moves'.",
+            ],
+        },
+        "robustness_context_not_the_gate": {
+            "gate_cells_against_other_S_baselines": ctx,
+            "S1024_vs_Scfg10_acceptance_and_ms_step": c["ctx_cells"],
+            "per_boot_exact_rank_tests_in_Scfg10": c["ranks"],
+            "per_run_mann_whitney": c["runs"],
+        },
+        "decision": {
+            "checks": checks,
+            "revert_sparse_markov": revert_both,
+            "promote_topk_1024": promote_topk,
+            "promote": promote,
+            "reject": reject,
+            "sparse_markov_verdict": sm_verdict,
+            "topk_verdict": topk_verdict,
+            "caveats": caveat,
+            "promoted_config_after_P6": promoted_before + promote,
+            "defaults_unchanged": "DSV41_DSPARK_SPARSE_MARKOV=1 and DSV41_WOA_PREPACK=1 stay (round-34 defaults).",
+        },
+        "serve_state_at_decision": SERVE_STATE,
+        "per_boot_raw": {b: {k: v for k, v in D[b].items() if k not in ("quality",)} for b in P6 + KCFG},
+    }
+    return out
+
+
+if __name__ == "__main__":
+    c = main()
+    out = compose(c)
+    json.dump(out, open(sys.argv[1], "w"), indent=1, default=str)
+    d = out["decision"]
+    print(json.dumps(d["checks"], indent=1))
+    print("PROMOTE", d["promote"], "REJECT", d["reject"])
+    print("SM:", d["sparse_markov_verdict"])
+    print("TOPK:", d["topk_verdict"])
+    for x in d["caveats"]:
+        print("CAVEAT:", x)

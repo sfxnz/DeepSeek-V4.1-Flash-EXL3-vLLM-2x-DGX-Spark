@@ -14,9 +14,18 @@ The pack is [sfxnz/DeepSeek-V4.1-Flash-EXL3](https://huggingface.co/sfxnz/DeepSe
 - L.A.I.L after c=2 traffic: 31.91 → 33.75 tok/s (+5.8%, n=20)
 - novel-text prefill (s13 only): 8k 184.2 → **838.0 tok/s**, 32k 231.1 → **811.5 tok/s** (Engram WILLNEED read-ahead)
 - quick quality eval: pass
-- SPARSE_MARKOV's effect on acceptance is open (round-2 ABAB pending).
+- SPARSE_MARKOV's effect on acceptance is open (round-2 ABAB pending; settled in round 35: it stays).
 
-New default levers: `DSV41_ENGRAM_WILLNEED`, `DSV41_STREAM_FEED`, `DSV41_WOA_PREPACK` and `DSV41_DSPARK_SPARSE_MARKOV`, on image `canonical-e13`. Evidence: `results/RESULTS.md` round 34.
+**Round-3 kernels 2026-09-26/27 (round 35)**: ten bit-exact (COOP: within 1 fp16 ulp) decode kernels promoted as one bundle, plus `DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024`, on image `canonical-e14`. Before is arm A, the round-34 defaults on the same image (2 boots). After is the final config (3 boots: S1024-1, S1024-2 and the validation boot final-1). Values are medians of the per-boot medians; the per-boot ranges do not overlap on any decode row:
+- L.A.I.L fresh: 33.95 → **43.17 tok/s** (+27.1%; 62.79 → 49.00 ms/step at unchanged acceptance, 2.138 → 2.133). Per boot 43.17 / 43.62 / 42.74 vs 33.69 / 34.21.
+- prose_long c=1 (natural finish, no post-EOS text): 33.00 → **43.73 tok/s** (+32.5%; 63.34 → 48.98 ms/step)
+- four_numbers prose c=1: 39.16 → **52.52 tok/s** (+34.1%); structured c=1 62.19 → **83.81** (+34.8%)
+- c=2 aggregate: prose 56.70 → 81.69 (+44.1%), structured 89.04 → 138.34 (+55.4%), prose_long 47.40 → 65.62 (+38.4%)
+- prefill unchanged within noise (pp_novel 8k/32k 821.4 / 806.3)
+- quality: quick PASS on all three boots; full PASS on final-1 (GSM8K 94/100, thinking 39/40, MMLU 199/228, needle 9/9)
+- Not promoted: the five KP add-ons (no tok/s gain beyond noise). Rejected: the Viterbi re-encoded pack (golden-hazard gate and L.A.I.L; local only, not on the Hub).
+
+New default levers (round 35): `DSV41_P2B_COOP=2`, `DSV41_DENSE_GEMV=1`, `DSV41_MHC_DET_SPLITS=16`, `DSV41_ENGRAM_NATIVE_STAGE=1`, `DSV41_ENGRAM_EARLY_HASH=1`, `DSV41_ATTN_T2R_DEDUP=1`, `DSV41_SWA_META_FUSED=1`, `DSV41_MOE_PREP_FUSED=1`, `DSV41_CANDIDATE_MASK_BOUNDED=1`, `DSV41_INDEXER_WP_GEMV=1` and `DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024`, on image `canonical-e14`. Evidence: `results/RESULTS.md` round 35 (per-lever attribution in `results/2026-09-26-serve-r3/P3/attribution.txt`). Round 34's (`DSV41_ENGRAM_WILLNEED`, `DSV41_STREAM_FEED`, `DSV41_WOA_PREPACK`, `DSV41_DSPARK_SPARSE_MARKOV`) stay on.
 
 Default thinking is off. If you omit `chat_template_kwargs`, V4.1 thinking is on at effort 50. A small `max_tokens` then returns empty `content`.
 
@@ -63,14 +72,14 @@ On both nodes, from this repo:
 
 ```bash
 docker pull vllm/vllm-openai:deepseekv41-flash-0909@sha256:d84a123255b822fc22508635218000187221794f59c0694c33b0650d1e377d58
-docker build -f docker/Dockerfile -t dsv41-flash-exl3-sm121:canonical-e13 docker
+docker build -f docker/Dockerfile -t dsv41-flash-exl3-sm121:canonical-e14 docker
 ```
 
 Stock `vllm/vllm-openai` wheels do not load `DeepseekV41ForCausalLM`. The image starts from the pinned `deepseekv41-flash-0909` digest and overlays Engram-on-disk plus `vllm-exl3`.
 
-If the image `dsv41-flash-exl3-sm121:canonical-e13` is already present, skip the pull and the build on that node. A node that already has `canonical-e12` can layer the round-34 stages on it instead of a full build: `docker build -f docker/Dockerfile.e13 -t dsv41-flash-exl3-sm121:canonical-e13 docker`.
+If the image `dsv41-flash-exl3-sm121:canonical-e14` is already present, skip the pull and the build on that node. A node that already has `canonical-e13` can layer the round-35 stages on it instead of a full build: `docker build -f docker/Dockerfile.e14 -t dsv41-flash-exl3-sm121:canonical-e14 docker`. A node with only `canonical-e12` builds `docker/Dockerfile.e13` as `canonical-e13` first.
 
-`docker/Dockerfile` builds the canonical serve image `dsv41-flash-exl3-sm121:canonical-e13`, which is the `IMAGE` default. It already applies the E10+E11 keeps (p2b mrow/cfg1/codebook/fshift, b12x smalls, `fix_o_proj_woa_fp8`) that the historical `docker/Dockerfile.e10` → `docker/Dockerfile.e11` chain added. `results/RESULTS.md` round 7 records the rebuild as content-equivalent. Round 34 adds the p2b srcsort build (`DSV41_P2B_SRC_SORT`, default off, byte-identical kernels when off) and the `fix_o_proj_woa_fp8` stage 2 that `DSV41_WOA_PREPACK=1` needs; on `canonical-e12` that lever logs `the lever is OFF` and the strict audit fails. `docker/Dockerfile.e13` layers the same two stages on `canonical-e12`; the Sparks' `canonical-e13` is that build (`sha256:c81762335a12`, `results/RESULTS.md` round 34). The k3 round-3 kernel work (`perf/kernels-r3`) adds the p2b coop and dataflow builds (`DSV41_P2B_COOP=1|2`, default off, byte-identical kernels when off); `docker/Dockerfile.e14` layers them on `canonical-e13` as `review-e14`, the image the round-3 serve arms boot (`results/2026-09-25-kernels/ARMS-r3.txt`). The image carries a `dsv41.recipe.patches` label. `run.sh` warns, but still boots, when `IMAGE` lacks the label: a stale local `:latest`, or a canonical-e12 built before the label existed. The experiment Dockerfiles (`docker/Dockerfile.e10`, `docker/Dockerfile.mma`) chain `FROM` the untagged base and are history.
+`docker/Dockerfile` builds the canonical serve image `dsv41-flash-exl3-sm121:canonical-e14`, which is the `IMAGE` default. It already applies the E10+E11 keeps (p2b mrow/cfg1/codebook/fshift, b12x smalls, `fix_o_proj_woa_fp8`) that the historical `docker/Dockerfile.e10` → `docker/Dockerfile.e11` chain added. `results/RESULTS.md` round 7 records the rebuild as content-equivalent. Round 34 adds the p2b srcsort build (`DSV41_P2B_SRC_SORT`, default off, byte-identical kernels when off) and the `fix_o_proj_woa_fp8` stage 2 that `DSV41_WOA_PREPACK=1` needs; on `canonical-e12` that lever logs `the lever is OFF` and the strict audit fails. `docker/Dockerfile.e13` layers the same two stages on `canonical-e12`; the Sparks' `canonical-e13` is that build (`sha256:c81762335a12`, `results/RESULTS.md` round 34). Round 35 (the k3 round-3 kernel work, `perf/kernels-r3`) adds the p2b coop and dataflow builds (`DSV41_P2B_COOP=1|2`; with the env unset or `0` the kernels are byte-identical to `canonical-e13`'s). `docker/Dockerfile.e14` layers them on `canonical-e13`; the Sparks' `canonical-e14` is that build, the round-3 serve arms' `review-e14` (`sha256:3a002b55c9bc`) tagged on both nodes (`results/RESULTS.md` round 35). `DSV41_P2B_COOP=2`, a default since round 35, needs it: on `canonical-e13` the boot logs `the lever is OFF. Rebuild docker/Dockerfile.e14` and `AUDIT=strict` fails. The other round-3 kernels compile at first use from the mounted `docker/patch` and need no build stage. The image carries a `dsv41.recipe.patches` label. `run.sh` warns, but still boots, when `IMAGE` lacks the label: a stale local `:latest`, or a canonical-e12 built before the label existed. The experiment Dockerfiles (`docker/Dockerfile.e10`, `docker/Dockerfile.mma`) chain `FROM` the untagged base and are history.
 
 ## Run
 
@@ -88,7 +97,7 @@ python3 tools/measure_lail_prose.py
 
 The API is `http://127.0.0.1:8000/v1`. The served model is `deepseek-ai/DeepSeek-V4.1-Flash`. Cap is `MAX_NUM_SEQS=2`. Do not send a third stream.
 
-The promoted recipe additionally ships, all default-on and individually A/B'd (results/RESULTS.md rounds 15–33): `NUM_SPECULATIVE_TOKENS=3` with cudagraph capture sizes `[1,3,4,6,8]`, `MAX_NUM_BATCHED_TOKENS=8192`, the NCCL AR-tail set (`NCCL_BUFFSIZE=1048576`, `NCCL_LL128_BUFFSIZE=262144`, `NCCL_PROTO=^LL128`, `NCCL_MAX_NCHANNELS=8`), the mem-hygiene bundle (`DSV41_DROP_PAGE_CACHE=1`, `DSV41_INDEXER_PREFILL_FACTOR=1`, `DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192`, `DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=2.5`, `VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=256`), Engram prefetch v3 + gather v2 + census (`DSV41_ENGRAM_PREFETCH=1`, `DSV41_ENGRAM_GATHER_V2=1`, `DSV41_ENGRAM_CENSUS=1`), and lm_head mxfp8 (`DSV41_LMHEAD_MXFP8=1`, pack revision `2.0bpw-mcg-lmhead-mxfp8` — the stock pack with only `model-00043` re-encoded; `tools/quantize_lmhead_mxfp8.py` builds it from `2.0bpw-mcg` in ~10 min). Round 34 (2026-09-24 review campaign, `results/RESULTS.md`) adds four more default-on levers: `DSV41_ENGRAM_WILLNEED=1` (prefill read-ahead) and `DSV41_STREAM_FEED=1` (weight-load drain), both from the s4 prefill arm; `DSV41_WOA_PREPACK=1`, bit-exact and ABAB-tested (bundled with MHC split-K, which was rejected); and `DSV41_DSPARK_SPARSE_MARKOV=1`, from one boot. Set any of them to `0` to turn it off.
+The promoted recipe additionally ships, all default-on and individually A/B'd (results/RESULTS.md rounds 15–33): `NUM_SPECULATIVE_TOKENS=3` with cudagraph capture sizes `[1,3,4,6,8]`, `MAX_NUM_BATCHED_TOKENS=8192`, the NCCL AR-tail set (`NCCL_BUFFSIZE=1048576`, `NCCL_LL128_BUFFSIZE=262144`, `NCCL_PROTO=^LL128`, `NCCL_MAX_NCHANNELS=8`), the mem-hygiene bundle (`DSV41_DROP_PAGE_CACHE=1`, `DSV41_INDEXER_PREFILL_FACTOR=1`, `DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192`, `DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=2.5`, `VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=256`), Engram prefetch v3 + gather v2 + census (`DSV41_ENGRAM_PREFETCH=1`, `DSV41_ENGRAM_GATHER_V2=1`, `DSV41_ENGRAM_CENSUS=1`), and lm_head mxfp8 (`DSV41_LMHEAD_MXFP8=1`, pack revision `2.0bpw-mcg-lmhead-mxfp8` — the stock pack with only `model-00043` re-encoded; `tools/quantize_lmhead_mxfp8.py` builds it from `2.0bpw-mcg` in ~10 min). Round 34 (2026-09-24 review campaign, `results/RESULTS.md`) adds four more default-on levers: `DSV41_ENGRAM_WILLNEED=1` (prefill read-ahead) and `DSV41_STREAM_FEED=1` (weight-load drain), both from the s4 prefill arm; `DSV41_WOA_PREPACK=1`, bit-exact and ABAB-tested (bundled with MHC split-K, which was rejected); and `DSV41_DSPARK_SPARSE_MARKOV=1`, from one boot. Round 35 (the k3 round-3 kernels, `results/RESULTS.md`) adds the kernel bundle `DSV41_P2B_COOP=2` (coop dataflow MoE kernel, needs `canonical-e14`), `DSV41_DENSE_GEMV=1`, `DSV41_MHC_DET_SPLITS=16`, `DSV41_ENGRAM_NATIVE_STAGE=1`, `DSV41_ENGRAM_EARLY_HASH=1`, `DSV41_ATTN_T2R_DEDUP=1`, `DSV41_SWA_META_FUSED=1`, `DSV41_MOE_PREP_FUSED=1`, `DSV41_CANDIDATE_MASK_BOUNDED=1` and `DSV41_INDEXER_WP_GEMV=1` (A, K, KC interleaved ABAB: −14.5 to −15.8 ms/step at c=1), and `DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024` (its own ABAB). Set any of them to `0` to turn it off (`DSV41_DSPARK_SPARSE_MARKOV_TOPK=256` restores the round-34 width).
 
 The `smoke_chat.py` default prompt is `What is 17*19? Return only the integer.` Thinking is off. The pass is `content` matching `323` (`--expect ''` accepts any non-empty content). `smoke_vision.py` sends a 64x64 solid-red PNG as OpenAI `image_url`. It must not return HTTP 400 `is not a multimodal model`, and the answer must contain `red`. `bench_decode.py` is streamed greedy, thinking off, 200 completion tokens, 3-run median by default (the headline cell uses `--runs 9`).
 
@@ -136,7 +145,7 @@ Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-
 <!-- BEGIN generated defaults from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Setting | Value |
 |---|---|
-| Image | `dsv41-flash-exl3-sm121:canonical-e13` |
+| Image | `dsv41-flash-exl3-sm121:canonical-e14` |
 | Model | `sfxnz/DeepSeek-V4.1-Flash-EXL3` revision `2.0bpw-mcg-lmhead-mxfp8` |
 | `--tensor-parallel-size` / `--nnodes` | 2 / 2 |
 | `--max-model-len` | 1048576 |
@@ -153,7 +162,8 @@ Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-
 | Engram prefill read-ahead | `DSV41_ENGRAM_WILLNEED=1` (gv2 calls with >= 512 rows fadvise their pages before the preadv loop) |
 | lm_head | MXFP8 (`DSV41_LMHEAD_MXFP8=1`), needs the `2.0bpw-mcg-lmhead-mxfp8` pack; self-disarms on stock `2.0bpw-mcg` |
 | Weight-load stream feed | `DSV41_STREAM_FEED=1` |
-| Decode levers | `DSV41_WOA_PREPACK=1` (needs the `dsv41-flash-exl3-sm121:canonical-e13` o_proj stage) `DSV41_DSPARK_SPARSE_MARKOV=1` (top-k 256) |
+| Decode levers | `DSV41_WOA_PREPACK=1` (needs the `dsv41-flash-exl3-sm121:canonical-e14` o_proj stage) `DSV41_DSPARK_SPARSE_MARKOV=1` `DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024` |
+| Round-3 kernel bundle | `DSV41_P2B_COOP=2` (coop dataflow MoE kernel, needs the `dsv41-flash-exl3-sm121:canonical-e14` build) `DSV41_DENSE_GEMV=1` `DSV41_MHC_DET_SPLITS=16` `DSV41_ENGRAM_NATIVE_STAGE=1` `DSV41_ENGRAM_EARLY_HASH=1` `DSV41_ATTN_T2R_DEDUP=1` `DSV41_SWA_META_FUSED=1` `DSV41_MOE_PREP_FUSED=1` `DSV41_CANDIDATE_MASK_BOUNDED=1` `DSV41_INDEXER_WP_GEMV=1` (set one to `0` to turn it off) |
 | NCCL AR-tail set | `NCCL_BUFFSIZE=1048576` `NCCL_LL128_BUFFSIZE=262144` `NCCL_PROTO=^LL128` `NCCL_MAX_NCHANNELS=8` |
 | Memory hygiene | `DSV41_DROP_PAGE_CACHE=1` `DSV41_INDEXER_PREFILL_FACTOR=1` `DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192` `DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=2.5` `VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=256` |
 | Tokenizers / tools / reasoning | `deepseek_v41` |
@@ -168,7 +178,7 @@ Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-
 
 ## Measured on 2× DGX Spark
 
-`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median; the round-34 table below pools 9 runs from each of two identical-config boots (39.52 tok/s prose c=1, n=18; the prompt stops naturally at ~78 tokens, so the cell forces `ignore_eos` and 59% of it is post-EOS text). `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2) — this is the real-world-use cell: 33.68 tok/s (n=20), +46% vs the pre-campaign published recipe (23 tok/s). The table pools the round-34 boots `s8-S-sparse-markov` and `s13-promote-final`, which both ran exactly the current defaults (`results/2026-09-24-review/campaign/pooled-s8-s13.json`). Default is DSpark-3 with matched cudagraph captures, vision on. These cells are the MCG pack with the lm_head-mxfp8 head (`2.0bpw-mcg-lmhead-mxfp8`) on native p2b `cb=1`. A MUL1 pack measured and lost prose decode at every bit-width tested (see below). The KV pool is 8 GiB. Every accepted/rejected experiment lives in `results/RESULTS.md` (34 rounds); run `benches/micro.sh` and `benches/e2e.sh` to reproduce cells, and `tests/correctness.sh --full` for the quality gate.
+`bench_decode.py` is streamed greedy, 200 completion tokens, 3-run median; the round-35 table below pools 9 runs from each of three identical-config boots (52.97 tok/s prose c=1, n=27; the prompt stops naturally at ~78-86 tokens, so the cell forces `ignore_eos` and about 60% of it is post-EOS text). `tools/measure_lail_prose.py` matches L.A.I.L streams prose (512 tokens, temperature 0.2) — this is the real-world-use cell: 42.98 tok/s (n=30), +87% vs the pre-campaign published recipe (23 tok/s). The table pools the round-35 boots `S1024-1`, `S1024-2` and `final-1`, which all ran exactly the current defaults (`results/2026-09-26-serve-r3/round35-headline.json`; round 34's table was 39.52 / 33.68 on `results/2026-09-24-review/campaign/pooled-s8-s13.json`). Default is DSpark-3 with matched cudagraph captures, vision on. These cells are the MCG pack with the lm_head-mxfp8 head (`2.0bpw-mcg-lmhead-mxfp8`) on native p2b `cb=1`. A MUL1 pack measured and lost prose decode at every bit-width tested (see below). The KV pool is 8 GiB. Every accepted/rejected experiment lives in `results/RESULTS.md` (35 rounds); run `benches/micro.sh` and `benches/e2e.sh` to reproduce cells, and `tests/correctness.sh --full` for the quality gate.
 
 `MAX_NUM_BATCHED_TOKENS` history: at 12.7k-token prompts 8192 measured −5% vs 2048 (`evidence/pr6-batched-8192/`), but on the campaign's prose/prefill cells 8192 was re-measured across rounds 15–33 as part of the promoted config — every kept lever was A/B'd on top of it. It ships as the default now; 2048 remains available for long-prompt-heavy workloads.
 
@@ -177,11 +187,11 @@ MUL1 + p2b `cb=2` (`2.0bpw-mul1` K=2 on `dsv41-flash-exl3-sm121:cb2`) lost prose
 <!-- BEGIN generated measured from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Phase | Concurrency | Decode tok/s (median per stream) | Aggregate tok/s | TTFT p50 |
 |---|---|---:|---:|---:|
-| prose | 1 | 39.52 | 39.52 | 0.25 s |
-| prose | 2 | 29.03 | 56.77 | 0.28 s |
-| structured | 1 | 62.52 | 62.50 | 0.18 s |
-| structured | 2 | 45.28 | 89.44 | 0.28 s |
-| lail_prose | 1 | 33.68 | 33.68 | 0.34 s |
+| prose | 1 | 52.97 | 52.96 | 0.23 s |
+| prose | 2 | 42.11 | 81.73 | 0.25 s |
+| structured | 1 | 83.73 | 83.71 | 0.18 s |
+| structured | 2 | 71.84 | 138.34 | 0.20 s |
+| lail_prose | 1 | 42.98 | 42.98 | 0.32 s |
 <!-- END generated measured -->
 
 ## Rebuild the pack

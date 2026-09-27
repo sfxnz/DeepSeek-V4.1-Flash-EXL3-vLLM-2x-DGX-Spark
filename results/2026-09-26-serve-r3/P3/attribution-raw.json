@@ -1,0 +1,3179 @@
+{
+ "A_c1_r0": {
+  "steps": 98,
+  "target_graph_id": 620,
+  "groups": {
+   "620": 98
+  },
+  "step_wall_ms": {
+   "median": 63.47,
+   "mean": 63.928,
+   "p10": 61.713,
+   "p90": 66.221,
+   "n": 98
+  },
+  "device_busy_ms": {
+   "median": 58.329,
+   "mean": 58.526,
+   "p10": 56.709,
+   "p90": 60.728,
+   "n": 98
+  },
+  "device_idle_ms": {
+   "median": 5.245,
+   "mean": 5.402,
+   "p10": 4.441,
+   "p90": 6.026,
+   "n": 98
+  },
+  "device_ops_per_step": {
+   "median": 2569.0,
+   "mean": 2569.122,
+   "p10": 2569,
+   "p90": 2569,
+   "n": 98
+  },
+  "phases_ms": {
+   "target_graph_ms": {
+    "median": 51.35,
+    "mean": 51.638,
+    "p10": 49.914,
+    "p90": 53.625,
+    "n": 98
+   },
+   "draft_graph_ms": {
+    "median": 5.411,
+    "mean": 5.363,
+    "p10": 4.986,
+    "p90": 5.677,
+    "n": 98
+   },
+   "eager_after_target_ms": {
+    "median": 2.467,
+    "mean": 2.528,
+    "p10": 2.454,
+    "p90": 2.693,
+    "n": 98
+   },
+   "eager_before_next_target_ms": {
+    "median": 4.176,
+    "mean": 4.4,
+    "p10": 3.482,
+    "p90": 5.068,
+    "n": 98
+   }
+  },
+  "categories": {
+   "routed_moe [COOP]": {
+    "ms_per_step": 22.067,
+    "launches_per_step": 40.0
+   },
+   "dense_b12x": {
+    "ms_per_step": 20.566,
+    "launches_per_step": 231.0
+   },
+   "nccl_allreduce": {
+    "ms_per_step": 3.751,
+    "launches_per_step": 88.0
+   },
+   "woa_einsum": {
+    "ms_per_step": 3.573,
+    "launches_per_step": 43.0
+   },
+   "mhc [MHC_DET]": {
+    "ms_per_step": 2.75,
+    "launches_per_step": 261.0
+   },
+   "torch_eltwise": {
+    "ms_per_step": 2.004,
+    "launches_per_step": 794.0
+   },
+   "router_gate_bf16 (+splitK)": {
+    "ms_per_step": 1.815,
+    "launches_per_step": 88.0
+   },
+   "sparse_mla": {
+    "ms_per_step": 1.166,
+    "launches_per_step": 86.0
+   },
+   "router_topk": {
+    "ms_per_step": 0.932,
+    "launches_per_step": 43.0
+   },
+   "deepgemm_fp8fp4_other": {
+    "ms_per_step": 0.82,
+    "launches_per_step": 6.0
+   },
+   "compare_scalar<long>": {
+    "ms_per_step": 0.722,
+    "launches_per_step": 178.0
+   },
+   "wp_gemm [WP_GEMV]": {
+    "ms_per_step": 0.704,
+    "launches_per_step": 8.0
+   },
+   "act_quant": {
+    "ms_per_step": 0.566,
+    "launches_per_step": 226.0
+   },
+   "cutlass_bf16_gemm": {
+    "ms_per_step": 0.353,
+    "launches_per_step": 10.0
+   },
+   "indexer": {
+    "ms_per_step": 0.325,
+    "launches_per_step": 64.0
+   },
+   "cand_mask [CAND_MASK]": {
+    "ms_per_step": 0.322,
+    "launches_per_step": 8.0
+   },
+   "triton": {
+    "ms_per_step": 0.316,
+    "launches_per_step": 104.06
+   },
+   "other": {
+    "ms_per_step": 0.306,
+    "launches_per_step": 115.0
+   },
+   "rope_kv_cache": {
+    "ms_per_step": 0.239,
+    "launches_per_step": 9.0
+   },
+   "nccl_allgather": {
+    "ms_per_step": 0.136,
+    "launches_per_step": 4.0
+   },
+   "sampler_argmax": {
+    "ms_per_step": 0.1,
+    "launches_per_step": 9.0
+   },
+   "memcpy": {
+    "ms_per_step": 0.082,
+    "launches_per_step": 63.06
+   },
+   "t2r_scan_map [T2R_DEDUP]": {
+    "ms_per_step": 0.08,
+    "launches_per_step": 63.0
+   },
+   "swa_meta_kernel [SWA_META]": {
+    "ms_per_step": 0.035,
+    "launches_per_step": 15.0
+   },
+   "norm": {
+    "ms_per_step": 0.019,
+    "launches_per_step": 6.0
+   },
+   "woa_pack": {
+    "ms_per_step": 0.005,
+    "launches_per_step": 3.0
+   },
+   "memset": {
+    "ms_per_step": 0.003,
+    "launches_per_step": 4.0
+   }
+  },
+  "gemv_roles": {},
+  "layer_segments": {
+   "replays_used": 98,
+   "A attn block: prev MoE AR end -> attn AR start": {
+    "median_us": 419.9,
+    "mean_us": 499.5,
+    "ms_per_step_mean_x40": 19.979
+   },
+   "B attn AR": {
+    "median_us": 24.0,
+    "mean_us": 41.2,
+    "ms_per_step_mean_x40": 1.649
+   },
+   "C ffn prologue: attn AR end -> routed start": {
+    "median_us": 148.8,
+    "mean_us": 152.9,
+    "ms_per_step_mean_x40": 6.114
+   },
+   "D routed MoE": {
+    "median_us": 539.2,
+    "mean_us": 551.7,
+    "ms_per_step_mean_x40": 22.067
+   },
+   "E epilogue: routed end -> MoE AR start": {
+    "median_us": 10.2,
+    "mean_us": 11.0,
+    "ms_per_step_mean_x40": 0.438
+   },
+   "F MoE AR": {
+    "median_us": 23.2,
+    "mean_us": 34.2,
+    "ms_per_step_mean_x40": 1.369
+   },
+   "sum_segments_ms_per_step": 51.617,
+   "routed_call_us": {
+    "median": 539.183,
+    "mean": 551.675,
+    "p10": 527.838,
+    "p90": 587.998,
+    "n": 3920
+   },
+   "kernels_launched_per_layer": {
+    "C kernels launched": 26.12,
+    "E kernels launched": 3.0,
+    "A kernels launched": 17.49,
+    "mhc kernels per layer": 4.31
+   },
+   "qkv_join_wait_us": {
+    "plain layers": {
+     "median": 0.5,
+     "mean": 0.5,
+     "per_step_ms": 0.018,
+     "layers_per_step": 32.0
+    },
+    "wp layers": {
+     "median": 24.2,
+     "mean": 28.4,
+     "per_step_ms": 0.227,
+     "layers_per_step": 8.0
+    }
+   }
+  },
+  "engram_stage_gap": {
+   "gap_ms": {
+    "median": 2.875,
+    "mean": 3.119,
+    "p10": 2.237,
+    "p90": 3.704,
+    "n": 98
+   },
+   "kernel_before_gap": {
+    "Memcpy DtoH ": 98
+   }
+  },
+  "ffn_prologue_and_mhc": {
+   "mhc elapsed, attention half (first start -> last end)": {
+    "median_us": 28.6,
+    "mean_us": 66.79,
+    "n": 3920,
+    "ms_per_step_median_x40": 1.143
+   },
+   "mhc elapsed, ffn half (first start -> last end)": {
+    "median_us": 25.4,
+    "mean_us": 27.09,
+    "n": 3920,
+    "ms_per_step_median_x40": 1.015
+   },
+   "C total": {
+    "median_us": 148.8,
+    "mean_us": 152.86,
+    "n": 3920,
+    "ms_per_step_median_x40": 5.952
+   },
+   "C1 attn AR end -> last ffn mhc end": {
+    "median_us": 30.0,
+    "mean_us": 31.59,
+    "n": 3920,
+    "ms_per_step_median_x40": 1.199
+   },
+   "C2 router gate kernel (bf16 cuBLAS, side stream)": {
+    "median_us": 19.6,
+    "mean_us": 21.12,
+    "n": 3920,
+    "ms_per_step_median_x40": 0.785
+   },
+   "C3 router gate end -> routed start (splitK, topk, prep)": {
+    "median_us": 98.3,
+    "mean_us": 99.41,
+    "n": 3920,
+    "ms_per_step_median_x40": 3.933
+   },
+   "router gate overlapped by shared gate_up (us)": {
+    "median_us": 0.0,
+    "mean_us": 1.26,
+    "n": 3920,
+    "ms_per_step_median_x40": 0.0
+   },
+   "shared gate_up kernel": {
+    "median_us": 57.6,
+    "mean_us": 58.68,
+    "n": 3920,
+    "ms_per_step_median_x40": 2.304
+   },
+   "shared_down end - routed start (+ = after)": {
+    "median_us": -6.6,
+    "mean_us": -6.41,
+    "n": 3920,
+    "ms_per_step_median_x40": -0.264
+   },
+   "frac layers shared_down ends after routed start": {
+    "median_us": 0.0,
+    "mean_us": 0.03,
+    "n": 3920,
+    "ms_per_step_median_x40": 0.0
+   }
+  },
+  "eager_before_next_target": {
+   "span_ms": {
+    "median": 4.176,
+    "mean": 4.4,
+    "p10": 3.482,
+    "p90": 5.068,
+    "n": 98
+   },
+   "busy_ms": {
+    "median": 0.403,
+    "mean": 0.409,
+    "p10": 0.392,
+    "p90": 0.417,
+    "n": 98
+   },
+   "idle_ms": {
+    "median": 3.764,
+    "mean": 3.991,
+    "p10": 3.082,
+    "p90": 4.615,
+    "n": 98
+   },
+   "device_ops": {
+    "median": 269.0,
+    "mean": 269.122,
+    "p10": 269,
+    "p90": 269,
+    "n": 98
+   },
+   "chain_before_hash_ms": {
+    "median": 1.098,
+    "mean": 1.118,
+    "p10": 1.087,
+    "p90": 1.118,
+    "n": 98
+   },
+   "stage_span_hash_dtoh_end_to_rows_htod_ms": {
+    "median": 2.875,
+    "mean": 3.119,
+    "p10": 2.237,
+    "p90": 3.704,
+    "n": 98
+   },
+   "ops_between_hash_and_rows": {
+    "median": 0.0,
+    "mean": 0.0,
+    "p10": 0,
+    "p90": 0,
+    "n": 98
+   },
+   "gpu_work_span_under_stage_ms": {
+    "median": 0.0,
+    "mean": 0.0,
+    "p10": 0.0,
+    "p90": 0.0,
+    "n": 98
+   }
+  },
+  "source": "/home/sfxnz/projects/data/dsv41-traces/p3-A_p-c1-20260926-110737/c1-rank0.pkl"
+ },
+ "A_c1_r1": {
+  "steps": 98,
+  "target_graph_id": 620,
+  "groups": {
+   "620": 98
+  },
+  "step_wall_ms": {
+   "median": 63.446,
+   "mean": 63.954,
+   "p10": 61.894,
+   "p90": 66.218,
+   "n": 98
+  },
+  "device_busy_ms": {
+   "median": 57.985,
+   "mean": 58.304,
+   "p10": 56.545,
+   "p90": 59.888,
+   "n": 98
+  },
+  "device_idle_ms": {
+   "median": 5.486,
+   "mean": 5.649,
+   "p10": 4.649,
+   "p90": 6.458,
+   "n": 98
+  },
+  "device_ops_per_step": {
+   "median": 2569.0,
+   "mean": 2569.122,
+   "p10": 2569,
+   "p90": 2569,
+   "n": 98
+  },
+  "phases_ms": {
+   "target_graph_ms": {
+    "median": 51.472,
+    "mean": 51.818,
+    "p10": 49.963,
+    "p90": 53.375,
+    "n": 98
+   },
+   "draft_graph_ms": {
+    "median": 5.436,
+    "mean": 5.382,
+    "p10": 4.995,
+    "p90": 5.753,
+    "n": 98
+   },
+   "eager_after_target_ms": {
+    "median": 2.492,
+    "mean": 2.519,
+    "p10": 2.477,
+    "p90": 2.587,
+    "n": 98
+   },
+   "eager_before_next_target_ms": {
+    "median": 4.039,
+    "mean": 4.235,
+    "p10": 3.486,
+    "p90": 4.774,
+    "n": 98
+   }
+  },
+  "categories": {
+   "routed_moe [COOP]": {
+    "ms_per_step": 21.718,
+    "launches_per_step": 40.0
+   },
+   "dense_b12x": {
+    "ms_per_step": 20.433,
+    "launches_per_step": 231.0
+   },
+   "nccl_allreduce": {
+    "ms_per_step": 4.118,
+    "launches_per_step": 88.0
+   },
+   "woa_einsum": {
+    "ms_per_step": 3.554,
+    "launches_per_step": 43.0
+   },
+   "mhc [MHC_DET]": {
+    "ms_per_step": 2.665,
+    "launches_per_step": 261.0
+   },
+   "torch_eltwise": {
+    "ms_per_step": 1.89,
+    "launches_per_step": 794.0
+   },
+   "router_gate_bf16 (+splitK)": {
+    "ms_per_step": 1.757,
+    "launches_per_step": 88.0
+   },
+   "sparse_mla": {
+    "ms_per_step": 1.144,
+    "launches_per_step": 86.0
+   },
+   "router_topk": {
+    "ms_per_step": 0.903,
+    "launches_per_step": 43.0
+   },
+   "compare_scalar<long>": {
+    "ms_per_step": 0.856,
+    "launches_per_step": 178.0
+   },
+   "deepgemm_fp8fp4_other": {
+    "ms_per_step": 0.8,
+    "launches_per_step": 6.0
+   },
+   "wp_gemm [WP_GEMV]": {
+    "ms_per_step": 0.697,
+    "launches_per_step": 8.0
+   },
+   "act_quant": {
+    "ms_per_step": 0.546,
+    "launches_per_step": 226.0
+   },
+   "cutlass_bf16_gemm": {
+    "ms_per_step": 0.349,
+    "launches_per_step": 10.0
+   },
+   "cand_mask [CAND_MASK]": {
+    "ms_per_step": 0.32,
+    "launches_per_step": 8.0
+   },
+   "indexer": {
+    "ms_per_step": 0.32,
+    "launches_per_step": 64.0
+   },
+   "triton": {
+    "ms_per_step": 0.306,
+    "launches_per_step": 104.06
+   },
+   "other": {
+    "ms_per_step": 0.298,
+    "launches_per_step": 115.0
+   },
+   "rope_kv_cache": {
+    "ms_per_step": 0.256,
+    "launches_per_step": 9.0
+   },
+   "nccl_allgather": {
+    "ms_per_step": 0.223,
+    "launches_per_step": 4.0
+   },
+   "sampler_argmax": {
+    "ms_per_step": 0.097,
+    "launches_per_step": 9.0
+   },
+   "memcpy": {
+    "ms_per_step": 0.083,
+    "launches_per_step": 63.06
+   },
+   "t2r_scan_map [T2R_DEDUP]": {
+    "ms_per_step": 0.077,
+    "launches_per_step": 63.0
+   },
+   "swa_meta_kernel [SWA_META]": {
+    "ms_per_step": 0.035,
+    "launches_per_step": 15.0
+   },
+   "norm": {
+    "ms_per_step": 0.018,
+    "launches_per_step": 6.0
+   },
+   "woa_pack": {
+    "ms_per_step": 0.005,
+    "launches_per_step": 3.0
+   },
+   "memset": {
+    "ms_per_step": 0.002,
+    "launches_per_step": 4.0
+   }
+  },
+  "gemv_roles": {},
+  "layer_segments": {
+   "replays_used": 98,
+   "A attn block: prev MoE AR end -> attn AR start": {
+    "median_us": 418.6,
+    "mean_us": 498.0,
+    "ms_per_step_mean_x40": 19.921
+   },
+   "B attn AR": {
+    "median_us": 23.9,
+    "mean_us": 47.5,
+    "ms_per_step_mean_x40": 1.901
+   },
+   "C ffn prologue: attn AR end -> routed start": {
+    "median_us": 149.5,
+    "mean_us": 151.5,
+    "ms_per_step_mean_x40": 6.062
+   },
+   "D routed MoE": {
+    "median_us": 536.5,
+    "mean_us": 543.0,
+    "ms_per_step_mean_x40": 21.718
+   },
+   "E epilogue: routed end -> MoE AR start": {
+    "median_us": 10.2,
+    "mean_us": 10.7,
+    "ms_per_step_mean_x40": 0.428
+   },
+   "F MoE AR": {
+    "median_us": 24.2,
+    "mean_us": 44.2,
+    "ms_per_step_mean_x40": 1.768
+   },
+   "sum_segments_ms_per_step": 51.798,
+   "routed_call_us": {
+    "median": 536.544,
+    "mean": 542.962,
+    "p10": 526.624,
+    "p90": 550.368,
+    "n": 3920
+   },
+   "kernels_launched_per_layer": {
+    "C kernels launched": 26.12,
+    "E kernels launched": 3.0,
+    "A kernels launched": 17.49,
+    "mhc kernels per layer": 4.31
+   },
+   "qkv_join_wait_us": {
+    "plain layers": {
+     "median": 0.5,
+     "mean": 0.5,
+     "per_step_ms": 0.017,
+     "layers_per_step": 32.0
+    },
+    "wp layers": {
+     "median": 25.2,
+     "mean": 27.3,
+     "per_step_ms": 0.218,
+     "layers_per_step": 8.0
+    }
+   }
+  },
+  "engram_stage_gap": {
+   "gap_ms": {
+    "median": 2.719,
+    "mean": 2.965,
+    "p10": 2.242,
+    "p90": 3.514,
+    "n": 98
+   },
+   "kernel_before_gap": {
+    "Memcpy DtoH ": 98
+   }
+  },
+  "ffn_prologue_and_mhc": {
+   "mhc elapsed, attention half (first start -> last end)": {
+    "median_us": 28.4,
+    "mean_us": 66.65,
+    "n": 3920,
+    "ms_per_step_median_x40": 1.137
+   },
+   "mhc elapsed, ffn half (first start -> last end)": {
+    "median_us": 25.2,
+    "mean_us": 26.3,
+    "n": 3920,
+    "ms_per_step_median_x40": 1.009
+   },
+   "C total": {
+    "median_us": 149.5,
+    "mean_us": 151.54,
+    "n": 3920,
+    "ms_per_step_median_x40": 5.98
+   },
+   "C1 attn AR end -> last ffn mhc end": {
+    "median_us": 29.9,
+    "mean_us": 30.67,
+    "n": 3920,
+    "ms_per_step_median_x40": 1.197
+   },
+   "C2 router gate kernel (bf16 cuBLAS, side stream)": {
+    "median_us": 19.7,
+    "mean_us": 21.0,
+    "n": 3920,
+    "ms_per_step_median_x40": 0.787
+   },
+   "C3 router gate end -> routed start (splitK, topk, prep)": {
+    "median_us": 99.0,
+    "mean_us": 99.18,
+    "n": 3920,
+    "ms_per_step_median_x40": 3.962
+   },
+   "router gate overlapped by shared gate_up (us)": {
+    "median_us": 0.0,
+    "mean_us": 1.24,
+    "n": 3920,
+    "ms_per_step_median_x40": 0.0
+   },
+   "shared gate_up kernel": {
+    "median_us": 57.5,
+    "mean_us": 58.04,
+    "n": 3920,
+    "ms_per_step_median_x40": 2.299
+   },
+   "shared_down end - routed start (+ = after)": {
+    "median_us": -7.3,
+    "mean_us": -6.94,
+    "n": 3920,
+    "ms_per_step_median_x40": -0.291
+   },
+   "frac layers shared_down ends after routed start": {
+    "median_us": 0.0,
+    "mean_us": 0.02,
+    "n": 3920,
+    "ms_per_step_median_x40": 0.0
+   }
+  },
+  "eager_before_next_target": {
+   "span_ms": {
+    "median": 4.039,
+    "mean": 4.235,
+    "p10": 3.486,
+    "p90": 4.774,
+    "n": 98
+   },
+   "busy_ms": {
+    "median": 0.386,
+    "mean": 0.411,
+    "p10": 0.38,
+    "p90": 0.404,
+    "n": 98
+   },
+   "idle_ms": {
+    "median": 3.57,
+    "mean": 3.824,
+    "p10": 3.098,
+    "p90": 4.395,
+    "n": 98
+   },
+   "device_ops": {
+    "median": 269.0,
+    "mean": 269.122,
+    "p10": 269,
+    "p90": 269,
+    "n": 98
+   },
+   "chain_before_hash_ms": {
+    "median": 1.082,
+    "mean": 1.109,
+    "p10": 1.078,
+    "p90": 1.108,
+    "n": 98
+   },
+   "stage_span_hash_dtoh_end_to_rows_htod_ms": {
+    "median": 2.719,
+    "mean": 2.965,
+    "p10": 2.242,
+    "p90": 3.514,
+    "n": 98
+   },
+   "ops_between_hash_and_rows": {
+    "median": 0.0,
+    "mean": 0.0,
+    "p10": 0,
+    "p90": 0,
+    "n": 98
+   },
+   "gpu_work_span_under_stage_ms": {
+    "median": 0.0,
+    "mean": 0.0,
+    "p10": 0.0,
+    "p90": 0.0,
+    "n": 98
+   }
+  },
+  "source": "/home/sfxnz/projects/data/dsv41-traces/p3-A_p-c1-20260926-110737/c1-rank1.pkl"
+ },
+ "A_c2_r0": {
+  "steps": 30,
+  "target_graph_id": 617,
+  "groups": {
+   "617": 30,
+   "620": 9
+  },
+  "step_wall_ms": {
+   "median": 89.668,
+   "mean": 89.761,
+   "p10": 87.674,
+   "p90": 91.912,
+   "n": 30
+  },
+  "device_busy_ms": {
+   "median": 82.169,
+   "mean": 82.25,
+   "p10": 80.495,
+   "p90": 84.386,
+   "n": 30
+  },
+  "device_idle_ms": {
+   "median": 7.423,
+   "mean": 7.511,
+   "p10": 6.16,
+   "p90": 8.592,
+   "n": 30
+  },
+  "device_ops_per_step": {
+   "median": 2572.0,
+   "mean": 2572.133,
+   "p10": 2572,
+   "p90": 2572,
+   "n": 30
+  },
+  "phases_ms": {
+   "target_graph_ms": {
+    "median": 74.352,
+    "mean": 74.745,
+    "p10": 73.232,
+    "p90": 77.02,
+    "n": 30
+   },
+   "draft_graph_ms": {
+    "median": 5.641,
+    "mean": 5.769,
+    "p10": 5.284,
+    "p90": 6.261,
+    "n": 30
+   },
+   "eager_after_target_ms": {
+    "median": 2.568,
+    "mean": 2.615,
+    "p10": 2.559,
+    "p90": 2.736,
+    "n": 30
+   },
+   "eager_before_next_target_ms": {
+    "median": 6.547,
+    "mean": 6.631,
+    "p10": 5.342,
+    "p90": 7.91,
+    "n": 30
+   }
+  },
+  "categories": {
+   "routed_moe [COOP]": {
+    "ms_per_step": 42.344,
+    "launches_per_step": 40.0
+   },
+   "dense_b12x": {
+    "ms_per_step": 21.247,
+    "launches_per_step": 231.0
+   },
+   "nccl_allreduce": {
+    "ms_per_step": 5.025,
+    "launches_per_step": 88.0
+   },
+   "woa_einsum": {
+    "ms_per_step": 3.6,
+    "launches_per_step": 43.0
+   },
+   "mhc [MHC_DET]": {
+    "ms_per_step": 2.874,
+    "launches_per_step": 261.0
+   },
+   "torch_eltwise": {
+    "ms_per_step": 2.121,
+    "launches_per_step": 797.0
+   },
+   "router_gate_bf16 (+splitK)": {
+    "ms_per_step": 2.083,
+    "launches_per_step": 94.0
+   },
+   "sparse_mla": {
+    "ms_per_step": 1.537,
+    "launches_per_step": 86.0
+   },
+   "deepgemm_fp8fp4_other": {
+    "ms_per_step": 1.332,
+    "launches_per_step": 6.0
+   },
+   "router_topk": {
+    "ms_per_step": 1.033,
+    "launches_per_step": 43.0
+   },
+   "compare_scalar<long>": {
+    "ms_per_step": 0.741,
+    "launches_per_step": 178.0
+   },
+   "wp_gemm [WP_GEMV]": {
+    "ms_per_step": 0.74,
+    "launches_per_step": 8.0
+   },
+   "cand_mask [CAND_MASK]": {
+    "ms_per_step": 0.689,
+    "launches_per_step": 8.0
+   },
+   "act_quant": {
+    "ms_per_step": 0.612,
+    "launches_per_step": 226.0
+   },
+   "triton": {
+    "ms_per_step": 0.378,
+    "launches_per_step": 104.07
+   },
+   "indexer": {
+    "ms_per_step": 0.353,
+    "launches_per_step": 64.0
+   },
+   "other": {
+    "ms_per_step": 0.325,
+    "launches_per_step": 114.0
+   },
+   "rope_kv_cache": {
+    "ms_per_step": 0.294,
+    "launches_per_step": 9.0
+   },
+   "nccl_allgather": {
+    "ms_per_step": 0.232,
+    "launches_per_step": 4.0
+   },
+   "sampler_argmax": {
+    "ms_per_step": 0.103,
+    "launches_per_step": 9.0
+   },
+   "memcpy": {
+    "ms_per_step": 0.096,
+    "launches_per_step": 63.07
+   },
+   "t2r_scan_map [T2R_DEDUP]": {
+    "ms_per_step": 0.081,
+    "launches_per_step": 63.0
+   },
+   "swa_meta_kernel [SWA_META]": {
+    "ms_per_step": 0.034,
+    "launches_per_step": 15.0
+   },
+   "cutlass_bf16_gemm": {
+    "ms_per_step": 0.034,
+    "launches_per_step": 7.0
+   },
+   "norm": {
+    "ms_per_step": 0.018,
+    "launches_per_step": 6.0
+   },
+   "woa_pack": {
+    "ms_per_step": 0.009,
+    "launches_per_step": 3.0
+   },
+   "memset": {
+    "ms_per_step": 0.001,
+    "launches_per_step": 2.0
+   }
+  },
+  "gemv_roles": {},
+  "layer_segments": {
+   "replays_used": 30,
+   "A attn block: prev MoE AR end -> attn AR start": {
+    "median_us": 440.0,
+    "mean_us": 533.0,
+    "ms_per_step_mean_x40": 21.32
+   },
+   "B attn AR": {
+    "median_us": 30.7,
+    "mean_us": 54.2,
+    "ms_per_step_mean_x40": 2.167
+   },
+   "C ffn prologue: attn AR end -> routed start": {
+    "median_us": 151.1,
+    "mean_us": 156.6,
+    "ms_per_step_mean_x40": 6.265
+   },
+   "D routed MoE": {
+    "median_us": 1036.4,
+    "mean_us": 1058.6,
+    "ms_per_step_mean_x40": 42.344
+   },
+   "E epilogue: routed end -> MoE AR start": {
+    "median_us": 10.3,
+    "mean_us": 11.2,
+    "ms_per_step_mean_x40": 0.449
+   },
+   "F MoE AR": {
+    "median_us": 30.6,
+    "mean_us": 54.5,
+    "ms_per_step_mean_x40": 2.179
+   },
+   "sum_segments_ms_per_step": 74.724,
+   "routed_call_us": {
+    "median": 1036.399,
+    "mean": 1058.61,
+    "p10": 1015.902,
+    "p90": 1153.15,
+    "n": 1200
+   },
+   "kernels_launched_per_layer": {
+    "C kernels launched": 26.12,
+    "E kernels launched": 3.0,
+    "A kernels launched": 17.49,
+    "mhc kernels per layer": 4.31
+   },
+   "qkv_join_wait_us": {
+    "plain layers": {
+     "median": 0.5,
+     "mean": 0.5,
+     "per_step_ms": 0.017,
+     "layers_per_step": 32.0
+    },
+    "wp layers": {
+     "median": 24.1,
+     "mean": 31.3,
+     "per_step_ms": 0.25,
+     "layers_per_step": 8.0
+    }
+   }
+  },
+  "engram_stage_gap": {
+   "gap_ms": {
+    "median": 5.262,
+    "mean": 5.283,
+    "p10": 3.928,
+    "p90": 6.261,
+    "n": 30
+   },
+   "kernel_before_gap": {
+    "Memcpy DtoH ": 30
+   }
+  },
+  "ffn_prologue_and_mhc": {
+   "mhc elapsed, attention half (first start -> last end)": {
+    "median_us": 29.9,
+    "mean_us": 67.72,
+    "n": 1200,
+    "ms_per_step_median_x40": 1.195
+   },
+   "mhc elapsed, ffn half (first start -> last end)": {
+    "median_us": 25.5,
+    "mean_us": 27.99,
+    "n": 1200,
+    "ms_per_step_median_x40": 1.019
+   },
+   "C total": {
+    "median_us": 151.1,
+    "mean_us": 156.63,
+    "n": 1200,
+    "ms_per_step_median_x40": 6.044
+   },
+   "C1 attn AR end -> last ffn mhc end": {
+    "median_us": 30.3,
+    "mean_us": 32.7,
+    "n": 1200,
+    "ms_per_step_median_x40": 1.212
+   },
+   "C2 router gate kernel (bf16 cuBLAS, side stream)": {
+    "median_us": 19.9,
+    "mean_us": 21.76,
+    "n": 1200,
+    "ms_per_step_median_x40": 0.797
+   },
+   "C3 router gate end -> routed start (splitK, topk, prep)": {
+    "median_us": 99.6,
+    "mean_us": 101.45,
+    "n": 1200,
+    "ms_per_step_median_x40": 3.982
+   },
+   "router gate overlapped by shared gate_up (us)": {
+    "median_us": 0.0,
+    "mean_us": 1.5,
+    "n": 1200,
+    "ms_per_step_median_x40": 0.0
+   },
+   "shared gate_up kernel": {
+    "median_us": 57.7,
+    "mean_us": 59.55,
+    "n": 1200,
+    "ms_per_step_median_x40": 2.307
+   },
+   "shared_down end - routed start (+ = after)": {
+    "median_us": -6.3,
+    "mean_us": -6.25,
+    "n": 1200,
+    "ms_per_step_median_x40": -0.25
+   },
+   "frac layers shared_down ends after routed start": {
+    "median_us": 0.0,
+    "mean_us": 0.03,
+    "n": 1200,
+    "ms_per_step_median_x40": 0.0
+   }
+  },
+  "eager_before_next_target": {
+   "span_ms": {
+    "median": 6.547,
+    "mean": 6.631,
+    "p10": 5.342,
+    "p90": 7.91,
+    "n": 30
+   },
+   "busy_ms": {
+    "median": 0.443,
+    "mean": 0.475,
+    "p10": 0.423,
+    "p90": 0.628,
+    "n": 30
+   },
+   "idle_ms": {
+    "median": 6.101,
+    "mean": 6.156,
+    "p10": 4.873,
+    "p90": 7.282,
+    "n": 30
+   },
+   "device_ops": {
+    "median": 269.0,
+    "mean": 269.133,
+    "p10": 269,
+    "p90": 269,
+    "n": 30
+   },
+   "chain_before_hash_ms": {
+    "median": 1.121,
+    "mean": 1.178,
+    "p10": 1.101,
+    "p90": 1.396,
+    "n": 30
+   },
+   "stage_span_hash_dtoh_end_to_rows_htod_ms": {
+    "median": 5.262,
+    "mean": 5.283,
+    "p10": 3.928,
+    "p90": 6.261,
+    "n": 30
+   },
+   "ops_between_hash_and_rows": {
+    "median": 0.0,
+    "mean": 0.0,
+    "p10": 0,
+    "p90": 0,
+    "n": 30
+   },
+   "gpu_work_span_under_stage_ms": {
+    "median": 0.0,
+    "mean": 0.0,
+    "p10": 0.0,
+    "p90": 0.0,
+    "n": 30
+   }
+  },
+  "source": "/home/sfxnz/projects/data/dsv41-traces/p3-A_p-c2-20260926-111110/c2-rank0.pkl"
+ },
+ "A_c2_r1": {
+  "steps": 30,
+  "target_graph_id": 617,
+  "groups": {
+   "617": 30,
+   "620": 9
+  },
+  "step_wall_ms": {
+   "median": 89.12,
+   "mean": 89.672,
+   "p10": 87.499,
+   "p90": 92.713,
+   "n": 30
+  },
+  "device_busy_ms": {
+   "median": 81.681,
+   "mean": 81.973,
+   "p10": 80.222,
+   "p90": 84.101,
+   "n": 30
+  },
+  "device_idle_ms": {
+   "median": 7.365,
+   "mean": 7.7,
+   "p10": 6.447,
+   "p90": 9.315,
+   "n": 30
+  },
+  "device_ops_per_step": {
+   "median": 2572.0,
+   "mean": 2572.133,
+   "p10": 2572,
+   "p90": 2572,
+   "n": 30
+  },
+  "phases_ms": {
+   "target_graph_ms": {
+    "median": 74.367,
+    "mean": 74.602,
+    "p10": 73.037,
+    "p90": 76.875,
+    "n": 30
+   },
+   "draft_graph_ms": {
+    "median": 5.678,
+    "mean": 5.772,
+    "p10": 5.27,
+    "p90": 6.254,
+    "n": 30
+   },
+   "eager_after_target_ms": {
+    "median": 2.598,
+    "mean": 2.631,
+    "p10": 2.588,
+    "p90": 2.72,
+    "n": 30
+   },
+   "eager_before_next_target_ms": {
+    "median": 6.378,
+    "mean": 6.668,
+    "p10": 5.494,
+    "p90": 7.943,
+    "n": 30
+   }
+  },
+  "categories": {
+   "routed_moe [COOP]": {
+    "ms_per_step": 42.038,
+    "launches_per_step": 40.0
+   },
+   "dense_b12x": {
+    "ms_per_step": 21.118,
+    "launches_per_step": 231.0
+   },
+   "nccl_allreduce": {
+    "ms_per_step": 5.252,
+    "launches_per_step": 88.0
+   },
+   "woa_einsum": {
+    "ms_per_step": 3.599,
+    "launches_per_step": 43.0
+   },
+   "mhc [MHC_DET]": {
+    "ms_per_step": 2.84,
+    "launches_per_step": 261.0
+   },
+   "torch_eltwise": {
+    "ms_per_step": 2.051,
+    "launches_per_step": 797.0
+   },
+   "router_gate_bf16 (+splitK)": {
+    "ms_per_step": 1.964,
+    "launches_per_step": 94.0
+   },
+   "sparse_mla": {
+    "ms_per_step": 1.517,
+    "launches_per_step": 86.0
+   },
+   "deepgemm_fp8fp4_other": {
+    "ms_per_step": 1.317,
+    "launches_per_step": 6.0
+   },
+   "router_topk": {
+    "ms_per_step": 1.0,
+    "launches_per_step": 43.0
+   },
+   "compare_scalar<long>": {
+    "ms_per_step": 0.771,
+    "launches_per_step": 178.0
+   },
+   "wp_gemm [WP_GEMV]": {
+    "ms_per_step": 0.717,
+    "launches_per_step": 8.0
+   },
+   "cand_mask [CAND_MASK]": {
+    "ms_per_step": 0.679,
+    "launches_per_step": 8.0
+   },
+   "act_quant": {
+    "ms_per_step": 0.606,
+    "launches_per_step": 226.0
+   },
+   "triton": {
+    "ms_per_step": 0.367,
+    "launches_per_step": 104.07
+   },
+   "indexer": {
+    "ms_per_step": 0.35,
+    "launches_per_step": 64.0
+   },
+   "other": {
+    "ms_per_step": 0.32,
+    "launches_per_step": 114.0
+   },
+   "nccl_allgather": {
+    "ms_per_step": 0.308,
+    "launches_per_step": 4.0
+   },
+   "rope_kv_cache": {
+    "ms_per_step": 0.279,
+    "launches_per_step": 9.0
+   },
+   "sampler_argmax": {
+    "ms_per_step": 0.1,
+    "launches_per_step": 9.0
+   },
+   "memcpy": {
+    "ms_per_step": 0.096,
+    "launches_per_step": 63.07
+   },
+   "t2r_scan_map [T2R_DEDUP]": {
+    "ms_per_step": 0.077,
+    "launches_per_step": 63.0
+   },
+   "swa_meta_kernel [SWA_META]": {
+    "ms_per_step": 0.033,
+    "launches_per_step": 15.0
+   },
+   "cutlass_bf16_gemm": {
+    "ms_per_step": 0.028,
+    "launches_per_step": 7.0
+   },
+   "norm": {
+    "ms_per_step": 0.019,
+    "launches_per_step": 6.0
+   },
+   "woa_pack": {
+    "ms_per_step": 0.011,
+    "launches_per_step": 3.0
+   },
+   "memset": {
+    "ms_per_step": 0.002,
+    "launches_per_step": 2.0
+   }
+  },
+  "gemv_roles": {},
+  "layer_segments": {
+   "replays_used": 30,
+   "A attn block: prev MoE AR end -> attn AR start": {
+    "median_us": 438.8,
+    "mean_us": 528.9,
+    "ms_per_step_mean_x40": 21.156
+   },
+   "B attn AR": {
+    "median_us": 30.9,
+    "mean_us": 54.9,
+    "ms_per_step_mean_x40": 2.197
+   },
+   "C ffn prologue: attn AR end -> routed start": {
+    "median_us": 151.2,
+    "mean_us": 154.7,
+    "ms_per_step_mean_x40": 6.188
+   },
+   "D routed MoE": {
+    "median_us": 1032.9,
+    "mean_us": 1051.0,
+    "ms_per_step_mean_x40": 42.038
+   },
+   "E epilogue: routed end -> MoE AR start": {
+    "median_us": 10.2,
+    "mean_us": 10.8,
+    "ms_per_step_mean_x40": 0.432
+   },
+   "F MoE AR": {
+    "median_us": 32.8,
+    "mean_us": 64.2,
+    "ms_per_step_mean_x40": 2.568
+   },
+   "sum_segments_ms_per_step": 74.58,
+   "routed_call_us": {
+    "median": 1032.882,
+    "mean": 1050.958,
+    "p10": 1014.946,
+    "p90": 1104.321,
+    "n": 1200
+   },
+   "kernels_launched_per_layer": {
+    "C kernels launched": 26.12,
+    "E kernels launched": 3.0,
+    "A kernels launched": 17.5,
+    "mhc kernels per layer": 4.31
+   },
+   "qkv_join_wait_us": {
+    "plain layers": {
+     "median": 0.5,
+     "mean": 0.5,
+     "per_step_ms": 0.017,
+     "layers_per_step": 32.0
+    },
+    "wp layers": {
+     "median": 25.2,
+     "mean": 28.2,
+     "per_step_ms": 0.226,
+     "layers_per_step": 8.0
+    }
+   }
+  },
+  "engram_stage_gap": {
+   "gap_ms": {
+    "median": 5.152,
+    "mean": 5.346,
+    "p10": 4.114,
+    "p90": 6.634,
+    "n": 30
+   },
+   "kernel_before_gap": {
+    "Memcpy DtoH ": 30
+   }
+  },
+  "ffn_prologue_and_mhc": {
+   "mhc elapsed, attention half (first start -> last end)": {
+    "median_us": 29.7,
+    "mean_us": 67.91,
+    "n": 1200,
+    "ms_per_step_median_x40": 1.187
+   },
+   "mhc elapsed, ffn half (first start -> last end)": {
+    "median_us": 25.4,
+    "mean_us": 27.42,
+    "n": 1200,
+    "ms_per_step_median_x40": 1.015
+   },
+   "C total": {
+    "median_us": 151.2,
+    "mean_us": 154.69,
+    "n": 1200,
+    "ms_per_step_median_x40": 6.047
+   },
+   "C1 attn AR end -> last ffn mhc end": {
+    "median_us": 30.1,
+    "mean_us": 31.98,
+    "n": 1200,
+    "ms_per_step_median_x40": 1.206
+   },
+   "C2 router gate kernel (bf16 cuBLAS, side stream)": {
+    "median_us": 20.0,
+    "mean_us": 21.32,
+    "n": 1200,
+    "ms_per_step_median_x40": 0.799
+   },
+   "C3 router gate end -> routed start (splitK, topk, prep)": {
+    "median_us": 99.6,
+    "mean_us": 100.71,
+    "n": 1200,
+    "ms_per_step_median_x40": 3.984
+   },
+   "router gate overlapped by shared gate_up (us)": {
+    "median_us": 0.0,
+    "mean_us": 1.15,
+    "n": 1200,
+    "ms_per_step_median_x40": 0.0
+   },
+   "shared gate_up kernel": {
+    "median_us": 57.8,
+    "mean_us": 58.71,
+    "n": 1200,
+    "ms_per_step_median_x40": 2.312
+   },
+   "shared_down end - routed start (+ = after)": {
+    "median_us": -6.4,
+    "mean_us": -6.33,
+    "n": 1200,
+    "ms_per_step_median_x40": -0.257
+   },
+   "frac layers shared_down ends after routed start": {
+    "median_us": 0.0,
+    "mean_us": 0.02,
+    "n": 1200,
+    "ms_per_step_median_x40": 0.0
+   }
+  },
+  "eager_before_next_target": {
+   "span_ms": {
+    "median": 6.378,
+    "mean": 6.668,
+    "p10": 5.494,
+    "p90": 7.943,
+    "n": 30
+   },
+   "busy_ms": {
+    "median": 0.418,
+    "mean": 0.468,
+    "p10": 0.41,
+    "p90": 0.595,
+    "n": 30
+   },
+   "idle_ms": {
+    "median": 5.969,
+    "mean": 6.199,
+    "p10": 5.087,
+    "p90": 7.531,
+    "n": 30
+   },
+   "device_ops": {
+    "median": 269.0,
+    "mean": 269.133,
+    "p10": 269,
+    "p90": 269,
+    "n": 30
+   },
+   "chain_before_hash_ms": {
+    "median": 1.099,
+    "mean": 1.157,
+    "p10": 1.091,
+    "p90": 1.428,
+    "n": 30
+   },
+   "stage_span_hash_dtoh_end_to_rows_htod_ms": {
+    "median": 5.152,
+    "mean": 5.346,
+    "p10": 4.114,
+    "p90": 6.634,
+    "n": 30
+   },
+   "ops_between_hash_and_rows": {
+    "median": 0.0,
+    "mean": 0.0,
+    "p10": 0,
+    "p90": 0,
+    "n": 30
+   },
+   "gpu_work_span_under_stage_ms": {
+    "median": 0.0,
+    "mean": 0.0,
+    "p10": 0.0,
+    "p90": 0.0,
+    "n": 30
+   }
+  },
+  "source": "/home/sfxnz/projects/data/dsv41-traces/p3-A_p-c2-20260926-111110/c2-rank1.pkl"
+ },
+ "K_c1_r0": {
+  "steps": 105,
+  "target_graph_id": 644,
+  "groups": {
+   "644": 105
+  },
+  "step_wall_ms": {
+   "median": 49.149,
+   "mean": 49.544,
+   "p10": 47.223,
+   "p90": 51.703,
+   "n": 105
+  },
+  "device_busy_ms": {
+   "median": 46.519,
+   "mean": 46.756,
+   "p10": 44.882,
+   "p90": 48.803,
+   "n": 105
+  },
+  "device_idle_ms": {
+   "median": 2.587,
+   "mean": 2.788,
+   "p10": 1.691,
+   "p90": 3.23,
+   "n": 105
+  },
+  "device_ops_per_step": {
+   "median": 1612,
+   "mean": 1612.114,
+   "p10": 1612,
+   "p90": 1612,
+   "n": 105
+  },
+  "phases_ms": {
+   "target_graph_ms": {
+    "median": 40.289,
+    "mean": 40.427,
+    "p10": 38.761,
+    "p90": 42.283,
+    "n": 105
+   },
+   "draft_graph_ms": {
+    "median": 4.974,
+    "mean": 4.993,
+    "p10": 4.644,
+    "p90": 5.338,
+    "n": 105
+   },
+   "eager_after_target_ms": {
+    "median": 2.348,
+    "mean": 2.398,
+    "p10": 2.321,
+    "p90": 2.594,
+    "n": 105
+   },
+   "eager_before_next_target_ms": {
+    "median": 1.587,
+    "mean": 1.726,
+    "p10": 0.7,
+    "p90": 2.037,
+    "n": 105
+   }
+  },
+  "categories": {
+   "dense_gemv [DENSE_GEMV]": {
+    "ms_per_step": 22.223,
+    "launches_per_step": 266.0
+   },
+   "routed_moe [COOP]": {
+    "ms_per_step": 15.958,
+    "launches_per_step": 40.0
+   },
+   "nccl_allreduce": {
+    "ms_per_step": 3.481,
+    "launches_per_step": 88.0
+   },
+   "router_gate_bf16 (+splitK)": {
+    "ms_per_step": 2.619,
+    "launches_per_step": 88.0
+   },
+   "mhc [MHC_DET]": {
+    "ms_per_step": 2.067,
+    "launches_per_step": 261.0
+   },
+   "sparse_mla": {
+    "ms_per_step": 1.17,
+    "launches_per_step": 86.0
+   },
+   "deepgemm_fp8fp4_other": {
+    "ms_per_step": 0.865,
+    "launches_per_step": 6.0
+   },
+   "torch_eltwise": {
+    "ms_per_step": 0.496,
+    "launches_per_step": 224.0
+   },
+   "cutlass_bf16_gemm": {
+    "ms_per_step": 0.348,
+    "launches_per_step": 10.0
+   },
+   "other": {
+    "ms_per_step": 0.344,
+    "launches_per_step": 115.0
+   },
+   "wp_gemm [WP_GEMV]": {
+    "ms_per_step": 0.341,
+    "launches_per_step": 8.0
+   },
+   "indexer": {
+    "ms_per_step": 0.33,
+    "launches_per_step": 64.0
+   },
+   "triton": {
+    "ms_per_step": 0.326,
+    "launches_per_step": 104.06
+   },
+   "router_topk": {
+    "ms_per_step": 0.32,
+    "launches_per_step": 43.0
+   },
+   "dense_b12x": {
+    "ms_per_step": 0.226,
+    "launches_per_step": 8.0
+   },
+   "nccl_allgather": {
+    "ms_per_step": 0.149,
+    "launches_per_step": 4.0
+   },
+   "rope_kv_cache": {
+    "ms_per_step": 0.099,
+    "launches_per_step": 9.0
+   },
+   "sampler_argmax": {
+    "ms_per_step": 0.097,
+    "launches_per_step": 9.0
+   },
+   "act_quant": {
+    "ms_per_step": 0.084,
+    "launches_per_step": 46.0
+   },
+   "memcpy": {
+    "ms_per_step": 0.07,
+    "launches_per_step": 48.06
+   },
+   "moe_prep_kernel [MOE_PREP]": {
+    "ms_per_step": 0.056,
+    "launches_per_step": 40.0
+   },
+   "swa_meta_kernel [SWA_META]": {
+    "ms_per_step": 0.034,
+    "launches_per_step": 15.0
+   },
+   "cand_mask [CAND_MASK]": {
+    "ms_per_step": 0.022,
+    "launches_per_step": 8.0
+   },
+   "norm": {
+    "ms_per_step": 0.018,
+    "launches_per_step": 6.0
+   },
+   "t2r_scan_map [T2R_DEDUP]": {
+    "ms_per_step": 0.01,
+    "launches_per_step": 6.0
+   },
+   "woa_pack": {
+    "ms_per_step": 0.005,
+    "launches_per_step": 3.0
+   },
+   "compare_scalar<long>": {
+    "ms_per_step": 0.004,
+    "launches_per_step": 3.0
+   },
+   "memset": {
+    "ms_per_step": 0.003,
+    "launches_per_step": 4.0
+   }
+  },
+  "gemv_roles": {
+   "wq_b": {
+    "calls_per_step": 43.0,
+    "us_median": 99.9,
+    "ms_per_step": 4.343
+   },
+   "wo_b": {
+    "calls_per_step": 43.0,
+    "us_median": 94.8,
+    "ms_per_step": 4.115
+   },
+   "wo_a": {
+    "calls_per_step": 43.0,
+    "us_median": 75.5,
+    "ms_per_step": 3.255
+   },
+   "lm_head": {
+    "calls_per_step": 2.0,
+    "us_median": 1450.2,
+    "ms_per_step": 2.933
+   },
+   "shared_gate_up": {
+    "calls_per_step": 42.99,
+    "us_median": 56.8,
+    "ms_per_step": 2.496
+   },
+   "qkv_a": {
+    "calls_per_step": 43.0,
+    "us_median": 43.8,
+    "ms_per_step": 1.957
+   },
+   "engram_wkv": {
+    "calls_per_step": 2.0,
+    "us_median": 679.9,
+    "ms_per_step": 1.361
+   },
+   "shared_down": {
+    "calls_per_step": 43.0,
+    "us_median": 28.3,
+    "ms_per_step": 1.25
+   },
+   "main_proj": {
+    "calls_per_step": 1.01,
+    "us_median": 364.1,
+    "ms_per_step": 0.37
+   },
+   "draft_ctx_kv": {
+    "calls_per_step": 3.0,
+    "us_median": 45.4,
+    "ms_per_step": 0.143
+   }
+  },
+  "layer_segments": {
+   "replays_used": 105,
+   "A attn block: prev MoE AR end -> attn AR start": {
+    "median_us": 375.9,
+    "mean_us": 437.5,
+    "ms_per_step_mean_x40": 17.501
+   },
+   "B attn AR": {
+    "median_us": 23.5,
+    "mean_us": 41.8,
+    "ms_per_step_mean_x40": 1.672
+   },
+   "C ffn prologue: attn AR end -> routed start": {
+    "median_us": 85.3,
+    "mean_us": 89.7,
+    "ms_per_step_mean_x40": 3.588
+   },
+   "D routed MoE": {
+    "median_us": 394.9,
+    "mean_us": 399.0,
+    "ms_per_step_mean_x40": 15.958
+   },
+   "E epilogue: routed end -> MoE AR start": {
+    "median_us": 9.4,
+    "mean_us": 10.2,
+    "ms_per_step_mean_x40": 0.408
+   },
+   "F MoE AR": {
+    "median_us": 23.4,
+    "mean_us": 32.0,
+    "ms_per_step_mean_x40": 1.281
+   },
+   "sum_segments_ms_per_step": 40.409,
+   "routed_call_us": {
+    "median": 394.928,
+    "mean": 398.958,
+    "p10": 323.745,
+    "p90": 477.057,
+    "n": 4200
+   },
+   "kernels_launched_per_layer": {
+    "C kernels launched": 9.34,
+    "E kernels launched": 2.0,
+    "A kernels launched": 16.23,
+    "mhc kernels per layer": 5.91
+   },
+   "qkv_join_wait_us": {
+    "plain layers": {
+     "median": 0.5,
+     "mean": 0.6,
+     "per_step_ms": 0.018,
+     "layers_per_step": 32.0
+    },
+    "wp layers": {
+     "median": 0.6,
+     "mean": 13.0,
+     "per_step_ms": 0.104,
+     "layers_per_step": 8.0
+    }
+   }
+  },
+  "engram_stage_gap": {
+   "gap_ms": {
+    "median": 0.957,
+    "mean": 1.126,
+    "p10": 0.084,
+    "p90": 1.444,
+    "n": 105
+   },
+   "kernel_before_gap": {
+    "_gather_lookback_kernel": 102,
+    "Memcpy HtoD ": 3
+   }
+  },
+  "ffn_prologue_and_mhc": {
+   "mhc elapsed, attention half (first start -> last end)": {
+    "median_us": 15.6,
+    "mean_us": 49.17,
+    "n": 4200,
+    "ms_per_step_median_x40": 0.622
+   },
+   "mhc elapsed, ffn half (first start -> last end)": {
+    "median_us": 13.8,
+    "mean_us": 14.23,
+    "n": 4200,
+    "ms_per_step_median_x40": 0.55
+   },
+   "C total": {
+    "median_us": 85.3,
+    "mean_us": 89.64,
+    "n": 4199,
+    "ms_per_step_median_x40": 3.413
+   },
+   "C1 attn AR end -> last ffn mhc end": {
+    "median_us": 14.0,
+    "mean_us": 14.49,
+    "n": 4199,
+    "ms_per_step_median_x40": 0.558
+   },
+   "C2 router gate kernel (bf16 cuBLAS, side stream)": {
+    "median_us": 47.0,
+    "mean_us": 47.6,
+    "n": 4199,
+    "ms_per_step_median_x40": 1.882
+   },
+   "C3 router gate end -> routed start (splitK, topk, prep)": {
+    "median_us": 24.7,
+    "mean_us": 26.13,
+    "n": 4199,
+    "ms_per_step_median_x40": 0.987
+   },
+   "router gate overlapped by shared gate_up (us)": {
+    "median_us": 34.1,
+    "mean_us": 34.41,
+    "n": 4199,
+    "ms_per_step_median_x40": 1.364
+   },
+   "shared gate_up kernel": {
+    "median_us": 56.9,
+    "mean_us": 58.19,
+    "n": 4199,
+    "ms_per_step_median_x40": 2.276
+   },
+   "shared_down end - routed start (+ = after)": {
+    "median_us": 387.6,
+    "mean_us": 361.9,
+    "n": 4199,
+    "ms_per_step_median_x40": 15.505
+   },
+   "frac layers shared_down ends after routed start": {
+    "median_us": 1.0,
+    "mean_us": 0.98,
+    "n": 4199,
+    "ms_per_step_median_x40": 0.04
+   }
+  },
+  "eager_before_next_target": {
+   "span_ms": {
+    "median": 1.587,
+    "mean": 1.726,
+    "p10": 0.7,
+    "p90": 2.037,
+    "n": 105
+   },
+   "busy_ms": {
+    "median": 0.204,
+    "mean": 0.234,
+    "p10": 0.189,
+    "p90": 0.336,
+    "n": 105
+   },
+   "idle_ms": {
+    "median": 1.313,
+    "mean": 1.491,
+    "p10": 0.471,
+    "p90": 1.801,
+    "n": 105
+   },
+   "device_ops": {
+    "median": 106,
+    "mean": 106.114,
+    "p10": 106,
+    "p90": 106,
+    "n": 105
+   },
+   "chain_before_hash_ms": {
+    "median": 0.08,
+    "mean": 0.083,
+    "p10": 0.071,
+    "p90": 0.106,
+    "n": 105
+   },
+   "stage_span_hash_dtoh_end_to_rows_htod_ms": {
+    "median": 1.368,
+    "mean": 1.504,
+    "p10": 0.44,
+    "p90": 1.795,
+    "n": 105
+   },
+   "ops_between_hash_and_rows": {
+    "median": 75,
+    "mean": 75.01,
+    "p10": 75,
+    "p90": 75,
+    "n": 105
+   },
+   "gpu_work_span_under_stage_ms": {
+    "median": 0.351,
+    "mean": 0.379,
+    "p10": 0.337,
+    "p90": 0.468,
+    "n": 105
+   }
+  },
+  "source": "/home/sfxnz/projects/data/dsv41-traces/p3-K_p-c1-20260926-113034/c1-rank0.pkl"
+ },
+ "K_c1_r1": {
+  "steps": 105,
+  "target_graph_id": 644,
+  "groups": {
+   "644": 105
+  },
+  "step_wall_ms": {
+   "median": 49.311,
+   "mean": 49.543,
+   "p10": 47.474,
+   "p90": 51.605,
+   "n": 105
+  },
+  "device_busy_ms": {
+   "median": 46.269,
+   "mean": 46.488,
+   "p10": 44.478,
+   "p90": 48.383,
+   "n": 105
+  },
+  "device_idle_ms": {
+   "median": 2.897,
+   "mean": 3.056,
+   "p10": 1.895,
+   "p90": 3.579,
+   "n": 105
+  },
+  "device_ops_per_step": {
+   "median": 1612,
+   "mean": 1612.114,
+   "p10": 1612,
+   "p90": 1612,
+   "n": 105
+  },
+  "phases_ms": {
+   "target_graph_ms": {
+    "median": 40.018,
+    "mean": 40.234,
+    "p10": 38.49,
+    "p90": 42.08,
+    "n": 105
+   },
+   "draft_graph_ms": {
+    "median": 5.016,
+    "mean": 5.015,
+    "p10": 4.646,
+    "p90": 5.405,
+    "n": 105
+   },
+   "eager_after_target_ms": {
+    "median": 2.351,
+    "mean": 2.385,
+    "p10": 2.33,
+    "p90": 2.51,
+    "n": 105
+   },
+   "eager_before_next_target_ms": {
+    "median": 1.788,
+    "mean": 1.908,
+    "p10": 0.716,
+    "p90": 2.233,
+    "n": 105
+   }
+  },
+  "categories": {
+   "dense_gemv [DENSE_GEMV]": {
+    "ms_per_step": 22.081,
+    "launches_per_step": 266.0
+   },
+   "routed_moe [COOP]": {
+    "ms_per_step": 15.809,
+    "launches_per_step": 40.0
+   },
+   "nccl_allreduce": {
+    "ms_per_step": 3.532,
+    "launches_per_step": 88.0
+   },
+   "router_gate_bf16 (+splitK)": {
+    "ms_per_step": 2.631,
+    "launches_per_step": 88.0
+   },
+   "mhc [MHC_DET]": {
+    "ms_per_step": 2.021,
+    "launches_per_step": 261.0
+   },
+   "sparse_mla": {
+    "ms_per_step": 1.152,
+    "launches_per_step": 86.0
+   },
+   "deepgemm_fp8fp4_other": {
+    "ms_per_step": 0.825,
+    "launches_per_step": 6.0
+   },
+   "torch_eltwise": {
+    "ms_per_step": 0.475,
+    "launches_per_step": 224.0
+   },
+   "wp_gemm [WP_GEMV]": {
+    "ms_per_step": 0.336,
+    "launches_per_step": 8.0
+   },
+   "other": {
+    "ms_per_step": 0.335,
+    "launches_per_step": 115.0
+   },
+   "cutlass_bf16_gemm": {
+    "ms_per_step": 0.335,
+    "launches_per_step": 10.0
+   },
+   "indexer": {
+    "ms_per_step": 0.326,
+    "launches_per_step": 64.0
+   },
+   "triton": {
+    "ms_per_step": 0.32,
+    "launches_per_step": 104.06
+   },
+   "router_topk": {
+    "ms_per_step": 0.308,
+    "launches_per_step": 43.0
+   },
+   "nccl_allgather": {
+    "ms_per_step": 0.231,
+    "launches_per_step": 4.0
+   },
+   "dense_b12x": {
+    "ms_per_step": 0.223,
+    "launches_per_step": 8.0
+   },
+   "rope_kv_cache": {
+    "ms_per_step": 0.097,
+    "launches_per_step": 9.0
+   },
+   "sampler_argmax": {
+    "ms_per_step": 0.097,
+    "launches_per_step": 9.0
+   },
+   "act_quant": {
+    "ms_per_step": 0.085,
+    "launches_per_step": 46.0
+   },
+   "memcpy": {
+    "ms_per_step": 0.069,
+    "launches_per_step": 48.06
+   },
+   "moe_prep_kernel [MOE_PREP]": {
+    "ms_per_step": 0.055,
+    "launches_per_step": 40.0
+   },
+   "swa_meta_kernel [SWA_META]": {
+    "ms_per_step": 0.039,
+    "launches_per_step": 15.0
+   },
+   "cand_mask [CAND_MASK]": {
+    "ms_per_step": 0.024,
+    "launches_per_step": 8.0
+   },
+   "norm": {
+    "ms_per_step": 0.017,
+    "launches_per_step": 6.0
+   },
+   "t2r_scan_map [T2R_DEDUP]": {
+    "ms_per_step": 0.009,
+    "launches_per_step": 6.0
+   },
+   "woa_pack": {
+    "ms_per_step": 0.005,
+    "launches_per_step": 3.0
+   },
+   "compare_scalar<long>": {
+    "ms_per_step": 0.004,
+    "launches_per_step": 3.0
+   },
+   "memset": {
+    "ms_per_step": 0.003,
+    "launches_per_step": 4.0
+   }
+  },
+  "gemv_roles": {
+   "wq_b": {
+    "calls_per_step": 43.0,
+    "us_median": 99.8,
+    "ms_per_step": 4.329
+   },
+   "wo_b": {
+    "calls_per_step": 43.0,
+    "us_median": 95.2,
+    "ms_per_step": 4.11
+   },
+   "wo_a": {
+    "calls_per_step": 43.0,
+    "us_median": 74.5,
+    "ms_per_step": 3.217
+   },
+   "lm_head": {
+    "calls_per_step": 2.0,
+    "us_median": 1436.9,
+    "ms_per_step": 2.884
+   },
+   "shared_gate_up": {
+    "calls_per_step": 43.0,
+    "us_median": 57.0,
+    "ms_per_step": 2.49
+   },
+   "qkv_a": {
+    "calls_per_step": 43.0,
+    "us_median": 44.1,
+    "ms_per_step": 1.948
+   },
+   "engram_wkv": {
+    "calls_per_step": 2.01,
+    "us_median": 676.5,
+    "ms_per_step": 1.355
+   },
+   "shared_down": {
+    "calls_per_step": 43.0,
+    "us_median": 28.4,
+    "ms_per_step": 1.25
+   },
+   "main_proj": {
+    "calls_per_step": 0.99,
+    "us_median": 364.4,
+    "ms_per_step": 0.364
+   },
+   "draft_ctx_kv": {
+    "calls_per_step": 3.0,
+    "us_median": 44.4,
+    "ms_per_step": 0.135
+   }
+  },
+  "layer_segments": {
+   "replays_used": 105,
+   "A attn block: prev MoE AR end -> attn AR start": {
+    "median_us": 375.0,
+    "mean_us": 434.3,
+    "ms_per_step_mean_x40": 17.374
+   },
+   "B attn AR": {
+    "median_us": 24.1,
+    "mean_us": 40.2,
+    "ms_per_step_mean_x40": 1.61
+   },
+   "C ffn prologue: attn AR end -> routed start": {
+    "median_us": 85.5,
+    "mean_us": 89.7,
+    "ms_per_step_mean_x40": 3.589
+   },
+   "D routed MoE": {
+    "median_us": 392.8,
+    "mean_us": 395.2,
+    "ms_per_step_mean_x40": 15.809
+   },
+   "E epilogue: routed end -> MoE AR start": {
+    "median_us": 9.1,
+    "mean_us": 9.7,
+    "ms_per_step_mean_x40": 0.389
+   },
+   "F MoE AR": {
+    "median_us": 24.1,
+    "mean_us": 36.2,
+    "ms_per_step_mean_x40": 1.447
+   },
+   "sum_segments_ms_per_step": 40.217,
+   "routed_call_us": {
+    "median": 392.767,
+    "mean": 395.216,
+    "p10": 321.183,
+    "p90": 471.038,
+    "n": 4200
+   },
+   "kernels_launched_per_layer": {
+    "C kernels launched": 9.41,
+    "E kernels launched": 2.0,
+    "A kernels launched": 16.25,
+    "mhc kernels per layer": 5.96
+   },
+   "qkv_join_wait_us": {
+    "plain layers": {
+     "median": 0.5,
+     "mean": 0.5,
+     "per_step_ms": 0.017,
+     "layers_per_step": 32.0
+    },
+    "wp layers": {
+     "median": 0.5,
+     "mean": 12.1,
+     "per_step_ms": 0.096,
+     "layers_per_step": 8.0
+    }
+   }
+  },
+  "engram_stage_gap": {
+   "gap_ms": {
+    "median": 1.182,
+    "mean": 1.299,
+    "p10": 0.075,
+    "p90": 1.636,
+    "n": 105
+   },
+   "kernel_before_gap": {
+    "_gather_lookback_kernel": 102,
+    "Memcpy HtoD ": 3
+   }
+  },
+  "ffn_prologue_and_mhc": {
+   "mhc elapsed, attention half (first start -> last end)": {
+    "median_us": 15.6,
+    "mean_us": 49.69,
+    "n": 4200,
+    "ms_per_step_median_x40": 0.623
+   },
+   "mhc elapsed, ffn half (first start -> last end)": {
+    "median_us": 13.6,
+    "mean_us": 14.01,
+    "n": 4200,
+    "ms_per_step_median_x40": 0.544
+   },
+   "C total": {
+    "median_us": 85.5,
+    "mean_us": 89.72,
+    "n": 4200,
+    "ms_per_step_median_x40": 3.42
+   },
+   "C1 attn AR end -> last ffn mhc end": {
+    "median_us": 13.8,
+    "mean_us": 14.3,
+    "n": 4200,
+    "ms_per_step_median_x40": 0.552
+   },
+   "C2 router gate kernel (bf16 cuBLAS, side stream)": {
+    "median_us": 48.1,
+    "mean_us": 48.38,
+    "n": 4200,
+    "ms_per_step_median_x40": 1.924
+   },
+   "C3 router gate end -> routed start (splitK, topk, prep)": {
+    "median_us": 24.0,
+    "mean_us": 25.65,
+    "n": 4200,
+    "ms_per_step_median_x40": 0.96
+   },
+   "router gate overlapped by shared gate_up (us)": {
+    "median_us": 35.2,
+    "mean_us": 35.19,
+    "n": 4200,
+    "ms_per_step_median_x40": 1.408
+   },
+   "shared gate_up kernel": {
+    "median_us": 57.1,
+    "mean_us": 58.05,
+    "n": 4200,
+    "ms_per_step_median_x40": 2.282
+   },
+   "shared_down end - routed start (+ = after)": {
+    "median_us": 384.4,
+    "mean_us": 354.56,
+    "n": 4200,
+    "ms_per_step_median_x40": 15.378
+   },
+   "frac layers shared_down ends after routed start": {
+    "median_us": 1.0,
+    "mean_us": 0.98,
+    "n": 4200,
+    "ms_per_step_median_x40": 0.04
+   }
+  },
+  "eager_before_next_target": {
+   "span_ms": {
+    "median": 1.788,
+    "mean": 1.908,
+    "p10": 0.716,
+    "p90": 2.233,
+    "n": 105
+   },
+   "busy_ms": {
+    "median": 0.186,
+    "mean": 0.225,
+    "p10": 0.179,
+    "p90": 0.355,
+    "n": 105
+   },
+   "idle_ms": {
+    "median": 1.565,
+    "mean": 1.683,
+    "p10": 0.442,
+    "p90": 2.025,
+    "n": 105
+   },
+   "device_ops": {
+    "median": 106,
+    "mean": 106.114,
+    "p10": 106,
+    "p90": 106,
+    "n": 105
+   },
+   "chain_before_hash_ms": {
+    "median": 0.081,
+    "mean": 0.081,
+    "p10": 0.07,
+    "p90": 0.088,
+    "n": 105
+   },
+   "stage_span_hash_dtoh_end_to_rows_htod_ms": {
+    "median": 1.558,
+    "mean": 1.673,
+    "p10": 0.482,
+    "p90": 1.974,
+    "n": 105
+   },
+   "ops_between_hash_and_rows": {
+    "median": 75,
+    "mean": 75.0,
+    "p10": 75,
+    "p90": 75,
+    "n": 105
+   },
+   "gpu_work_span_under_stage_ms": {
+    "median": 0.338,
+    "mean": 0.375,
+    "p10": 0.332,
+    "p90": 0.499,
+    "n": 105
+   }
+  },
+  "source": "/home/sfxnz/projects/data/dsv41-traces/p3-K_p-c1-20260926-113034/c1-rank1.pkl"
+ },
+ "K_c2_r0": {
+  "steps": 34,
+  "target_graph_id": 641,
+  "groups": {
+   "641": 34,
+   "644": 2
+  },
+  "step_wall_ms": {
+   "median": 61.87,
+   "mean": 62.657,
+   "p10": 60.405,
+   "p90": 64.676,
+   "n": 34
+  },
+  "device_busy_ms": {
+   "median": 59.09,
+   "mean": 59.49,
+   "p10": 57.634,
+   "p90": 61.248,
+   "n": 34
+  },
+  "device_idle_ms": {
+   "median": 2.673,
+   "mean": 3.167,
+   "p10": 2.249,
+   "p90": 3.165,
+   "n": 34
+  },
+  "device_ops_per_step": {
+   "median": 1616.0,
+   "mean": 1616.235,
+   "p10": 1616,
+   "p90": 1616,
+   "n": 34
+  },
+  "phases_ms": {
+   "target_graph_ms": {
+    "median": 51.999,
+    "mean": 52.5,
+    "p10": 50.819,
+    "p90": 54.381,
+    "n": 34
+   },
+   "draft_graph_ms": {
+    "median": 5.542,
+    "mean": 5.513,
+    "p10": 5.198,
+    "p90": 5.796,
+    "n": 34
+   },
+   "eager_after_target_ms": {
+    "median": 2.473,
+    "mean": 2.507,
+    "p10": 2.463,
+    "p90": 2.667,
+    "n": 34
+   },
+   "eager_before_next_target_ms": {
+    "median": 1.659,
+    "mean": 2.138,
+    "p10": 1.143,
+    "p90": 1.971,
+    "n": 34
+   }
+  },
+  "categories": {
+   "routed_moe [COOP]": {
+    "ms_per_step": 25.836,
+    "launches_per_step": 40.0
+   },
+   "dense_gemv [DENSE_GEMV]": {
+    "ms_per_step": 22.481,
+    "launches_per_step": 265.0
+   },
+   "nccl_allreduce": {
+    "ms_per_step": 4.651,
+    "launches_per_step": 88.0
+   },
+   "router_gate_bf16 (+splitK)": {
+    "ms_per_step": 2.788,
+    "launches_per_step": 94.0
+   },
+   "mhc [MHC_DET]": {
+    "ms_per_step": 2.192,
+    "launches_per_step": 261.0
+   },
+   "sparse_mla": {
+    "ms_per_step": 1.577,
+    "launches_per_step": 86.0
+   },
+   "deepgemm_fp8fp4_other": {
+    "ms_per_step": 1.316,
+    "launches_per_step": 6.0
+   },
+   "dense_b12x": {
+    "ms_per_step": 0.649,
+    "launches_per_step": 9.0
+   },
+   "torch_eltwise": {
+    "ms_per_step": 0.607,
+    "launches_per_step": 227.0
+   },
+   "router_topk": {
+    "ms_per_step": 0.409,
+    "launches_per_step": 43.0
+   },
+   "other": {
+    "ms_per_step": 0.385,
+    "launches_per_step": 114.0
+   },
+   "triton": {
+    "ms_per_step": 0.385,
+    "launches_per_step": 104.12
+   },
+   "wp_gemm [WP_GEMV]": {
+    "ms_per_step": 0.383,
+    "launches_per_step": 8.0
+   },
+   "indexer": {
+    "ms_per_step": 0.349,
+    "launches_per_step": 64.0
+   },
+   "nccl_allgather": {
+    "ms_per_step": 0.233,
+    "launches_per_step": 4.0
+   },
+   "rope_kv_cache": {
+    "ms_per_step": 0.116,
+    "launches_per_step": 9.0
+   },
+   "act_quant": {
+    "ms_per_step": 0.105,
+    "launches_per_step": 47.0
+   },
+   "sampler_argmax": {
+    "ms_per_step": 0.099,
+    "launches_per_step": 9.0
+   },
+   "memcpy": {
+    "ms_per_step": 0.078,
+    "launches_per_step": 48.12
+   },
+   "moe_prep_kernel [MOE_PREP]": {
+    "ms_per_step": 0.063,
+    "launches_per_step": 40.0
+   },
+   "cand_mask [CAND_MASK]": {
+    "ms_per_step": 0.035,
+    "launches_per_step": 8.0
+   },
+   "swa_meta_kernel [SWA_META]": {
+    "ms_per_step": 0.031,
+    "launches_per_step": 15.0
+   },
+   "cutlass_bf16_gemm": {
+    "ms_per_step": 0.03,
+    "launches_per_step": 7.0
+   },
+   "norm": {
+    "ms_per_step": 0.016,
+    "launches_per_step": 6.0
+   },
+   "t2r_scan_map [T2R_DEDUP]": {
+    "ms_per_step": 0.009,
+    "launches_per_step": 6.0
+   },
+   "woa_pack": {
+    "ms_per_step": 0.005,
+    "launches_per_step": 3.0
+   },
+   "compare_scalar<long>": {
+    "ms_per_step": 0.005,
+    "launches_per_step": 3.0
+   },
+   "memset": {
+    "ms_per_step": 0.002,
+    "launches_per_step": 2.0
+   }
+  },
+  "gemv_roles": {
+   "wq_b": {
+    "calls_per_step": 43.0,
+    "us_median": 104.9,
+    "ms_per_step": 4.556
+   },
+   "wo_b": {
+    "calls_per_step": 43.0,
+    "us_median": 98.0,
+    "ms_per_step": 4.263
+   },
+   "wo_a": {
+    "calls_per_step": 43.0,
+    "us_median": 75.6,
+    "ms_per_step": 3.282
+   },
+   "lm_head": {
+    "calls_per_step": 2.0,
+    "us_median": 1456.6,
+    "ms_per_step": 2.934
+   },
+   "shared_gate_up": {
+    "calls_per_step": 43.0,
+    "us_median": 57.7,
+    "ms_per_step": 2.548
+   },
+   "qkv_a": {
+    "calls_per_step": 43.0,
+    "us_median": 46.7,
+    "ms_per_step": 2.086
+   },
+   "engram_wkv": {
+    "calls_per_step": 2.0,
+    "us_median": 689.7,
+    "ms_per_step": 1.388
+   },
+   "shared_down": {
+    "calls_per_step": 43.0,
+    "us_median": 28.9,
+    "ms_per_step": 1.277
+   },
+   "draft_ctx_kv": {
+    "calls_per_step": 3.0,
+    "us_median": 48.5,
+    "ms_per_step": 0.145
+   }
+  },
+  "layer_segments": {
+   "replays_used": 34,
+   "A attn block: prev MoE AR end -> attn AR start": {
+    "median_us": 399.0,
+    "mean_us": 463.7,
+    "ms_per_step_mean_x40": 18.547
+   },
+   "B attn AR": {
+    "median_us": 30.5,
+    "mean_us": 54.4,
+    "ms_per_step_mean_x40": 2.177
+   },
+   "C ffn prologue: attn AR end -> routed start": {
+    "median_us": 86.9,
+    "mean_us": 90.3,
+    "ms_per_step_mean_x40": 3.613
+   },
+   "D routed MoE": {
+    "median_us": 637.2,
+    "mean_us": 645.9,
+    "ms_per_step_mean_x40": 25.836
+   },
+   "E epilogue: routed end -> MoE AR start": {
+    "median_us": 9.5,
+    "mean_us": 10.3,
+    "ms_per_step_mean_x40": 0.41
+   },
+   "F MoE AR": {
+    "median_us": 31.3,
+    "mean_us": 47.4,
+    "ms_per_step_mean_x40": 1.898
+   },
+   "sum_segments_ms_per_step": 52.482,
+   "routed_call_us": {
+    "median": 637.25,
+    "mean": 645.912,
+    "p10": 512.416,
+    "p90": 794.402,
+    "n": 1360
+   },
+   "kernels_launched_per_layer": {
+    "C kernels launched": 9.11,
+    "E kernels launched": 2.0,
+    "A kernels launched": 16.21,
+    "mhc kernels per layer": 5.87
+   },
+   "qkv_join_wait_us": {
+    "plain layers": {
+     "median": 0.5,
+     "mean": 0.6,
+     "per_step_ms": 0.018,
+     "layers_per_step": 32.0
+    },
+    "wp layers": {
+     "median": 0.9,
+     "mean": 14.1,
+     "per_step_ms": 0.112,
+     "layers_per_step": 8.0
+    }
+   }
+  },
+  "engram_stage_gap": {
+   "gap_ms": {
+    "median": 0.829,
+    "mean": 1.35,
+    "p10": 0.407,
+    "p90": 1.392,
+    "n": 34
+   },
+   "kernel_before_gap": {
+    "_gather_lookback_kernel": 31,
+    "Memcpy HtoD ": 3
+   }
+  },
+  "ffn_prologue_and_mhc": {
+   "mhc elapsed, attention half (first start -> last end)": {
+    "median_us": 16.3,
+    "mean_us": 51.02,
+    "n": 1360,
+    "ms_per_step_median_x40": 0.651
+   },
+   "mhc elapsed, ffn half (first start -> last end)": {
+    "median_us": 14.5,
+    "mean_us": 14.88,
+    "n": 1360,
+    "ms_per_step_median_x40": 0.579
+   },
+   "C total": {
+    "median_us": 86.9,
+    "mean_us": 90.32,
+    "n": 1360,
+    "ms_per_step_median_x40": 3.478
+   },
+   "C1 attn AR end -> last ffn mhc end": {
+    "median_us": 14.7,
+    "mean_us": 15.23,
+    "n": 1360,
+    "ms_per_step_median_x40": 0.588
+   },
+   "C2 router gate kernel (bf16 cuBLAS, side stream)": {
+    "median_us": 43.1,
+    "mean_us": 44.31,
+    "n": 1360,
+    "ms_per_step_median_x40": 1.722
+   },
+   "C3 router gate end -> routed start (splitK, topk, prep)": {
+    "median_us": 29.4,
+    "mean_us": 30.06,
+    "n": 1360,
+    "ms_per_step_median_x40": 1.177
+   },
+   "router gate overlapped by shared gate_up (us)": {
+    "median_us": 28.9,
+    "mean_us": 30.49,
+    "n": 1360,
+    "ms_per_step_median_x40": 1.158
+   },
+   "shared gate_up kernel": {
+    "median_us": 57.5,
+    "mean_us": 59.23,
+    "n": 1360,
+    "ms_per_step_median_x40": 2.301
+   },
+   "shared_down end - routed start (+ = after)": {
+    "median_us": 626.6,
+    "mean_us": 616.97,
+    "n": 1360,
+    "ms_per_step_median_x40": 25.062
+   },
+   "frac layers shared_down ends after routed start": {
+    "median_us": 1.0,
+    "mean_us": 1.0,
+    "n": 1360,
+    "ms_per_step_median_x40": 0.04
+   }
+  },
+  "eager_before_next_target": {
+   "span_ms": {
+    "median": 1.659,
+    "mean": 2.138,
+    "p10": 1.143,
+    "p90": 1.971,
+    "n": 34
+   },
+   "busy_ms": {
+    "median": 0.216,
+    "mean": 0.225,
+    "p10": 0.204,
+    "p90": 0.237,
+    "n": 34
+   },
+   "idle_ms": {
+    "median": 1.437,
+    "mean": 1.912,
+    "p10": 0.923,
+    "p90": 1.747,
+    "n": 34
+   },
+   "device_ops": {
+    "median": 106.0,
+    "mean": 106.235,
+    "p10": 106,
+    "p90": 106,
+    "n": 34
+   },
+   "chain_before_hash_ms": {
+    "median": 0.081,
+    "mean": 0.084,
+    "p10": 0.073,
+    "p90": 0.091,
+    "n": 34
+   },
+   "stage_span_hash_dtoh_end_to_rows_htod_ms": {
+    "median": 1.143,
+    "mean": 1.677,
+    "p10": 0.65,
+    "p90": 1.756,
+    "n": 34
+   },
+   "ops_between_hash_and_rows": {
+    "median": 75.0,
+    "mean": 75.029,
+    "p10": 75,
+    "p90": 75,
+    "n": 34
+   },
+   "gpu_work_span_under_stage_ms": {
+    "median": 0.355,
+    "mean": 0.361,
+    "p10": 0.345,
+    "p90": 0.371,
+    "n": 34
+   }
+  },
+  "source": "/home/sfxnz/projects/data/dsv41-traces/p3-K_p-c2-20260926-113255/c2-rank0.pkl"
+ },
+ "K_c2_r1": {
+  "steps": 34,
+  "target_graph_id": 641,
+  "groups": {
+   "641": 34,
+   "644": 2
+  },
+  "step_wall_ms": {
+   "median": 61.735,
+   "mean": 62.65,
+   "p10": 60.201,
+   "p90": 64.537,
+   "n": 34
+  },
+  "device_busy_ms": {
+   "median": 59.063,
+   "mean": 59.463,
+   "p10": 57.612,
+   "p90": 61.502,
+   "n": 34
+  },
+  "device_idle_ms": {
+   "median": 2.638,
+   "mean": 3.187,
+   "p10": 1.988,
+   "p90": 3.474,
+   "n": 34
+  },
+  "device_ops_per_step": {
+   "median": 1616.0,
+   "mean": 1616.235,
+   "p10": 1616,
+   "p90": 1616,
+   "n": 34
+  },
+  "phases_ms": {
+   "target_graph_ms": {
+    "median": 52.079,
+    "mean": 52.607,
+    "p10": 50.714,
+    "p90": 54.878,
+    "n": 34
+   },
+   "draft_graph_ms": {
+    "median": 5.532,
+    "mean": 5.515,
+    "p10": 5.176,
+    "p90": 5.821,
+    "n": 34
+   },
+   "eager_after_target_ms": {
+    "median": 2.483,
+    "mean": 2.506,
+    "p10": 2.474,
+    "p90": 2.575,
+    "n": 34
+   },
+   "eager_before_next_target_ms": {
+    "median": 1.519,
+    "mean": 2.023,
+    "p10": 0.898,
+    "p90": 2.234,
+    "n": 34
+   }
+  },
+  "categories": {
+   "routed_moe [COOP]": {
+    "ms_per_step": 25.632,
+    "launches_per_step": 40.0
+   },
+   "dense_gemv [DENSE_GEMV]": {
+    "ms_per_step": 22.33,
+    "launches_per_step": 265.0
+   },
+   "nccl_allreduce": {
+    "ms_per_step": 5.037,
+    "launches_per_step": 88.0
+   },
+   "router_gate_bf16 (+splitK)": {
+    "ms_per_step": 2.802,
+    "launches_per_step": 94.0
+   },
+   "mhc [MHC_DET]": {
+    "ms_per_step": 2.2,
+    "launches_per_step": 261.0
+   },
+   "sparse_mla": {
+    "ms_per_step": 1.536,
+    "launches_per_step": 86.0
+   },
+   "deepgemm_fp8fp4_other": {
+    "ms_per_step": 1.279,
+    "launches_per_step": 6.0
+   },
+   "dense_b12x": {
+    "ms_per_step": 0.65,
+    "launches_per_step": 9.0
+   },
+   "torch_eltwise": {
+    "ms_per_step": 0.588,
+    "launches_per_step": 227.0
+   },
+   "router_topk": {
+    "ms_per_step": 0.401,
+    "launches_per_step": 43.0
+   },
+   "other": {
+    "ms_per_step": 0.381,
+    "launches_per_step": 114.0
+   },
+   "wp_gemm [WP_GEMV]": {
+    "ms_per_step": 0.38,
+    "launches_per_step": 8.0
+   },
+   "triton": {
+    "ms_per_step": 0.369,
+    "launches_per_step": 104.12
+   },
+   "indexer": {
+    "ms_per_step": 0.344,
+    "launches_per_step": 64.0
+   },
+   "nccl_allgather": {
+    "ms_per_step": 0.298,
+    "launches_per_step": 4.0
+   },
+   "rope_kv_cache": {
+    "ms_per_step": 0.116,
+    "launches_per_step": 9.0
+   },
+   "act_quant": {
+    "ms_per_step": 0.1,
+    "launches_per_step": 47.0
+   },
+   "sampler_argmax": {
+    "ms_per_step": 0.097,
+    "launches_per_step": 9.0
+   },
+   "memcpy": {
+    "ms_per_step": 0.071,
+    "launches_per_step": 48.12
+   },
+   "moe_prep_kernel [MOE_PREP]": {
+    "ms_per_step": 0.06,
+    "launches_per_step": 40.0
+   },
+   "cand_mask [CAND_MASK]": {
+    "ms_per_step": 0.033,
+    "launches_per_step": 8.0
+   },
+   "cutlass_bf16_gemm": {
+    "ms_per_step": 0.032,
+    "launches_per_step": 7.0
+   },
+   "swa_meta_kernel [SWA_META]": {
+    "ms_per_step": 0.028,
+    "launches_per_step": 15.0
+   },
+   "norm": {
+    "ms_per_step": 0.017,
+    "launches_per_step": 6.0
+   },
+   "t2r_scan_map [T2R_DEDUP]": {
+    "ms_per_step": 0.008,
+    "launches_per_step": 6.0
+   },
+   "woa_pack": {
+    "ms_per_step": 0.005,
+    "launches_per_step": 3.0
+   },
+   "compare_scalar<long>": {
+    "ms_per_step": 0.004,
+    "launches_per_step": 3.0
+   },
+   "memset": {
+    "ms_per_step": 0.001,
+    "launches_per_step": 2.0
+   }
+  },
+  "gemv_roles": {
+   "wq_b": {
+    "calls_per_step": 43.0,
+    "us_median": 103.5,
+    "ms_per_step": 4.477
+   },
+   "wo_b": {
+    "calls_per_step": 43.0,
+    "us_median": 98.0,
+    "ms_per_step": 4.265
+   },
+   "wo_a": {
+    "calls_per_step": 43.0,
+    "us_median": 74.9,
+    "ms_per_step": 3.25
+   },
+   "lm_head": {
+    "calls_per_step": 2.0,
+    "us_median": 1445.9,
+    "ms_per_step": 2.896
+   },
+   "shared_gate_up": {
+    "calls_per_step": 43.0,
+    "us_median": 58.1,
+    "ms_per_step": 2.559
+   },
+   "qkv_a": {
+    "calls_per_step": 43.0,
+    "us_median": 47.9,
+    "ms_per_step": 2.106
+   },
+   "engram_wkv": {
+    "calls_per_step": 2.0,
+    "us_median": 682.5,
+    "ms_per_step": 1.359
+   },
+   "shared_down": {
+    "calls_per_step": 43.0,
+    "us_median": 28.8,
+    "ms_per_step": 1.279
+   },
+   "draft_ctx_kv": {
+    "calls_per_step": 3.0,
+    "us_median": 45.8,
+    "ms_per_step": 0.139
+   }
+  },
+  "layer_segments": {
+   "replays_used": 34,
+   "A attn block: prev MoE AR end -> attn AR start": {
+    "median_us": 397.6,
+    "mean_us": 458.8,
+    "ms_per_step_mean_x40": 18.351
+   },
+   "B attn AR": {
+    "median_us": 31.7,
+    "mean_us": 62.2,
+    "ms_per_step_mean_x40": 2.488
+   },
+   "C ffn prologue: attn AR end -> routed start": {
+    "median_us": 87.5,
+    "mean_us": 91.0,
+    "ms_per_step_mean_x40": 3.64
+   },
+   "D routed MoE": {
+    "median_us": 636.5,
+    "mean_us": 640.8,
+    "ms_per_step_mean_x40": 25.632
+   },
+   "E epilogue: routed end -> MoE AR start": {
+    "median_us": 9.2,
+    "mean_us": 10.1,
+    "ms_per_step_mean_x40": 0.404
+   },
+   "F MoE AR": {
+    "median_us": 31.6,
+    "mean_us": 51.8,
+    "ms_per_step_mean_x40": 2.074
+   },
+   "sum_segments_ms_per_step": 52.589,
+   "routed_call_us": {
+    "median": 636.479,
+    "mean": 640.788,
+    "p10": 507.391,
+    "p90": 781.279,
+    "n": 1360
+   },
+   "kernels_launched_per_layer": {
+    "C kernels launched": 9.14,
+    "E kernels launched": 2.0,
+    "A kernels launched": 16.24,
+    "mhc kernels per layer": 5.93
+   },
+   "qkv_join_wait_us": {
+    "plain layers": {
+     "median": 0.5,
+     "mean": 0.5,
+     "per_step_ms": 0.017,
+     "layers_per_step": 32.0
+    },
+    "wp layers": {
+     "median": 0.5,
+     "mean": 13.0,
+     "per_step_ms": 0.104,
+     "layers_per_step": 8.0
+    }
+   }
+  },
+  "engram_stage_gap": {
+   "gap_ms": {
+    "median": 0.94,
+    "mean": 1.415,
+    "p10": 0.298,
+    "p90": 1.634,
+    "n": 34
+   },
+   "kernel_before_gap": {
+    "_gather_lookback_kernel": 34
+   }
+  },
+  "ffn_prologue_and_mhc": {
+   "mhc elapsed, attention half (first start -> last end)": {
+    "median_us": 16.2,
+    "mean_us": 51.88,
+    "n": 1360,
+    "ms_per_step_median_x40": 0.648
+   },
+   "mhc elapsed, ffn half (first start -> last end)": {
+    "median_us": 14.5,
+    "mean_us": 15.07,
+    "n": 1360,
+    "ms_per_step_median_x40": 0.579
+   },
+   "C total": {
+    "median_us": 87.5,
+    "mean_us": 91.01,
+    "n": 1360,
+    "ms_per_step_median_x40": 3.498
+   },
+   "C1 attn AR end -> last ffn mhc end": {
+    "median_us": 14.7,
+    "mean_us": 15.43,
+    "n": 1360,
+    "ms_per_step_median_x40": 0.586
+   },
+   "C2 router gate kernel (bf16 cuBLAS, side stream)": {
+    "median_us": 44.1,
+    "mean_us": 45.74,
+    "n": 1360,
+    "ms_per_step_median_x40": 1.766
+   },
+   "C3 router gate end -> routed start (splitK, topk, prep)": {
+    "median_us": 28.8,
+    "mean_us": 29.12,
+    "n": 1360,
+    "ms_per_step_median_x40": 1.152
+   },
+   "router gate overlapped by shared gate_up (us)": {
+    "median_us": 30.2,
+    "mean_us": 31.9,
+    "n": 1360,
+    "ms_per_step_median_x40": 1.206
+   },
+   "shared gate_up kernel": {
+    "median_us": 58.0,
+    "mean_us": 59.57,
+    "n": 1360,
+    "ms_per_step_median_x40": 2.32
+   },
+   "shared_down end - routed start (+ = after)": {
+    "median_us": 624.9,
+    "mean_us": 611.06,
+    "n": 1360,
+    "ms_per_step_median_x40": 24.998
+   },
+   "frac layers shared_down ends after routed start": {
+    "median_us": 1.0,
+    "mean_us": 1.0,
+    "n": 1360,
+    "ms_per_step_median_x40": 0.04
+   }
+  },
+  "eager_before_next_target": {
+   "span_ms": {
+    "median": 1.519,
+    "mean": 2.023,
+    "p10": 0.898,
+    "p90": 2.234,
+    "n": 34
+   },
+   "busy_ms": {
+    "median": 0.207,
+    "mean": 0.224,
+    "p10": 0.2,
+    "p90": 0.24,
+    "n": 34
+   },
+   "idle_ms": {
+    "median": 1.321,
+    "mean": 1.798,
+    "p10": 0.651,
+    "p90": 2.014,
+    "n": 34
+   },
+   "device_ops": {
+    "median": 106.0,
+    "mean": 106.235,
+    "p10": 106,
+    "p90": 106,
+    "n": 34
+   },
+   "chain_before_hash_ms": {
+    "median": 0.08,
+    "mean": 0.08,
+    "p10": 0.07,
+    "p90": 0.086,
+    "n": 34
+   },
+   "stage_span_hash_dtoh_end_to_rows_htod_ms": {
+    "median": 1.286,
+    "mean": 1.782,
+    "p10": 0.685,
+    "p90": 1.982,
+    "n": 34
+   },
+   "ops_between_hash_and_rows": {
+    "median": 75.0,
+    "mean": 75.0,
+    "p10": 75,
+    "p90": 75,
+    "n": 34
+   },
+   "gpu_work_span_under_stage_ms": {
+    "median": 0.348,
+    "mean": 0.367,
+    "p10": 0.345,
+    "p90": 0.387,
+    "n": 34
+   }
+  },
+  "source": "/home/sfxnz/projects/data/dsv41-traces/p3-K_p-c2-20260926-113255/c2-rank1.pkl"
+ }
+}

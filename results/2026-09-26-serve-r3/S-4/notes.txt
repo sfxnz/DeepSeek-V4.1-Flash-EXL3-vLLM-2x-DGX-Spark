@@ -1,0 +1,67 @@
+S-4 boot notes. ARMS-r3 section 9 (P6, SPARSE_MARKOV), boot S#4, the third boot of the second pair S#3, S1024#1,
+S#4, S1024#2 (first pair W#1, S#1, W#2, S#2 done; S#3 = S-3, S1024#1 = S1024-1). Arm S = the promoted K bundle (10 K envs)
+on the round-34 defaults (DSV41_DSPARK_SPARSE_MARKOV=1, TOPK unset = 256, DSV41_WOA_PREPACK=1); KP add-ons off; current
+pack 2.0bpw-mcg-lmhead-mxfp8; image review-e14. Env identical to S-1/S-2/S-3 and the K-config boots; differs from
+S1024-1 only by TOPK (256 vs 1024).
+- Command: command.txt (nohup, background, output in boot.txt). HEAD d6502a8 at boot. docker/patch sha256 identical to
+  S1024-1/S-3/S-2/W-2/S-1/W-1/KP-2/Kp-2/Kp-1 (61 files). First attempt counted: no fix, no retry, no lever dropped.
+  run.sh started 00:50:59Z, vLLM server started 01:00:55Z (596 s), run.sh exited after warmup 01:01:37-01:01:39Z
+  (2 s poll; 638-640 s). Model loading 435.57 s (weights 351.90 + 28.92, 75.58 GiB), init engine 59.96 s. Both ranks
+  loaded .../snapshots/2.0bpw-mcg-lmhead-mxfp8 (head model path; worker container args).
+- Preconditions (preconditions.txt, 00:47:37Z): requant DONE. No GPU container on either node (magical_blackwell is
+  Created, not running). pmon spark1 empty, spark2 Xorg/gnome-shell only. No microbench. MemAvailable 116/117 GiB.
+  Image ID 3a002b55c9bc on both nodes. Tree clean apart from this dir. unittest 798 OK (14 skipped) rc 0, render
+  --check rc 0 (tests-render.txt). gpu_free_wait GPUFREE at 00:50:13Z (gpufree-spark1.txt, no ok=0 sample).
+- spark2 lock: held from 00:47:24Z (remote flock pid 1668397, LOCK_HELD before run.sh). After stop the remote
+  flock/sleep pair (1668397/1668398) outlived the killed local ssh; this session killed its own pair. LOCK_FREE 01:25:47Z.
+- Audit: boot.txt has "audit ok: every expected patch engaged on head, worker" (AUDIT=strict); a strict re-run on the
+  end-of-boot logs also passed (rc 0). engagement.txt: every section-3 line for K 1x per rank (COOP=2, mhc det target
+  81 fn / draft 6 fn, native stage, early hash, t2r dedup + census 9.50 reuses/compute, moe prep, candidate mask, wp
+  gemv, swa meta), dense GEMV armed 9 per rank, lm_head mxfp8 / prefetch v3 / gather v2 1x per rank, [woa-requant] 43/43
+  and [woa-prepack] 43/43 per rank. Arm S lever: "dsv41: DSpark sparse Markov (gathered top-k) k=256" head 4 / worker 3
+  (same counts as S-1/S-2/S-3); the k=1024 line is absent on both ranks. KP add-on lines 0. grep -ci disarm 0 on both
+  ranks; 0 hits of the 18 LOG_DISARMED string constants extracted from docker/patch. Envs equal on both ranks (only
+  VLLM_HOST_IP differs); DSV41_DSPARK_SPARSE_MARKOV=1, TOPK unset and DSV41_WOA_PREPACK=1 on both ranks; running image
+  3a002b55c9bc on both ranks. disarm_scan rc 0.
+- gpu_guard rc=0 (0 FOREIGN). spark1 677 samples at 2 s (01:01:39Z-01:25:29Z), only VLLM::Worker_TP. spark2 132 at
+  10 s (01:01:39Z-01:25:22Z; VLLM::Worker_TP, Xorg, gnome-shell). Guards started when run.sh exited, before the smokes,
+  and were stopped (by pid) after quality, disarm_scan, the engagement capture and mem-end. Not VOID.
+- Smokes: chat 323 rc 0, vision Red rc 0. Correctness 8/8 rc 0 (sampled prose_sanity ttr 0.70). MemAvailable after
+  smoke 22/24 GiB (floor 8).
+- L.A.I.L x10 (fresh, before any c=2, 01:02:10-01:04:27Z): median 42.871 tok/s (34.59-49.715), 48.58 ms/step
+  (48.379-61.676), acc 2.1313 (2.0039-2.4265), finish length, TTFT median 0.316 s. Run 5 read 61.68 ms/step (34.59
+  tok/s, acc 2.142); the other 9 read 48.38-49.01. During run 5 spark1 showed only VLLM::Worker_TP at SM 92-93% and
+  spark2 only VLLM::Worker_TP/Xorg/gnome-shell. 61.68 is the slowest single L.A.I.L run of the S/W/K boots in this
+  window (previous max 60.46 on S-3). Kept as measured; the median is not affected.
+- bench_decode x9 (rc 0): prose c=1 52.005 tok/s at 48.79 ms/step (median run acc 2.5, range 2.3256-2.5897); prose c=2
+  agg 82.531 at 59.293; structured c=1 83.535 at 47.415 ms/step (acc 3.9608); structured c=2 agg
+  138.967 at 54.884.
+- four_numbers (four/, partial false, started 01:06:56Z, one run, no timeout wrapper, rc 0 in four_rc.txt): prose c=1
+  53.63 tok/s at 47.713 ms/step (median run acc 2.519, range 2.4815-2.8986; runs 51.99-60.02); prose_long c=1 42.195
+  tok/s at 48.986 ms/step (acc 2.0515, range 1.951-2.2989, n=5, finish length, post-EOS 0); prose_long c=2 agg 65.109
+  at 61.939 ms/step (median run acc 2.0725, range 1.9801-2.2402); pp_warm 8k/32k 759.6/774.2 (runs 763.4/759.6/720.8,
+  766.6/774.2/775.0); pp_novel 8k/32k 826.3/818.6 (runs 841.5/826.3/785.0, 829.8/813.2/818.6); L.A.I.L 3x after c=2
+  42.47 (43.08/42.47/41.98; 48.906/48.614/48.981 ms/step); warm prefix 1.0 (TTFT cold/warm 2.697/0.424 s);
+  ranks_match true; disarmed false. MemAvailable after micro 21.09/23.49 GiB.
+- e2e rc 0, 3/3 (useful_tok_s 6.14).
+- Quality quick: PASS (one run, rc 0, 320.5 s). nll 0.243261 (<=0.25316), dlp 0.01398 (<=0.06794), gen_nll_prefill
+  0.32692 (<=0.50932), golden 0.01446 and aa 0.01887 (both <=0.03206; 4/12 identical), tools json 22/22, exact_args
+  21/22 = 0.9545 (t09 calculate_loan_payment called with {}; exactly at the limit, as on S-1/S-2/S-3/S1024-1), no_call
+  8/8, needle 6/6, c2, vision Red. Full not run (s9/s10 require quick only).
+- Order: smokes, mem, correctness, L.A.I.L x10, bench_decode x9, four_numbers, e2e, quality quick, disarm_scan,
+  engagement + strict audit re-run, mem-end, gpu_guard --check, ./stop.sh (01:25:36Z). MemAvailable end (serve up)
+  20/23 GiB. Swap used spark1 3.4 -> 7.4 GiB, spark2 1.6 -> 4.8 GiB.
+- P6 context, not a verdict (summary.json P6_context_not_a_verdict; recomputed from raw files with the prior method,
+  and the extractor reproduces the S-1/S-2/S-3/S1024-1 summary values). S1024#2 is pending.
+  Gate cells: L.A.I.L tok/s 42.871 vs S-1..S-3 42.791/42.785/42.36 (above all three), K 41.899-43.567 (inside).
+    prose_long c=1 tok/s 42.195 vs S-1..S-3 44.739/43.336/42.788 (below all three), K 43.395-44.893 (below).
+  The prose_long c=1 drop follows acceptance: median-run acc 2.0515 is the lowest of the S/K boots, while ms/step
+  48.986 is below S-1..S-3 (49.177/48.987/49.125) and inside K.
+  Second pair so far: S=[S-3, S-4] L.A.I.L 42.36/42.871 (median 42.615, spread 0.511), prose_long c=1 42.788/42.195
+  (median 42.491, spread 0.593). S1024-1 reads 43.167 / 44.174: above both S boots on both gate cells (+0.552 and
+  +1.683 vs the pair-2 S median). The s9 rule needs S1024#2 (every S1024 boot beats the S median by more than the
+  noise = the larger within-arm spread), so no verdict.
+  ms/step c=1 vs S-1..S-3: L.A.I.L 48.58 (below), four prose 47.713 (below), prose_long 48.986 (below), bench prose
+  48.79 (inside), structured 47.415 (inside). prose_long c=2 agg 65.109 is below S-1..S-3 (66.872-69.325) and K
+  (66.093-70.089) at 61.939 ms/step (inside both) and median-run acc 2.0725 (below S-1..S-3 and K). structured c=2 agg
+  138.967 (inside S and K).

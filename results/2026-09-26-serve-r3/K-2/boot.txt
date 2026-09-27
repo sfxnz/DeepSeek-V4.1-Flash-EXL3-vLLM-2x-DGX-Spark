@@ -1,0 +1,41 @@
+==> role=head host=spark1
+==> Preflight spark1
+==> Ensuring image dsv41-flash-exl3-sm121:review-e14
+==> Using pinned snapshot /home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8
+==> Preflight spark2
+==> Ensuring image dsv41-flash-exl3-sm121:review-e14
+==> Using pinned snapshot /home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8
+==> Starting worker on spark2 first
+==> role=worker host=spark2
+==> Ensuring image dsv41-flash-exl3-sm121:review-e14
+==> Using pinned snapshot /home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8
+==> Starting dsv41-flash-exl3 rank=1 model=/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8 ctx=1048576 quant=exl3 engram_disk=1
+bdd005d44f88cd59c0cf2e653cf59ce4b6335fcda57b19b94147f09da37af9d2
+==> Worker rank 1 is up. Head should start next.
+==> Worker is connecting to 10.100.8.1:29524. Starting head.
+==> Ensuring image dsv41-flash-exl3-sm121:review-e14
+==> Using pinned snapshot /home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8
+==> Starting dsv41-flash-exl3 rank=0 model=/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8 ctx=1048576 quant=exl3 engram_disk=1
+703d64fd5ef3d32ad1777fd2d46fef5f2b952b8b935980fdd8c6b93ae4e2598c
+==> Waiting for http://127.0.0.1:8000/health and /v1/models
+==> still loading… (12×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (24×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (36×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (48×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (60×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (72×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (84×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (96×5s) — docker logs -f dsv41-flash-exl3
+==> still loading… (108×5s) — docker logs -f dsv41-flash-exl3
+==> Ready → http://127.0.0.1:8000/v1  (context=1048576)
+{"object":"list","data":[{"id":"deepseek-ai/DeepSeek-V4.1-Flash","object":"model","created":1790413437,"owned_by":"vllm","root":"/cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mxfp8","parent":null,"max_model_len":1048576,"permission":[{"id":"modelperm-ab6753b7a514a716","object":"model_permission","created":1790413437,"allow_create_engine":false,"allow_sampling":true,"allow_logprobs":true,"allow_search_indices":false,"allow_view":true,"allow_fine_tuning":false,"organization":"*","group":null,"is_blocking":false}]}]}
+
+==> audit ok: every expected patch engaged on head, worker
+==> Warmup: greedy, t=0.7, ~3k/~1k/~300-token nonce prefills and a small image
+==> warmup greedy: 1.8s '323'
+==> warmup t=0.7: 1.5s 'A prime number above 100 is **101**.'
+==> warmup prefill: 6.9s 'The text describes a complex DeepSeek'
+==> warmup prefill-300: 2.0s 'The text describes a script that refuses'
+==> warmup prefill-1000: 15.0s 'The text describes a complex deployment '
+==> warmup vision: 0.8s 'Red'
+==> Stop with: ./stop.sh

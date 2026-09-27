@@ -1,0 +1,34 @@
+KC-2 boot notes (arm KC = K_ENV without DSV41_P2B_COOP, leave-one-out for COOP; round-34 defaults; image review-e14; P2 interleave boot 6 of 6)
+- Command: see command.txt (nohup, background; boot.txt). HEAD da3cb4e at boot (docker/patch sha256 identical to K-2), first attempt
+  counted (no fix, no retry). run.sh start 09:58:31Z, vLLM server start 10:08:27Z (596 s), run.sh exit after warmup 10:09:12Z (641 s).
+  Model loading 434.11 s (weights 349.79 + 24.87), init engine 60.77 s.
+- Preconditions (preconditions.txt, 09:55:30Z): requant DONE; no GPU container on either node (spark1 "magical_blackwell" is Created,
+  not running, as on K-2); pmon spark1 empty, spark2 Xorg/gnome-shell only; no microbench; MemAvailable 116/116 GiB; image ID
+  3a002b55c9bc on both nodes; tree clean apart from this dir; unittest 798 OK (14 skipped) rc 0; render --check rc 0;
+  gpu_free_wait GPUFREE (gpufree-spark1.txt).
+- spark2 GPU lock: HELD for this boot (ssh spark2 flock ... sleep 7200 from 09:58Z, LOCK_HELD confirmed before run.sh; released
+  after stop, LOCK_FREE confirmed). Unlike A-1/K-1/KC-1/K-2, the holder was not refused this time.
+- Audit: "audit ok: every expected patch engaged on head, worker" (boot.txt); strict re-run on the saved logs with the KC env rc 0.
+  engagement.txt: every section-3 line for KC 1x per rank (mhc det target 81 fn / draft 6 fn, native stage, early hash, t2r dedup +
+  census 9.50 reuses/compute, moe prep, candidate mask, wp gemv, swa meta), dense GEMV 9 lines per rank, lm_head mxfp8 / prefetch
+  v3 / gather v2 1x per rank, woa fp8 43/43; COOP line 0 and DSV41_P2B_COOP unset in both containers; KP add-ons 0; 0 LOG_DISARMED;
+  envs equal on both ranks (only VLLM_HOST_IP differs); running image 3a002b55c9bc on both ranks.
+- gpu_guard rc=0 (0 FOREIGN; spark1 737 samples @2 s, spark2 144 @10 s, 10:09:22Z-10:35:19Z). Not VOID.
+- L.A.I.L x10: median 36.73 tok/s, 56.349 ms/step. Run 1 read 63.93 ms/step (31.04 tok/s); runs 2-10 read 55.73-57.68. Guard clean
+  over that window (only VLLM::Worker_TP on spark1). Kept as measured.
+- Quality quick: PASS (single run). nll 0.246794, dlp 0.0063, gen_nll_prefill 0.28515, aa 0.01674, golden 0.02541 (limit 0.03206;
+  4/12 identical), exact_args 20/22 (t08 + t09 called with {}), passes by the gate's one-item slack as on K-2. No full run on KC
+  (section 10 puts full on K#2 only).
+- Memory: MemAvailable 22/24 GiB after boot and after smokes (floor 8), 21.1/23.51 after micro, 20/23 at end. Swap used rose on
+  spark1 3.1 -> 7.1 GiB and spark2 1.5 -> 4.8 GiB across the boot.
+- Order followed: smokes, mem, correctness 8/8, L.A.I.L x10, bench_decode x9, four_numbers, e2e (rc 0, 3/3), quality quick,
+  disarm_scan (rc 0), engagement check, gpu_guard --check (rc 0), mem-end, ./stop.sh (10:35:27Z, both nodes).
+- P2 is complete with this boot (A-1, K-1, KC-1, A-2, K-2, KC-2; all counted, all guards clean). Readings per ARMS.md step 6
+  are in summary.json P2_complete_six_boots (medians of 2 boots per arm; noise = larger boot-to-boot spread):
+    four prose c=1 ms/step: A 63.866/63.083, K 47.156/48.245, KC 56.154/56.213
+      K vs A 15.774 (noise 1.089), K vs KC 8.483 (noise 1.089), KC vs A 7.291 (noise 0.783); every candidate boot beats the base median
+    prose_long c=1 ms/step: A 63.47/63.216, K 49.01/48.702, KC 56.9/57.161
+      K vs A 14.487 (noise 0.308), K vs KC 8.175 (noise 0.308), KC vs A 6.312 (noise 0.261); every candidate boot beats the base median
+  Non-inferiority caveats: K vs KC pp_novel_32k K 799.5/811.4 vs KC 815.6/820.7, delta -12.7, outside both spreads (K 11.9,
+  KC 5.1); K vs A pp_novel_32k -7.5 is inside both spreads. K vs A pp_novel_8k -4.4 is inside K's spread 21.6, outside A's 0.6.
+  The verdict (flags.md / RESULTS.md) is not written by this stage.

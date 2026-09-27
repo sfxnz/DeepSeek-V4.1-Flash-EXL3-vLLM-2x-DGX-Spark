@@ -1,0 +1,23 @@
+A-2 boot notes (arm A = round-34 defaults on review-e14, round-3 levers unset/0; P2 interleave boot 4 of 6)
+- Command: see command.txt (nohup, background; boot.txt). HEAD 5a45ed1 at boot (docker/patch sha256 identical to KC-1),
+  first attempt counted (no fix, no retry). run.sh start 08:09:22Z, API routes 08:18:37Z (555 s), run.sh exit after
+  warmup 08:19:09Z (587 s). Model loading 373.62 s (weights 312.07 + 23.72), init engine 80.62 s.
+- Preconditions (preconditions.txt, 08:05:41Z): requant DONE; no GPU container on either node; pmon spark1 empty, spark2
+  Xorg/gnome-shell only; no microbench; MemAvailable 116/117 GiB; image ID 3a002b55c9bc on both nodes; tree clean apart
+  from this dir; unittest 798 OK (14 skipped) rc 0; render --check rc 0; gpu_free_wait GPUFREE (gpufree-spark1.txt).
+- spark2 GPU lock: unlike A-1/K-1/KC-1, the lock WAS held for this boot (ssh spark2 flock -n ... sleep 7200, from
+  08:08Z until after ./stop.sh at 08:46Z), then released (LOCK_FREE verified).
+- Audit: "audit ok: every expected patch engaged on head, worker" (boot.txt), strict re-run on saved logs rc 0.
+  engagement.txt: default-on markers present 1x per rank (lm_head mxfp8, engram prefetch v3, gather v2), woa fp8 43/43,
+  drop page cache 2/2, breakable CUDA graph 1/1; every round-3 lever marker 0 on both ranks; round-3 envs 0/unset,
+  identical on both ranks; 0 LOG_DISARMED; running image 3a002b55c9bc on both ranks.
+- Idle gap between warmup end and smokes: ~12 s (guards started 08:19:21Z).
+- gpu_guard rc=0 (0 FOREIGN; spark1 761 samples @2 s 08:19:21Z-08:46:09Z, spark2 149 samples @10 s). Not VOID.
+- Quality quick (section 10; A boots are the A/A control): PASS, single run. nll 0.242723, decode median dlp 0.01112,
+  gen_nll_prefill 0.29075, aa_hazard 0.01663, golden 0.01926 (limit 0.03206; 5/12 identical), tools json 22/22,
+  exact_args 0.9545 (= its limit, as A-1 rep2, K-1, KC-1), no_call 8/8, needle 6/6, c2, vision.
+- Order followed: smokes, mem, correctness 8/8, L.A.I.L x10, bench_decode x9, four_numbers, e2e (rc 0, 3/3),
+  quality quick, disarm_scan (rc 0), engagement check, gpu_guard --check (rc 0), mem-end, ./stop.sh (08:46:26Z, both nodes).
+- A/A (A-1 vs A-2) ms/step spreads: L.A.I.L 0.445, bench prose c1 0.221, four prose c1 0.783, prose_long c1 0.254,
+  prose_long c2 1.521, structured c1 1.163, bench prose c2 1.788, structured c2 2.54 (summary.json ms_step table).
+  K#2 and KC#2 are still to run; no promote verdict from this boot.

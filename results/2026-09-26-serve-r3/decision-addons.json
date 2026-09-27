@@ -1,0 +1,2745 @@
+{
+ "what": "ARMS-r3 section 8 (P5) KP add-on decision: ARMS.md step 6 applied to the counted ABAB Kp-1 (K#3), KP-1 (KP#1), Kp-2 (K#4), KP-2 (KP#2) in results/2026-09-26-serve-r3/. KPsafe-1 (the uncounted s8 safety boot) and the earlier boots of the same K config (K-1, K-2, CUR-1, CUR-2) appear only as labelled context. Computed by decision-addons-compute.py.txt from the raw per-boot files through the per-boot readers of decision-bundle-compute.py.txt; stdlib only.",
+ "date": "2026-09-26",
+ "inputs": {
+  "image": "dsv41-flash-exl3-sm121:review-e14 = sha256:3a002b55c9bc... on both ranks, every boot",
+  "snapshot": "2.0bpw-mcg-lmhead-mxfp8 (serve pin) on every boot (four/serve_cmd.json)",
+  "arms": {
+   "K": "AUDIT=strict + round-34 defaults + the 10 promoted K envs (DSV41_P2B_COOP=2 ... DSV41_INDEXER_WP_GEMV=1); add-ons MHC_DET_OVERLAP/ENGRAM_WKV_TP/NCCL_EAGER_TWIN/AR_L2_PREFETCH=0, PM_QOS_US unset",
+   "KP": "K + DSV41_MHC_DET_OVERLAP=1 DSV41_ENGRAM_WKV_TP=1 DSV41_PM_QOS_US=20 DSV41_NCCL_EAGER_TWIN=1 DSV41_AR_L2_PREFETCH=1 (DSV41_AR_L2_PREFETCH_MIB unset, default)"
+  },
+  "order": "KPsafe-1 (uncounted), then Kp-1, KP-1, Kp-2, KP-2 (s8 order K#3, KP#1, K#4, KP#2). Each counted boot is its first attempt, with no fix, no retry and no add-on dropped.",
+  "commits_at_boot": {
+   "Kp-1": "36392cea5300",
+   "KP-1": "275156207c97",
+   "Kp-2": "71dccac71064",
+   "KP-2": "ba6b1e8c2e6e",
+   "KPsafe-1": "c02cbf6d8e28"
+  },
+  "code_between_counted_boots": "git diff --stat 36392cea5300..ba6b1e8c2e6e outside results/: empty",
+  "docker_patch": "sha256 list digest adaaac7a0f40a2a1 on all five P5 boots: True",
+  "prerequisite": "P1 NCCL twin device check gate_pass true (p0-p1/nccl-twin)"
+ },
+ "rule": {
+  "sources": [
+   "ARMS-r3 section 8 (P5): 'K#3, KP#1, K#4, KP#2 (K = the promoted bundle), same gates as P2. Quality quick on both KP boots.' 'If KP fails the gate, split it: K+{PM_QOS, WKV_TP} against K first ..., then the rest one at a time.'",
+   "ARMS-r3 section 5 (the P2 gates) and section 10 (quality)",
+   "ARMS.md step 6"
+  ],
+  "primary_metric": "prose_median_ms_per_step (four_numbers prose cell, 9 runs) and prose_long c=1 median_ms_per_step (5 runs), per boot; arm value = median of its 2 boots. Both cells are bench_decode.py at temperature 0.",
+  "matched_acceptance": "ARMS.md: 'the A and B per-boot median_run_acceptance_len must overlap. If they do not, the arm changed drafting; gate on prose_long c=1 tok/s instead with the same noise rule.' ARMS-r3 s5 adds L.A.I.L tok/s to that fallback.",
+  "noise": "the larger boot-to-boot spread (max-min of the per-boot values) of the two arms; pass = median improvement > noise AND every KP boot beats the K median",
+  "also_required": [
+   "non-inferiority: pp_warm/pp_novel 8k/32k, prose_long c=2 aggregate, warm-prefix not worse than K by more than the larger spread (the P2 decision's reading; the K-spread-only reading is also recorded)",
+   "honest cells, disarm_scan and gpu_guard clean, e2e rc 0, boot floors, on every counted boot",
+   "quality quick passes on both KP boots"
+  ]
+ },
+ "validity": {
+  "all_four_counted_boots_valid": true,
+  "per_boot_valid": {
+   "Kp-1": true,
+   "KP-1": true,
+   "Kp-2": true,
+   "KP-2": true,
+   "KPsafe-1": true
+  },
+  "per_boot": {
+   "Kp-1": {
+    "arm": "K",
+    "commit": "36392cea5300",
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "snapshot": [
+     "2.0bpw-mcg-lmhead-mxfp8"
+    ],
+    "k_envs_both_ranks_as_promoted": true,
+    "addon_envs_both_ranks": {
+     "DSV41_MHC_DET_OVERLAP": [
+      "0",
+      "0"
+     ],
+     "DSV41_ENGRAM_WKV_TP": [
+      "0",
+      "0"
+     ],
+     "DSV41_PM_QOS_US": [
+      null,
+      null
+     ],
+     "DSV41_NCCL_EAGER_TWIN": [
+      "0",
+      "0"
+     ],
+     "DSV41_AR_L2_PREFETCH": [
+      "0",
+      "0"
+     ]
+    },
+    "addon_envs_as_arm": true,
+    "addon_engagement_head_worker": {
+     "DSV41_MHC_DET_OVERLAP": {
+      "dsv41: mhc det overlap engaged: target:": null,
+      "dsv41: mhc det overlap engaged: draft:": null
+     },
+     "DSV41_ENGRAM_WKV_TP": {
+      "dsv41: engram wkv column-parallel armed": null,
+      "dsv41: engram wkv column-parallel self-check bit-exact": [
+       0,
+       0
+      ]
+     },
+     "DSV41_PM_QOS_US": {
+      "dsv41: pm qos engaged": [
+       0,
+       0
+      ]
+     },
+     "DSV41_NCCL_EAGER_TWIN": {
+      "dsv41: nccl eager twin engaged": [
+       0,
+       0
+      ],
+      "dsv41: nccl eager twin guard": null,
+      "dsv41: nccl eager twin routing on tp:0": null
+     },
+     "DSV41_AR_L2_PREFETCH": {
+      "dsv41: ar l2 prefetch engaged: 37/40 layers": null
+     }
+    },
+    "addon_engagement_as_arm": true,
+    "dense_gemv_armed_head_worker": [
+     9,
+     9
+    ],
+    "nccl_graphUsageMode_line_head_worker": null,
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_at_boot_spark1_spark2": [
+     "116Gi",
+     "116Gi"
+    ],
+    "memavail_after_smoke_spark1_spark2": [
+     "23Gi",
+     "25Gi"
+    ],
+    "model_loading_per_rank": {
+     "head": {
+      "file": ".run-state/audit-head-20260926-184001.log",
+      "GiB": 75.58,
+      "s": 429.76
+     },
+     "worker": {
+      "file": ".run-state/audit-worker-20260926-184001.log",
+      "GiB": 75.58,
+      "s": 268.55
+     }
+    }
+   },
+   "KP-1": {
+    "arm": "KP",
+    "commit": "275156207c97",
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "snapshot": [
+     "2.0bpw-mcg-lmhead-mxfp8"
+    ],
+    "k_envs_both_ranks_as_promoted": true,
+    "addon_envs_both_ranks": {
+     "DSV41_MHC_DET_OVERLAP": [
+      "1",
+      "1"
+     ],
+     "DSV41_ENGRAM_WKV_TP": [
+      "1",
+      "1"
+     ],
+     "DSV41_PM_QOS_US": [
+      "20",
+      "20"
+     ],
+     "DSV41_NCCL_EAGER_TWIN": [
+      "1",
+      "1"
+     ],
+     "DSV41_AR_L2_PREFETCH": [
+      "1",
+      "1"
+     ]
+    },
+    "addon_envs_as_arm": true,
+    "addon_engagement_head_worker": {
+     "DSV41_MHC_DET_OVERLAP": {
+      "dsv41: mhc det overlap engaged: target:": [
+       1,
+       1
+      ],
+      "dsv41: mhc det overlap engaged: draft:": [
+       1,
+       1
+      ]
+     },
+     "DSV41_ENGRAM_WKV_TP": {
+      "dsv41: engram wkv column-parallel armed": [
+       2,
+       2
+      ],
+      "dsv41: engram wkv column-parallel self-check bit-exact": [
+       2,
+       2
+      ]
+     },
+     "DSV41_PM_QOS_US": {
+      "dsv41: pm qos engaged": [
+       4,
+       3
+      ]
+     },
+     "DSV41_NCCL_EAGER_TWIN": {
+      "dsv41: nccl eager twin engaged": [
+       1,
+       1
+      ],
+      "dsv41: nccl eager twin guard": [
+       1,
+       1
+      ],
+      "dsv41: nccl eager twin routing on tp:0": [
+       1,
+       1
+      ]
+     },
+     "DSV41_AR_L2_PREFETCH": {
+      "dsv41: ar l2 prefetch engaged: 37/40 layers": [
+       1,
+       1
+      ]
+     }
+    },
+    "addon_engagement_as_arm": true,
+    "dense_gemv_armed_head_worker": [
+     8,
+     8
+    ],
+    "nccl_graphUsageMode_line_head_worker": [
+     0,
+     0
+    ],
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_at_boot_spark1_spark2": [
+     "116Gi",
+     "117Gi"
+    ],
+    "memavail_after_smoke_spark1_spark2": [
+     "23Gi",
+     "24Gi"
+    ],
+    "model_loading_per_rank": {
+     "head": {
+      "file": ".run-state/audit-head-20260926-192340.log",
+      "GiB": 75.43,
+      "s": 373.21
+     },
+     "worker": {
+      "file": ".run-state/audit-worker-20260926-192340.log",
+      "GiB": 75.43,
+      "s": 373.39
+     }
+    }
+   },
+   "Kp-2": {
+    "arm": "K",
+    "commit": "71dccac71064",
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "snapshot": [
+     "2.0bpw-mcg-lmhead-mxfp8"
+    ],
+    "k_envs_both_ranks_as_promoted": true,
+    "addon_envs_both_ranks": {
+     "DSV41_MHC_DET_OVERLAP": [
+      "0",
+      "0"
+     ],
+     "DSV41_ENGRAM_WKV_TP": [
+      "0",
+      "0"
+     ],
+     "DSV41_PM_QOS_US": [
+      null,
+      null
+     ],
+     "DSV41_NCCL_EAGER_TWIN": [
+      "0",
+      "0"
+     ],
+     "DSV41_AR_L2_PREFETCH": [
+      "0",
+      "0"
+     ]
+    },
+    "addon_envs_as_arm": true,
+    "addon_engagement_head_worker": {
+     "DSV41_MHC_DET_OVERLAP": {
+      "dsv41: mhc det overlap engaged: target:": null,
+      "dsv41: mhc det overlap engaged: draft:": null
+     },
+     "DSV41_ENGRAM_WKV_TP": {
+      "dsv41: engram wkv column-parallel armed": null,
+      "dsv41: engram wkv column-parallel self-check bit-exact": [
+       0,
+       0
+      ]
+     },
+     "DSV41_PM_QOS_US": {
+      "dsv41: pm qos engaged": [
+       0,
+       0
+      ]
+     },
+     "DSV41_NCCL_EAGER_TWIN": {
+      "dsv41: nccl eager twin engaged": [
+       0,
+       0
+      ],
+      "dsv41: nccl eager twin guard": null,
+      "dsv41: nccl eager twin routing on tp:0": null
+     },
+     "DSV41_AR_L2_PREFETCH": {
+      "dsv41: ar l2 prefetch engaged: 37/40 layers": null
+     }
+    },
+    "addon_engagement_as_arm": true,
+    "dense_gemv_armed_head_worker": [
+     9,
+     9
+    ],
+    "nccl_graphUsageMode_line_head_worker": null,
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_at_boot_spark1_spark2": [
+     "116Gi",
+     "117Gi"
+    ],
+    "memavail_after_smoke_spark1_spark2": [
+     "22Gi",
+     "24Gi"
+    ],
+    "model_loading_per_rank": {
+     "head": {
+      "file": ".run-state/audit-head-20260926-200558.log",
+      "GiB": 75.58,
+      "s": 433.74
+     },
+     "worker": {
+      "file": ".run-state/audit-worker-20260926-200558.log",
+      "GiB": 75.58,
+      "s": 262.61
+     }
+    }
+   },
+   "KP-2": {
+    "arm": "KP",
+    "commit": "ba6b1e8c2e6e",
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "snapshot": [
+     "2.0bpw-mcg-lmhead-mxfp8"
+    ],
+    "k_envs_both_ranks_as_promoted": true,
+    "addon_envs_both_ranks": {
+     "DSV41_MHC_DET_OVERLAP": [
+      "1",
+      "1"
+     ],
+     "DSV41_ENGRAM_WKV_TP": [
+      "1",
+      "1"
+     ],
+     "DSV41_PM_QOS_US": [
+      "20",
+      "20"
+     ],
+     "DSV41_NCCL_EAGER_TWIN": [
+      "1",
+      "1"
+     ],
+     "DSV41_AR_L2_PREFETCH": [
+      "1",
+      "1"
+     ]
+    },
+    "addon_envs_as_arm": true,
+    "addon_engagement_head_worker": {
+     "DSV41_MHC_DET_OVERLAP": {
+      "dsv41: mhc det overlap engaged: target:": [
+       1,
+       1
+      ],
+      "dsv41: mhc det overlap engaged: draft:": [
+       1,
+       1
+      ]
+     },
+     "DSV41_ENGRAM_WKV_TP": {
+      "dsv41: engram wkv column-parallel armed": [
+       2,
+       2
+      ],
+      "dsv41: engram wkv column-parallel self-check bit-exact": [
+       2,
+       2
+      ]
+     },
+     "DSV41_PM_QOS_US": {
+      "dsv41: pm qos engaged": [
+       4,
+       3
+      ]
+     },
+     "DSV41_NCCL_EAGER_TWIN": {
+      "dsv41: nccl eager twin engaged": [
+       1,
+       1
+      ],
+      "dsv41: nccl eager twin guard": [
+       1,
+       1
+      ],
+      "dsv41: nccl eager twin routing on tp:0": [
+       1,
+       1
+      ]
+     },
+     "DSV41_AR_L2_PREFETCH": {
+      "dsv41: ar l2 prefetch engaged: 37/40 layers": [
+       1,
+       1
+      ]
+     }
+    },
+    "addon_engagement_as_arm": true,
+    "dense_gemv_armed_head_worker": [
+     8,
+     8
+    ],
+    "nccl_graphUsageMode_line_head_worker": [
+     0,
+     0
+    ],
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_at_boot_spark1_spark2": [
+     "116Gi",
+     "117Gi"
+    ],
+    "memavail_after_smoke_spark1_spark2": [
+     "23Gi",
+     "25Gi"
+    ],
+    "model_loading_per_rank": {
+     "head": {
+      "file": ".run-state/audit-head-20260926-204737.log",
+      "GiB": 75.43,
+      "s": 369.76
+     },
+     "worker": {
+      "file": ".run-state/audit-worker-20260926-204737.log",
+      "GiB": 75.43,
+      "s": 368.13
+     }
+    }
+   },
+   "KPsafe-1": {
+    "arm": "KP (uncounted safety boot)",
+    "commit": "c02cbf6d8e28",
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "snapshot": [
+     "2.0bpw-mcg-lmhead-mxfp8"
+    ],
+    "k_envs_both_ranks_as_promoted": true,
+    "addon_envs_both_ranks": {
+     "DSV41_MHC_DET_OVERLAP": [
+      "1",
+      "1"
+     ],
+     "DSV41_ENGRAM_WKV_TP": [
+      "1",
+      "1"
+     ],
+     "DSV41_PM_QOS_US": [
+      "20",
+      "20"
+     ],
+     "DSV41_NCCL_EAGER_TWIN": [
+      "1",
+      "1"
+     ],
+     "DSV41_AR_L2_PREFETCH": [
+      "1",
+      "1"
+     ]
+    },
+    "addon_envs_as_arm": true,
+    "addon_engagement_head_worker": {
+     "DSV41_MHC_DET_OVERLAP": {
+      "dsv41: mhc det overlap engaged: target:": [
+       1,
+       1
+      ],
+      "dsv41: mhc det overlap engaged: draft:": [
+       1,
+       1
+      ]
+     },
+     "DSV41_ENGRAM_WKV_TP": {
+      "dsv41: engram wkv column-parallel armed": [
+       2,
+       2
+      ],
+      "dsv41: engram wkv column-parallel self-check bit-exact": [
+       2,
+       2
+      ]
+     },
+     "DSV41_PM_QOS_US": {
+      "dsv41: pm qos engaged": [
+       4,
+       3
+      ]
+     },
+     "DSV41_NCCL_EAGER_TWIN": {
+      "dsv41: nccl eager twin engaged": [
+       1,
+       1
+      ],
+      "dsv41: nccl eager twin guard": [
+       1,
+       1
+      ],
+      "dsv41: nccl eager twin routing on tp:0": [
+       1,
+       1
+      ]
+     },
+     "DSV41_AR_L2_PREFETCH": {
+      "dsv41: ar l2 prefetch engaged: 37/40 layers": [
+       1,
+       1
+      ]
+     }
+    },
+    "addon_engagement_as_arm": true,
+    "dense_gemv_armed_head_worker": [
+     8,
+     8
+    ],
+    "nccl_graphUsageMode_line_head_worker": [
+     0,
+     0
+    ],
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_at_boot_spark1_spark2": [
+     "116Gi",
+     "117Gi"
+    ],
+    "memavail_after_smoke_spark1_spark2": [
+     "22Gi",
+     "24Gi"
+    ],
+    "model_loading_per_rank": {
+     "head": {
+      "file": ".run-state/audit-head-20260926-175414.log",
+      "GiB": 75.43,
+      "s": 371.32
+     },
+     "worker": {
+      "file": ".run-state/audit-worker-20260926-175414.log",
+      "GiB": 75.43,
+      "s": 371.66
+     }
+    }
+   }
+  },
+  "greedy_smoke_sha256_chat_vision": {
+   "Kp-1": [
+    "ecdeae21aea0",
+    "55e9fda7e025"
+   ],
+   "KP-1": [
+    "ecdeae21aea0",
+    "55e9fda7e025"
+   ],
+   "Kp-2": [
+    "ecdeae21aea0",
+    "55e9fda7e025"
+   ],
+   "KP-2": [
+    "ecdeae21aea0",
+    "55e9fda7e025"
+   ],
+   "KPsafe-1": [
+    "ecdeae21aea0",
+    "55e9fda7e025"
+   ]
+  },
+  "correctness_outputs_differing_from_Kp1": {
+   "Kp-1": [],
+   "KP-1": [
+    "prose_sanity"
+   ],
+   "Kp-2": [
+    "prose_sanity"
+   ],
+   "KP-2": [
+    "prose_sanity"
+   ],
+   "KPsafe-1": [
+    "prose_sanity"
+   ]
+  },
+  "notes": [
+   "No boot is VOID: gpu_guard --check rc 0 (0 FOREIGN) and no CONTAMINATED marker on all five P5 boots.",
+   "The spark2 GPU lock holder was refused by the permission layer on Kp-1 and KP-1 (the lock was free at precheck and after stop, and the spark2 guard was clean). It was held on KPsafe-1, Kp-2 and KP-2.",
+   "Slow L.A.I.L runs inside clean boots were kept as measured: Kp-1 run 5 (53.73 ms/step), KP-1 run 10 (50.99), Kp-2 runs 2/3/5 (55.52/52.88/53.26), KP-2 run 5 (58.77). The per-boot medians are the gate values.",
+   "Greedy smokes (smoke_chat '323', smoke_vision 'Red') are byte-identical on all five boots. The only correctness output that differs from Kp-1 is prose_sanity, which is sampled and also differs between Kp-1 and Kp-2.",
+   "Model loading per rank [head, worker], quoted from the gitignored .run-state audit logs. Kp-1 (K): 75.58/75.58 GiB, 429.76/268.55 s; KP-1 (KP): 75.43/75.43 GiB, 373.21/373.39 s; Kp-2 (K): 75.58/75.58 GiB, 433.74/262.61 s; KP-2 (KP): 75.43/75.43 GiB, 369.76/368.13 s; KPsafe-1 (KP): 75.43/75.43 GiB, 371.32/371.66 s. KP loads the same time on both ranks. That is consistent with WKV_TP's post-load collective self-check making the ranks wait for each other, which is not verified. Why the head loads ~60 s faster under KP is not established. run.sh start to vLLM start, from the notes.txt of each boot: KPsafe-1 526 s, KP-1 539 s, KP-2 547 s; Kp-1 584 s, Kp-2 590 s. Not a gate metric."
+  ]
+ },
+ "speed": {
+  "ms_step": {
+   "four_prose_c1_ms_step": {
+    "base": [
+     48.083,
+     47.522
+    ],
+    "cand": [
+     46.496,
+     46.46
+    ],
+    "base_median": 47.803,
+    "cand_median": 46.478,
+    "base_spread": 0.561,
+    "cand_spread": 0.036,
+    "noise": 0.561,
+    "improvement": 1.325,
+    "improvement_pct": 2.77,
+    "every_cand_boot_beats_base_median": true,
+    "beyond_noise": true,
+    "gate_pass": true,
+    "delta_KP_minus_K": -1.325
+   },
+   "prose_long_c1_ms_step": {
+    "base": [
+     48.744,
+     48.924
+    ],
+    "cand": [
+     46.858,
+     47.19
+    ],
+    "base_median": 48.834,
+    "cand_median": 47.024,
+    "base_spread": 0.18,
+    "cand_spread": 0.333,
+    "noise": 0.333,
+    "improvement": 1.81,
+    "improvement_pct": 3.71,
+    "every_cand_boot_beats_base_median": true,
+    "beyond_noise": true,
+    "gate_pass": true,
+    "delta_KP_minus_K": -1.81
+   },
+   "lail_ms_step": {
+    "base": [
+     48.547,
+     48.541
+    ],
+    "cand": [
+     46.771,
+     46.853
+    ],
+    "base_median": 48.544,
+    "cand_median": 46.812,
+    "base_spread": 0.006,
+    "cand_spread": 0.082,
+    "noise": 0.082,
+    "improvement": 1.732,
+    "improvement_pct": 3.57,
+    "every_cand_boot_beats_base_median": true,
+    "beyond_noise": true,
+    "gate_pass": true,
+    "delta_KP_minus_K": -1.732
+   },
+   "bench_prose_c1_ms_step": {
+    "base": [
+     48.214,
+     48.49
+    ],
+    "cand": [
+     46.28,
+     46.68
+    ],
+    "base_median": 48.352,
+    "cand_median": 46.48,
+    "base_spread": 0.276,
+    "cand_spread": 0.4,
+    "noise": 0.4,
+    "improvement": 1.872,
+    "improvement_pct": 3.87,
+    "every_cand_boot_beats_base_median": true,
+    "beyond_noise": true,
+    "gate_pass": true,
+    "delta_KP_minus_K": -1.872
+   },
+   "structured_c1_ms_step": {
+    "base": [
+     47.139,
+     46.97
+    ],
+    "cand": [
+     45.358,
+     45.625
+    ],
+    "base_median": 47.054,
+    "cand_median": 45.491,
+    "base_spread": 0.169,
+    "cand_spread": 0.268,
+    "noise": 0.268,
+    "improvement": 1.563,
+    "improvement_pct": 3.32,
+    "every_cand_boot_beats_base_median": true,
+    "beyond_noise": true,
+    "gate_pass": true,
+    "delta_KP_minus_K": -1.563
+   },
+   "prose_long_c2_ms_step": {
+    "base": [
+     61.316,
+     61.647
+    ],
+    "cand": [
+     59.393,
+     59.885
+    ],
+    "base_median": 61.482,
+    "cand_median": 59.639,
+    "base_spread": 0.331,
+    "cand_spread": 0.492,
+    "noise": 0.492,
+    "improvement": 1.843,
+    "improvement_pct": 3.0,
+    "every_cand_boot_beats_base_median": true,
+    "beyond_noise": true,
+    "gate_pass": true,
+    "delta_KP_minus_K": -1.843
+   },
+   "bench_prose_c2_ms_step": {
+    "base": [
+     58.332,
+     59.417
+    ],
+    "cand": [
+     58.028,
+     59.428
+    ],
+    "base_median": 58.875,
+    "cand_median": 58.728,
+    "base_spread": 1.085,
+    "cand_spread": 1.4,
+    "noise": 1.4,
+    "improvement": 0.146,
+    "improvement_pct": 0.25,
+    "every_cand_boot_beats_base_median": false,
+    "beyond_noise": false,
+    "gate_pass": false,
+    "delta_KP_minus_K": -0.146
+   },
+   "structured_c2_ms_step": {
+    "base": [
+     54.848,
+     56.087
+    ],
+    "cand": [
+     56.064,
+     55.105
+    ],
+    "base_median": 55.467,
+    "cand_median": 55.584,
+    "base_spread": 1.239,
+    "cand_spread": 0.959,
+    "noise": 1.239,
+    "improvement": -0.117,
+    "improvement_pct": -0.21,
+    "every_cand_boot_beats_base_median": false,
+    "beyond_noise": false,
+    "gate_pass": false,
+    "delta_KP_minus_K": 0.117
+   }
+  },
+  "tok_s": {
+   "prose_long_c1_tok_s": {
+    "base": [
+     44.259,
+     43.695
+    ],
+    "cand": [
+     44.534,
+     43.816
+    ],
+    "base_median": 43.977,
+    "cand_median": 44.175,
+    "base_spread": 0.564,
+    "cand_spread": 0.718,
+    "noise": 0.718,
+    "improvement": 0.198,
+    "improvement_pct": 0.45,
+    "every_cand_boot_beats_base_median": false,
+    "beyond_noise": false,
+    "gate_pass": false
+   },
+   "lail_tok_s": {
+    "base": [
+     43.493,
+     41.899
+    ],
+    "cand": [
+     44.094,
+     44.217
+    ],
+    "base_median": 42.696,
+    "cand_median": 44.155,
+    "base_spread": 1.594,
+    "cand_spread": 0.123,
+    "noise": 1.594,
+    "improvement": 1.459,
+    "improvement_pct": 3.42,
+    "every_cand_boot_beats_base_median": true,
+    "beyond_noise": false,
+    "gate_pass": false
+   },
+   "four_prose_c1_tok_s": {
+    "base": [
+     54.52,
+     54.85
+    ],
+    "cand": [
+     54.28,
+     55.24
+    ],
+    "base_median": 54.685,
+    "cand_median": 54.76,
+    "base_spread": 0.33,
+    "cand_spread": 0.96,
+    "noise": 0.96,
+    "improvement": 0.075,
+    "improvement_pct": 0.14,
+    "every_cand_boot_beats_base_median": false,
+    "beyond_noise": false,
+    "gate_pass": false
+   },
+   "bench_prose_c1_tok_s": {
+    "base": [
+     51.953,
+     52.106
+    ],
+    "cand": [
+     54.235,
+     51.938
+    ],
+    "base_median": 52.029,
+    "cand_median": 53.087,
+    "base_spread": 0.153,
+    "cand_spread": 2.298,
+    "noise": 2.298,
+    "improvement": 1.058,
+    "improvement_pct": 2.03,
+    "every_cand_boot_beats_base_median": false,
+    "beyond_noise": false,
+    "gate_pass": false
+   },
+   "structured_c1_tok_s": {
+    "base": [
+     84.023,
+     84.326
+    ],
+    "cand": [
+     87.323,
+     86.811
+    ],
+    "base_median": 84.175,
+    "cand_median": 87.067,
+    "base_spread": 0.302,
+    "cand_spread": 0.512,
+    "noise": 0.512,
+    "improvement": 2.893,
+    "improvement_pct": 3.44,
+    "every_cand_boot_beats_base_median": true,
+    "beyond_noise": true,
+    "gate_pass": true
+   },
+   "prose_long_c2_agg_tok_s": {
+    "base": [
+     68.323,
+     68.529
+    ],
+    "cand": [
+     69.64,
+     69.826
+    ],
+    "base_median": 68.426,
+    "cand_median": 69.733,
+    "base_spread": 0.206,
+    "cand_spread": 0.186,
+    "noise": 0.206,
+    "improvement": 1.307,
+    "improvement_pct": 1.91,
+    "every_cand_boot_beats_base_median": true,
+    "beyond_noise": true,
+    "gate_pass": true
+   },
+   "bench_prose_c2_agg_tok_s": {
+    "base": [
+     85.558,
+     85.357
+    ],
+    "cand": [
+     84.596,
+     82.762
+    ],
+    "base_median": 85.457,
+    "cand_median": 83.679,
+    "base_spread": 0.201,
+    "cand_spread": 1.834,
+    "noise": 1.834,
+    "improvement": -1.779,
+    "improvement_pct": -2.08,
+    "every_cand_boot_beats_base_median": false,
+    "beyond_noise": false,
+    "gate_pass": false
+   },
+   "structured_c2_agg_tok_s": {
+    "base": [
+     138.909,
+     138.998
+    ],
+    "cand": [
+     142.327,
+     142.008
+    ],
+    "base_median": 138.953,
+    "cand_median": 142.167,
+    "base_spread": 0.089,
+    "cand_spread": 0.319,
+    "noise": 0.319,
+    "improvement": 3.214,
+    "improvement_pct": 2.31,
+    "every_cand_boot_beats_base_median": true,
+    "beyond_noise": true,
+    "gate_pass": true
+   },
+   "lail_after_c2_3x_tok_s": {
+    "base": [
+     44.26,
+     44.19
+    ],
+    "cand": [
+     45.18,
+     46.57
+    ],
+    "base_median": 44.225,
+    "cand_median": 45.875,
+    "base_spread": 0.07,
+    "cand_spread": 1.39,
+    "noise": 1.39,
+    "improvement": 1.65,
+    "improvement_pct": 3.73,
+    "every_cand_boot_beats_base_median": true,
+    "beyond_noise": true,
+    "gate_pass": true
+   }
+  },
+  "non_inferiority": {
+   "pp_warm_8k": {
+    "base": [
+     752.0,
+     774.5
+    ],
+    "cand": [
+     723.2,
+     758.0
+    ],
+    "base_median": 763.25,
+    "cand_median": 740.6,
+    "delta": -22.65,
+    "base_spread": 22.5,
+    "cand_spread": 34.8,
+    "noise": 34.8,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": false
+   },
+   "pp_warm_32k": {
+    "base": [
+     765.4,
+     768.7
+    ],
+    "cand": [
+     764.7,
+     780.0
+    ],
+    "base_median": 767.05,
+    "cand_median": 772.35,
+    "delta": 5.3,
+    "base_spread": 3.3,
+    "cand_spread": 15.3,
+    "noise": 15.3,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   },
+   "pp_novel_8k": {
+    "base": [
+     803.7,
+     813.1
+    ],
+    "cand": [
+     821.5,
+     826.9
+    ],
+    "base_median": 808.4,
+    "cand_median": 824.2,
+    "delta": 15.8,
+    "base_spread": 9.4,
+    "cand_spread": 5.4,
+    "noise": 9.4,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   },
+   "pp_novel_32k": {
+    "base": [
+     811.1,
+     804.7
+    ],
+    "cand": [
+     812.8,
+     815.9
+    ],
+    "base_median": 807.9,
+    "cand_median": 814.35,
+    "delta": 6.45,
+    "base_spread": 6.4,
+    "cand_spread": 3.1,
+    "noise": 6.4,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   },
+   "prose_long_c2_agg_tok_s": {
+    "base": [
+     68.323,
+     68.529
+    ],
+    "cand": [
+     69.64,
+     69.826
+    ],
+    "base_median": 68.426,
+    "cand_median": 69.733,
+    "delta": 1.307,
+    "base_spread": 0.206,
+    "cand_spread": 0.186,
+    "noise": 0.206,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   },
+   "warm_prefix_hit_fraction": {
+    "base": [
+     1.0,
+     1.0
+    ],
+    "cand": [
+     1.0,
+     1.0
+    ],
+    "base_median": 1.0,
+    "cand_median": 1.0,
+    "delta": 0.0,
+    "base_spread": 0.0,
+    "cand_spread": 0.0,
+    "noise": 0.0,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   }
+  },
+  "acceptance": {
+   "four_prose_c1": {
+    "base_per_boot": [
+     2.5897,
+     2.5844
+    ],
+    "cand_per_boot": [
+     2.525,
+     2.5769
+    ],
+    "per_boot_interval_overlap": false,
+    "base_run_range": [
+     2.2955,
+     2.7917
+    ],
+    "cand_run_range": [
+     2.3103,
+     2.7297
+    ],
+    "run_range_overlap": true,
+    "mwu_runs_KP_vs_K": {
+     "n_x": 18,
+     "n_y": 18,
+     "U_y": 122.5,
+     "z": -1.235,
+     "p_two_sided_normal": 0.21671,
+     "hodges_lehmann_y_minus_x": -0.0528
+    },
+    "mwu_runs_KP3_vs_Kcfg6_context": {
+     "n_x": 54,
+     "n_y": 27,
+     "U_y": 588.5,
+     "z": -1.403,
+     "p_two_sided_normal": 0.16047,
+     "hodges_lehmann_y_minus_x": -0.0325
+    }
+   },
+   "prose_long_c1": {
+    "base_per_boot": [
+     2.1505,
+     2.117
+    ],
+    "cand_per_boot": [
+     2.0729,
+     2.0938
+    ],
+    "per_boot_interval_overlap": false,
+    "base_run_range": [
+     1.9802,
+     2.2841
+    ],
+    "cand_run_range": [
+     2.0306,
+     2.1848
+    ],
+    "run_range_overlap": true,
+    "mwu_runs_KP_vs_K": {
+     "n_x": 10,
+     "n_y": 10,
+     "U_y": 46.0,
+     "z": -0.265,
+     "p_two_sided_normal": 0.79111,
+     "hodges_lehmann_y_minus_x": -0.0284
+    },
+    "mwu_runs_KP3_vs_Kcfg6_context": {
+     "n_x": 30,
+     "n_y": 15,
+     "U_y": 186.5,
+     "z": -0.916,
+     "p_two_sided_normal": 0.35963,
+     "hodges_lehmann_y_minus_x": -0.0277
+    }
+   },
+   "lail": {
+    "base_per_boot": [
+     2.1269,
+     2.0727
+    ],
+    "cand_per_boot": [
+     2.1136,
+     2.1179
+    ],
+    "per_boot_interval_overlap": true,
+    "base_run_range": [
+     1.973,
+     2.2711
+    ],
+    "cand_run_range": [
+     2.0,
+     2.2314
+    ],
+    "run_range_overlap": true,
+    "note": "run ranges from lail10.txt; per-boot value = median of 10 runs at t=0.2",
+    "mwu_runs_KP_vs_K": {
+     "n_x": 20,
+     "n_y": 20,
+     "U_y": 189.5,
+     "z": -0.271,
+     "p_two_sided_normal": 0.78671,
+     "hodges_lehmann_y_minus_x": -0.0066
+    },
+    "mwu_runs_KP3_vs_Kcfg6_context": {
+     "n_x": 60,
+     "n_y": 30,
+     "U_y": 897.0,
+     "z": -0.021,
+     "p_two_sided_normal": 0.98292,
+     "hodges_lehmann_y_minus_x": 0.0
+    }
+   },
+   "bench_prose_c1": {
+    "K_per_boot": [
+     2.525,
+     2.5125
+    ],
+    "KP_per_boot": [
+     2.5125,
+     2.439
+    ],
+    "mwu_runs_KP_vs_K": {
+     "n_x": 18,
+     "n_y": 18,
+     "U_y": 125.0,
+     "z": -1.157,
+     "p_two_sided_normal": 0.24713,
+     "hodges_lehmann_y_minus_x": -0.032
+    },
+    "per_boot_interval_overlap": true
+   }
+  },
+  "structured_c1_exactly_matched_acceptance": {
+   "acceptance_values_on_every_run_of_all_boots": [
+    3.961
+   ],
+   "ms_step_runs": {
+    "KP-1": [
+     46.2,
+     45.1,
+     45.3,
+     45.7,
+     45.4,
+     45.3,
+     45.4,
+     45.3,
+     45.8
+    ],
+    "KP-2": [
+     46.3,
+     45.6,
+     45.6,
+     45.5,
+     45.6,
+     45.6,
+     45.7,
+     45.4,
+     45.7
+    ],
+    "KPsafe-1": [
+     47.2,
+     45.7,
+     45.6,
+     46.0,
+     45.5,
+     45.9,
+     45.4,
+     45.5,
+     45.9
+    ],
+    "Kp-1": [
+     48.6,
+     47.1,
+     47.0,
+     46.9,
+     47.1,
+     47.0,
+     47.2,
+     47.3,
+     47.3
+    ],
+    "Kp-2": [
+     48.4,
+     47.2,
+     47.0,
+     47.1,
+     47.0,
+     46.8,
+     46.7,
+     46.9,
+     46.8
+    ],
+    "CUR-1": [
+     48.0,
+     47.0,
+     46.8,
+     47.0,
+     47.1,
+     47.1,
+     47.0,
+     46.8,
+     46.6
+    ],
+    "CUR-2": [
+     48.5,
+     47.3,
+     47.5,
+     47.0,
+     47.3,
+     48.0,
+     47.0,
+     47.0,
+     47.5
+    ],
+    "K-1": [
+     47.8,
+     46.9,
+     47.2,
+     46.6,
+     47.0,
+     46.9,
+     46.8,
+     46.7,
+     47.0
+    ],
+    "K-2": [
+     52.2,
+     47.2,
+     47.1,
+     47.1,
+     47.2,
+     47.3,
+     47.0,
+     47.4,
+     47.0
+    ]
+   },
+   "K_runs_min_max": [
+    46.7,
+    48.6
+   ],
+   "KP_runs_min_max": [
+    45.1,
+    46.3
+   ],
+   "Kcfg6_runs_min": 46.6,
+   "KP_runs_below_every_Kcfg6_run": "18/18",
+   "mwu_runs_KP_vs_K": {
+    "n_x": 18,
+    "n_y": 18,
+    "U_y": 0.0,
+    "z": -5.123,
+    "p_two_sided_normal": 0.0,
+    "hodges_lehmann_y_minus_x": -1.5
+   },
+   "gate_ms_step": {
+    "base": [
+     47.139,
+     46.97
+    ],
+    "cand": [
+     45.358,
+     45.625
+    ],
+    "base_median": 47.054,
+    "cand_median": 45.491,
+    "base_spread": 0.169,
+    "cand_spread": 0.268,
+    "noise": 0.268,
+    "improvement": 1.563,
+    "improvement_pct": 3.32,
+    "every_cand_boot_beats_base_median": true,
+    "beyond_noise": true,
+    "gate_pass": true,
+    "delta_KP_minus_K": -1.563
+   },
+   "gate_tok_s": {
+    "base": [
+     84.023,
+     84.326
+    ],
+    "cand": [
+     87.323,
+     86.811
+    ],
+    "base_median": 84.175,
+    "cand_median": 87.067,
+    "base_spread": 0.302,
+    "cand_spread": 0.512,
+    "noise": 0.512,
+    "improvement": 2.893,
+    "improvement_pct": 3.44,
+    "every_cand_boot_beats_base_median": true,
+    "beyond_noise": true,
+    "gate_pass": true
+   },
+   "note": "bench_decode.py structured c=1, temperature 0, 9 runs per boot. Acceptance is the same value on all runs of both arms, so this cell is at exactly matched acceptance by observation. It is not a step-6 primary cell."
+  },
+  "pp_warm_8k_runs_context": {
+   "Kcfg6_runs_min_max": [
+    734.2,
+    788.1
+   ],
+   "Kcfg6_n_runs": 18,
+   "KP_runs": {
+    "KP-1": [
+     680.3,
+     754.5,
+     723.2
+    ],
+    "KP-2": [
+     776.2,
+     758.0,
+     746.9
+    ],
+    "KPsafe-1": [
+     739.4,
+     688.8,
+     781.9
+    ]
+   },
+   "KP_runs_below_Kcfg6_min": "3/9",
+   "mwu_runs_KP3_vs_Kcfg6": {
+    "n_x": 18,
+    "n_y": 9,
+    "U_y": 52.0,
+    "z": -1.466,
+    "p_two_sided_normal": 0.14268,
+    "hodges_lehmann_y_minus_x": -15.65
+   },
+   "note": "context for the pp_warm_8k non-inferiority row (four/02-micro.log, 3 runs per boot)"
+  },
+  "acceptance_context_all_boots_of_the_K_config": {
+   "acc_four_prose_c1": {
+    "Kcfg6": {
+     "K-1": 2.557,
+     "K-2": 2.5316,
+     "CUR-1": 2.6184,
+     "CUR-2": 2.5443,
+     "Kp-1": 2.5897,
+     "Kp-2": 2.5844
+    },
+    "Kcfg6_range": [
+     2.5316,
+     2.6184
+    ],
+    "KP": {
+     "KP-1": 2.525,
+     "KP-2": 2.5769,
+     "KPsafe-1": 2.5
+    },
+    "KP_counted_inside_Kcfg6_range": [
+     false,
+     true
+    ],
+    "exact_rank_sum_KP2_among_8": {
+     "n_pop": 8,
+     "n_sub": 2,
+     "rank_sum": 6.0,
+     "p_one_sided_low": 0.2143,
+     "subsets": 28
+    },
+    "exact_rank_sum_KP3_among_9": {
+     "n_pop": 9,
+     "n_sub": 3,
+     "rank_sum": 9.0,
+     "p_one_sided_low": 0.0833,
+     "subsets": 84
+    }
+   },
+   "acc_prose_long_c1": {
+    "Kcfg6": {
+     "K-1": 2.117,
+     "K-2": 2.1505,
+     "CUR-1": 2.2222,
+     "CUR-2": 2.117,
+     "Kp-1": 2.1505,
+     "Kp-2": 2.117
+    },
+    "Kcfg6_range": [
+     2.117,
+     2.2222
+    ],
+    "KP": {
+     "KP-1": 2.0729,
+     "KP-2": 2.0938,
+     "KPsafe-1": 2.1277
+    },
+    "KP_counted_inside_Kcfg6_range": [
+     false,
+     false
+    ],
+    "exact_rank_sum_KP2_among_8": {
+     "n_pop": 8,
+     "n_sub": 2,
+     "rank_sum": 3.0,
+     "p_one_sided_low": 0.0357,
+     "subsets": 28
+    },
+    "exact_rank_sum_KP3_among_9": {
+     "n_pop": 9,
+     "n_sub": 3,
+     "rank_sum": 9.0,
+     "p_one_sided_low": 0.0833,
+     "subsets": 84
+    }
+   },
+   "acc_lail": {
+    "Kcfg6": {
+     "K-1": 2.107,
+     "K-2": 2.1048,
+     "CUR-1": 2.118,
+     "CUR-2": 2.1225,
+     "Kp-1": 2.1269,
+     "Kp-2": 2.0727
+    },
+    "Kcfg6_range": [
+     2.0727,
+     2.1269
+    ],
+    "KP": {
+     "KP-1": 2.1136,
+     "KP-2": 2.1179,
+     "KPsafe-1": 2.1312
+    },
+    "KP_counted_inside_Kcfg6_range": [
+     true,
+     true
+    ],
+    "exact_rank_sum_KP2_among_8": {
+     "n_pop": 8,
+     "n_sub": 2,
+     "rank_sum": 9.0,
+     "p_one_sided_low": 0.5714,
+     "subsets": 28
+    },
+    "exact_rank_sum_KP3_among_9": {
+     "n_pop": 9,
+     "n_sub": 3,
+     "rank_sum": 18.0,
+     "p_one_sided_low": 0.8095,
+     "subsets": 84
+    }
+   }
+  },
+  "projection_vs_measured": {
+   "source": "ARMS-r3 s11: KP add-ons -2.4..-7.1 ms/step at c=1 (MHC_OVERLAP -0.6..-0.75, WKV_TP -0.55..-0.59 with DENSE_GEMV on, PM_QOS -0.7..-2.0, EAGER_TWIN -0.5..-3.1, L2_PREFETCH -0.07..-0.63); microbench, first order, serve-untested",
+   "projected_c1": [
+    -7.1,
+    -2.4
+   ],
+   "measured_c1_delta_KP_minus_K": {
+    "four_prose_c1_ms_step": -1.325,
+    "prose_long_c1_ms_step": -1.81,
+    "lail_ms_step": -1.732,
+    "bench_prose_c1_ms_step": -1.872,
+    "structured_c1_ms_step": -1.563
+   },
+   "measured_c2_delta_KP_minus_K": {
+    "prose_long_c2_ms_step": -1.843,
+    "bench_prose_c2_ms_step": -0.146,
+    "structured_c2_ms_step": 0.117
+   },
+   "reading": "Every c=1 cell sits above the projected range (a smaller saving than the low end, -2.4). The c=2 cells range from a saving (prose_long c=2) to no change (bench prose / structured c=2, inside their noise)."
+  }
+ },
+ "quality": {
+  "quick_pass": {
+   "Kp-1": true,
+   "KP-1": true,
+   "Kp-2": true,
+   "KP-2": true,
+   "KPsafe-1": true
+  },
+  "per_boot": {
+   "Kp-1": {
+    "file": "Kp-1/quality_quick.json",
+    "mode": "quick",
+    "passed": true,
+    "nll": 0.243135,
+    "decode_median_dlp": 0.0101,
+    "gen_nll_prefill": 0.28213,
+    "aa_hazard": 0.02273,
+    "golden_hazard": 0.01985,
+    "hazard_limit": 0.03206,
+    "selfcons_identical": "4/12",
+    "tools_exact": "20/22",
+    "tools_exact_failed": [
+     "t01",
+     "t09"
+    ],
+    "tools_json": 1.0,
+    "no_call": 1.0,
+    "needle": "6/6",
+    "failed_gates": [],
+    "extra": {}
+   },
+   "KP-1": {
+    "file": "KP-1/quality_quick.json",
+    "mode": "quick",
+    "passed": true,
+    "nll": 0.24445,
+    "decode_median_dlp": 0.01456,
+    "gen_nll_prefill": 0.34781,
+    "aa_hazard": 0.02273,
+    "golden_hazard": 0.0172,
+    "hazard_limit": 0.03206,
+    "selfcons_identical": "3/12",
+    "tools_exact": "20/22",
+    "tools_exact_failed": [
+     "t01",
+     "t09"
+    ],
+    "tools_json": 1.0,
+    "no_call": 1.0,
+    "needle": "6/6",
+    "failed_gates": [],
+    "extra": {}
+   },
+   "Kp-2": {
+    "file": "Kp-2/quality_quick.json",
+    "mode": "quick",
+    "passed": true,
+    "nll": 0.242387,
+    "decode_median_dlp": 0.01963,
+    "gen_nll_prefill": 0.32727,
+    "aa_hazard": 0.02128,
+    "golden_hazard": 0.01792,
+    "hazard_limit": 0.03206,
+    "selfcons_identical": "4/12",
+    "tools_exact": "20/22",
+    "tools_exact_failed": [
+     "t01",
+     "t09"
+    ],
+    "tools_json": 1.0,
+    "no_call": 1.0,
+    "needle": "6/6",
+    "failed_gates": [],
+    "extra": {}
+   },
+   "KP-2": {
+    "file": "KP-2/quality_quick.json",
+    "mode": "quick",
+    "passed": true,
+    "nll": 0.241712,
+    "decode_median_dlp": 0.0178,
+    "gen_nll_prefill": 0.36381,
+    "aa_hazard": 0.02041,
+    "golden_hazard": 0.02236,
+    "hazard_limit": 0.03206,
+    "selfcons_identical": "3/12",
+    "tools_exact": "21/22",
+    "tools_exact_failed": [
+     "t09"
+    ],
+    "tools_json": 1.0,
+    "no_call": 1.0,
+    "needle": "6/6",
+    "failed_gates": [],
+    "extra": {}
+   },
+   "KPsafe-1": {
+    "file": "KPsafe-1/quality_quick.json",
+    "mode": "quick",
+    "passed": true,
+    "nll": 0.244703,
+    "decode_median_dlp": 0.01015,
+    "gen_nll_prefill": 0.28066,
+    "aa_hazard": 0.01653,
+    "golden_hazard": 0.01656,
+    "hazard_limit": 0.03206,
+    "selfcons_identical": "4/12",
+    "tools_exact": "21/22",
+    "tools_exact_failed": [
+     "t09"
+    ],
+    "tools_json": 1.0,
+    "no_call": 1.0,
+    "needle": "6/6",
+    "failed_gates": [],
+    "extra": {}
+   }
+  },
+  "greedy_cross_arm_divergence": {
+   "note": "quality_quick selfcons: 12 greedy prompts x 128 tokens, 2 runs per boot. Hazard = divergences per token at risk (first-divergence events / tokens up to and including the first divergence), pooled over every run pair of the named boots. If the add-ons changed greedy numerics, KP-vs-K would diverge more than K-vs-K across boots.",
+   "within_boot_aa": {
+    "Kp-1": {
+     "hazard": 0.02273,
+     "diverged": 8,
+     "pairs": 12
+    },
+    "KP-1": {
+     "hazard": 0.02273,
+     "diverged": 9,
+     "pairs": 12
+    },
+    "Kp-2": {
+     "hazard": 0.02128,
+     "diverged": 8,
+     "pairs": 12
+    },
+    "KP-2": {
+     "hazard": 0.02041,
+     "diverged": 9,
+     "pairs": 12
+    },
+    "KPsafe-1": {
+     "hazard": 0.01653,
+     "diverged": 8,
+     "pairs": 12
+    }
+   },
+   "K_x_K_cross_boot_Kcfg6": {
+    "hazard": 0.01832,
+    "diverged": 480,
+    "pairs": 720
+   },
+   "KP_x_K_cross_arm_KP3_x_Kcfg6": {
+    "hazard": 0.0183,
+    "diverged": 587,
+    "pairs": 864
+   },
+   "KP_x_KP_cross_boot_KP3": {
+    "hazard": 0.01844,
+    "diverged": 99,
+    "pairs": 144
+   },
+   "counted_only": {
+    "K_x_K": {
+     "hazard": 0.02116,
+     "diverged": 35,
+     "pairs": 48
+    },
+    "KP_x_KP": {
+     "hazard": 0.02051,
+     "diverged": 34,
+     "pairs": 48
+    },
+    "KP_x_K": {
+     "hazard": 0.01988,
+     "diverged": 135,
+     "pairs": 192
+    }
+   }
+  },
+  "reading": [
+   "Quality quick passes on every component on both KP boots (and on KPsafe-1 and both K boots).",
+   "tools.exact_args reads 20/22 on KP-1, Kp-1 and Kp-2 (t01 and t09 called with {}) and 21/22 on KP-2 and KPsafe-1 (t09). The 20/22 readings pass the 0.9545 limit only by the gate's one-item Wilson slack. The same pattern shows on both arms, so it is not an add-on effect.",
+   "Greedy numerics: the KP-vs-K cross-arm divergence hazard equals the K-vs-K cross-boot hazard (the serve is not deterministic at temperature 0 from boot to boot or run to run; every boot's own A/A hazard is non-zero). This is consistent with the add-ons being bit-exact in the serve, at the resolution the serve's own nondeterminism allows."
+  ]
+ },
+ "decision": {
+  "checks": {
+   "validity_all_four_counted_boots": true,
+   "acceptance_matched_per_boot_primary_cells": {
+    "four_prose_c1_ms_step": false,
+    "prose_long_c1_ms_step": false
+   },
+   "ms_step_gate_primary_cells_if_matched": {
+    "four_prose_c1_ms_step": true,
+    "prose_long_c1_ms_step": true
+   },
+   "fallback_tok_s_gate_since_not_matched": {
+    "prose_long_c1_tok_s (ARMS.md step 6)": false,
+    "lail_tok_s (ARMS-r3 s5, same gates in s8)": false
+   },
+   "speed_gate_as_written": false,
+   "non_inferiority_ok": {
+    "pp_warm_8k": true,
+    "pp_warm_32k": true,
+    "pp_novel_8k": true,
+    "pp_novel_32k": true,
+    "prose_long_c2_agg_tok_s": true,
+    "warm_prefix_hit_fraction": true
+   },
+   "honest_cells_and_guards": true,
+   "quality_quick_both_KP_boots": true,
+   "patch_identical_and_no_code_change": true
+  },
+  "promote_KP_add_on_set": false,
+  "promote": [],
+  "not_promoted": [
+   "DSV41_MHC_DET_OVERLAP=1",
+   "DSV41_ENGRAM_WKV_TP=1",
+   "DSV41_PM_QOS_US=20",
+   "DSV41_NCCL_EAGER_TWIN=1",
+   "DSV41_AR_L2_PREFETCH=1"
+  ],
+  "promoted_config_unchanged": [
+   "DSV41_P2B_COOP=2",
+   "DSV41_DENSE_GEMV=1",
+   "DSV41_MHC_DET_SPLITS=16",
+   "DSV41_ENGRAM_NATIVE_STAGE=1",
+   "DSV41_ENGRAM_EARLY_HASH=1",
+   "DSV41_ATTN_T2R_DEDUP=1",
+   "DSV41_SWA_META_FUSED=1",
+   "DSV41_MOE_PREP_FUSED=1",
+   "DSV41_CANDIDATE_MASK_BOUNDED=1",
+   "DSV41_INDEXER_WP_GEMV=1"
+  ],
+  "verdict": "NOT PROMOTED: none of the five add-ons joins the defaults. The promoted config stays the 10 K envs. ms/step: KP is lower than K beyond the noise on every c=1 cell and on prose_long c=2, and every KP boot beats the K median. Four prose c=1 -1.325 (noise 0.561), prose_long c=1 -1.81 (noise 0.333). ARMS.md step 6 uses that ms/step as primary only at matched acceptance, and the per-boot median_run_acceptance_len intervals do not overlap on either primary cell. Four prose: K [2.5897, 2.5844], KP [2.525, 2.5769]. Prose_long c=1: K [2.1505, 2.117], KP [2.0729, 2.0938]. So the rule gates on tok/s. prose_long c=1 tok/s improves 0.198 against noise 0.718, and KP-2 (43.816) is below the K median (43.977). L.A.I.L tok/s improves 1.459 against noise 1.594. Both fallback gates fail. Non-inferiority, honest cells, guards and quality quick all pass. The speed gate is the only check that fails.",
+  "why_the_rule_is_applied_as_written": [
+   "The fallback exists for arms that trade acceptance for step time, where lower ms/step does not mean faster output. On the two primary cells that is the pattern measured here. prose_long c=1: ms/step -1.81 (-3.71%), per-boot acceptance -0.0504 (-2.36%; K median 2.1338, KP median 2.0834), tok/s +0.198 (+0.45%). Four prose c=1: ms/step -1.325 (-2.77%), tok/s +0.075 (+0.14%).",
+   "The evidence on whether the acceptance gap is noise or a drafting change is mixed, and it is not the rule's test. (1) Per run, the gap is not significant. Mann-Whitney on the counted boots: four prose p 0.21671, prose_long c=1 p 0.79111. All three KP boots against all six boots of the K config on this pack: p 0.16047 and 0.35963. (2) Per boot, against those six K-config boots, prose_long c=1 KP-1 and KP-2 are the two lowest of 8 (exact one-sided rank-sum p 0.0357; with KPsafe-1, 3 of 9, p 0.0833). Four prose gives p 0.2143. No correction for testing three cells is applied. (3) Greedy KP-vs-K divergence hazard is 0.0183, against K-vs-K 0.01832 and KP-vs-KP 0.01844 across boots. (4) structured c=1 is at exactly matched acceptance ([3.961] on every run of every boot). There ms/step moves -1.563 (noise 0.268; 18/18 KP runs below every K-config run) and tok/s moves +2.893 (noise 0.512), both beyond the noise. (1), (3) and (4) point to noise, and (2) is borderline on prose_long. None of them is the step-6 test. Choosing a different test after seeing the result is what the fixed rule is there to prevent. Changing the rule is for the protocol owner, not for this decision.",
+   "Correction to the KP-2 stage note: the four prose and prose_long cells are not sampled. bench_decode.py sends temperature 0; only L.A.I.L runs at t=0.2. Their run-to-run acceptance spread comes from the serve's own nondeterminism at temperature 0: the within-boot greedy A/A hazard is non-zero on every boot of both arms."
+  ],
+  "context_observations": [
+   "pp_warm_8k passes non-inferiority against the larger spread (delta -22.65, noise 34.8). It fails the reading against K's own spread (22.5) by 0.15. KP's spread comes from KP-1's low median. Per run, 3/9 KP-arm runs (KP-1, KP-2, KPsafe-1) fall below the lowest of the 18 K-config runs (734.2): KP-1 [680.3, 754.5, 723.2], KPsafe-1 [739.4, 688.8, 781.9]. KP-2 [776.2, 758.0, 746.9] has none. Mann-Whitney p 0.14268. Recorded, not a gate failure; a KP_p boot or the s8 split would show whether an add-on touches warm-prefix prefill.",
+   "bench prose c=2 aggregate tok/s: K [85.558, 85.357], KP [84.596, 82.762], delta -1.779 against noise 1.834, so inside the noise. Both KP boots are below the K median. bench prose c=2 ms/step is -0.146 (noise 1.4) and structured c=2 ms/step is 0.117 (noise 1.239). Only prose_long c=2 ms/step (-1.843, noise 0.492) shows the c=1 pattern at c=2. structured c=2 aggregate tok/s +3.214 (noise 0.319) and prose_long c=2 aggregate +1.307 (noise 0.206) pass the noise rule.",
+   "L.A.I.L runs at t=0.2 and its per-boot acceptance overlaps (K [2.1269, 2.0727], KP [2.1136, 2.1179]). Its ms/step moves -1.732 against noise 0.082, but L.A.I.L is not a step-6 primary cell. Its tok/s gate misses: +1.459 against noise 1.594, a noise set by Kp-2's three slow runs (per-boot [43.493, 41.899])."
+  ],
+  "per_add_on": {
+   "DSV41_MHC_DET_OVERLAP=1": {
+    "engaged_both_ranks_on_every_KP_boot": true,
+    "absent_on_both_K_boots": true,
+    "engagement_counts_head_worker": {
+     "Kp-1": {
+      "dsv41: mhc det overlap engaged: target:": null,
+      "dsv41: mhc det overlap engaged: draft:": null
+     },
+     "KP-1": {
+      "dsv41: mhc det overlap engaged: target:": [
+       1,
+       1
+      ],
+      "dsv41: mhc det overlap engaged: draft:": [
+       1,
+       1
+      ]
+     },
+     "Kp-2": {
+      "dsv41: mhc det overlap engaged: target:": null,
+      "dsv41: mhc det overlap engaged: draft:": null
+     },
+     "KP-2": {
+      "dsv41: mhc det overlap engaged: target:": [
+       1,
+       1
+      ],
+      "dsv41: mhc det overlap engaged: draft:": [
+       1,
+       1
+      ]
+     },
+     "KPsafe-1": {
+      "dsv41: mhc det overlap engaged: target:": [
+       1,
+       1
+      ],
+      "dsv41: mhc det overlap engaged: draft:": [
+       1,
+       1
+      ]
+     }
+    },
+    "serve_attribution": "none. The s8 KP_p profile boot against K_p was not run, so this add-on's share of the measured KP-vs-K ms/step delta is unknown.",
+    "mechanism_evidence": "Engaged on target and draft on both ranks, with the load-time self-check 'split path bitwise equal to stock (fork and in place, T 1/4/16)'. The s8 mechanism check was not run: 86 mhc_det_gemm_t8 + 86 mhc_det_norm_coef on a second stream inside each AllReduce, with the ncclDevKernel_AllReduce median not rising by more than ~7 us. It needs a KP_p profile boot.",
+    "projection_c1": "-0.6..-0.75",
+    "verdict": "NOT PROMOTED. KP did not pass the P5 gate as a set (step 6 as written, see decision), and no evidence isolates this add-on, so it cannot be promoted alone. It is not shown harmful: it engaged cleanly, the set passed quality quick and non-inferiority, and the set lowered ms/step. It stays env-gated and off by default."
+   },
+   "DSV41_ENGRAM_WKV_TP=1": {
+    "engaged_both_ranks_on_every_KP_boot": true,
+    "absent_on_both_K_boots": true,
+    "engagement_counts_head_worker": {
+     "Kp-1": {
+      "dsv41: engram wkv column-parallel armed": null,
+      "dsv41: engram wkv column-parallel self-check bit-exact": [
+       0,
+       0
+      ]
+     },
+     "KP-1": {
+      "dsv41: engram wkv column-parallel armed": [
+       2,
+       2
+      ],
+      "dsv41: engram wkv column-parallel self-check bit-exact": [
+       2,
+       2
+      ]
+     },
+     "Kp-2": {
+      "dsv41: engram wkv column-parallel armed": null,
+      "dsv41: engram wkv column-parallel self-check bit-exact": [
+       0,
+       0
+      ]
+     },
+     "KP-2": {
+      "dsv41: engram wkv column-parallel armed": [
+       2,
+       2
+      ],
+      "dsv41: engram wkv column-parallel self-check bit-exact": [
+       2,
+       2
+      ]
+     },
+     "KPsafe-1": {
+      "dsv41: engram wkv column-parallel armed": [
+       2,
+       2
+      ],
+      "dsv41: engram wkv column-parallel self-check bit-exact": [
+       2,
+       2
+      ]
+     }
+    },
+    "serve_attribution": "none. The s8 KP_p profile boot against K_p was not run, so this add-on's share of the measured KP-vs-K ms/step delta is unknown.",
+    "mechanism_evidence": "Armed and self-check bit-exact for layers 1 and 14 on both ranks (M 1/4/8/64). The self-check lines follow the armed lines, so there was no s8 hang on any of the 3 KP boots. Memory side confirmed: 'Model loading took' reads 75.43 GiB per rank on all 3 KP boots, against 75.58 GiB on both P5 K boots (and on CUR-1/CUR-2, the same config earlier in the day). That is -0.15 GiB per rank, against s8's expected ~0.16. The s12 interaction also shows: dense GEMV armed 8 per rank on KP against 9 on K, because the engram_wkv (6144, 25600) dense-gemv config has no (6144, 12800) twin, so that GEMM stays on b12x. Timing side (engram_wkv 2 per step at ~375-445 us against 758, plus 2 all-gathers) was not measured; it needs KP_p.",
+    "projection_c1": "-0.55..-0.59 with DENSE_GEMV on",
+    "verdict": "NOT PROMOTED. KP did not pass the P5 gate as a set (step 6 as written, see decision), and no evidence isolates this add-on, so it cannot be promoted alone. It is not shown harmful: it engaged cleanly, the set passed quality quick and non-inferiority, and the set lowered ms/step. It stays env-gated and off by default."
+   },
+   "DSV41_PM_QOS_US=20": {
+    "engaged_both_ranks_on_every_KP_boot": true,
+    "absent_on_both_K_boots": true,
+    "engagement_counts_head_worker": {
+     "Kp-1": {
+      "dsv41: pm qos engaged": [
+       0,
+       0
+      ]
+     },
+     "KP-1": {
+      "dsv41: pm qos engaged": [
+       4,
+       3
+      ]
+     },
+     "Kp-2": {
+      "dsv41: pm qos engaged": [
+       0,
+       0
+      ]
+     },
+     "KP-2": {
+      "dsv41: pm qos engaged": [
+       4,
+       3
+      ]
+     },
+     "KPsafe-1": {
+      "dsv41: pm qos engaged": [
+       4,
+       3
+      ]
+     }
+    },
+    "serve_attribution": "none. The s8 KP_p profile boot against K_p was not run, so this add-on's share of the measured KP-vs-K ms/step delta is unknown.",
+    "mechanism_evidence": "'pm qos engaged: /dev/cpu_dma_latency <= 20 us' in every serve process (4 head, 3 worker) on all 3 KP boots, 0 on K. The s8 mechanism check (draft AR0 idle-before 235/427 us -> tens of us; SM clock and power against K) was not run; it needs KP_p.",
+    "projection_c1": "-0.7..-2.0",
+    "verdict": "NOT PROMOTED. KP did not pass the P5 gate as a set (step 6 as written, see decision), and no evidence isolates this add-on, so it cannot be promoted alone. It is not shown harmful: it engaged cleanly, the set passed quality quick and non-inferiority, and the set lowered ms/step. It stays env-gated and off by default."
+   },
+   "DSV41_NCCL_EAGER_TWIN=1": {
+    "engaged_both_ranks_on_every_KP_boot": true,
+    "absent_on_both_K_boots": true,
+    "engagement_counts_head_worker": {
+     "Kp-1": {
+      "dsv41: nccl eager twin engaged": [
+       0,
+       0
+      ],
+      "dsv41: nccl eager twin guard": null,
+      "dsv41: nccl eager twin routing on tp:0": null
+     },
+     "KP-1": {
+      "dsv41: nccl eager twin engaged": [
+       1,
+       1
+      ],
+      "dsv41: nccl eager twin guard": [
+       1,
+       1
+      ],
+      "dsv41: nccl eager twin routing on tp:0": [
+       1,
+       1
+      ]
+     },
+     "Kp-2": {
+      "dsv41: nccl eager twin engaged": [
+       0,
+       0
+      ],
+      "dsv41: nccl eager twin guard": null,
+      "dsv41: nccl eager twin routing on tp:0": null
+     },
+     "KP-2": {
+      "dsv41: nccl eager twin engaged": [
+       1,
+       1
+      ],
+      "dsv41: nccl eager twin guard": [
+       1,
+       1
+      ],
+      "dsv41: nccl eager twin routing on tp:0": [
+       1,
+       1
+      ]
+     },
+     "KPsafe-1": {
+      "dsv41: nccl eager twin engaged": [
+       1,
+       1
+      ],
+      "dsv41: nccl eager twin guard": [
+       1,
+       1
+      ],
+      "dsv41: nccl eager twin routing on tp:0": [
+       1,
+       1
+      ]
+     }
+    },
+    "serve_attribution": "none. The s8 KP_p profile boot against K_p was not run, so this add-on's share of the measured KP-vs-K ms/step delta is unknown.",
+    "mechanism_evidence": "Engaged on tp:0 with the guard on ep:0 and one routing line per rank ('84 captured calls on the graph comm, eager calls on the twin (189 so far)') on all 3 KP boots. The P1 device check passed (0 bad steps, 0 host mismatches, NCCL 2.30.7 on both ranks). OPEN since KPsafe-1: ARMS-r3 s3 expects NCCL's 'graphUsageMode is set to 0 but the user is capturing graphs' 434 times per rank, and engagement.txt counts 0 per rank on every KP boot under NCCL_DEBUG=WARN. The P1 runs also show 0 lines. The logs cannot show whether mixing is off on the graph comm. The s8 KP_p check (gap before in-graph ARs 5.7 -> ~3 us, AR median 22.8 -> ~20-21 us, cudaGraphLaunch host time) was not run.",
+    "projection_c1": "-0.5..-3.1",
+    "verdict": "NOT PROMOTED. KP did not pass the P5 gate as a set (step 6 as written, see decision), and no evidence isolates this add-on, so it cannot be promoted alone. It is not shown harmful: it engaged cleanly, the set passed quality quick and non-inferiority, and the set lowered ms/step. It stays env-gated and off by default."
+   },
+   "DSV41_AR_L2_PREFETCH=1": {
+    "engaged_both_ranks_on_every_KP_boot": true,
+    "absent_on_both_K_boots": true,
+    "engagement_counts_head_worker": {
+     "Kp-1": {
+      "dsv41: ar l2 prefetch engaged: 37/40 layers": null
+     },
+     "KP-1": {
+      "dsv41: ar l2 prefetch engaged: 37/40 layers": [
+       1,
+       1
+      ]
+     },
+     "Kp-2": {
+      "dsv41: ar l2 prefetch engaged: 37/40 layers": null
+     },
+     "KP-2": {
+      "dsv41: ar l2 prefetch engaged: 37/40 layers": [
+       1,
+       1
+      ]
+     },
+     "KPsafe-1": {
+      "dsv41: ar l2 prefetch engaged: 37/40 layers": [
+       1,
+       1
+      ]
+     }
+    },
+    "serve_attribution": "none. The s8 KP_p profile boot against K_p was not run, so this add-on's share of the measured KP-vs-K ms/step delta is unknown.",
+    "mechanism_evidence": "'ar l2 prefetch engaged: 37/40 layers, 9.02 MiB per MoE all-reduce window' on both ranks on all 3 KP boots. The s8 mechanism check (qkv_a 47.6 -> ~16-19 us, MoE-AR-start -> qkv_a-end span shorter than K's by more than the spread, the AR not slowed by as much as qkv_a saves, else retry with DSV41_AR_L2_PREFETCH_MIB=5.5) was not run; it needs KP_p.",
+    "projection_c1": "-0.07..-0.63",
+    "verdict": "NOT PROMOTED. KP did not pass the P5 gate as a set (step 6 as written, see decision), and no evidence isolates this add-on, so it cannot be promoted alone. It is not shown harmful: it engaged cleanly, the set passed quality quick and non-inferiority, and the set lowered ms/step. It stays env-gated and off by default."
+   }
+  },
+  "next_steps_per_s8": [
+   "s8 says that if KP fails the gate, it is split: an ABAB of K+{PM_QOS, WKV_TP} against K first (the two highest-confidence add-ons), then the other three one at a time, as in comm/serve_arm_plan.txt and mhc-det/serve_validation_plan.txt.",
+   "The s8 KP_p profile boot against K_p is still owed. It gives the per-add-on attribution that no counted boot provides. It also settles the EAGER_TWIN graphUsageMode question and whether L2_PREFETCH or MHC_OVERLAP slows the all-reduce (s12). If it does, s8 says to retry with DSV41_AR_L2_PREFETCH_MIB=5.5.",
+   "For the protocol owner: for levers that are bit-exact by construction, should matched acceptance be judged on the pooled per-run distribution, or on a cell whose acceptance is fixed (structured c=1), instead of on 2 per-boot medians? Measured here: KP is -1.3..-1.9 ms/step at c=1, beyond the noise. Under the current rule it does not promote. That rule change does not happen in this decision."
+  ]
+ },
+ "serve_state_at_decision": "down on both nodes (2026-09-26T20:19:31Z: docker ps on spark1 shows only the unrelated conduit container; spark2 shows no container). This stage booted nothing.",
+ "per_boot_raw": {
+  "Kp-1": {
+   "commit": "36392cea5300c5eec15987ea0e9b9e46778f3896",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 48.0834179517415,
+   "prose_long_c1_ms_step": 48.744342555621216,
+   "lail_ms_step": 48.54703684095671,
+   "bench_prose_c1_ms_step": 48.21416304751186,
+   "structured_c1_ms_step": 47.13903696244405,
+   "bench_prose_c2_ms_step": 58.33183214629203,
+   "structured_c2_ms_step": 54.84753878137602,
+   "prose_long_c2_ms_step": 61.315991818282306,
+   "lail_tok_s": 43.49332676840156,
+   "four_prose_c1_tok_s": 54.52,
+   "bench_prose_c1_tok_s": 51.95271698502124,
+   "structured_c1_tok_s": 84.0234457246352,
+   "prose_long_c1_tok_s": 44.258811424536184,
+   "bench_prose_c2_agg_tok_s": 85.5576846730342,
+   "structured_c2_agg_tok_s": 138.90869828330298,
+   "prose_long_c2_agg_tok_s": 68.3226634753882,
+   "lail_after_c2_3x_tok_s": 44.26,
+   "pp_warm_8k": 752.0,
+   "pp_warm_32k": 765.4,
+   "pp_novel_8k": 803.7,
+   "pp_novel_32k": 811.1,
+   "pp_runs": {
+    "pp_warm_8k": [
+     749.6,
+     752.0,
+     756.7
+    ],
+    "pp_novel_8k": [
+     803.7,
+     799.7,
+     820.4
+    ],
+    "pp_warm_32k": [
+     766.4,
+     765.4,
+     765.1
+    ],
+    "pp_novel_32k": [
+     822.5,
+     811.1,
+     807.7
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.5897435897435894,
+   "acc_four_prose_c1_runs": [
+    2.2955,
+    2.369,
+    2.7917,
+    2.726,
+    2.6316,
+    2.5844,
+    2.5897,
+    2.7162,
+    2.5897
+   ],
+   "acc_prose_long_c1": 2.150537634408602,
+   "acc_prose_long_c1_runs": [
+    2.0101,
+    2.0408,
+    2.2841,
+    2.1505,
+    2.236
+   ],
+   "acc_lail": 2.126914831079913,
+   "acc_lail_range": [
+    2.060483870967742,
+    2.271111111111111
+   ],
+   "acc_bench_prose_c1": 2.525,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.36,
+    49.86,
+    48.41,
+    48.56,
+    53.73,
+    48.48,
+    48.54,
+    48.51,
+    48.61,
+    48.69
+   ],
+   "lail_tok_runs": [
+    42.86,
+    41.92,
+    42.47,
+    46.25,
+    39.37,
+    43.1,
+    43.95,
+    46.7,
+    43.88,
+    44.0
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "25Gi"
+   ]
+  },
+  "KP-1": {
+   "commit": "275156207c9734ba2e6d6c42e86d8765a5a40ece",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 46.49575709223349,
+   "prose_long_c1_ms_step": 46.857781500356005,
+   "lail_ms_step": 46.771435173548646,
+   "bench_prose_c1_ms_step": 46.280013627796635,
+   "structured_c1_ms_step": 45.357609630236325,
+   "bench_prose_c2_ms_step": 58.02831332816192,
+   "structured_c2_ms_step": 56.064048412338806,
+   "prose_long_c2_ms_step": 59.39261135754769,
+   "lail_tok_s": 44.09378512176387,
+   "four_prose_c1_tok_s": 54.28,
+   "bench_prose_c1_tok_s": 54.2354557959466,
+   "structured_c1_tok_s": 87.32347991912583,
+   "prose_long_c1_tok_s": 44.53414195452663,
+   "bench_prose_c2_agg_tok_s": 84.59559475068744,
+   "structured_c2_agg_tok_s": 142.32689237368407,
+   "prose_long_c2_agg_tok_s": 69.63978947201241,
+   "lail_after_c2_3x_tok_s": 45.18,
+   "pp_warm_8k": 723.2,
+   "pp_warm_32k": 764.7,
+   "pp_novel_8k": 821.5,
+   "pp_novel_32k": 812.8,
+   "pp_runs": {
+    "pp_warm_8k": [
+     680.3,
+     754.5,
+     723.2
+    ],
+    "pp_novel_8k": [
+     809.6,
+     842.6,
+     821.5
+    ],
+    "pp_warm_32k": [
+     777.7,
+     759.8,
+     764.7
+    ],
+    "pp_novel_32k": [
+     810.5,
+     812.8,
+     822.2
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.525,
+   "acc_four_prose_c1_runs": [
+    2.5316,
+    2.4634,
+    2.525,
+    2.519,
+    2.6667,
+    2.3103,
+    2.4815,
+    2.557,
+    2.6104
+   ],
+   "acc_prose_long_c1": 2.072916666666667,
+   "acc_prose_long_c1_runs": [
+    2.0306,
+    2.0722,
+    2.0729,
+    2.163,
+    2.1848
+   ],
+   "acc_lail": 2.1136363636363638,
+   "acc_lail_range": [
+    2.0197628458498027,
+    2.1561181434599157
+   ],
+   "acc_bench_prose_c1": 2.5125,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    46.54,
+    47.45,
+    46.49,
+    46.78,
+    47.29,
+    46.7,
+    48.51,
+    46.73,
+    46.77,
+    50.99
+   ],
+   "lail_tok_runs": [
+    44.36,
+    42.99,
+    43.36,
+    45.23,
+    43.83,
+    45.11,
+    43.8,
+    45.09,
+    46.0,
+    41.84
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "24Gi"
+   ]
+  },
+  "Kp-2": {
+   "commit": "71dccac71064a064dffefde929852594380a7d2f",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 47.5222177108088,
+   "prose_long_c1_ms_step": 48.924284907985786,
+   "lail_ms_step": 48.54094056973399,
+   "bench_prose_c1_ms_step": 48.490111342802095,
+   "structured_c1_ms_step": 46.96995448441316,
+   "bench_prose_c2_ms_step": 59.417225246897885,
+   "structured_c2_ms_step": 56.08674292973629,
+   "prose_long_c2_ms_step": 61.64715226129998,
+   "lail_tok_s": 41.89940780156915,
+   "four_prose_c1_tok_s": 54.85,
+   "bench_prose_c1_tok_s": 52.10559452425695,
+   "structured_c1_tok_s": 84.32591338873587,
+   "prose_long_c1_tok_s": 43.69471497027246,
+   "bench_prose_c2_agg_tok_s": 85.35693350336462,
+   "structured_c2_agg_tok_s": 138.99801775613057,
+   "prose_long_c2_agg_tok_s": 68.52858285098635,
+   "lail_after_c2_3x_tok_s": 44.19,
+   "pp_warm_8k": 774.5,
+   "pp_warm_32k": 768.7,
+   "pp_novel_8k": 813.1,
+   "pp_novel_32k": 804.7,
+   "pp_runs": {
+    "pp_warm_8k": [
+     788.1,
+     774.5,
+     765.4
+    ],
+    "pp_novel_8k": [
+     800.1,
+     823.7,
+     813.1
+    ],
+    "pp_warm_32k": [
+     768.5,
+     768.7,
+     778.7
+    ],
+    "pp_novel_32k": [
+     804.7,
+     793.5,
+     806.9
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.5844155844155843,
+   "acc_four_prose_c1_runs": [
+    2.3765,
+    2.6184,
+    2.6667,
+    2.7534,
+    2.3412,
+    2.5844,
+    2.519,
+    2.5316,
+    2.7027
+   ],
+   "acc_prose_long_c1": 2.117021276595745,
+   "acc_prose_long_c1_runs": [
+    2.117,
+    2.2697,
+    2.163,
+    1.9802,
+    2.0303
+   ],
+   "acc_lail": 2.0727438944756433,
+   "acc_lail_range": [
+    1.972972972972973,
+    2.212121212121212
+   ],
+   "acc_bench_prose_c1": 2.5125,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.56,
+    55.52,
+    52.88,
+    48.45,
+    53.26,
+    48.25,
+    48.42,
+    48.5,
+    48.52,
+    48.63
+   ],
+   "lail_tok_runs": [
+    43.21,
+    36.74,
+    41.74,
+    44.59,
+    38.61,
+    40.81,
+    42.81,
+    42.06,
+    41.38,
+    44.99
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "22Gi",
+    "24Gi"
+   ]
+  },
+  "KP-2": {
+   "commit": "ba6b1e8c2e6e7d345245ec0adca415f0b4c3c3cc",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 46.459513600695836,
+   "prose_long_c1_ms_step": 47.190405228164764,
+   "lail_ms_step": 46.853042410378535,
+   "bench_prose_c1_ms_step": 46.68021736947881,
+   "structured_c1_ms_step": 45.625287953622696,
+   "bench_prose_c2_ms_step": 59.42784258330428,
+   "structured_c2_ms_step": 55.10461833285797,
+   "prose_long_c2_ms_step": 59.88497547924273,
+   "lail_tok_s": 44.21714532309851,
+   "four_prose_c1_tok_s": 55.24,
+   "bench_prose_c1_tok_s": 51.937893896329115,
+   "structured_c1_tok_s": 86.81116309340464,
+   "prose_long_c1_tok_s": 43.81628250467666,
+   "bench_prose_c2_agg_tok_s": 82.76184938552933,
+   "structured_c2_agg_tok_s": 142.0077623184849,
+   "prose_long_c2_agg_tok_s": 69.82595681934659,
+   "lail_after_c2_3x_tok_s": 46.57,
+   "pp_warm_8k": 758.0,
+   "pp_warm_32k": 780.0,
+   "pp_novel_8k": 826.9,
+   "pp_novel_32k": 815.9,
+   "pp_runs": {
+    "pp_warm_8k": [
+     776.2,
+     758.0,
+     746.9
+    ],
+    "pp_novel_8k": [
+     830.1,
+     826.9,
+     820.7
+    ],
+    "pp_warm_32k": [
+     784.1,
+     780.0,
+     764.9
+    ],
+    "pp_novel_32k": [
+     812.0,
+     826.0,
+     815.9
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.5769230769230766,
+   "acc_four_prose_c1_runs": [
+    2.5974,
+    2.5513,
+    2.7297,
+    2.5769,
+    2.5125,
+    2.5316,
+    2.5316,
+    2.5974,
+    2.5844
+   ],
+   "acc_prose_long_c1": 2.09375,
+   "acc_prose_long_c1_runs": [
+    2.1277,
+    2.0938,
+    2.0515,
+    2.117,
+    2.0722
+   ],
+   "acc_lail": 2.1178961748633878,
+   "acc_lail_range": [
+    2.0,
+    2.2314410480349345
+   ],
+   "acc_bench_prose_c1": 2.4390243902439024,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    46.72,
+    48.98,
+    46.68,
+    46.83,
+    58.77,
+    46.71,
+    48.58,
+    49.44,
+    46.86,
+    46.85
+   ],
+   "lail_tok_runs": [
+    44.73,
+    45.45,
+    43.7,
+    45.37,
+    36.92,
+    45.67,
+    42.32,
+    40.45,
+    42.35,
+    46.71
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "25Gi"
+   ]
+  },
+  "KPsafe-1": {
+   "commit": "c02cbf6d8e28f5fdbce8826b05894f775957b89c",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 46.064252314038654,
+   "prose_long_c1_ms_step": 47.100352033966836,
+   "lail_ms_step": 47.00695737156403,
+   "bench_prose_c1_ms_step": 46.95760850748703,
+   "structured_c1_ms_step": 45.6554195101029,
+   "bench_prose_c2_ms_step": 57.65168462783345,
+   "structured_c2_ms_step": 55.85116695424597,
+   "prose_long_c2_ms_step": 59.576290946813415,
+   "lail_tok_s": 45.114742262698456,
+   "four_prose_c1_tok_s": 54.49,
+   "bench_prose_c1_tok_s": 54.10223399273903,
+   "structured_c1_tok_s": 86.75386966598838,
+   "prose_long_c1_tok_s": 45.30298663073905,
+   "bench_prose_c2_agg_tok_s": 84.17335813807196,
+   "structured_c2_agg_tok_s": 141.29746366911357,
+   "prose_long_c2_agg_tok_s": 68.54134828790248,
+   "lail_after_c2_3x_tok_s": 47.76,
+   "pp_warm_8k": 739.4,
+   "pp_warm_32k": 772.9,
+   "pp_novel_8k": 811.0,
+   "pp_novel_32k": 820.9,
+   "pp_runs": {
+    "pp_warm_8k": [
+     739.4,
+     688.8,
+     781.9
+    ],
+    "pp_novel_8k": [
+     822.0,
+     811.0,
+     809.1
+    ],
+    "pp_warm_32k": [
+     772.9,
+     765.9,
+     788.1
+    ],
+    "pp_novel_32k": [
+     823.1,
+     807.9,
+     820.9
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.5,
+   "acc_four_prose_c1_runs": [
+    2.6234,
+    2.5316,
+    2.4938,
+    2.5,
+    2.4217,
+    2.519,
+    2.5844,
+    2.314,
+    2.2614
+   ],
+   "acc_prose_long_c1": 2.127659574468085,
+   "acc_prose_long_c1_runs": [
+    2.1978,
+    2.1277,
+    2.1158,
+    2.1053,
+    2.1398
+   ],
+   "acc_lail": 2.1312499999999996,
+   "acc_lail_range": [
+    1.9922178988326849,
+    2.2401746724890828
+   ],
+   "acc_bench_prose_c1": 2.564102564102564,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    46.68,
+    50.98,
+    46.81,
+    46.99,
+    47.82,
+    47.03,
+    46.9,
+    47.66,
+    46.92,
+    47.08
+   ],
+   "lail_tok_runs": [
+    45.51,
+    39.23,
+    42.4,
+    47.38,
+    44.43,
+    46.93,
+    47.06,
+    43.14,
+    44.72,
+    45.51
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "22Gi",
+    "24Gi"
+   ]
+  }
+ }
+}

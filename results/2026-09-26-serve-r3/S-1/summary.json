@@ -1,0 +1,669 @@
+{
+ "arm": "S-1",
+ "phase": "P6 (SPARSE_MARKOV), boot 2 of W#1, S#1, W#2, S#2 (then S#3, S1024#1, S#4, S1024#2). Arm S = promoted K bundle (10 envs) on the round-34 defaults: DSV41_DSPARK_SPARSE_MARKOV=1 (TOPK default 256), DSV41_WOA_PREPACK=1; KP add-ons off",
+ "env": "AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e14 DSV41_P2B_COOP=2 DSV41_DENSE_GEMV=1 DSV41_MHC_DET_SPLITS=16 DSV41_ENGRAM_NATIVE_STAGE=1 DSV41_ENGRAM_EARLY_HASH=1 DSV41_ATTN_T2R_DEDUP=1 DSV41_SWA_META_FUSED=1 DSV41_MOE_PREP_FUSED=1 DSV41_CANDIDATE_MASK_BOUNDED=1 DSV41_INDEXER_WP_GEMV=1",
+ "env_diff_vs_W": "only DSV41_DSPARK_SPARSE_MARKOV (1 here, 0 on W-1); TOPK unset on both ranks (default 256; engagement line k=256); WOA_PREPACK=1 on both. Same env as the K-config boots K-1/K-2/CUR-1/CUR-2/Kp-1/Kp-2",
+ "head_at_boot": "81b7cadb42ab6ac7fadb8336ac318f2d5a34effc",
+ "patch_sha256": "identical to W-1 / KP-2 / Kp-2 / Kp-1 (61 files)",
+ "snapshot": "2.0bpw-mcg-lmhead-mxfp8 (SNAPSHOT_SHA default); head model path and worker container args both .../snapshots/2.0bpw-mcg-lmhead-mxfp8",
+ "attempts": {
+  "1": "first attempt counted; no fix, no retry, no lever dropped"
+ },
+ "lail_fresh_median": 42.791,
+ "lail_fresh_n": 10,
+ "lail_fresh_runs": [
+  42.885,
+  37.422,
+  42.319,
+  37.294,
+  45.114,
+  44.901,
+  42.703,
+  42.828,
+  46.314,
+  42.755
+ ],
+ "lail_fresh_range": [
+  37.294,
+  46.314
+ ],
+ "lail_ms_step": 48.897,
+ "lail_ms_step_range": [
+  48.532,
+  55.391
+ ],
+ "lail_ms_step_runs": [
+  48.532,
+  55.391,
+  48.785,
+  52.2,
+  48.708,
+  49.15,
+  48.937,
+  48.796,
+  48.915,
+  48.879
+ ],
+ "lail_acc": 2.1004,
+ "lail_acc_range": [
+  1.9542,
+  2.2756
+ ],
+ "lail_acc_runs": [
+  2.0857,
+  2.0894,
+  2.0729,
+  1.9542,
+  2.2026,
+  2.2121,
+  2.1066,
+  2.0984,
+  2.2756,
+  2.1025
+ ],
+ "lail_ttft_median_s": 0.3086,
+ "lail_natural_finish": "length",
+ "lail_post_eos": 0.0,
+ "lail_note": "Runs 2 and 4 read 55.39/52.20 ms/step (37.42/37.29 tok/s). The other 8 read 48.53-49.15. Both guards were clean for the whole boot (spark1 only VLLM::Worker_TP at 2 s sampling). Kept as measured.",
+ "bench_decode_n9": {
+  "prose_c1": {
+   "tok_s": 51.781,
+   "agg_tok_s": 51.771,
+   "ms_step": 49.027,
+   "acc": 2.548,
+   "median_run_acc": 2.5316,
+   "run_acc_range": [
+    2.3412,
+    2.8986
+   ],
+   "ttft_p50_s": 0.2195,
+   "natural_finish": "stop",
+   "post_eos": 0.61
+  },
+  "prose_c2": {
+   "tok_s": 42.609,
+   "agg_tok_s": 84.802,
+   "ms_step": 59.247,
+   "acc": 2.5586,
+   "median_run_acc": 2.5669,
+   "run_acc_range": [
+    2.4217,
+    2.7095
+   ],
+   "ttft_p50_s": 0.2509,
+   "natural_finish": "stop",
+   "post_eos": 0.61
+  },
+  "structured_c1": {
+   "tok_s": 83.731,
+   "agg_tok_s": 83.707,
+   "ms_step": 47.304,
+   "acc": 3.9608,
+   "median_run_acc": 3.9608,
+   "run_acc_range": [
+    3.9608,
+    3.9608
+   ],
+   "ttft_p50_s": 0.178,
+   "natural_finish": "length",
+   "post_eos": 0.0
+  },
+  "structured_c2": {
+   "tok_s": 71.788,
+   "agg_tok_s": 138.044,
+   "ms_step": 55.173,
+   "acc": 3.9608,
+   "median_run_acc": 3.9608,
+   "run_acc_range": [
+    3.9608,
+    3.9608
+   ],
+   "ttft_p50_s": 0.1935,
+   "natural_finish": "length",
+   "post_eos": 0.0
+  }
+ },
+ "four_numbers": {
+  "prose_c1_tok_s": 52.46,
+  "prose_c1_ms_step": 48.061,
+  "prose_c1_median_run_acc": 2.5316,
+  "prose_c1_acc_range": [
+   2.314,
+   2.8857
+  ],
+  "prose_c1_runs": [
+   51.97,
+   52.46,
+   51.73,
+   48.21,
+   59.13,
+   52.94,
+   57.06,
+   48.3,
+   53.67
+  ],
+  "prose_c1_ttft_p50_s": 0.225,
+  "prose_long_c1_tok_s": 44.739,
+  "prose_long_c1_ms_step": 49.177,
+  "prose_long_c1_median_run_acc": 2.1978,
+  "prose_long_c1_acc_range": [
+   2.0833,
+   2.2584
+  ],
+  "prose_long_c1_n": 5,
+  "prose_long_natural_finish": "length",
+  "prose_long_post_eos": 0.0,
+  "prose_long_c2_agg": 67.276,
+  "prose_long_c2_ms_step": 61.037,
+  "pp_warm_8k": 761.4,
+  "pp_warm_8k_runs": [
+   766.6,
+   755.2,
+   761.4
+  ],
+  "pp_warm_32k": 765.2,
+  "pp_warm_32k_runs": [
+   759.0,
+   765.2,
+   773.5
+  ],
+  "pp_novel_8k": 831.0,
+  "pp_novel_8k_runs": [
+   801.6,
+   831.0,
+   833.2
+  ],
+  "pp_novel_32k": 820.5,
+  "pp_novel_32k_runs": [
+   820.5,
+   826.9,
+   811.9
+  ],
+  "lail_after_c2": 43.47,
+  "lail_after_c2_runs": [
+   43.48,
+   41.26,
+   43.47
+  ],
+  "lail_after_c2_ms_step": [
+   48.857,
+   48.852,
+   48.667
+  ],
+  "warm_prefix_hit_fraction": 1.0,
+  "warm_prefix_ttft_cold_warm_s": [
+   2.849,
+   0.297
+  ],
+  "serve_env_ranks_match": true,
+  "lever_disarmed": false,
+  "partial": false,
+  "memavail_after_micro_gib": [
+   21.25,
+   22.9
+  ]
+ },
+ "correctness": "8/8 rc=0 (CORRECTNESS {\"pass\": 8, \"total\": 8})",
+ "greedy_smoke": "smoke_chat '323' rc 0, smoke_vision 'Red' rc 0",
+ "e2e": "rc=0, 3/3 (useful_tok_s 6.22)",
+ "disarm_scan": "rc=0",
+ "audit": "boot.txt: audit ok: every expected patch engaged on head, worker (AUDIT=strict); strict re-run on end-of-boot logs rc 0",
+ "engagement": "engagement.txt: every s3 K line 1x per rank (COOP=2; mhc det target 81 fn / draft 6 fn; native stage; early hash; t2r dedup + census 9.50 reuses/compute; moe prep; candidate mask; wp gemv; swa meta); dense GEMV armed 9 per rank; lm_head mxfp8, prefetch v3, gather v2 1x per rank; [woa-requant] 43/43 and [woa-prepack] 43/43 per rank. Arm S lever: \"dsv41: DSpark sparse Markov (gathered top-k) k=256\" head 4 / worker 3 (same counts as Kp-2). KP add-on lines 0. 0 of 27 disarm markers. DSV41_DSPARK_SPARSE_MARKOV=1 on both ranks, TOPK unset. Rank env diff only VLLM_HOST_IP. Running image 3a002b55c9bc on both ranks.",
+ "gpu_guard": "rc=0, 0 FOREIGN. spark1 503 samples at 2 s (21:34:34Z-21:57:49Z), only VLLM::Worker_TP. spark2 129 samples at 10 s (21:34:34Z-21:57:43Z): VLLM::Worker_TP, Xorg, gnome-shell. Guards started when run.sh exited, before the smokes. Not VOID.",
+ "spark2_lock": "held from 21:20:10Z (remote flock pid 934180, LOCK_HELD before run.sh). After stop the remote flock/sleep pair (934180/934181) outlived the killed local ssh; this session killed its own pair. LOCK_FREE 21:58:10Z.",
+ "quality_quick": {
+  "pass": true,
+  "rc": 0,
+  "elapsed_s": 316.7,
+  "nll": 0.243172,
+  "decode_median_dlp": 0.01135,
+  "gen_nll_prefill": 0.3108,
+  "golden_hazard": 0.02286,
+  "aa_hazard": 0.01675,
+  "selfcons_identical": "5/12",
+  "tools_json": "22/22",
+  "exact_args": "21/22 = 0.9545 (t09 miss; exactly at the limit)",
+  "no_call": "8/8",
+  "needle": "6/6",
+  "c2": true,
+  "vision": "Red"
+ },
+ "quality_full": "not run (s9/s10: quick on one boot per P6 arm)",
+ "memavail_gib": {
+  "before_boot": [
+   116,
+   117
+  ],
+  "after_smoke": [
+   22,
+   24
+  ],
+  "after_micro": [
+   21.25,
+   22.9
+  ],
+  "end_serve_up": [
+   21,
+   23
+  ],
+  "swap_used": "spark1 3.3 -> 7.4 GiB, spark2 1.6 -> 4.8 GiB"
+ },
+ "load": {
+  "run_sh_start": "21:24:09Z",
+  "vllm_server_start": "21:33:53Z (584 s)",
+  "run_sh_exit": "21:34:29-21:34:34Z (5 s poll; 620-625 s incl. warmup)",
+  "model_loading_s": 426.57,
+  "weights_s": [
+   346.3,
+   22.76
+  ],
+  "model_gib": 75.58,
+  "init_engine_s": 60.17
+ },
+ "stop": "./stop.sh 21:57:58Z rc 0; neither node has a dsv41 container",
+ "P6_context_not_a_verdict": {
+  "note": "S-1 vs the six K-config boots (K-1, K-2, CUR-1, CUR-2, Kp-1, Kp-2: identical env/image/patch/pack = arm S config, earlier in the window) and vs W-1. Recomputed from raw files with the W-1 method. P6 decides on W#1, S#1, W#2, S#2 with the noise rule; W#2 and S#2 are pending.",
+  "cells": {
+   "four_prose_c1_tok_s": {
+    "K_config": [
+     54.42,
+     53.43,
+     54.11,
+     53.34,
+     54.52,
+     54.85
+    ],
+    "K_median": 54.265,
+    "K_range": [
+     53.34,
+     54.85
+    ],
+    "S1": 52.46,
+    "S1_minus_K_median": -1.805,
+    "position_vs_K": "below",
+    "W1": 54.68,
+    "S1_minus_W1": -2.22
+   },
+   "four_prose_c1_ms_step": {
+    "K_config": [
+     47.156,
+     48.245,
+     47.753,
+     47.715,
+     48.083,
+     47.522
+    ],
+    "K_median": 47.734,
+    "K_range": [
+     47.156,
+     48.245
+    ],
+    "S1": 48.061,
+    "S1_minus_K_median": 0.327,
+    "position_vs_K": "inside",
+    "W1": 48.705,
+    "S1_minus_W1": -0.644
+   },
+   "four_prose_c1_acc": {
+    "K_config": [
+     2.557,
+     2.532,
+     2.618,
+     2.544,
+     2.59,
+     2.584
+    ],
+    "K_median": 2.571,
+    "K_range": [
+     2.532,
+     2.618
+    ],
+    "S1": 2.532,
+    "S1_minus_K_median": -0.038,
+    "position_vs_K": "inside",
+    "W1": 2.653,
+    "S1_minus_W1": -0.121
+   },
+   "prose_long_c1_tok_s": {
+    "K_config": [
+     43.688,
+     43.923,
+     44.893,
+     43.395,
+     44.259,
+     43.695
+    ],
+    "K_median": 43.809,
+    "K_range": [
+     43.395,
+     44.893
+    ],
+    "S1": 44.739,
+    "S1_minus_K_median": 0.93,
+    "position_vs_K": "inside",
+    "W1": 44.257,
+    "S1_minus_W1": 0.482
+   },
+   "prose_long_c1_ms_step": {
+    "K_config": [
+     49.01,
+     48.702,
+     49.101,
+     48.675,
+     48.744,
+     48.924
+    ],
+    "K_median": 48.834,
+    "K_range": [
+     48.675,
+     49.101
+    ],
+    "S1": 49.177,
+    "S1_minus_K_median": 0.343,
+    "position_vs_K": "above",
+    "W1": 49.89,
+    "S1_minus_W1": -0.713
+   },
+   "prose_long_c1_acc": {
+    "K_config": [
+     2.117,
+     2.151,
+     2.222,
+     2.117,
+     2.151,
+     2.117
+    ],
+    "K_median": 2.134,
+    "K_range": [
+     2.117,
+     2.222
+    ],
+    "S1": 2.198,
+    "S1_minus_K_median": 0.064,
+    "position_vs_K": "inside",
+    "W1": 2.187,
+    "S1_minus_W1": 0.011
+   },
+   "prose_long_c2_agg": {
+    "K_config": [
+     68.063,
+     68.259,
+     70.089,
+     66.093,
+     68.323,
+     68.529
+    ],
+    "K_median": 68.291,
+    "K_range": [
+     66.093,
+     70.089
+    ],
+    "S1": 67.276,
+    "S1_minus_K_median": -1.015,
+    "position_vs_K": "inside",
+    "W1": 66.876,
+    "S1_minus_W1": 0.4
+   },
+   "prose_long_c2_ms_step": {
+    "K_config": [
+     60.724,
+     61.415,
+     60.197,
+     62.2,
+     61.316,
+     61.647
+    ],
+    "K_median": 61.365,
+    "K_range": [
+     60.197,
+     62.2
+    ],
+    "S1": 61.037,
+    "S1_minus_K_median": -0.328,
+    "position_vs_K": "inside",
+    "W1": 62.899,
+    "S1_minus_W1": -1.862
+   },
+   "lail_tok_s": {
+    "K_config": [
+     43.567,
+     42.531,
+     42.927,
+     43.123,
+     43.493,
+     41.899
+    ],
+    "K_median": 43.025,
+    "K_range": [
+     41.899,
+     43.567
+    ],
+    "S1": 42.791,
+    "S1_minus_K_median": -0.234,
+    "position_vs_K": "inside",
+    "W1": 42.814,
+    "S1_minus_W1": -0.023
+   },
+   "lail_ms_step": {
+    "K_config": [
+     48.328,
+     48.909,
+     49.371,
+     48.638,
+     48.547,
+     48.541
+    ],
+    "K_median": 48.593,
+    "K_range": [
+     48.328,
+     49.371
+    ],
+    "S1": 48.897,
+    "S1_minus_K_median": 0.304,
+    "position_vs_K": "inside",
+    "W1": 49.576,
+    "S1_minus_W1": -0.679
+   },
+   "lail_acc": {
+    "K_config": [
+     2.107,
+     2.105,
+     2.118,
+     2.122,
+     2.127,
+     2.073
+    ],
+    "K_median": 2.112,
+    "K_range": [
+     2.073,
+     2.127
+    ],
+    "S1": 2.1,
+    "S1_minus_K_median": -0.012,
+    "position_vs_K": "inside",
+    "W1": 2.158,
+    "S1_minus_W1": -0.058
+   },
+   "bench_prose_c1_tok_s": {
+    "K_config": [
+     52.338,
+     53.531,
+     53.688,
+     52.363,
+     51.953,
+     52.106
+    ],
+    "K_median": 52.35,
+    "K_range": [
+     51.953,
+     53.688
+    ],
+    "S1": 51.781,
+    "S1_minus_K_median": -0.569,
+    "position_vs_K": "below",
+    "W1": 50.067,
+    "S1_minus_W1": 1.714
+   },
+   "bench_prose_c1_ms_step": {
+    "K_config": [
+     48.244,
+     48.764,
+     48.28,
+     48.355,
+     48.214,
+     48.49
+    ],
+    "K_median": 48.317,
+    "K_range": [
+     48.214,
+     48.764
+    ],
+    "S1": 49.027,
+    "S1_minus_K_median": 0.71,
+    "position_vs_K": "above",
+    "W1": 49.219,
+    "S1_minus_W1": -0.192
+   },
+   "bench_prose_c1_acc": {
+    "K_config": [
+     2.525,
+     2.59,
+     2.584,
+     2.519,
+     2.525,
+     2.513
+    ],
+    "K_median": 2.525,
+    "K_range": [
+     2.513,
+     2.59
+    ],
+    "S1": 2.532,
+    "S1_minus_K_median": 0.007,
+    "position_vs_K": "inside",
+    "W1": 2.487,
+    "S1_minus_W1": 0.045
+   },
+   "structured_c1_ms_step": {
+    "K_config": [
+     46.877,
+     47.196,
+     46.992,
+     47.313,
+     47.139,
+     46.97
+    ],
+    "K_median": 47.066,
+    "K_range": [
+     46.877,
+     47.313
+    ],
+    "S1": 47.304,
+    "S1_minus_K_median": 0.239,
+    "position_vs_K": "inside",
+    "W1": 48.004,
+    "S1_minus_W1": -0.7
+   },
+   "structured_c2_agg": {
+    "K_config": [
+     139.836,
+     139.038,
+     138.839,
+     139.219,
+     138.909,
+     138.998
+    ],
+    "K_median": 139.018,
+    "K_range": [
+     138.839,
+     139.836
+    ],
+    "S1": 138.044,
+    "S1_minus_K_median": -0.974,
+    "position_vs_K": "below",
+    "W1": 136.159,
+    "S1_minus_W1": 1.885
+   },
+   "pp_warm_8k": {
+    "K_config": [
+     758.1,
+     784.4,
+     762.5,
+     743.1,
+     752.0,
+     774.5
+    ],
+    "K_median": 760.3,
+    "K_range": [
+     743.1,
+     784.4
+    ],
+    "S1": 761.4,
+    "S1_minus_K_median": 1.1,
+    "position_vs_K": "inside",
+    "W1": 776.8,
+    "S1_minus_W1": -15.4
+   },
+   "pp_warm_32k": {
+    "K_config": [
+     769.7,
+     758.9,
+     763.0,
+     772.0,
+     765.4,
+     768.7
+    ],
+    "K_median": 767.05,
+    "K_range": [
+     758.9,
+     772.0
+    ],
+    "S1": 765.2,
+    "S1_minus_K_median": -1.85,
+    "position_vs_K": "inside",
+    "W1": 768.8,
+    "S1_minus_W1": -3.6
+   },
+   "pp_novel_8k": {
+    "K_config": [
+     804.0,
+     825.6,
+     809.7,
+     810.2,
+     803.7,
+     813.1
+    ],
+    "K_median": 809.95,
+    "K_range": [
+     803.7,
+     825.6
+    ],
+    "S1": 831.0,
+    "S1_minus_K_median": 21.05,
+    "position_vs_K": "above",
+    "W1": 806.6,
+    "S1_minus_W1": 24.4
+   },
+   "pp_novel_32k": {
+    "K_config": [
+     799.5,
+     811.4,
+     811.7,
+     821.0,
+     811.1,
+     804.7
+    ],
+    "K_median": 811.25,
+    "K_range": [
+     799.5,
+     821.0
+    ],
+    "S1": 820.5,
+    "S1_minus_K_median": 9.25,
+    "position_vs_K": "inside",
+    "W1": 806.0,
+    "S1_minus_W1": 14.5
+   }
+  }
+ }
+}

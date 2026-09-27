@@ -911,3 +911,115 @@ Cause: no record_stream on the side-stream copies, an intermittent allocator rac
 - E2 (MAX_ROWS=256), not needed.
 - A warmup key for the intermittent e13 TileLang JIT.
 - The warm-prefix band on the R33 config.
+
+## Round 35 — 2026-09-26 kernels + Viterbi: the round-3 kernel bundle and SPARSE_MARKOV_TOPK=1024 promoted on canonical-e14, Viterbi pack rejected, serve UP
+
+The branch perf/kernels-r3 carries the k3 round-3 kernel work: five workstreams (`results/2026-09-25-kernels/coop-moe/`, `dense-gemv/`, `mhc-det/`, `fusion-host/`, `comm/`), the ground-truth profile (`profile/timeline-r3.txt`), the integration record (`integration/VERIFY.txt`, one image `review-e14` for every lever) and the full Viterbi re-encode of the routed experts (`requant/`, `/home/sfxnz/projects/data/dsv41-requant-viterbi/`). A serialized serve campaign on both Sparks (2026-09-26 05:27Z to 2026-09-27 03:33Z) followed `results/2026-09-25-kernels/ARMS-r3.txt` and ARMS.md step 6. Evidence per boot is in `results/2026-09-26-serve-r3/<arm>-<n>/`, and each decision recomputes from the raw per-boot files (`decision-bundle.json`, `decision-viterbi.json`, `decision-addons.json`, `decision-markov.json`, with their `*-compute.py.txt`). Every boot ran image `sha256:3a002b55c9bc` on both ranks.
+
+**New defaults** (commit 5da6f21):
+- the round-3 kernel bundle, promoted as one unit: `DSV41_P2B_COOP=2`, `DSV41_DENSE_GEMV=1`, `DSV41_MHC_DET_SPLITS=16`, `DSV41_ENGRAM_NATIVE_STAGE=1`, `DSV41_ENGRAM_EARLY_HASH=1`, `DSV41_ATTN_T2R_DEDUP=1`, `DSV41_SWA_META_FUSED=1`, `DSV41_MOE_PREP_FUSED=1`, `DSV41_CANDIDATE_MASK_BOUNDED=1`, `DSV41_INDEXER_WP_GEMV=1`
+- `DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024` (SPARSE_MARKOV=1 stays)
+
+The image is `dsv41-flash-exl3-sm121:canonical-e14`: review-e14 (`docker/Dockerfile.e14` on canonical-e13, `sha256:3a002b55c9bc`) tagged on both nodes (`results/2026-09-26-serve-r3/promote-image-provenance.txt`). `DSV41_P2B_COOP=2` needs it. `docker/Dockerfile` runs the same p2b chain from scratch.
+
+**Not promoted, still default off** (numbers in flags.md): the five KP add-ons (`DSV41_MHC_DET_OVERLAP`, `DSV41_ENGRAM_WKV_TP`, `DSV41_PM_QOS_US`, `DSV41_NCCL_EAGER_TWIN`, `DSV41_AR_L2_PREFETCH`); the revert to `DSV41_DSPARK_SPARSE_MARKOV=0`. **Rejected**: the Viterbi pack `2.0bpw-mcg-viterbi-lmhead-mxfp8`; the serve pin stays `2.0bpw-mcg-lmhead-mxfp8`.
+
+**Headline.** Before is arm A, the round-34 defaults on the same image (A-1, A-2). After is the final promoted config: S1024-1 and S1024-2 (P6, same env set by hand) and final-1 (the validation boot of the committed defaults). All five boots have the same pack, image ID, docker/patch sha256 list and procedure; the after boots share one container env. Arm value = median of the per-boot medians; noise = the larger boot-to-boot spread. The A boots and the after boots ran in the same window but were not interleaved with each other, so this table describes the result; the promotions rest on the interleaved decisions below. Computed by `results/2026-09-26-serve-r3/round35-headline-compute.py.txt` → `round35-headline.json`.
+
+| Metric | A-1 / A-2 | S1024-1 / S1024-2 / final-1 | A → final (medians) | Δ | noise |
+|---|---|---|---|---:|---:|
+| L.A.I.L fresh, t=0.2 (tok/s) | 33.69 / 34.21 | 43.17 / 43.62 / 42.74 | 33.95 → 43.17 | +9.22 (+27.1%) | 0.88 |
+| L.A.I.L fresh (ms/step) | 63.01 / 62.57 | 49.22 / 49.00 / 48.73 | 62.79 → 49.00 | -13.79 (-22.0%) | 0.49 |
+| L.A.I.L fresh acceptance (median run) | 2.120 / 2.156 | 2.133 / 2.186 / 2.109 | 2.138 → 2.133 | -0.005 | 0.076 |
+| four prose c=1 (tok/s) | 39.07 / 39.24 | 53.67 / 52.04 / 52.52 | 39.16 → 52.52 | +13.37 (+34.1%) | 1.63 |
+| four prose c=1 (ms/step) | 63.87 / 63.08 | 48.10 / 48.07 / 47.92 | 63.47 → 48.07 | -15.40 (-24.3%) | 0.78 |
+| prose_long c=1 (tok/s) | 32.88 / 33.12 | 44.17 / 43.73 / 43.56 | 33.00 → 43.73 | +10.73 (+32.5%) | 0.61 |
+| prose_long c=1 (ms/step) | 63.47 / 63.22 | 48.80 / 49.49 / 48.98 | 63.34 → 48.98 | -14.36 (-22.7%) | 0.69 |
+| prose_long c=1 acceptance | 2.151 / 2.073 | 2.163 / 2.174 / 2.149 | 2.112 → 2.163 | +0.051 | 0.078 |
+| bench prose c=1 (tok/s) | 38.11 / 39.29 | 51.99 / 52.08 / 54.03 | 38.70 → 52.08 | +13.38 (+34.6%) | 2.04 |
+| structured c=1 (tok/s) | 61.62 / 62.76 | 83.81 / 83.45 / 83.90 | 62.19 → 83.81 | +21.62 (+34.8%) | 1.14 |
+| structured c=1 (ms/step) | 64.28 / 63.11 | 47.26 / 47.46 / 47.21 | 63.69 → 47.26 | -16.44 (-25.8%) | 1.16 |
+| bench prose c=2 aggregate (tok/s) | 55.44 / 57.95 | 82.38 / 81.69 / 80.61 | 56.70 → 81.69 | +24.99 (+44.1%) | 2.50 |
+| structured c=2 aggregate (tok/s) | 88.35 / 89.73 | 138.60 / 138.24 / 138.34 | 89.04 → 138.34 | +49.30 (+55.4%) | 1.38 |
+| prose_long c=2 aggregate (tok/s) | 47.18 / 47.63 | 65.24 / 65.62 / 68.05 | 47.40 → 65.62 | +18.22 (+38.4%) | 2.81 |
+| prose_long c=2 (ms/step) | 88.74 / 87.21 | 61.37 / 62.56 / 62.35 | 87.97 → 62.35 | -25.62 (-29.1%) | 1.52 |
+| L.A.I.L 3x after c=2 traffic (tok/s) | 32.85 / 33.38 | 43.68 / 42.46 / 43.66 | 33.12 → 43.66 | +10.54 (+31.8%) | 1.22 |
+| pp_warm 8k / 32k (tok/s) | 758.1 / 756.6 ; 765.9 / 763.8 | 757.6 / 753.8 / 765.0 ; 763.0 / 769.5 / 768.0 | 757.4 → 757.6 ; 764.9 → 768.0 | +0.2 ; +3.1 | 11.2 ; 6.5 |
+| pp_novel 8k / 32k (tok/s) | 819.5 / 818.9 ; 808.5 / 817.4 | 821.4 / 807.4 / 835.0 ; 806.2 / 806.3 / 810.7 | 819.2 → 821.4 ; 813.0 → 806.3 | +2.2 ; -6.7 | 27.6 ; 8.9 |
+
+Every after boot beats the A median on every tok/s and ms/step row. Acceptance did not move: L.A.I.L median-run acceptance 2.138 → 2.133 and four prose 2.501 → 2.513, inside the noise. Prefill is unchanged within the noise (the bundle is decode-side). Pooled per-run medians: L.A.I.L 33.92 (n=20) → 42.98 (n=30) tok/s, 62.88 → 48.96 ms/step, TTFT 0.356 → 0.322 s; four prose c=1 39.155 (n=18) → 52.66 (n=27). bench_decode pooled per stream (the recipe.yaml measured rows): prose c=1 38.46 → 52.97, structured c=1 62.14 → 83.73, prose c=2 aggregate 56.95 → 81.73, structured c=2 aggregate 88.76 → 138.34.
+
+Against the round-34 published cells (s8+s13 pooled, a different day): L.A.I.L 33.68 → 42.98 pooled, prose c=1 39.52 → 52.97, structured c=1 62.52 → 83.73. The round-33 target of 35 tok/s L.A.I.L is crossed on all 20 serve boots in this window that ran the full K bundle (lowest per-boot median 41.829, VIT-1 on the Viterbi pack); the A boots read 33.69 / 34.21 and the KC boots (bundle without COOP) 37.56 / 36.73.
+
+Quality on the final config: quick PASS on S1024-1, S1024-2 and final-1; full PASS on final-1 on every component (NLL 0.242247, decode median |dlogprob| 0.01185, golden hazard 0.02659 and A/A 0.01698 against 0.04348, tools 22/22 json and 21/22 exact, GSM8K 94/100, GSM8K thinking 39/40, MMLU 199/228, needle 9/9 including 128k). Round 34's s13 full read NLL 0.243755, GSM8K 92/100, thinking 38/40, MMLU 199/228. tools exact_args is the tightest gate: 21/22 (t09 `calculate_loan_payment` called with `{}`) sits exactly at the 0.9545 limit, and 20/22 (t01 `get_weather` also `{}`) passes only by the gate's one-item slack. The A readings are 22/22, 21/22 (A-1 rep1, rep2) and 21/22 (A-2); the 20 full-bundle quick readings are 20/22 on K-2, CUR-2, Kp-1, KP-1, Kp-2 and W-2, 22/22 on VIT-1, VIT-2 and W-1, and 21/22 on the other 11 (KC-1 / KC-2 read 21/22 and 20/22); the full readings are 20/22 (K-2), 22/22 (CUR-1, VIT-1, VIT-2) and 21/22 (CUR-2, final-1).
+
+**Final validation boot** (`final-1/`, 5da6f21, commits f6d9fd2, d8f8e19, 77df363). `AUDIT=strict ./run.sh` with no lever env: strict audit ok on both ranks, every K line and the k=1024 line on both ranks, KP lines absent, disarm_scan rc 0, gpu_guard rc 0 (0 FOREIGN in 1332 / 260 samples), smokes 323 / Red, correctness 8/8, e2e 3/3. L.A.I.L x10 42.737 tok/s at 48.732 ms/step (acceptance 2.1092), four prose c=1 52.52 at 47.921, prose_long c=1 43.564 at 48.979 (natural finish length, post-EOS 0), c=2 aggregates prose 80.605 / structured 138.339 / prose_long 68.047, pp_warm 765.0 / 768.0, pp_novel 835.0 / 810.7, warm prefix 1.0. Quality quick and full PASS. MemAvailable 116/117 GiB before, 23/25 after smoke, 21.42/23.50 after the 32k prefill. Load: model loading 431.14 s (75.58 GiB), init engine 60.94 s, server start 594 s after run.sh. **Serve left UP** on this boot (canonical-e14, round-35 defaults, from the kernels-r3 worktree).
+
+### Phases
+
+Every counted boot below passed the section 1 preconditions and ran the section 2 procedure: strict audit at ready, smokes, correctness 8/8, fresh L.A.I.L x10 before any c=2, `bench_decode.py --runs 9`, `tools/four_numbers.sh`, `benches/e2e.py` (3/3 on every boot; rc 0 wherever captured, CUR-1 ran it in the background), quality, `disarm_scan` rc 0 and `gpu_guard` rc 0 with 0 FOREIGN samples. No boot was VOID and no lever was dropped. No lever disarmed on a counted boot: K-1's first attempt hit the MHC_DET self-test dtype bug (bf16 default under the loader), fixed in ae0255a, and the retry is the counted K-1. Every boot ran image `sha256:3a002b55c9bc` on both ranks; honest cells held on all of them (prose_long natural finish `length`, post-EOS 0, `serve_env_ranks_match` true, `lever_disarmed` false). MemAvailable was 116-117 GiB before each boot and 22-25 GiB after the smokes (floor 8). Per-boot numbers are in each boot's `summary.json` / `notes.txt`; the decisions recompute from the raw files (`lail10.txt`, `bench_decode.txt`, `four/four_numbers.json`, `four/02-micro.log`, `quality_*.json`).
+
+- **P0 / P1** (`p0-p1/`, commits a80c789, 96a7de7).
+  - Viterbi pack assembled on both nodes: 40/40 unit shards sha256- and size-equal to the manifest on each node, sha-list digest equal across nodes, 40/40 hard links, safetensors headers byte-equal to stock, 47,323/47,323 non-expert tensors in the unit shards byte-equal to stock, 0 problems.
+  - Preflight: requant containers gone (exit 0), no serve, GPUs free, MemAvailable 116/116 GiB, image IDs equal, unit tests 797 OK.
+  - NCCL twin device check (two-node harness with memset gaps, serve down): self-test flags exactly step 37 on both ranks; c=1 and c=2 device checks 330/330 steps, 0 bad steps, 0 host mismatches. Rank-0 step medians: c=1 keep 56.673, twin 50.054, keep_qos 55.562, twin_qos 49.448 ms; c=2 keep 57.643, twin 50.664. This is a harness, not a serve.
+- **P2 bundle** (A-1, K-1, KC-1, A-2, K-2, KC-2; `decision-bundle.json`, 54ad48e). Arm value = median of its two boots, noise = the larger boot-to-boot spread.
+
+  | Cell (ms/step) | A | K | KC | K vs A | K vs KC | KC vs A |
+  |---|---|---|---|---:|---:|---:|
+  | four prose c=1 | 63.866 / 63.083 | 47.156 / 48.245 | 56.154 / 56.213 | −15.774 (noise 1.089) | −8.483 (1.089) | −7.291 (0.782) |
+  | prose_long c=1 | 63.47 / 63.216 | 49.01 / 48.702 | 56.9 / 57.161 | −14.487 (0.308) | −8.175 (0.308) | −6.312 (0.261) |
+  | L.A.I.L | 63.013 / 62.568 | 48.328 / 48.909 | 56.205 / 56.349 | −14.172 | −7.659 | −6.513 |
+
+  Every K boot beats the A and the KC median on both primary cells. Acceptance is matched for all pairs (four prose median-run: A 2.5443/2.4568, K 2.557/2.5316, KC 2.5844/2.5443). Non-inferiority holds against the larger spread; K vs KC pp_novel 32k is −12.7 tok/s against a noise of 11.9 (runs overlap; COOP does not run in prefill). Quality quick PASS on K-1, K-2, KC-1 and KC-2; full PASS on K-2 (NLL 0.242805, GSM8K 94/100, thinking 39/40, MMLU 199/228, needle 9/9). The A/A control: A-1's quick rep1 failed on aa_hazard 0.03516 with no lever armed (rep2 on the same boot passed); A-2 passed. Every measured saving is larger than the section 11 projection: K vs A c=1 projected 11.9-13.1, measured 14.172-16.657 ms/step; c=2 projected 21.5-22.0, measured 26.905-31.707. Promoted as one unit.
+- **P3 attribution** (profile boots A_p-1, K_p-1, not counted; `P3/attribution.txt`, 7db92e9). Profiled step wall K_p − A_p: c=1 −14.321 / −14.135 ms (rank 0 / rank 1), c=2 −27.798 / −27.385. Device ops per step 2569 → 1612. Per lever, c=1, rank 0 / rank 1:
+
+  | Lever | Measured on | K − A (ms/step) | Projection (s11) | Reading |
+  |---|---|---:|---:|---|
+  | `DSV41_P2B_COOP=2` | routed MoE segment | −6.109 / −5.909 (c=2 −16.508 / −16.406) | −6.76..−6.81 (c=2 −15.2..−15.3) | delivered |
+  | `DSV41_DENSE_GEMV=1` | dense MXFP8 GEMM kernel time | −1.690 / −1.683, plus −0.46..−0.51 act-quant | −1.60 | delivered; router gate next to the shared gate_up slows 19.6 → 47.0 us/layer, +1.096 / +1.136 back |
+  | `DSV41_MHC_DET_SPLITS=16` | elapsed mHC chain | −0.984 / −0.976 | −1.0..−1.4 | delivered (low end) |
+  | `DSV41_ENGRAM_NATIVE_STAGE=1` | Engram stage span | −1.507 / −1.161 | −1.22..−1.57 | partial: span 1.368 / 1.558 ms, expected 0.2-0.35 |
+  | `DSV41_ENGRAM_EARLY_HASH=1` | eager chain before the hash | −1.018 / −1.001 | −0.18 | delivered, above projection |
+  | `DSV41_MOE_PREP_FUSED=1` | router gate end → routed start | −2.944 / −3.000 | −0.19..−0.34 | delivered, ~10x projection |
+  | `DSV41_CANDIDATE_MASK_BOUNDED=1` | mask + flags kernels | −0.300 / −0.296 | −0.27..−0.43 | delivered |
+  | `DSV41_INDEXER_WP_GEMV=1` | qkv join wait | −0.123 / −0.122 | −0.10..−0.17 | delivered |
+  | `DSV41_ATTN_T2R_DEDUP=1` | t2r scan/map kernels | −0.070 / −0.068 | −0.41..−0.43 | mechanism delivered, step gain masked |
+  | `DSV41_SWA_META_FUSED=1` | SWA metadata kernel | −0.001 / +0.004 | −0.09..−0.16 | mechanism delivered, step gain masked |
+
+  The reconciliation rows sum to −14.251 / −14.338 against the measured −14.321 / −14.135 (c=1). Unplaced: the unprofiled P2 leave-one-out gave COOP −7.66..−8.48 ms/step at c=1 while the profiled COOP kernel delta is −5.91..−6.11, so about 2 ms/step at c=1 is an interaction the two profile arms cannot place (a KC_p boot would). Remaining top 3 in K_p: the routed MoE coop kernel (15.96 / 15.81 ms/step; about 4 ms above a flat-read floor at c=1), the Engram host stage (span 1.37-1.56 ms; page-cache misses), and the router gate slowed by the shared gate_up GEMV (+1.1 ms/step). K_p worker traces had NUL bytes at page-final indentation positions (cause unidentified; parsed after a lossless NUL → space rewrite).
+- **P4 Viterbi pack** (CUR-1, VIT-1, CUR-2, VIT-2 on the promoted config; `decision-viterbi.json`, c02cbf6). Kernel pre-check on the Viterbi weights passed first (spark2, layer 20 with `--ref` and layer 33 rank 1: 24/24 checks each, one-hot bit-exact vs p2b, COOP=2 bitwise = =1, full max_rel ≤ 4.13e-4, 8bf97c5). **Rejected, and the serve pin stays `2.0bpw-mcg-lmhead-mxfp8`**, on two grounds, either sufficient as written:
+  - Quality gate: quick and full FAIL on both VIT boots, on `selfcons.golden_hazard` only (0.09756 / 0.10204 quick against 0.03206; 0.0939 / 0.0939 full against 0.04348; 20/24 pairs diverge from the old pack's greedy goldens, on 8/12 prompts at the same token on all 16 VIT sequences). CUR passed every component on all four readings. The pack's own A/A hazard stays in band (VIT 0.0084-0.0161, CUR 0.0123-0.0274), so the failure is the pack being different from the goldens, not unstable output.
+  - Speed: acceptance is not matched, so the gate is tok/s. prose_long c=1 CUR 44.893 / 43.395 vs VIT 45.875 / 48.629 (+3.108, noise 2.754, better); L.A.I.L CUR 42.927 / 43.123 vs VIT 41.829 / 42.174 (−1.024, noise 0.345, worse beyond noise). c=1 ms/step is equal within noise (four prose −0.084, prose_long −0.032, L.A.I.L −0.322).
+  - What improved: teacher-forced NLL −0.10489 nats/token paired over 40 passages (−42.1%, 95% CI −0.12856..−0.08122, 39/40 lower, Wilcoxon p = 5.5e-12; full NLL VIT 0.1386 / 0.1393 vs CUR 0.2434 / 0.2439). GSM8K 97 / 97 vs 95 / 94 and MMLU 206 / 204 vs 196 / 198 favour VIT but are not significant after pooling (McNemar p 0.219 and 0.134). Structured c=2 is −5.38 ms/step (noise 0.2) on VIT: the two c=2 streams start together and run in lockstep at acceptance 4.0; cause not established.
+  - Whether the golden-hazard gate should apply to a pack change is left to the protocol owner. The pack is local only (both nodes, `snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8`); it is not on the Hub (see "Viterbi pack: status and commands" below).
+- **P5 KP add-ons** (safety boot KPsafe-1, then Kp-1, KP-1, Kp-2, KP-2; `decision-addons.json`, 172359d). KP = K + `DSV41_MHC_DET_OVERLAP=1 DSV41_ENGRAM_WKV_TP=1 DSV41_PM_QOS_US=20 DSV41_NCCL_EAGER_TWIN=1 DSV41_AR_L2_PREFETCH=1`. The safety boot booted with every add-on engaged on both ranks and no hang; greedy smokes were byte-identical to K on all five boots. ms/step KP − K: four prose c=1 −1.325 (noise 0.561), prose_long c=1 −1.81 (0.333), L.A.I.L −1.732 (0.082), every KP boot below the K median; the s11 projection was −2.4..−7.1. Per-boot median-run acceptance does not overlap on the two primary cells (four prose K 2.5897/2.5844 vs KP 2.525/2.5769; prose_long c=1 K 2.1505/2.117 vs KP 2.0729/2.0938), so step 6 falls back to tok/s: prose_long c=1 +0.198 (noise 0.718, KP-2 below the K median), L.A.I.L +1.459 (noise 1.594). **Not promoted**; all five stay off. No KP_p profile boot ran, so there is no per-add-on attribution. On structured c=1 (acceptance 3.961 on every run) KP is −1.563 ms/step (18/18 KP runs below every one of the 54 K-config runs) and +2.893 tok/s (noise 0.512). Next per s8: an ABAB of K + {PM_QOS, WKV_TP} against K, and the KP_p profile.
+- **P6 SPARSE_MARKOV** (`decision-markov.json`, 018ec0d).
+  - W vs S (W-1, S-1, W-2, S-2; W = `DSV41_DSPARK_SPARSE_MARKOV=0` with WOA_PREPACK=1): L.A.I.L W 42.814 / 43.624 vs S 42.791 / 42.785, +0.431 (noise 0.81); prose_long c=1 W 44.257 / 44.196 vs S 44.739 / 43.336, +0.189 (noise 1.403). W does not beat S beyond the noise: the revert is rejected and SPARSE_MARKOV=1 stays. The trade, S relative to W: L.A.I.L acceptance −2.74% (beyond noise) against ms/step −0.735 (noise 0.07), which roughly cancel in tok/s. This settles the round-34 open question on SPARSE_MARKOV's acceptance cost.
+  - S1024 vs S (S-3, S1024-1, S-4, S1024-2): L.A.I.L S 42.36 / 42.871 (median 42.6155) vs S1024 43.167 / 43.615, margins +0.552 / +1.000 against noise 0.511; prose_long c=1 S 42.788 / 42.195 (median 42.4915) vs S1024 44.174 / 43.728, margins +1.683 / +1.237 against noise 0.593. Every S1024 boot beats the S median by more than the noise on both gate cells: **`DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024` promoted**. The gain is acceptance (prose_long c=1 +0.1062, noise 0.0214); the gather costs +0.473 ms/step on L.A.I.L (noise 0.219). Quick quality PASS on all eight P6 boots. Robustness caveat recorded with the decision: S-3/S-4 are the two lowest of the ten S-config boots on prose_long c=1, and against S-1..S-4 (same env, not interleaved) or all ten S-config boots neither gate cell meets the rule.
+
+### Viterbi re-encode (requant) and the pack's status
+
+- Encoder: exllamav3 1.5.1 `quantize_tiles` (tail-biting Viterbi) + `refit_scales` (H = I), 2.0 bpw MCG K=2, from the MXFP4 source (official commit `dba1be0a40aa45a94ad051997016db3960a90277`), resumable across both Sparks (`tools/requant_full.py`; units: 26 on spark1, 14 on spark2). First unit started 2026-09-25T10:34:44Z; `state/DONE` 2026-09-26T04:34:48Z.
+- 46,080 routed-expert tensors in 40 shards. Relative error against the source: final mean 0.261564 (min 0.253070, median 0.261592, max 0.261920) vs stock 2.0bpw-mcg 0.377535 (median 0.377533); Viterbi before refit 0.261711. Final / stock per tensor: mean 0.69282 (0.66615-0.69446); 46,080/46,080 improved, refit kept on all, all finite; MSE ratio 0.48000; per-unit gate ratio 0.69254-0.69293 (`p0-p1/pack-relerr.json`).
+- Same format and bytes as the stock pack: safetensors headers byte-equal on 40/40 shards; 47,323/47,323 non-expert tensors in the unit shards byte-equal (6,884,224,448 B); trellis, suh and svh differ on 46,080/46,080 tensors (refit makes svh a real per-column scale). Assembly on both nodes as `snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8` (hard links to the verified outputs; model-00043 = the lm_head MXFP8 file), 0 problems (`p0-p1/pack-verify-spark{1,2}.json`).
+- The P4 verdict above rejects it for serving as ARMS-r3 section 7 is written. The weight-space gain shows as NLL −42.1% on the fixed passages; the golden-hazard gate and the L.A.I.L speed gate fail. It is **not on the Hub**. To run it locally on the current code: assemble on both nodes (`/home/sfxnz/projects/data/dsv41-requant-viterbi/PLAN.txt` section 9), then `SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8 AUDIT=strict ./run.sh` (ARMS.md, Exact restore sequence).
+- Pending decision for the user / protocol owner, not an action taken: if the golden-hazard gate is judged not to apply to a pack change, the publish command is
+  ```bash
+  HF_XET_HIGH_PERFORMANCE=1 /home/sfxnz/.hf-cli/venv/bin/python tools/publish_pack.py \
+    --src ~/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8 \
+    --revision 2.0bpw-mcg-viterbi-lmhead-mxfp8 --dry-run      # then again without --dry-run
+  ```
+  `publish_pack.py` also uploads `model-card.md` as the README of `main` and of the new branch, so that card has to describe the new revision first. The L.A.I.L regression (−1.024 tok/s, noise 0.345) stands either way.
+
+### Not done / open
+
+- KC_p profile boot: about 2 ms/step of COOP's c=1 saving is an interaction P3 could not place.
+- KP_p profile boot and the section 8 split (K + {PM_QOS, WKV_TP} against K); EAGER_TWIN's missing graphUsageMode lines.
+- The Engram native stage span (1.37-1.56 ms, expected 0.2-0.35): page-cache misses under the early-hash gather.
+- The router gate next to the shared gate_up GEMV (+1.1 ms/step on the FFN prologue).
+- The coop kernel's remaining ~4 ms/step above the flat-read floor at c=1 (shared expert on the coop tail).
+- Whether the golden-hazard gate should gate a pack change (P4), and whether bit-exact levers should gate on the tok/s fallback when their acceptance gap comes from sampling (P5).
+- P6 robustness: S1024 beat the designed pair's S boots, not all ten S-config boots. A further S vs S1024 pair would tighten it.
+- Structured c=2 on the Viterbi pack runs its two streams in lockstep (−5.38 ms/step); cause not established.
+- Viterbi pack publication (above).

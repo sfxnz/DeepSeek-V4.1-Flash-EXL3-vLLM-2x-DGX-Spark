@@ -1,0 +1,27 @@
+K-2 boot notes (arm K = K_ENV, the bit-exact kernel bundle, on round-34 defaults; image review-e14; P2 interleave boot 5 of 6)
+- Command: see command.txt (nohup, background; boot.txt). HEAD f03792b at boot (docker/patch sha256 identical to A-2, KC-1),
+  first attempt counted (no fix, no retry). run.sh start 08:53:41Z, vLLM server start 09:03:44Z (603 s), /v1/models 09:03:57Z,
+  run.sh exit after warmup 09:04:26Z (645 s). Model loading 430.67 s (weights 351.91 + 22.45), init engine 59.07 s.
+- Preconditions (preconditions.txt, 08:49:38Z): requant DONE; no GPU container on either node; pmon spark1 empty, spark2
+  Xorg/gnome-shell only; no microbench; MemAvailable 116/117 GiB; image ID 3a002b55c9bc on both nodes; tree clean apart
+  from this dir; unittest 798 OK (14 skipped) rc 0; render --check rc 0; gpu_free_wait GPUFREE (gpufree-spark1.txt).
+- Deviation (same as A-1/K-1/KC-1): the spark2 lock holder (ssh spark2 flock ... sleep) was refused by the session's
+  permission layer. The lock was FREE at precheck; the spark2 gpu_guard (10 s) saw only VLLM::Worker_TP / Xorg / gnome-shell.
+- Audit: "audit ok: every expected patch engaged on head, worker" (boot.txt); strict re-run on saved logs rc 0.
+  engagement.txt: every section-3 line for K 1x per rank (COOP=2, mhc det target 81 fn / draft 6 fn, native stage, early
+  hash, t2r dedup + census 9.50 reuses/compute, moe prep, candidate mask, wp gemv, swa meta), dense GEMV 9 lines per rank,
+  lm_head mxfp8 / prefetch v3 / gather v2 1x per rank, woa fp8 43/43; KP add-ons 0; 0 LOG_DISARMED; envs equal on both
+  ranks (only VLLM_HOST_IP differs); running image 3a002b55c9bc on both ranks.
+- gpu_guard rc=0 (0 FOREIGN; spark1 1337 samples @2 s, spark2 260 @10 s, 09:04:39Z-09:51:43Z). Not VOID.
+- L.A.I.L x10: median 42.531 tok/s, 48.909 ms/step. Runs 4 and 5 were slow (52.49 / 55.96 ms/step; the other 8 runs
+  48.38-49.50). The guard was clean and the head log shows nothing for 09:05-09:07Z. Kept as measured.
+- Quality quick: PASS (single run). exact_args 20/22 (t01 + t09 called with {}), passes by the gate's one-item slack;
+  A-2/K-1/KC-1 read 21/22 (t09 only). nll 0.242911, dlp 0.00965, aa 0.01627, golden 0.01415.
+- Quality full (section 10, required on K#2): PASS (single run, 1359 s). nll 0.242805, dlp 0.01647, aa 0.02059, golden
+  0.02317 (limit 0.04348), exact_args 20/22 (t09 + t17), needle 9/9, gsm8k 94/100, gsm8k_think 39/40, mmlu 199/228.
+- Order followed: smokes, mem, correctness 8/8, L.A.I.L x10, bench_decode x9, four_numbers, e2e (rc 0, 3/3), quality
+  quick, quality full, disarm_scan (rc 0), engagement check, gpu_guard --check (rc 0), mem-end, ./stop.sh (09:51:52Z).
+- K vs A on the 2x2 boots (summary.json K_vs_A_gate_readings_2x2): four prose c=1 ms/step A 63.866/63.083, K 47.156/48.245
+  (improvement 15.774 vs noise 1.089); prose_long c=1 A 63.47/63.216, K 49.01/48.702 (14.487 vs 0.308); every K boot beats
+  the A median on both. Non-inferiority and acceptance overlap hold (pp_novel_8k caveat in summary.json). KC-2 has not run,
+  so no promotion verdict here.

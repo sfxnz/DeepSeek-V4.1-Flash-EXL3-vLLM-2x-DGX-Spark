@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# ARMS-r3 section 4, correctness part: selftest, device-check c=1 (4 arms), device-check c=2 (2 arms).
+set -uo pipefail
+W=/home/sfxnz/projects/ai-lab/recipes/.worktrees/kernels-r3
+T=$W/results/2026-09-26-serve-r3/p0-p1/nccl-twin
+export IMAGE=dsv41-flash-exl3-sm121:review-e14
+cd $W
+run() {  # name, then env assignments
+  local name=$1; shift
+  echo "=== $name start $(date -u +%FT%TZ) env: $*"
+  env "$@" OUT=$T/$name tools/nccl_twin_check.sh > $T/$name.stdout.txt 2>&1
+  local rc=$?
+  echo "=== $name end $(date -u +%FT%TZ) rc=$rc"
+  python3 tools/nccl_twin_check.py compare $T/$name > $T/$name.compare.json 2>&1
+}
+mkdir -p $T
+case "${1:-checks}" in
+  checks)
+    run selftest CHECK="--device-check --inject-fault 37" REPS=1 STEPS=60 ARMS=twin
+    run devcheck-c1 CHECK=--device-check REPS=1 ARMS="keep twin keep_qos twin_qos"
+    run devcheck-c2 CHECK=--device-check REPS=1 ARMS="keep twin" ROWS="--m 8 --md 6"
+    ;;
+  timing)
+    run timing-c1 ARMS="keep twin keep_qos twin_qos" REPS=3
+    run timing-c2 ARMS="keep twin" REPS=2 ROWS="--m 8 --md 6"
+    ;;
+esac
+echo "ALLDONE $(date -u +%FT%TZ)"

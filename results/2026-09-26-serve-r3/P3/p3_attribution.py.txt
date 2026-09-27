@@ -1,0 +1,378 @@
+#!/usr/bin/env python3
+"""P3 per-lever attribution: A_p vs K_p decode steps, per rank, c=1 and c=2 (CPU only).
+
+  python3 p3_attribution.py.txt OUT.json  A_c1_r0.pkl A_c1_r1.pkl A_c2_r0.pkl A_c2_r1.pkl \
+                                          K_c1_r0.pkl K_c1_r1.pkl K_c2_r0.pkl K_c2_r1.pkl
+
+Inputs are tools/decode_timeline.py extract pickles. Steps are split the way
+decode_timeline.analyze() splits them: at each start of the target-model graph, with
+outliers over 2x the median dropped. Only the target-graph group with the most steps is
+used (c=1: m=4; c=2: m=8). Every number is a per-step sum over the kernels whose start
+falls in a counted step, divided by the step count.
+
+The stock analyzer's CATEGORIES predate round 3. It files p2b_coop_df_kernel and the
+mhc_det_* kernels under "other" and dsv41_gemv under cutlass_bf16_gemm, so the lever
+categories below come first and the stock ones follow.
+"""
+from __future__ import annotations
+
+import bisect
+import collections
+import json
+import pickle
+import re
+import statistics as st
+import sys
+
+sys.path.insert(0, "/home/sfxnz/projects/ai-lab/recipes/.worktrees/kernels-r3/tools")
+import decode_timeline as dt  # noqa: E402
+
+WP_CUBLAS = "cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_16x16_128x1"
+R3 = [
+    ("routed_moe [COOP]", re.compile(r"p2b_moe_batched|p2b_coop_df")),
+    ("dense_gemv [DENSE_GEMV]", re.compile(r"dsv41_gemv::gemv_kernel|gemv_grouped")),
+    ("dense_b12x", re.compile(r"dense_blockscaled_gemm_sm120_b12x")),
+    ("woa_einsum", re.compile(r"sm120_fp8_fp4_gemm_1d1d_impl<0u, \d+u, 4096u")),
+    ("mhc [MHC_DET]", re.compile(r"hc_prenorm_gemm|mhc_pre_big_fuse|mhc_post_tilelang|mhc_det_")),
+    ("cand_mask [CAND_MASK]", re.compile(r"_mask_candidates|_candidate_flags")),
+    ("wp_gemm [WP_GEMV]", None),  # special: _wp_gemv_kernel, or the cuBLAS 128x1 kernel at grid (2,1,1)
+    ("moe_prep_kernel [MOE_PREP]", re.compile(r"_moe_prep_kernel")),
+    ("swa_meta_kernel [SWA_META]", re.compile(r"_compute_swa_indices_and_lens_kernel|_swa_decode_fused_kernel")),
+    ("t2r_scan_map [T2R_DEDUP]", re.compile(r"DeviceScanInitKernel<at_cuda_detail::cub::ScanTileState<long|"
+                                            r"DeviceScanKernel<at_cuda_detail::cub::detail::scan::policy_hub<long|"
+                                            r"compute_cuda_kernel<int>")),
+    ("compare_scalar<long>", re.compile(r"compare_scalar_kernel<long>")),
+    ("router_gate_bf16 (+splitK)", re.compile(r"cutlass_80_wmma_tensorop_s161616gemm_bf16_16x16_128x2|"
+                                              r"splitKreduce_kernel<32, 16, int, float, float")),
+]
+
+
+def r3cat(name: str, grid: tuple) -> str:
+    for c, rx in R3:
+        if rx is None:
+            if "_wp_gemv_kernel" in name or (WP_CUBLAS in name and tuple(grid) == (2, 1, 1)):
+                return c
+            continue
+        if rx.search(name):
+            return c
+    return dt.classify(name)
+
+
+ROUTED = R3[0][1]
+GEMV_T = re.compile(r"gemv_kernel<(\d+), (\d+), (\d+), (\d+), (\d+), (\d+)>")
+
+
+def gemv_role(name: str, grid: tuple, dur: float, where: str) -> str | None:
+    """dsv41_gemv template <W, S, KC, lmhead, prequant, MR> + grid -> the armed shape (boot log)."""
+    m = GEMV_T.search(name)
+    if not m:
+        return None
+    w, s, kc, a, b, mr = map(int, m.groups())
+    g = grid[0] if grid else 0
+    if kc == 640:
+        return "wq_b"
+    if kc == 384:
+        return "shared_down"
+    if a == 1:
+        return "lm_head"
+    if b == 1:
+        return "wo_a"
+    if g in (28, 38):
+        return "draft_ctx_kv" if where == "eager" else "qkv_a"
+    if w == 4:
+        return "wo_b"
+    if w == 2:
+        return "engram_wkv" if dur >= 500 else ("main_proj" if dur >= 250 else "shared_gate_up")
+    return f"gemv_W{w}_KC{kc}_MR{mr}_g{g}"
+
+
+def load(path: str) -> dict:
+    with open(path, "rb") as fh:
+        d = pickle.load(fh)
+    names = d["names"]
+    dev = sorted(d["dev"])
+    corr_rt = {c: (ts, dur, names[n]) for ts, dur, n, c, tid in d["rt"] if c is not None}
+    by_launch = collections.defaultdict(list)
+    for i, k in enumerate(dev):
+        r = corr_rt.get(k[6])
+        if r and r[2] == "cudaGraphLaunch":
+            by_launch[k[6]].append(i)
+    cat = [r3cat(names[k[2]], k[3]) for k in dev]
+    stockcat = [dt.classify(names[k[2]]) for k in dev]
+    ar = {c: sum(stockcat[i] == "nccl_allreduce" for i in idx) for c, idx in by_launch.items()}
+    mx = max(ar.values())
+    kind = {c: ("target" if ar[c] >= max(2, mx - 1) else ("draft" if ar[c] > 0 else "graph_other")) for c in by_launch}
+    span = {c: (min(dev[i][0] for i in idx), max(dev[i][0] + dev[i][1] for i in idx)) for c, idx in by_launch.items()}
+    graph_of = {c: dev[idx[0]][7] for c, idx in by_launch.items()}
+    tg = sorted((span[c][0], c) for c in by_launch if kind[c] == "target")
+    raw = [(tg[j][1], tg[j][0], tg[j + 1][0]) for j in range(len(tg) - 1)]
+    med = st.median(e - s for _, s, e in raw)
+    steps = [x for x in raw if x[2] - x[1] <= 2.0 * med]
+    groups = collections.Counter(graph_of[c] for c, _, _ in steps)
+    main_gid = groups.most_common(1)[0][0]
+    steps = [x for x in steps if graph_of[x[0]] == main_gid]
+    launch_of = {i: c for c, idx in by_launch.items() for i in idx}
+    return {"d": d, "names": names, "dev": dev, "cat": cat, "stockcat": stockcat, "by_launch": by_launch,
+            "kind": kind, "span": span, "steps": steps, "main_gid": main_gid, "groups": dict(groups),
+            "launch_of": launch_of, "corr_rt": corr_rt}
+
+
+def step_index(L):
+    starts = [s for _, s, _ in L["steps"]]
+    ends = [e for _, _, e in L["steps"]]
+    out = collections.defaultdict(list)
+    for i, k in enumerate(L["dev"]):
+        j = bisect.bisect_right(starts, k[0]) - 1
+        if j >= 0 and k[0] < ends[j]:
+            out[j].append(i)
+    return out
+
+
+def q(xs, p):
+    s = sorted(xs)
+    return s[min(len(s) - 1, int(p * (len(s) - 1) + 0.5))] if s else None
+
+
+def stat(xs):
+    return {"median": round(st.median(xs), 3), "mean": round(st.fmean(xs), 3), "p10": round(q(xs, .1), 3),
+            "p90": round(q(xs, .9), 3), "n": len(xs)} if xs else None
+
+
+def per_step(L) -> dict:
+    dev, names, cat, kind, span = L["dev"], L["names"], L["cat"], L["kind"], L["span"]
+    sidx = step_index(L)
+    n = len(L["steps"])
+    cat_ms, cat_n = collections.Counter(), collections.Counter()
+    walls, busy, idle, launches = [], [], [], []
+    phase = collections.defaultdict(list)
+    role_d = collections.defaultdict(list)
+    for j, (c0, s0, e0) in enumerate(L["steps"]):
+        ivs = [(dev[i][0], dev[i][0] + dev[i][1]) for i in sidx[j]]
+        b = dt.union_busy(ivs)
+        walls.append((e0 - s0) / 1e3)
+        busy.append(b / 1e3)
+        idle.append((e0 - s0 - b) / 1e3)
+        launches.append(len(sidx[j]))
+        t = span[c0]
+        ds = [span[c] for c in L["by_launch"] if kind[c] == "draft" and s0 <= span[c][0] < e0]
+        phase["target_graph_ms"].append((t[1] - t[0]) / 1e3)
+        phase["draft_graph_ms"].append(sum(b2 - a2 for a2, b2 in ds) / 1e3)
+        if ds:
+            phase["eager_after_target_ms"].append((min(a2 for a2, _ in ds) - t[1]) / 1e3)
+            phase["eager_before_next_target_ms"].append((e0 - max(b2 for _, b2 in ds)) / 1e3)
+        for i in sidx[j]:
+            k = dev[i]
+            cat_ms[cat[i]] += k[1]
+            cat_n[cat[i]] += 1
+            where = kind.get(L["launch_of"].get(i), "eager")
+            r = gemv_role(names[k[2]], k[3], k[1], where)
+            if r:
+                role_d[r].append(k[1])
+    return {
+        "steps": n, "target_graph_id": L["main_gid"], "groups": {str(k): v for k, v in L["groups"].items()},
+        "step_wall_ms": stat(walls), "device_busy_ms": stat(busy), "device_idle_ms": stat(idle),
+        "device_ops_per_step": stat(launches),
+        "phases_ms": {k: stat(v) for k, v in phase.items()},
+        "categories": {c: {"ms_per_step": round(cat_ms[c] / n / 1e3, 3), "launches_per_step": round(cat_n[c] / n, 2)}
+                       for c in sorted(cat_ms, key=lambda c: -cat_ms[c])},
+        "gemv_roles": {r: {"calls_per_step": round(len(v) / n, 2), "us_median": round(st.median(v), 1),
+                           "ms_per_step": round(sum(v) / n / 1e3, 3)} for r, v in sorted(role_d.items(), key=lambda kv: -sum(kv[1]))},
+    }
+
+
+def layer_segments(L) -> dict:
+    """Per-layer critical-path segments inside the target graph replays of counted steps."""
+    dev, names, cat, stockcat = L["dev"], L["names"], L["cat"], L["stockcat"]
+    seg = collections.defaultdict(list)
+    cnt = collections.defaultdict(list)
+    join = collections.defaultdict(list)
+    routed_calls = []
+    n_ok = 0
+    for c0, s0, e0 in L["steps"]:
+        idx = sorted(L["by_launch"][c0], key=lambda i: dev[i][0])
+        ks = [(dev[i][0], dev[i][0] + dev[i][1], i) for i in idx]
+        ars = [k for k in ks if stockcat[k[2]] == "nccl_allreduce"]
+        rts = [k for k in ks if ROUTED.search(names[dev[k[2]][2]])]
+        if len(ars) != 80 or len(rts) != 40:
+            continue
+        n_ok += 1
+        starts = [k[0] for k in ks]
+        for Ly in range(40):
+            a_attn, a_moe, p = ars[2 * Ly], ars[2 * Ly + 1], rts[Ly]
+            prev_end = ars[2 * Ly - 1][1] if Ly else ks[0][0]
+            seg["A attn block: prev MoE AR end -> attn AR start"].append(a_attn[0] - prev_end)
+            seg["B attn AR"].append(a_attn[1] - a_attn[0])
+            seg["C ffn prologue: attn AR end -> routed start"].append(p[0] - a_attn[1])
+            seg["D routed MoE"].append(p[1] - p[0])
+            seg["E epilogue: routed end -> MoE AR start"].append(a_moe[0] - p[1])
+            seg["F MoE AR"].append(a_moe[1] - a_moe[0])
+            routed_calls.append(p[1] - p[0])
+            lo, hi = bisect.bisect_left(starts, a_attn[1]), bisect.bisect_left(starts, p[0])
+            cnt["C kernels launched"].append(hi - lo)
+            lo2, hi2 = bisect.bisect_left(starts, p[1]), bisect.bisect_left(starts, a_moe[0])
+            cnt["E kernels launched"].append(hi2 - lo2)
+            lo3, hi3 = bisect.bisect_left(starts, prev_end), bisect.bisect_left(starts, a_attn[0])
+            cnt["A kernels launched"].append(hi3 - lo3)
+            # WP join: qkv_a end -> _q_kv_norm_quant_kernel start, inside the attention block
+            blk = ks[lo3:hi3]
+            qn = [k for k in blk if "_q_kv_norm_quant_kernel" in names[dev[k[2]][2]]]
+            qa = [k for k in blk if (gemv_role(names[dev[k[2]][2]], dev[k[2]][3], dev[k[2]][1], "target") == "qkv_a")
+                  or (stockcat[k[2]] == "dense_b12x" and len(dev[k[2]][3]) > 2 and dev[k[2]][3][2] == 28)]
+            if qn and qa:
+                q0 = qn[0]
+                qa_before = [k for k in qa if k[0] < q0[0]]
+                if qa_before:
+                    qa_end = qa_before[-1][1]
+                    has_wp = any(cat[k[2]] == "wp_gemm [WP_GEMV]" for k in blk if k[0] < q0[0])
+                    join["wp layers" if has_wp else "plain layers"].append(q0[0] - qa_end)
+            mhc = [k for k in blk + ks[bisect.bisect_left(starts, a_attn[1]):hi] if cat[k[2]] == "mhc [MHC_DET]"]
+            cnt["mhc kernels per layer"].append(len(mhc))
+    out = {"replays_used": n_ok}
+    tot = 0.0
+    for k in sorted(seg):
+        v = seg[k]
+        tot += st.fmean(v) * 40
+        out[k] = {"median_us": round(st.median(v), 1), "mean_us": round(st.fmean(v), 1),
+                  "ms_per_step_mean_x40": round(st.fmean(v) * 40 / 1e3, 3)}
+    out["sum_segments_ms_per_step"] = round(tot / 1e3, 3)
+    out["routed_call_us"] = stat(routed_calls)
+    out["kernels_launched_per_layer"] = {k: round(st.fmean(v), 2) for k, v in cnt.items()}
+    out["qkv_join_wait_us"] = {k: {"median": round(st.median(v), 1), "mean": round(st.fmean(v), 1),
+                                   "per_step_ms": round(sum(v) / max(1, n_ok) / 1e3, 3), "layers_per_step": round(len(v) / max(1, n_ok), 2)}
+                               for k, v in join.items()}
+    return out
+
+
+RG = "cutlass_80_wmma_tensorop_s161616gemm_bf16_16x16_128x2"
+
+
+def _is_gate_up(L, k):
+    dev, names, stockcat = L["dev"], L["names"], L["stockcat"]
+    x = dev[k[2]]
+    return (gemv_role(names[x[2]], x[3], x[1], "target") == "shared_gate_up"
+            or (stockcat[k[2]] == "dense_b12x" and len(x[3]) > 2 and x[3][2] == 36))
+
+
+def _is_shared_down(L, k, after):
+    dev, names, stockcat = L["dev"], L["names"], L["stockcat"]
+    x = dev[k[2]]
+    return (gemv_role(names[x[2]], x[3], x[1], "target") == "shared_down"
+            or (stockcat[k[2]] == "dense_b12x" and len(x[3]) > 2 and x[3][2] == 48 and k[0] > after))
+
+
+def ffn_and_mhc(L) -> dict:
+    """Per layer: FFN prologue (C) critical-path pieces, and the elapsed mHC chain of each half-layer."""
+    dev, names, cat, stockcat = L["dev"], L["names"], L["cat"], L["stockcat"]
+    out = collections.defaultdict(list)
+    for c0, s0, e0 in L["steps"]:
+        idx = sorted(L["by_launch"][c0], key=lambda i: dev[i][0])
+        ks = [(dev[i][0], dev[i][0] + dev[i][1], i) for i in idx]
+        ars = [k for k in ks if stockcat[k[2]] == "nccl_allreduce"]
+        rts = [k for k in ks if ROUTED.search(names[dev[k[2]][2]])]
+        if len(ars) != 80 or len(rts) != 40:
+            continue
+        starts = [k[0] for k in ks]
+        for Ly in range(40):
+            a_attn, a_moe, p = ars[2 * Ly], ars[2 * Ly + 1], rts[Ly]
+            prev_end = ars[2 * Ly - 1][1] if Ly else ks[0][0]
+            attn = ks[bisect.bisect_left(starts, prev_end):bisect.bisect_left(starts, a_attn[0])]
+            ffn = ks[bisect.bisect_left(starts, a_attn[1]):bisect.bisect_left(starts, a_moe[0])]
+            m1 = [k for k in attn if cat[k[2]] == "mhc [MHC_DET]"]
+            m2 = [k for k in ffn if cat[k[2]] == "mhc [MHC_DET]" and k[0] < p[0]]
+            if m1:
+                out["mhc elapsed, attention half (first start -> last end)"].append(max(k[1] for k in m1) - min(k[0] for k in m1))
+            if m2:
+                out["mhc elapsed, ffn half (first start -> last end)"].append(max(k[1] for k in m2) - min(k[0] for k in m2))
+            pre = [k for k in ffn if k[0] < p[0]]
+            rg = [k for k in pre if RG in names[dev[k[2]][2]]]
+            gu = [k for k in ffn if _is_gate_up(L, k)]
+            sd = [k for k in ffn if _is_shared_down(L, k, a_attn[1])]
+            if not (m2 and rg and gu and sd):
+                continue
+            out["C total"].append(p[0] - a_attn[1])
+            out["C1 attn AR end -> last ffn mhc end"].append(max(k[1] for k in m2) - a_attn[1])
+            out["C2 router gate kernel (bf16 cuBLAS, side stream)"].append(rg[0][1] - rg[0][0])
+            out["C3 router gate end -> routed start (splitK, topk, prep)"].append(p[0] - rg[0][1])
+            out["router gate overlapped by shared gate_up (us)"].append(max(0.0, min(rg[0][1], gu[0][1]) - max(rg[0][0], gu[0][0])))
+            out["shared gate_up kernel"].append(gu[0][1] - gu[0][0])
+            out["shared_down end - routed start (+ = after)"].append(sd[-1][1] - p[0])
+            out["frac layers shared_down ends after routed start"].append(1.0 if sd[-1][1] > p[0] else 0.0)
+    return {k: {"median_us": round(st.median(v), 1), "mean_us": round(st.fmean(v), 2), "n": len(v),
+                "ms_per_step_median_x40": round(st.median(v) * 40 / 1e3, 3)} for k, v in out.items()}
+
+
+def eager_before(L) -> dict:
+    """The eager span from the last draft-graph end to the next target-graph start, per step."""
+    dev, names, kind, span = L["dev"], L["names"], L["kind"], L["span"]
+    sidx = step_index(L)
+    res = collections.defaultdict(list)
+    for j, (c0, s0, e0) in enumerate(L["steps"]):
+        ds = [span[c] for c in L["by_launch"] if kind[c] == "draft" and s0 <= span[c][0] < e0]
+        if not ds:
+            continue
+        t0 = max(b for _, b in ds)
+        ops = [i for i in sidx[j] if dev[i][0] >= t0 and L["launch_of"].get(i) is None]
+        busy = dt.union_busy([(dev[i][0], min(e0, dev[i][0] + dev[i][1])) for i in ops])
+        res["span_ms"].append((e0 - t0) / 1e3)
+        res["busy_ms"].append(busy / 1e3)
+        res["idle_ms"].append((e0 - t0 - busy) / 1e3)
+        res["device_ops"].append(len(ops))
+        # Engram stage as the GPU sees it: hash DtoH end -> first HtoD after it (the staged rows)
+        ops.sort(key=lambda i: dev[i][0])
+        hk = [i for i in ops if "_hash_ids_kernel" in names[dev[i][2]]]
+        if not hk:
+            continue
+        h_end = dev[hk[0]][0] + dev[hk[0]][1]
+        dth = [i for i in ops if dev[i][0] >= h_end and names[dev[i][2]].startswith("Memcpy DtoH")]
+        if not dth:
+            continue
+        d_end = dev[dth[0]][0] + dev[dth[0]][1]
+        htd = [i for i in ops if dev[i][0] >= d_end and names[dev[i][2]].startswith("Memcpy HtoD")]
+        if not htd:
+            continue
+        r0 = dev[htd[0]][0]
+        between = [i for i in ops if d_end <= dev[i][0] < r0]
+        res["chain_before_hash_ms"].append((dev[hk[0]][0] - t0) / 1e3)
+        res["stage_span_hash_dtoh_end_to_rows_htod_ms"].append((r0 - d_end) / 1e3)
+        res["ops_between_hash_and_rows"].append(len(between))
+        res["gpu_work_span_under_stage_ms"].append(((max(dev[i][0] + dev[i][1] for i in between) - d_end) / 1e3) if between else 0.0)
+    return {k: stat(v) for k, v in res.items()}
+
+
+def engram_gap(L) -> dict:
+    """The largest device-idle gap per counted step that ends at an eager HtoD (the Engram rows)."""
+    dev, names = L["dev"], L["names"]
+    sidx = step_index(L)
+    gaps, before = [], collections.Counter()
+    for j, (c0, s0, e0) in enumerate(L["steps"]):
+        ivs = [(dev[i][0], dev[i][0] + dev[i][1], i) for i in sidx[j]]
+        best = None
+        for g0, g1, ib, ia in dt.idle_gaps(ivs, s0, e0, 3.0):
+            if ia is not None and names[dev[ia][2]].startswith("Memcpy HtoD") and (best is None or g1 - g0 > best[1] - best[0]):
+                best = (g0, g1, ib)
+        if best:
+            gaps.append((best[1] - best[0]) / 1e3)
+            before[dt._short(names[dev[best[2]][2]]) if best[2] is not None else "<start>"] += 1
+    return {"gap_ms": stat(gaps), "kernel_before_gap": dict(before.most_common(4))}
+
+
+def main():
+    out_path, *pk = sys.argv[1:]
+    labels = ["A_c1_r0", "A_c1_r1", "A_c2_r0", "A_c2_r1", "K_c1_r0", "K_c1_r1", "K_c2_r0", "K_c2_r1"]
+    res = {}
+    for lab, p in zip(labels, pk):
+        L = load(p)
+        r = per_step(L)
+        r["layer_segments"] = layer_segments(L)
+        r["engram_stage_gap"] = engram_gap(L)
+        r["ffn_prologue_and_mhc"] = ffn_and_mhc(L)
+        r["eager_before_next_target"] = eager_before(L)
+        r["source"] = p
+        res[lab] = r
+        print(lab, "steps", r["steps"], "graph", r["target_graph_id"], "wall", r["step_wall_ms"]["median"], flush=True)
+    with open(out_path, "w") as fh:
+        json.dump(res, fh, indent=1)
+
+
+if __name__ == "__main__":
+    main()

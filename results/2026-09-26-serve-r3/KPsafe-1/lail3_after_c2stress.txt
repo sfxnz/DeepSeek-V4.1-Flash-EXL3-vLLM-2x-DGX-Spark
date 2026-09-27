@@ -1,0 +1,22 @@
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=512 temperature=0.2 runs=3 phase=lail_prose c=1
+run=1 {"ttft_s": 0.3182652529794723, "decode_s": 10.977968121063896, "prompt_tokens": 61, "completion_tokens": 512, "finish_reason": "length", "chunks": 235, "lail_tok_s": 46.63886744374888, "recipe_tok_s": 46.54777590577281, "tokens_per_chunk": 2.178723404255319, "repeat_ratio": 0.0024449877750611247, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On a DGX Spark with unified memory, the distinction collapses: the same physical pages that hold the system prompt's encoded states are the pages that hold the agent's working set, the", "acceptance_len": 2.183760683760684, "draft_acceptance_rate": 0.3945868945868946}
+run=2 {"ttft_s": 0.3451639038976282, "decode_s": 11.65201782004442, "prompt_tokens": 61, "completion_tokens": 512, "finish_reason": "length", "chunks": 247, "lail_tok_s": 43.940887141386824, "recipe_tok_s": 43.8550650961888, "tokens_per_chunk": 2.0728744939271255, "repeat_ratio": 0.0025252525252525255, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On unified memory, the distinction between \"resident\" and \"paged\" collapses into a single budget line, and the allocator's job becomes deciding which tab's context earns the right to s", "acceptance_len": 2.08130081300813, "draft_acceptance_rate": 0.3604336043360434}
+run=3 {"ttft_s": 0.3441755899693817, "decode_s": 11.155248880037107, "prompt_tokens": 61, "completion_tokens": 512, "finish_reason": "length", "chunks": 237, "lail_tok_s": 45.89767610799347, "recipe_tok_s": 45.80803220934504, "tokens_per_chunk": 2.160337552742616, "repeat_ratio": 0.0024449877750611247, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. That inversion matters because it reorders every assumption downstream: what you budget, what you shard, what you evict, and what you refuse to evict even when the scheduler is screami", "acceptance_len": 2.165254237288136, "draft_acceptance_rate": 0.3884180790960452}
+natural phase=lail_prose completion_tokens=512 finish_reason=length
+SUMMARY {
+  "phase": "lail_prose",
+  "concurrency": 1,
+  "max_tokens": 512,
+  "temperature": 0.2,
+  "n": 3,
+  "median_lail_tok_s": 45.89767610799347,
+  "median_recipe_tok_s": 45.80803220934504,
+  "median_ttft_s": 0.3441755899693817,
+  "median_completion_tokens": 512,
+  "natural_completion_tokens": 512,
+  "natural_finish_reason": "length",
+  "post_eos_fraction": 0.0,
+  "median_acceptance_len": 2.165254237288136,
+  "median_draft_acceptance_rate": 0.3884180790960452
+}
+rc=0
