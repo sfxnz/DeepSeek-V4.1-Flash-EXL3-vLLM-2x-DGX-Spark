@@ -226,6 +226,15 @@ def main(out):
         per_boot={b: {k: v for k, v in per[b].items() if k not in ("pp_runs",)} for b in AFTER},
     )
     json.dump(res, open(out, "w"), indent=1, default=str)
+    for b in AFTER:   # per-boot summary next to the raw files, as round 35 kept one per boot dir
+        json.dump(dict(arm="V (round-36 defaults)", boot=b, commit=per[b]["commit"],
+                       command=open(f"{PATH[b]}/command.txt").read().strip(),
+                       per_boot={k: r(per[b][k], 4) for k in TOK + MS + ACC + PP},
+                       quality={m: res["quality"]["readings"][f"{b}/{m}"] for m in ("quick", "full")},
+                       quality_role="recorded the new baseline (no --baseline)" if b == "V-1"
+                       else "gated against quality-baseline/{quick,full}.json",
+                       validity=res["validity"][b], headline="../round36-headline.json"),
+                  open(f"{PATH[b]}/summary.json", "w"), indent=1, default=str)
     return res
 
 

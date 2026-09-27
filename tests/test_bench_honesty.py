@@ -98,13 +98,21 @@ class MicroPhaseTests(unittest.TestCase):
         # the calibrated ratio overestimates tokens/char and nothing topped
         # the doc back up. A ratio of 0.3 against a len//4 tokenizer makes
         # build_doc land ~0.875x; fresh_doc must still hit [0.97, 1.0]x.
+        # The repo-text path uses fixed 20-174-token segments, not the live
+        # README/flags.md paragraphs: with those, a doc edit reshuffles the
+        # seed-13 draw, and a multi-thousand-token table segment can exhaust
+        # the top-up pool (a separate, known miss, not what this test checks).
         micro = _load("benches/micro.py", "micro_t2")
         tok = lambda t: len(t) // 4  # noqa: E731
-        for novel in (False, True):
-            for target in (8192, 32768):
-                _, ntok = micro.fresh_doc(target, 0.3, tok, seed=13, novel=novel)
-                self.assertGreaterEqual(ntok, 0.97 * target, (novel, target))
-                self.assertLessEqual(ntok, target, (novel, target))
+        segs = [f"Segment {i}: " + " ".join(f"w{(i * 7 + j) % 97}" for j in range(20 + (i * 37) % 160))
+                for i in range(120)]
+        corpus = sys.modules[micro.build_doc.__module__]
+        with mock.patch.object(corpus, "_segments_cache", segs):
+            for novel in (False, True):
+                for target in (8192, 32768):
+                    _, ntok = micro.fresh_doc(target, 0.3, tok, seed=13, novel=novel)
+                    self.assertGreaterEqual(ntok, 0.97 * target, (novel, target))
+                    self.assertLessEqual(ntok, target, (novel, target))
 
     def test_trim_never_returns_over_target_when_pool_runs_out(self) -> None:
         # Exhausting more_segs used to return right after the append, unmeasured

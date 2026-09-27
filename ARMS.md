@@ -144,8 +144,14 @@ One boot = one lever. Every arm produces the four numbers via
    S1024-1, S1024-2 and final-1, `results/2026-09-26-serve-r3/round35-headline.json`):
    fresh L.A.I.L 43.17 at 49.00 ms/step, four prose c=1 52.52 at 48.07 ms/step,
    prose_long c=1 43.73 at 48.98 ms/step, prose_long c=2 65.62 aggregate,
-   pp_novel 8k/32k 821.4/806.3, pp_warm 757.6/768.0. After a change to the
-   defaults, a new ABAB still needs its own A boots.
+   pp_novel 8k/32k 821.4/806.3, pp_warm 757.6/768.0. Round 36 reference (the
+   round-36 defaults, i.e. the round-35 config on the Viterbi pack; medians of
+   the per-boot medians of V-1 and V-2,
+   `results/2026-09-27-viterbi-adopt/round36-headline.json`): fresh L.A.I.L
+   42.58 at 48.78 ms/step (acceptance 2.115), four prose c=1 50.51 at 47.96
+   ms/step, prose_long c=1 43.80 at 49.59 ms/step, prose_long c=2 69.00
+   aggregate, pp_novel 8k/32k 814.4/811.9, pp_warm 772.8/774.9. After a
+   change to the defaults, a new ABAB still needs its own A boots.
    Warm-prefix hits depend on the prompt length: a repeat of N tokens
    missed entirely when N ran only 10-58 tokens past the last 128-token
    boundary, and hit at 68-127 (results/RESULTS.md round 34).
@@ -155,15 +161,21 @@ One boot = one lever. Every arm produces the four numbers via
 
 ## Exact restore sequence
 
-Current serve (round 35) = `dsv41-flash-exl3-sm121:canonical-e14` on both
+Current serve (round 36) = the round-35 defaults below on the default pack
+`2.0bpw-mcg-viterbi-lmhead-mxfp8`, launched with `AUDIT=strict ./run.sh` from
+the kernels-r3 worktree (`results/2026-09-27-viterbi-adopt/V-2/`).
+
+Round 35 (before round 36) = `dsv41-flash-exl3-sm121:canonical-e14` on both
 nodes with the round-35 defaults: the round-34 set below plus the round-3
 kernel bundle (`DSV41_P2B_COOP=2`, `DSV41_DENSE_GEMV=1`,
 `DSV41_MHC_DET_SPLITS=16`, `DSV41_ENGRAM_NATIVE_STAGE=1`,
 `DSV41_ENGRAM_EARLY_HASH=1`, `DSV41_ATTN_T2R_DEDUP=1`,
 `DSV41_SWA_META_FUSED=1`, `DSV41_MOE_PREP_FUSED=1`,
 `DSV41_CANDIDATE_MASK_BOUNDED=1`, `DSV41_INDEXER_WP_GEMV=1`) and
-`DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024`, launched with `AUDIT=strict ./run.sh`
-from the kernels-r3 worktree (`results/2026-09-26-serve-r3/final-1/`). Until
+`DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024` on pack `2.0bpw-mcg-lmhead-mxfp8`, launched
+with `AUDIT=strict ./run.sh` from the kernels-r3 worktree
+(`results/2026-09-26-serve-r3/final-1/`; on round-36 code add
+`SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8`). Until
 perf/kernels-r3 merges, the main checkout keeps older defaults. The round-35
 kernel levers need `canonical-e14` for COOP; every other line below that
 boots an older image must set the ten round-3 levers to `0` (list under

@@ -1023,3 +1023,121 @@ Every counted boot below passed the section 1 preconditions and ran the section 
 - P6 robustness: S1024 beat the designed pair's S boots, not all ten S-config boots. A further S vs S1024 pair would tighten it.
 - Structured c=2 on the Viterbi pack runs its two streams in lockstep (−5.38 ms/step); cause not established.
 - Viterbi pack publication (above).
+
+## Round 36 — 2026-09-27 Viterbi pack adopted
+
+The protocol owner adopted the Viterbi re-encoded pack `2.0bpw-mcg-viterbi-lmhead-mxfp8` as the recipe default, to be published to the Hub as a new revision. Round 35 P4 had rejected it under the rules as written. Evidence is in `results/2026-09-27-viterbi-adopt/`: the decision addendum, two validation boots of the new defaults (V-1, V-2), the new quality baseline and `round36-headline.json` (computed by `round36-compute.py.txt` from the raw per-boot files with the round-35 readers). Commits: aac194a (protocol amendment + decision), 8f94827 (default pack), dcca87e (per-boot driver), ff93f29 (V-1 + new baseline), and the round-36 results commit.
+
+**Decision** (`decision-viterbi-addendum.json`, numbers copied from `results/2026-09-26-serve-r3/decision-viterbi.json`). P4's rejection had two grounds:
+- quality quick and full failed on both VIT boots on `selfcons.golden_hazard` only (0.094-0.102 against 0.032/0.043);
+- L.A.I.L tok/s was worse beyond the noise (−1.024, −2.38%, noise 0.345; acceptance 2.0648 vs 2.1202 arm medians), while prose_long c=1 was better beyond it (+3.108, +7.04%, noise 2.754).
+
+Every other quality reading favoured VIT or was equal:
+- paired NLL −0.10489 nats/token (−42.12%, 95% CI −0.12856..−0.08122, 39/40 passages lower, Wilcoxon p 5.5e-12)
+- GSM8K 97/97 vs 95/94; MMLU 206/204 vs 196/198; tools exact args 88/88 vs 84/88 (none significant after pooling)
+- VIT's own A/A hazard 0.00843-0.01609, against CUR's 0.01232-0.0274
+
+The owner judged that the golden gate does not apply to a pack change and accepted the speed trade as measured. c=1 ms/step was equal within the noise, and speed moves only through acceptance.
+
+**Protocol amendment** (ARMS.md step 6, "Pack changes"; tests/quality_eval.py docstring and `--baseline` help; README quality section). The golden flip hazard compares an arm's greedy text with run A of the baseline's `selfcons.runs`. So it gates kernel and numerics levers on the pack the baseline was recorded on, and nothing else. A pack (weights) change is judged on:
+- paired NLL over the 40 fixed passages
+- paired benchmark tests over the fixed items (GSM8K, GSM8K-think, MMLU, tools exact_args: McNemar per pair, pooled sign test)
+- the new pack's A/A self-consistency against the current pack's A/A band
+- every other component in its band
+- speed per the rest of step 6
+
+Adopting a pack re-records the quality baseline and goldens on the new pack. The old baseline stays the reference for the old pack.
+
+**Default change** (8f94827). `recipe.yaml` `model.revision` (`SNAPSHOT_SHA`) is now `2.0bpw-mcg-viterbi-lmhead-mxfp8`, rendered into run.sh and the README defaults. The README, model-card.md (the Hub README) and AGENTS.md name the new revision and keep `2.0bpw-mcg-lmhead-mxfp8` (rounds 33-35) and `2.0bpw-mcg` (stock) as previous revisions with their `SNAPSHOT_SHA` lines. The revision-pin tests and `tools/pack_meta.SERVE_REVISION` were updated. With no override, `RESOLVE_SNAPSHOT_ONLY=1 ./run.sh` resolves `snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8` on spark1 and spark2 (rc 0, 60 entries, equal config/index sha256), and the harness dry run passes that path to both ranks (`resolve-check.txt`). There is no `refs/` entry until the Hub revision is published.
+
+**Boots.** V-1 and V-2 each ran `env AUDIT=strict ./run.sh` with no lever, pack or image env, through the full ARMS-r3 section 1-3 procedure (`boot-procedure.sh.txt`; section 1 checks abort the boot on failure). The procedure: strict audit at ready, smokes, correctness, L.A.I.L x10 before any c=2, `bench_decode.py --runs 9`, `four_numbers.sh`, `benches/e2e.py`, quality quick and full, `correctness.sh --full`, `disarm_scan`, an engagement capture with a strict audit re-run on the end-of-boot logs, and `gpu_guard --check`. spark2's GPU lock was held from V-1's preconditions to V-2's last measurement.
+
+Both boots, first attempt, no retry:
+- image `sha256:3a002b55c9bc` on both ranks; docker/patch sha256 list identical to final-1's
+- head vLLM argv and both ranks' container env equal final-1's apart from the model path
+- strict audit ok, 0 LOG_DISARMED hits, disarm_scan rc 0, gpu_guard rc 0 (0 FOREIGN)
+- smokes 323 / Red, correctness 8/8 and `--full` 9/9, e2e 3/3
+- honest cells: prose_long `length`, post-EOS 0, `serve_env_ranks_match` true, `lever_disarmed` false
+- MemAvailable 116/117 GiB before, 22/24 after the smokes
+- head model loading 427.04 / 426.78 s (75.58 GiB)
+
+V-1 recorded the quality baseline; V-2 gated against it.
+
+**Headline.** Before is the round-35 final config on the old pack (S1024-1, S1024-2, final-1; `round35-headline.json`). After is the round-36 defaults (V-1, V-2): the same config and code on the Viterbi pack. Arm value = median of the per-boot medians; noise = the larger boot-to-boot spread. The two sets ran on the same day but were not interleaved (round 35 00:08-03:33Z, V-1/V-2 05:50-07:51Z). The table describes the adoption; P4's interleaved CUR/VIT ABAB is the controlled comparison.
+
+| Metric | S1024-1 / S1024-2 / final-1 (old pack) | V-1 / V-2 (Viterbi pack) | R35 → V (medians) | Δ | noise |
+|---|---|---|---|---:|---:|
+| L.A.I.L fresh, t=0.2 (tok/s) | 43.17 / 43.62 / 42.74 | 42.73 / 42.44 | 43.17 → 42.58 | -0.59 (-1.4%) | 0.88 |
+| L.A.I.L fresh (ms/step) | 49.22 / 49.00 / 48.73 | 48.81 / 48.75 | 49.00 → 48.78 | -0.22 (-0.5%) | 0.49 |
+| L.A.I.L fresh acceptance (median run) | 2.133 / 2.186 / 2.109 | 2.107 / 2.122 | 2.133 → 2.115 | -0.018 | 0.076 |
+| four prose c=1 (tok/s) | 53.67 / 52.04 / 52.52 | 50.60 / 50.42 | 52.52 → 50.51 | -2.01 (-3.8%) | 1.63 |
+| four prose c=1 (ms/step) | 48.10 / 48.07 / 47.92 | 47.66 / 48.25 | 48.07 → 47.96 | -0.12 (-0.2%) | 0.59 |
+| four prose c=1 acceptance | 2.577 / 2.500 / 2.513 | 2.410 / 2.422 | 2.513 → 2.416 | -0.097 | 0.077 |
+| prose_long c=1 (tok/s) | 44.17 / 43.73 / 43.56 | 45.17 / 42.42 | 43.73 → 43.80 | +0.07 (+0.1%) | 2.75 |
+| prose_long c=1 (ms/step) | 48.80 / 49.49 / 48.98 | 49.05 / 50.12 | 48.98 → 49.59 | +0.61 (+1.2%) | 1.07 |
+| prose_long c=1 acceptance | 2.163 / 2.174 / 2.149 | 2.222 / 2.126 | 2.163 → 2.174 | +0.011 | 0.096 |
+| bench prose c=1 (tok/s) | 51.99 / 52.08 / 54.03 | 50.26 / 51.12 | 52.08 → 50.69 | -1.39 (-2.7%) | 2.04 |
+| bench prose c=1 (ms/step) | 48.64 / 49.28 / 48.56 | 48.41 / 48.50 | 48.64 → 48.46 | -0.18 (-0.4%) | 0.72 |
+| bench prose c=1 acceptance | 2.551 / 2.557 / 2.632 | 2.439 / 2.457 | 2.557 → 2.448 | -0.109 | 0.080 |
+| structured c=1 (tok/s) | 83.81 / 83.45 / 83.90 | 84.37 / 84.19 | 83.81 → 84.28 | +0.47 (+0.6%) | 0.44 |
+| structured c=1 (ms/step) | 47.26 / 47.46 / 47.21 | 47.41 / 47.51 | 47.26 → 47.46 | +0.20 (+0.4%) | 0.25 |
+| structured c=1 acceptance | 3.961 / 3.961 / 3.961 | 4.000 / 4.000 | 3.961 → 4.000 | +0.039 | 0.000 |
+| bench prose c=2 aggregate (tok/s) | 82.38 / 81.69 / 80.61 | 81.28 / 80.76 | 81.69 → 81.02 | -0.66 (-0.8%) | 1.77 |
+| bench prose c=2 (ms/step) | 60.56 / 60.31 / 59.45 | 59.01 / 59.73 | 60.31 → 59.37 | -0.94 (-1.6%) | 1.12 |
+| structured c=2 aggregate (tok/s) | 138.60 / 138.24 / 138.34 | 156.25 / 156.33 | 138.34 → 156.29 | +17.95 (+13.0%) | 0.36 |
+| structured c=2 (ms/step) | 55.13 / 55.09 / 56.22 | 51.18 / 51.15 | 55.13 → 51.17 | -3.97 (-7.2%) | 1.13 |
+| prose_long c=2 aggregate (tok/s) | 65.24 / 65.62 / 68.05 | 71.32 / 66.67 | 65.62 → 69.00 | +3.37 (+5.1%) | 4.65 |
+| prose_long c=2 (ms/step) | 61.37 / 62.56 / 62.35 | 62.40 / 63.29 | 62.35 → 62.84 | +0.49 (+0.8%) | 1.19 |
+| L.A.I.L 3x after c=2 traffic (tok/s) | 43.68 / 42.46 / 43.66 | 46.06 / 41.67 | 43.66 → 43.87 | +0.20 (+0.5%) | 4.39 |
+| pp_warm 8k (tok/s) | 757.6 / 753.8 / 765.0 | 789.4 / 756.2 | 757.6 → 772.8 | +15.2 (+2.0%) | 33.2 |
+| pp_warm 32k (tok/s) | 763.0 / 769.5 / 768.0 | 776.9 / 772.9 | 768.0 → 774.9 | +6.9 (+0.9%) | 6.5 |
+| pp_novel 8k (tok/s) | 821.4 / 807.4 / 835.0 | 815.7 / 813.0 | 821.4 → 814.4 | -7.0 (-0.9%) | 27.6 |
+| pp_novel 32k (tok/s) | 806.2 / 806.3 / 810.7 | 818.2 / 805.6 | 806.3 → 811.9 | +5.6 (+0.7%) | 12.6 |
+
+Reading. c=1 ms/step is equal within the noise on every c=1 cell, as P4 found (same kernels, same bytes per step). Every speed move comes through DSpark acceptance:
+- L.A.I.L is −0.59 tok/s (−1.4%), inside its noise 0.88, but both V boots sit below the round-35 median. Acceptance 2.133 → 2.115, also inside the noise. P4's interleaved gap was larger (−2.38%, at TOPK=256); these sets are not interleaved, so the two gaps are not compared as a TOPK effect.
+- prose_long c=1 is flat on the medians (+0.07). V-1 read 45.17 and V-2 42.42, a spread of 2.75, where P4's VIT boots read 45.88 / 48.63.
+- The short prose cells lose beyond the noise: four prose c=1 −2.01 tok/s (−3.8%) and bench prose c=1 −1.39, with acceptance 2.513 → 2.416 and 2.557 → 2.448. P4 showed the same (−2.62). About 60% of these cells is post-EOS text under `ignore_eos`.
+- Structured c=2 is +13.0% (138.34 → 156.29, −3.97 ms/step). On the Viterbi pack both streams run at acceptance 4.0 in lockstep (P4: start pattern, cause not established).
+- Prefill and warm-prefix are unchanged within the noise (pp_warm 32k +6.9 against a noise of 6.5; runs overlap).
+
+Pooled per-run medians (the recipe.yaml measured rows):
+- L.A.I.L 42.98 (n=30) → 42.58 (n=20) tok/s, 48.96 → 48.81 ms/step, TTFT 0.322 → 0.322 s
+- bench_decode per stream: prose c=1 52.97 → 50.41, structured c=1 83.73 → 84.20
+- aggregates: prose c=2 81.73 → 81.02, structured c=2 138.34 → 156.29
+- four prose c=1 52.66 (n=27) → 50.54 (n=18)
+
+**Quality.** Every reading passes its gates. The round-35 readings were gated against the 09-24 old-pack baseline; V-2 against the new baseline; V-1's readings are the new baseline, so only vision and c2 are gated.
+
+| Reading | NLL | decode median \|Δlogprob\| / greedy-text NLL | A/A hazard (identical) | golden hazard (limit) | tools json / exact / no-call | needle | GSM8K / thinking / MMLU |
+|---|---|---|---|---|---|---|---|
+| S1024-1 quick | 0.244484 | 0.01379 / 0.3393 | 0.01549 (5/12) | 0.01307 (0.03206) | 22 / 21 / 8 | 6/6 | – |
+| S1024-2 quick | 0.243487 | 0.01399 / 0.3585 | 0.01887 (4/12) | 0.01456 (0.03206) | 22 / 21 / 8 | 6/6 | – |
+| final-1 quick | 0.242947 | 0.02264 / 0.33845 | 0.0201 (4/12) | 0.01697 (0.03206) | 22 / 21 / 8 | 6/6 | – |
+| final-1 full | 0.242247 | 0.01185 / 0.29669 | 0.01698 (3/12) | 0.02659 (0.04348) | 22 / 21 / 8 | 9/9 | 94/100, 39/40, 199/228 |
+| V-1 quick (baseline) | 0.138564 | 0.00734 / 0.3336 | 0.0122 (5/12) | – | 22 / 22 / 8 | 6/6 | – |
+| V-1 full (baseline) | 0.139323 | 0.00139 / 0.219 | 0.00968 (6/12) | – | 22 / 22 / 8 | 9/9 | 97/100, 39/40, 205/228 |
+| V-2 quick | 0.138972 | 0.00256 / 0.27358 | 0.0123 (5/12) | 0.01104 (0.0244) | 22 / 22 / 8 | 6/6 | – |
+| V-2 full | 0.137368 | 0.00335 / 0.25592 | 0.00957 (6/12) | 0.01128 (0.01936) | 22 / 22 / 8 | 9/9 | 96/100, 39/40, 202/228 |
+
+Paired against the round-35 readings (`round36-headline.json` quality):
+- **NLL**, per passage over the 40 fixed passages, arm = mean of its 4 readings: V − R35 = −0.10477 nats/token (95% CI t −0.12848..−0.08106, bootstrap −0.12827..−0.08299), −41.95%, 39/40 passages lower, Wilcoxon p 5.5e-12. This is the same size as P4's −0.10489. The same-pack cross-boot per-passage mean deltas are +0.00041 / −0.00196 (V-2 − V-1, quick / full) and −0.001 / −0.00054 on the old pack.
+- **Items**: GSM8K V-1 / V-2 97 / 96 vs final-1 94 (McNemar p 0.25 / 0.5). MMLU 205 / 202 vs 199 (p 0.18 / 0.63). Tools exact args 22/22 on all four V readings vs 21/22 on all four R35 readings. Thinking 39/40 everywhere. None of these is significant. Between the V boots, 1 GSM8K item and 3 MMLU items differ.
+- **Self-consistency**: V A/A 0.0122 / 0.00968 / 0.0123 / 0.00957 vs R35 0.01549-0.0201. Cross-boot on the same pack: V-2 vs V-1 run A 0.01104 quick / 0.01128 full (old pack S1024-2 vs S1024-1 0.02061). Cross-pack: V-1 vs final-1 run A 0.10638 / 0.10204, the gap the golden gate measured in P4.
+
+**New quality baseline** (the harness's documented default; ARMS.md, README, quality_eval.py and AGENTS.md point at it):
+- `results/2026-09-27-viterbi-adopt/quality-baseline/quick.json` and `full.json`, recorded on V-1 with no `--baseline`. The goldens are their `selfcons.runs`. Provenance and numbers are in `quality-baseline/README.txt`.
+- The limits these files set: golden and A/A hazard ≤ 0.0244 quick / 0.01936 full; NLL ≤ 0.148564 / 0.149323; tools exact args ≥ 21/22.
+- Offline re-gates (`quality-baseline/crosscheck/`, no traffic): round 35's VIT-1 and VIT-2 readings of this pack pass (golden 0.01006-0.01128), and the old-pack CUR readings fail (NLL 0.242-0.244, golden 0.10204).
+- The 09-24 baseline (`results/2026-09-24-review/quality-baseline/`) stays the reference for `2.0bpw-mcg-lmhead-mxfp8`.
+
+**Serve left UP on V-2** (canonical-e14, round-36 defaults on `2.0bpw-mcg-viterbi-lmhead-mxfp8`, `AUDIT=strict ./run.sh` from the kernels-r3 worktree, started 2026-09-27T06:55:34Z).
+
+**Test change.** `tests/test_bench_honesty.py::test_fresh_doc_tops_up_when_build_undershoots` checked `benches/micro.py fresh_doc` at one seed over the live README/flags.md paragraphs. Adding a README paragraph reshuffles that draw, and the round-36 doc edits made it fail. The test now runs its repo-text path on 120 fixed 20-174-token segments; its novel-text path is unchanged. With them, `build_doc` lands at 0.878x, the top-up reaches 0.995x / 0.978x, and there are 0 misses over 200 seed/target pairs. Without the top-up it stays at 0.878x, so the test still catches a broken top-up. The underlying behaviour is unchanged and stays open: on the live corpus, `fresh_doc` at 8k misses [0.97, 1.0]x on 11/200 seeds at round-35 HEAD (16/200 after the round-36 edits) with the test's ratio. A multi-thousand-token flags.md table segment is dropped and the top-up pool runs out.
+
+### Not done / open
+
+- Publish the pack to the Hub as revision `2.0bpw-mcg-viterbi-lmhead-mxfp8` (the Publish stage; `tools/publish_pack.py` also uploads `model-card.md` as the README of `main` and of the new branch). This PR merges after it.
+- The short-prose acceptance drop (four prose c=1 −3.8%) and the V-2 prose_long c=1 reading 42.42 (V-1 45.17). A broader prompt set would settle the net speed effect on a mixed workload.
+- Structured c=2 lockstep on this pack (+13.0% aggregate): cause not established.
+- `fresh_doc` top-up pool exhaustion on large table segments (above).
