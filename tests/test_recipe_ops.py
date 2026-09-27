@@ -839,6 +839,12 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn('"draft_sample_method":"greedy"', run)
         self.assertNotIn('"draft_sample_method":"probabilistic"', run)
 
+    def test_dspark_default_disables_eagle_block_drop(self) -> None:
+        # vLLM's eagle block drop makes the first follow-up after a short reply miss the
+        # prefix cache entirely on this model (#19). The default must turn it off.
+        run = _read("run.sh")
+        self.assertIn('"disable_eagle_block_drop":true', run)
+
     def test_default_language_model_only_is_off(self) -> None:
         self.assertEqual(_recipe()["serve"]["env"]["LANGUAGE_MODEL_ONLY"], "0")
         run = _read("run.sh")
