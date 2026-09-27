@@ -1,7 +1,7 @@
 ---
 license: mit
 base_model: deepseek-ai/DeepSeek-V4.1-Flash
-library_name: transformers
+library_name: exllamav3
 tags:
   - exl3
   - quantized
