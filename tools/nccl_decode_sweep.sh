@@ -11,7 +11,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-IMAGE="${IMAGE:-dsv41-flash-exl3-sm121:canonical-e13}"
+IMAGE="${IMAGE:-dsv41-flash-exl3-sm121:canonical-e14}"
 WORKER_HOST="${WORKER_HOST:-spark2}"
 HEAD_IP="${HEAD_IP:-10.100.8.1}"
 IFACE="${IFACE:-enp1s0f1np1}"

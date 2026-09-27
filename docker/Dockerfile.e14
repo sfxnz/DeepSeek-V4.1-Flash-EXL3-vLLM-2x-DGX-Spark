@@ -1,9 +1,10 @@
-# review-e14: canonical-e13 + the build-time kernel stages of k3 round 3 (perf/kernels-r3):
+# canonical-e14 (built as review-e14 for the round-3 serve arms): canonical-e13 + the build-time
+# kernel stages of k3 round 3 (perf/kernels-r3):
 #   - vllm_exl3_c rebuilt from the same vllm-exl3 pin and the same p2b chain as
 #     docker/Dockerfile.e13, plus widen_p2b_coop.py (DSV41_P2B_COOP=1, the coop kernel
 #     p2b_moe_batched_kernel<2, 1, 2>) and widen_p2b_dataflow.py (DSV41_P2B_COOP=2, the
-#     dataflow kernel p2b_coop_df_kernel<2, 1>); both default off. With the env unset the
-#     SORT=0/1 kernels are byte-identical to canonical-e13's chain
+#     dataflow kernel p2b_coop_df_kernel<2, 1>; the run.sh default since round 35). With the env
+#     unset or 0 the SORT=0/1 kernels are byte-identical to canonical-e13's chain
 #     (kernel_study/p2b_coop/sass_identity.sh, sass_identity_r3.sh). Folds in the former
 #     docker/Dockerfile.e15 (review-e15), which built this same chain.
 #   - the branch sitecustomize baked in, as docker/Dockerfile does (run.sh still bind-mounts
@@ -13,7 +14,7 @@
 # engram_native.c: gcc; the Triton kernels: Triton JIT).
 # docker/Dockerfile applies the same p2b chain from scratch (tests/test_widen_p2b_dataflow.py
 # keeps the two in sync).
-#   docker build -f docker/Dockerfile.e14 -t dsv41-flash-exl3-sm121:review-e14 docker
+#   docker build -f docker/Dockerfile.e14 -t dsv41-flash-exl3-sm121:canonical-e14 docker
 FROM dsv41-flash-exl3-sm121:canonical-e13
 
 COPY patch /opt/dsv41-patch

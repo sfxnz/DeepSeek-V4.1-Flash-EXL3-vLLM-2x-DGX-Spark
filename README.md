@@ -63,14 +63,14 @@ On both nodes, from this repo:
 
 ```bash
 docker pull vllm/vllm-openai:deepseekv41-flash-0909@sha256:d84a123255b822fc22508635218000187221794f59c0694c33b0650d1e377d58
-docker build -f docker/Dockerfile -t dsv41-flash-exl3-sm121:canonical-e13 docker
+docker build -f docker/Dockerfile -t dsv41-flash-exl3-sm121:canonical-e14 docker
 ```
 
 Stock `vllm/vllm-openai` wheels do not load `DeepseekV41ForCausalLM`. The image starts from the pinned `deepseekv41-flash-0909` digest and overlays Engram-on-disk plus `vllm-exl3`.
 
-If the image `dsv41-flash-exl3-sm121:canonical-e13` is already present, skip the pull and the build on that node. A node that already has `canonical-e12` can layer the round-34 stages on it instead of a full build: `docker build -f docker/Dockerfile.e13 -t dsv41-flash-exl3-sm121:canonical-e13 docker`.
+If the image `dsv41-flash-exl3-sm121:canonical-e14` is already present, skip the pull and the build on that node. A node that already has `canonical-e13` can layer the round-35 stages on it instead of a full build: `docker build -f docker/Dockerfile.e14 -t dsv41-flash-exl3-sm121:canonical-e14 docker`. A node with only `canonical-e12` builds `docker/Dockerfile.e13` as `canonical-e13` first.
 
-`docker/Dockerfile` builds the canonical serve image `dsv41-flash-exl3-sm121:canonical-e13`, which is the `IMAGE` default. It already applies the E10+E11 keeps (p2b mrow/cfg1/codebook/fshift, b12x smalls, `fix_o_proj_woa_fp8`) that the historical `docker/Dockerfile.e10` → `docker/Dockerfile.e11` chain added. `results/RESULTS.md` round 7 records the rebuild as content-equivalent. Round 34 adds the p2b srcsort build (`DSV41_P2B_SRC_SORT`, default off, byte-identical kernels when off) and the `fix_o_proj_woa_fp8` stage 2 that `DSV41_WOA_PREPACK=1` needs; on `canonical-e12` that lever logs `the lever is OFF` and the strict audit fails. `docker/Dockerfile.e13` layers the same two stages on `canonical-e12`; the Sparks' `canonical-e13` is that build (`sha256:c81762335a12`, `results/RESULTS.md` round 34). The k3 round-3 kernel work (`perf/kernels-r3`) adds the p2b coop and dataflow builds (`DSV41_P2B_COOP=1|2`, default off, byte-identical kernels when off); `docker/Dockerfile.e14` layers them on `canonical-e13` as `review-e14`, the image the round-3 serve arms boot (`results/2026-09-25-kernels/ARMS-r3.txt`). The image carries a `dsv41.recipe.patches` label. `run.sh` warns, but still boots, when `IMAGE` lacks the label: a stale local `:latest`, or a canonical-e12 built before the label existed. The experiment Dockerfiles (`docker/Dockerfile.e10`, `docker/Dockerfile.mma`) chain `FROM` the untagged base and are history.
+`docker/Dockerfile` builds the canonical serve image `dsv41-flash-exl3-sm121:canonical-e14`, which is the `IMAGE` default. It already applies the E10+E11 keeps (p2b mrow/cfg1/codebook/fshift, b12x smalls, `fix_o_proj_woa_fp8`) that the historical `docker/Dockerfile.e10` → `docker/Dockerfile.e11` chain added. `results/RESULTS.md` round 7 records the rebuild as content-equivalent. Round 34 adds the p2b srcsort build (`DSV41_P2B_SRC_SORT`, default off, byte-identical kernels when off) and the `fix_o_proj_woa_fp8` stage 2 that `DSV41_WOA_PREPACK=1` needs; on `canonical-e12` that lever logs `the lever is OFF` and the strict audit fails. `docker/Dockerfile.e13` layers the same two stages on `canonical-e12`; the Sparks' `canonical-e13` is that build (`sha256:c81762335a12`, `results/RESULTS.md` round 34). Round 35 (the k3 round-3 kernel work, `perf/kernels-r3`) adds the p2b coop and dataflow builds (`DSV41_P2B_COOP=1|2`; with the env unset or `0` the kernels are byte-identical to `canonical-e13`'s). `docker/Dockerfile.e14` layers them on `canonical-e13`; the Sparks' `canonical-e14` is that build, the round-3 serve arms' `review-e14` (`sha256:3a002b55c9bc`) tagged on both nodes (`results/RESULTS.md` round 35). `DSV41_P2B_COOP=2`, a default since round 35, needs it: on `canonical-e13` the boot logs `the lever is OFF. Rebuild docker/Dockerfile.e14` and `AUDIT=strict` fails. The other round-3 kernels compile at first use from the mounted `docker/patch` and need no build stage. The image carries a `dsv41.recipe.patches` label. `run.sh` warns, but still boots, when `IMAGE` lacks the label: a stale local `:latest`, or a canonical-e12 built before the label existed. The experiment Dockerfiles (`docker/Dockerfile.e10`, `docker/Dockerfile.mma`) chain `FROM` the untagged base and are history.
 
 ## Run
 
@@ -136,7 +136,7 @@ Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-
 <!-- BEGIN generated defaults from recipe.yaml — edit recipe.yaml and run kit/render.py -->
 | Setting | Value |
 |---|---|
-| Image | `dsv41-flash-exl3-sm121:canonical-e13` |
+| Image | `dsv41-flash-exl3-sm121:canonical-e14` |
 | Model | `sfxnz/DeepSeek-V4.1-Flash-EXL3` revision `2.0bpw-mcg-lmhead-mxfp8` |
 | `--tensor-parallel-size` / `--nnodes` | 2 / 2 |
 | `--max-model-len` | 1048576 |
@@ -153,7 +153,8 @@ Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-
 | Engram prefill read-ahead | `DSV41_ENGRAM_WILLNEED=1` (gv2 calls with >= 512 rows fadvise their pages before the preadv loop) |
 | lm_head | MXFP8 (`DSV41_LMHEAD_MXFP8=1`), needs the `2.0bpw-mcg-lmhead-mxfp8` pack; self-disarms on stock `2.0bpw-mcg` |
 | Weight-load stream feed | `DSV41_STREAM_FEED=1` |
-| Decode levers | `DSV41_WOA_PREPACK=1` (needs the `dsv41-flash-exl3-sm121:canonical-e13` o_proj stage) `DSV41_DSPARK_SPARSE_MARKOV=1` (top-k 256) |
+| Decode levers | `DSV41_WOA_PREPACK=1` (needs the `dsv41-flash-exl3-sm121:canonical-e14` o_proj stage) `DSV41_DSPARK_SPARSE_MARKOV=1` `DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024` |
+| Round-3 kernel bundle | `DSV41_P2B_COOP=2` (coop dataflow MoE kernel, needs the `dsv41-flash-exl3-sm121:canonical-e14` build) `DSV41_DENSE_GEMV=1` `DSV41_MHC_DET_SPLITS=16` `DSV41_ENGRAM_NATIVE_STAGE=1` `DSV41_ENGRAM_EARLY_HASH=1` `DSV41_ATTN_T2R_DEDUP=1` `DSV41_SWA_META_FUSED=1` `DSV41_MOE_PREP_FUSED=1` `DSV41_CANDIDATE_MASK_BOUNDED=1` `DSV41_INDEXER_WP_GEMV=1` (set one to `0` to turn it off) |
 | NCCL AR-tail set | `NCCL_BUFFSIZE=1048576` `NCCL_LL128_BUFFSIZE=262144` `NCCL_PROTO=^LL128` `NCCL_MAX_NCHANNELS=8` |
 | Memory hygiene | `DSV41_DROP_PAGE_CACHE=1` `DSV41_INDEXER_PREFILL_FACTOR=1` `DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192` `DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=2.5` `VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=256` |
 | Tokenizers / tools / reasoning | `deepseek_v41` |

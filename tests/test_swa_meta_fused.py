@@ -272,9 +272,10 @@ class WiringTests(unittest.TestCase):
         self.assertEqual(calls, [1])
         self.assertIn("swa metadata fused: fused", out.getvalue())
 
-    def test_forwarded_default_off(self) -> None:
+    def test_forwarded_default_on(self) -> None:
         run = (ROOT / "run.sh").read_text()
-        self.assertIn("  DSV41_SWA_META_FUSED=0\n", run)
+        self.assertIn("  DSV41_SWA_META_FUSED=\n", run)  # default from the generated block
+        self.assertIn('DSV41_SWA_META_FUSED="${DSV41_SWA_META_FUSED:-1}"\n', run)  # round 35
         self.assertIn("  DSV41_SWA_META_VERIFY=\n", run)
 
     def test_top_level_imports_are_stdlib_only(self) -> None:

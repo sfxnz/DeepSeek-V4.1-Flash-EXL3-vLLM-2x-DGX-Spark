@@ -254,10 +254,10 @@ class WiringTests(unittest.TestCase):
             self.assertEqual(env["DSV41_DSPARK_SPARSE_MARKOV"], "1", role)
             self.assertEqual(env["DSV41_DSPARK_SPARSE_MARKOV_TOPK"], "128", role)
         plain = container_env(dry_run()["head"])
-        # Round 34 (s7/s8) promoted WOA_PREPACK and SPARSE_MARKOV; TOPK keeps the in-code 256.
+        # Round 34 (s7/s8) promoted WOA_PREPACK and SPARSE_MARKOV; round 35 (P6) TOPK=1024.
         self.assertEqual(plain["DSV41_WOA_PREPACK"], "1")
         self.assertEqual(plain["DSV41_DSPARK_SPARSE_MARKOV"], "1")
-        self.assertNotIn("DSV41_DSPARK_SPARSE_MARKOV_TOPK", plain)
+        self.assertEqual(plain["DSV41_DSPARK_SPARSE_MARKOV_TOPK"], "1024")
         self.assertEqual(plain["DSV41_MHC_DECODE_SPLITS"], "0")
 
     def test_sitecustomize_calls_install_once_at_the_end(self):
