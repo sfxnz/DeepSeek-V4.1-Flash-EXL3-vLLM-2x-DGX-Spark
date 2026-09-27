@@ -1,0 +1,6228 @@
+{
+ "what": "ARMS-r3 section 9 (P6) SPARSE_MARKOV decision: the s9 rule and ARMS.md step 6 applied to the counted boots W-1, S-1, W-2, S-2 (W vs S) and S-3, S1024-1, S-4, S1024-2 (S1024 vs S) in results/2026-09-26-serve-r3/. The six earlier boots of the same S config (K-1, K-2, CUR-1, CUR-2, Kp-1, Kp-2) and the S boots of the other pair appear only as labelled robustness context. Computed by decision-markov-compute.py.txt from the raw per-boot files through the readers of decision-bundle-compute.py.txt and the helpers of decision-addons-compute.py.txt; stdlib only.",
+ "date": "2026-09-27",
+ "inputs": {
+  "image": "dsv41-flash-exl3-sm121:review-e14 = sha256:3a002b55c9bc... on both ranks, every boot",
+  "snapshot": "2.0bpw-mcg-lmhead-mxfp8 (serve pin) on every boot (four/serve_cmd.json)",
+  "arms": {
+   "W": "AUDIT=strict + round-34 defaults + the 10 promoted K envs + DSV41_WOA_PREPACK=1 DSV41_DSPARK_SPARSE_MARKOV=0",
+   "S": "AUDIT=strict + round-34 defaults (DSV41_DSPARK_SPARSE_MARKOV=1, TOPK unset = 256, WOA_PREPACK=1) + the 10 promoted K envs",
+   "S1024": "S + DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024",
+   "all": "KP add-ons MHC_DET_OVERLAP/ENGRAM_WKV_TP/NCCL_EAGER_TWIN/AR_L2_PREFETCH=0, PM_QOS_US unset, on both ranks"
+  },
+  "order": "W-1, S-1, W-2, S-2, then S-3, S1024-1, S-4, S1024-2 (s9 order). Each counted boot is its first attempt; no fix, retry or dropped lever.",
+  "commits_at_boot": {
+   "W-1": "172359d876dd",
+   "S-1": "81b7cadb42ab",
+   "W-2": "b6cb1edf501d",
+   "S-2": "e9c11c1371fe",
+   "S-3": "c0da1bce2053",
+   "S1024-1": "7c38bed8ad79",
+   "S-4": "d6502a8069c4",
+   "S1024-2": "cbaf68be0760"
+  },
+  "code_between_counted_boots": "git diff --stat 172359d876dd..cbaf68be0760 outside results/: empty",
+  "docker_patch": "sha256 list digest adaaac7a0f40a2a1 on all 8 P6 boots: True; also on the 6 K-config context boots: True",
+  "context_boots_S_config": {
+   "K-1": {
+    "commit": "ae0255acca35",
+    "SPARSE_MARKOV_spark1_spark2_TOPK_spark1_spark2": [
+     "1",
+     "1",
+     null,
+     null
+    ]
+   },
+   "K-2": {
+    "commit": "f03792b5f424",
+    "SPARSE_MARKOV_spark1_spark2_TOPK_spark1_spark2": [
+     "1",
+     "1",
+     null,
+     null
+    ]
+   },
+   "CUR-1": {
+    "commit": "7db92e93a10c",
+    "SPARSE_MARKOV_spark1_spark2_TOPK_spark1_spark2": [
+     "1",
+     "1",
+     null,
+     null
+    ]
+   },
+   "CUR-2": {
+    "commit": "fcfb092461ee",
+    "SPARSE_MARKOV_spark1_spark2_TOPK_spark1_spark2": [
+     "1",
+     "1",
+     null,
+     null
+    ]
+   },
+   "Kp-1": {
+    "commit": "36392cea5300",
+    "SPARSE_MARKOV_spark1_spark2_TOPK_spark1_spark2": [
+     "1",
+     "1",
+     null,
+     null
+    ]
+   },
+   "Kp-2": {
+    "commit": "71dccac71064",
+    "SPARSE_MARKOV_spark1_spark2_TOPK_spark1_spark2": [
+     "1",
+     "1",
+     null,
+     null
+    ]
+   }
+  },
+  "temperatures": "four prose c=1, prose_long c=1/c=2 and bench_decode cells send temperature 0 (bench_decode.py); L.A.I.L runs at t=0.2 (tools/measure_lail_prose.py)"
+ },
+ "rule": {
+  "sources": [
+   "ARMS-r3 s9: 'Acceptance moves by design, so gate on prose_long c=1 tok/s and L.A.I.L tok/s with the noise rule, and report per boot median_run_acceptance_len and ms/step. Quality quick on one boot per arm.'",
+   "ARMS-r3 s9: 'W vs S: revert the default to SPARSE_MARKOV=0 only if W beats S beyond the noise (every W boot beats the S median). Otherwise S stays and S1024 decides.'",
+   "ARMS-r3 s9: 'S1024 vs S: promote TOPK=1024 when every S1024 boot beats the S median by more than the noise.'",
+   "ARMS.md step 6: primary metric ms/step only at matched acceptance (per-boot median_run_acceptance_len intervals overlap); otherwise 'the arm changed drafting; gate on prose_long c=1 tok/s instead with the same noise rule'. Noise = the larger boot-to-boot spread (max-min of per-boot medians) of the two arms; pass = median improvement > noise AND every B boot beats the A median. Non-inferiority, honest cells, e2e, boot floors, and quality quick before any KEEP."
+  ],
+  "baselines": "W vs S uses S-1, S-2 (the S boots interleaved with W). S1024 vs S uses S-3, S-4 (the S boots interleaved with S1024). ARMS.md: 'the reference is the A boots of the same ABAB sequence'.",
+  "gate_cells": [
+   "L.A.I.L tok/s (lail10.txt, 10 runs, t=0.2)",
+   "prose_long c=1 tok/s (four/four_numbers.json, 5 runs, t=0)"
+  ],
+  "readings_recorded": {
+   "armsmd": "median improvement > noise AND every candidate boot beats the base median",
+   "s9_per_boot": "every candidate boot beats the base median by more than the noise (used for S1024; stricter)"
+  },
+  "both_gate_cells_required": true
+ },
+ "validity": {
+  "all_eight_counted_boots_valid": true,
+  "per_boot": {
+   "W-1": {
+    "arm": "W",
+    "commit": "172359d876dd",
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "snapshot": [
+     "2.0bpw-mcg-lmhead-mxfp8"
+    ],
+    "k_envs_both_ranks_as_promoted": true,
+    "kp_addons_off_both_ranks": true,
+    "arm_envs_both_ranks": {
+     "DSV41_DSPARK_SPARSE_MARKOV": [
+      "0",
+      "0"
+     ],
+     "DSV41_DSPARK_SPARSE_MARKOV_TOPK": [
+      null,
+      null
+     ],
+     "DSV41_WOA_PREPACK": [
+      "1",
+      "1"
+     ]
+    },
+    "arm_envs_as_arm": true,
+    "sparse_markov_line_head_worker": {
+     "any": [
+      0,
+      0
+     ],
+     "k=256": null,
+     "k=1024": null
+    },
+    "sparse_markov_engagement_as_arm": true,
+    "k_lines_engaged_both_ranks": true,
+    "kp_lines_absent": true,
+    "woa_prepack_missing_warning": [
+     0,
+     0
+    ],
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_preconditions_spark1_spark2": [
+     "116Gi",
+     "117Gi"
+    ],
+    "memavail_after_smoke_spark1_spark2": [
+     "23Gi",
+     "25Gi"
+    ],
+    "four_numbers_partial": false,
+    "valid": true
+   },
+   "S-1": {
+    "arm": "S",
+    "commit": "81b7cadb42ab",
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "snapshot": [
+     "2.0bpw-mcg-lmhead-mxfp8"
+    ],
+    "k_envs_both_ranks_as_promoted": true,
+    "kp_addons_off_both_ranks": true,
+    "arm_envs_both_ranks": {
+     "DSV41_DSPARK_SPARSE_MARKOV": [
+      "1",
+      "1"
+     ],
+     "DSV41_DSPARK_SPARSE_MARKOV_TOPK": [
+      null,
+      null
+     ],
+     "DSV41_WOA_PREPACK": [
+      "1",
+      "1"
+     ]
+    },
+    "arm_envs_as_arm": true,
+    "sparse_markov_line_head_worker": {
+     "any": [
+      4,
+      3
+     ],
+     "k=256": [
+      4,
+      3
+     ],
+     "k=1024": null
+    },
+    "sparse_markov_engagement_as_arm": true,
+    "k_lines_engaged_both_ranks": true,
+    "kp_lines_absent": true,
+    "woa_prepack_missing_warning": [
+     0,
+     0
+    ],
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_preconditions_spark1_spark2": [
+     "116Gi",
+     "117Gi"
+    ],
+    "memavail_after_smoke_spark1_spark2": [
+     "22Gi",
+     "24Gi"
+    ],
+    "four_numbers_partial": false,
+    "valid": true
+   },
+   "W-2": {
+    "arm": "W",
+    "commit": "b6cb1edf501d",
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "snapshot": [
+     "2.0bpw-mcg-lmhead-mxfp8"
+    ],
+    "k_envs_both_ranks_as_promoted": true,
+    "kp_addons_off_both_ranks": true,
+    "arm_envs_both_ranks": {
+     "DSV41_DSPARK_SPARSE_MARKOV": [
+      "0",
+      "0"
+     ],
+     "DSV41_DSPARK_SPARSE_MARKOV_TOPK": [
+      null,
+      null
+     ],
+     "DSV41_WOA_PREPACK": [
+      "1",
+      "1"
+     ]
+    },
+    "arm_envs_as_arm": true,
+    "sparse_markov_line_head_worker": {
+     "any": [
+      0,
+      0
+     ],
+     "k=256": null,
+     "k=1024": null
+    },
+    "sparse_markov_engagement_as_arm": true,
+    "k_lines_engaged_both_ranks": true,
+    "kp_lines_absent": true,
+    "woa_prepack_missing_warning": [
+     0,
+     0
+    ],
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_preconditions_spark1_spark2": [
+     "116Gi",
+     "117Gi"
+    ],
+    "memavail_after_smoke_spark1_spark2": [
+     "23Gi",
+     "25Gi"
+    ],
+    "four_numbers_partial": false,
+    "valid": true
+   },
+   "S-2": {
+    "arm": "S",
+    "commit": "e9c11c1371fe",
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "snapshot": [
+     "2.0bpw-mcg-lmhead-mxfp8"
+    ],
+    "k_envs_both_ranks_as_promoted": true,
+    "kp_addons_off_both_ranks": true,
+    "arm_envs_both_ranks": {
+     "DSV41_DSPARK_SPARSE_MARKOV": [
+      "1",
+      "1"
+     ],
+     "DSV41_DSPARK_SPARSE_MARKOV_TOPK": [
+      null,
+      null
+     ],
+     "DSV41_WOA_PREPACK": [
+      "1",
+      "1"
+     ]
+    },
+    "arm_envs_as_arm": true,
+    "sparse_markov_line_head_worker": {
+     "any": [
+      4,
+      3
+     ],
+     "k=256": [
+      4,
+      3
+     ],
+     "k=1024": null
+    },
+    "sparse_markov_engagement_as_arm": true,
+    "k_lines_engaged_both_ranks": true,
+    "kp_lines_absent": true,
+    "woa_prepack_missing_warning": [
+     0,
+     0
+    ],
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_preconditions_spark1_spark2": [
+     "116Gi",
+     "117Gi"
+    ],
+    "memavail_after_smoke_spark1_spark2": [
+     "23Gi",
+     "24Gi"
+    ],
+    "four_numbers_partial": false,
+    "valid": true
+   },
+   "S-3": {
+    "arm": "S",
+    "commit": "c0da1bce2053",
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "snapshot": [
+     "2.0bpw-mcg-lmhead-mxfp8"
+    ],
+    "k_envs_both_ranks_as_promoted": true,
+    "kp_addons_off_both_ranks": true,
+    "arm_envs_both_ranks": {
+     "DSV41_DSPARK_SPARSE_MARKOV": [
+      "1",
+      "1"
+     ],
+     "DSV41_DSPARK_SPARSE_MARKOV_TOPK": [
+      null,
+      null
+     ],
+     "DSV41_WOA_PREPACK": [
+      "1",
+      "1"
+     ]
+    },
+    "arm_envs_as_arm": true,
+    "sparse_markov_line_head_worker": {
+     "any": [
+      4,
+      3
+     ],
+     "k=256": [
+      4,
+      3
+     ],
+     "k=1024": null
+    },
+    "sparse_markov_engagement_as_arm": true,
+    "k_lines_engaged_both_ranks": true,
+    "kp_lines_absent": true,
+    "woa_prepack_missing_warning": [
+     0,
+     0
+    ],
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_preconditions_spark1_spark2": [
+     "116Gi",
+     "117Gi"
+    ],
+    "memavail_after_smoke_spark1_spark2": [
+     "22Gi",
+     "24Gi"
+    ],
+    "four_numbers_partial": false,
+    "valid": true
+   },
+   "S1024-1": {
+    "arm": "S1024",
+    "commit": "7c38bed8ad79",
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "snapshot": [
+     "2.0bpw-mcg-lmhead-mxfp8"
+    ],
+    "k_envs_both_ranks_as_promoted": true,
+    "kp_addons_off_both_ranks": true,
+    "arm_envs_both_ranks": {
+     "DSV41_DSPARK_SPARSE_MARKOV": [
+      "1",
+      "1"
+     ],
+     "DSV41_DSPARK_SPARSE_MARKOV_TOPK": [
+      "1024",
+      "1024"
+     ],
+     "DSV41_WOA_PREPACK": [
+      "1",
+      "1"
+     ]
+    },
+    "arm_envs_as_arm": true,
+    "sparse_markov_line_head_worker": {
+     "any": [
+      4,
+      3
+     ],
+     "k=256": [
+      0,
+      0
+     ],
+     "k=1024": [
+      4,
+      3
+     ]
+    },
+    "sparse_markov_engagement_as_arm": true,
+    "k_lines_engaged_both_ranks": true,
+    "kp_lines_absent": true,
+    "woa_prepack_missing_warning": [
+     0,
+     0
+    ],
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_preconditions_spark1_spark2": [
+     "116Gi",
+     "117Gi"
+    ],
+    "memavail_after_smoke_spark1_spark2": [
+     "23Gi",
+     "24Gi"
+    ],
+    "four_numbers_partial": false,
+    "valid": true
+   },
+   "S-4": {
+    "arm": "S",
+    "commit": "d6502a8069c4",
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "snapshot": [
+     "2.0bpw-mcg-lmhead-mxfp8"
+    ],
+    "k_envs_both_ranks_as_promoted": true,
+    "kp_addons_off_both_ranks": true,
+    "arm_envs_both_ranks": {
+     "DSV41_DSPARK_SPARSE_MARKOV": [
+      "1",
+      "1"
+     ],
+     "DSV41_DSPARK_SPARSE_MARKOV_TOPK": [
+      null,
+      null
+     ],
+     "DSV41_WOA_PREPACK": [
+      "1",
+      "1"
+     ]
+    },
+    "arm_envs_as_arm": true,
+    "sparse_markov_line_head_worker": {
+     "any": [
+      4,
+      3
+     ],
+     "k=256": [
+      4,
+      3
+     ],
+     "k=1024": [
+      0,
+      0
+     ]
+    },
+    "sparse_markov_engagement_as_arm": true,
+    "k_lines_engaged_both_ranks": true,
+    "kp_lines_absent": true,
+    "woa_prepack_missing_warning": [
+     0,
+     0
+    ],
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_preconditions_spark1_spark2": [
+     "116Gi",
+     "117Gi"
+    ],
+    "memavail_after_smoke_spark1_spark2": [
+     "22Gi",
+     "24Gi"
+    ],
+    "four_numbers_partial": false,
+    "valid": true
+   },
+   "S1024-2": {
+    "arm": "S1024",
+    "commit": "cbaf68be0760",
+    "patch_sha256_list_digest": "adaaac7a0f40a2a1",
+    "snapshot": [
+     "2.0bpw-mcg-lmhead-mxfp8"
+    ],
+    "k_envs_both_ranks_as_promoted": true,
+    "kp_addons_off_both_ranks": true,
+    "arm_envs_both_ranks": {
+     "DSV41_DSPARK_SPARSE_MARKOV": [
+      "1",
+      "1"
+     ],
+     "DSV41_DSPARK_SPARSE_MARKOV_TOPK": [
+      "1024",
+      "1024"
+     ],
+     "DSV41_WOA_PREPACK": [
+      "1",
+      "1"
+     ]
+    },
+    "arm_envs_as_arm": true,
+    "sparse_markov_line_head_worker": {
+     "any": [
+      4,
+      3
+     ],
+     "k=256": [
+      0,
+      0
+     ],
+     "k=1024": [
+      4,
+      3
+     ]
+    },
+    "sparse_markov_engagement_as_arm": true,
+    "k_lines_engaged_both_ranks": true,
+    "kp_lines_absent": true,
+    "woa_prepack_missing_warning": [
+     0,
+     0
+    ],
+    "prose_long_c1": "length, post-EOS 0.0",
+    "prose_long_c2": "length, post-EOS 0.0",
+    "lail_finish": [
+     "length"
+    ],
+    "serve_env_ranks_match": true,
+    "lever_disarmed": false,
+    "disarm_scan_rc": [
+     0
+    ],
+    "gpu_guard_rc": [
+     0
+    ],
+    "contaminated": false,
+    "e2e_rc": [
+     0
+    ],
+    "correctness": "8/8",
+    "memavail_preconditions_spark1_spark2": [
+     "116Gi",
+     "117Gi"
+    ],
+    "memavail_after_smoke_spark1_spark2": [
+     "22Gi",
+     "24Gi"
+    ],
+    "four_numbers_partial": false,
+    "valid": true
+   }
+  }
+ },
+ "pair1_W_vs_S": {
+  "gate_W_minus_S_tok_s": {
+   "lail_tok_s": {
+    "base": [
+     42.791,
+     42.785
+    ],
+    "cand": [
+     42.814,
+     43.624
+    ],
+    "base_median": 42.788,
+    "cand_median": 43.219,
+    "improvement": 0.431,
+    "noise": 0.81,
+    "per_boot_margin_vs_base_median": [
+     0.026,
+     0.836
+    ],
+    "armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median": false,
+    "s9_rule_every_boot_margin_gt_noise": false
+   },
+   "prose_long_c1_tok_s": {
+    "base": [
+     44.739,
+     43.336
+    ],
+    "cand": [
+     44.257,
+     44.196
+    ],
+    "base_median": 44.038,
+    "cand_median": 44.227,
+    "improvement": 0.189,
+    "noise": 1.403,
+    "per_boot_margin_vs_base_median": [
+     0.219,
+     0.158
+    ],
+    "armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median": false,
+    "s9_rule_every_boot_margin_gt_noise": false
+   }
+  },
+  "S_relative_to_W_all_cells": {
+   "lail": {
+    "tok_s": {
+     "base": [
+      42.814,
+      43.624
+     ],
+     "cand": [
+      42.791,
+      42.785
+     ],
+     "base_median": 43.219,
+     "cand_median": 42.788,
+     "base_spread": 0.81,
+     "cand_spread": 0.006,
+     "noise": 0.81,
+     "improvement": -0.431,
+     "improvement_pct": -1.0,
+     "per_boot_margin_vs_base_median": [
+      -0.428,
+      -0.434
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      49.576,
+      49.619
+     ],
+     "cand": [
+      48.897,
+      48.827
+     ],
+     "base_median": 49.597,
+     "cand_median": 48.862,
+     "base_spread": 0.043,
+     "cand_spread": 0.07,
+     "noise": 0.07,
+     "improvement": 0.735,
+     "improvement_pct": 1.48,
+     "per_boot_margin_vs_base_median": [
+      0.7,
+      0.77
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": true
+    },
+    "acceptance": {
+     "base": [
+      2.1579,
+      2.2
+     ],
+     "cand": [
+      2.1004,
+      2.1381
+     ],
+     "base_median": 2.179,
+     "cand_median": 2.1193,
+     "base_spread": 0.0421,
+     "cand_spread": 0.0377,
+     "noise": 0.0421,
+     "improvement": -0.0597,
+     "improvement_pct": -2.74,
+     "per_boot_margin_vs_base_median": [
+      -0.0785,
+      -0.0408
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": false,
+    "pct_cand_vs_base": {
+     "acceptance": -2.74,
+     "ms_step": -1.48,
+     "tok_s": -1.0,
+     "tok_s_from_acc_and_ms": -1.28,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "prose_long_c1": {
+    "tok_s": {
+     "base": [
+      44.257,
+      44.196
+     ],
+     "cand": [
+      44.739,
+      43.336
+     ],
+     "base_median": 44.227,
+     "cand_median": 44.038,
+     "base_spread": 0.061,
+     "cand_spread": 1.403,
+     "noise": 1.403,
+     "improvement": -0.189,
+     "improvement_pct": -0.43,
+     "per_boot_margin_vs_base_median": [
+      0.513,
+      -0.89
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      49.89,
+      49.48
+     ],
+     "cand": [
+      49.177,
+      48.987
+     ],
+     "base_median": 49.685,
+     "cand_median": 49.082,
+     "base_spread": 0.41,
+     "cand_spread": 0.19,
+     "noise": 0.41,
+     "improvement": 0.603,
+     "improvement_pct": 1.21,
+     "per_boot_margin_vs_base_median": [
+      0.508,
+      0.698
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": true
+    },
+    "acceptance": {
+     "base": [
+      2.1868,
+      2.1868
+     ],
+     "cand": [
+      2.1978,
+      2.1277
+     ],
+     "base_median": 2.1868,
+     "cand_median": 2.1627,
+     "base_spread": 0.0,
+     "cand_spread": 0.0701,
+     "noise": 0.0701,
+     "improvement": -0.0241,
+     "improvement_pct": -1.1,
+     "per_boot_margin_vs_base_median": [
+      0.011,
+      -0.0592
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": -1.1,
+     "ms_step": -1.21,
+     "tok_s": -0.43,
+     "tok_s_from_acc_and_ms": 0.11,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "four_prose_c1": {
+    "tok_s": {
+     "base": [
+      54.68,
+      52.38
+     ],
+     "cand": [
+      52.46,
+      52.72
+     ],
+     "base_median": 53.53,
+     "cand_median": 52.59,
+     "base_spread": 2.3,
+     "cand_spread": 0.26,
+     "noise": 2.3,
+     "improvement": -0.94,
+     "improvement_pct": -1.76,
+     "per_boot_margin_vs_base_median": [
+      -1.07,
+      -0.81
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      48.705,
+      49.314
+     ],
+     "cand": [
+      48.061,
+      47.726
+     ],
+     "base_median": 49.009,
+     "cand_median": 47.893,
+     "base_spread": 0.61,
+     "cand_spread": 0.335,
+     "noise": 0.61,
+     "improvement": 1.116,
+     "improvement_pct": 2.28,
+     "per_boot_margin_vs_base_median": [
+      0.949,
+      1.283
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": true
+    },
+    "acceptance": {
+     "base": [
+      2.6533,
+      2.5769
+     ],
+     "cand": [
+      2.5316,
+      2.519
+     ],
+     "base_median": 2.6151,
+     "cand_median": 2.5253,
+     "base_spread": 0.0764,
+     "cand_spread": 0.0127,
+     "noise": 0.0764,
+     "improvement": -0.0898,
+     "improvement_pct": -3.43,
+     "per_boot_margin_vs_base_median": [
+      -0.0835,
+      -0.0961
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": false,
+    "pct_cand_vs_base": {
+     "acceptance": -3.43,
+     "ms_step": -2.28,
+     "tok_s": -1.76,
+     "tok_s_from_acc_and_ms": -1.18,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "bench_prose_c1": {
+    "tok_s": {
+     "base": [
+      50.067,
+      53.368
+     ],
+     "cand": [
+      51.781,
+      53.658
+     ],
+     "base_median": 51.718,
+     "cand_median": 52.719,
+     "base_spread": 3.302,
+     "cand_spread": 1.878,
+     "noise": 3.302,
+     "improvement": 1.002,
+     "improvement_pct": 1.94,
+     "per_boot_margin_vs_base_median": [
+      0.063,
+      1.941
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      49.219,
+      49.57
+     ],
+     "cand": [
+      49.027,
+      48.72
+     ],
+     "base_median": 49.395,
+     "cand_median": 48.874,
+     "base_spread": 0.351,
+     "cand_spread": 0.307,
+     "noise": 0.351,
+     "improvement": 0.521,
+     "improvement_pct": 1.05,
+     "per_boot_margin_vs_base_median": [
+      0.367,
+      0.675
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": true
+    },
+    "acceptance": {
+     "base": [
+      2.4875,
+      2.6234
+     ],
+     "cand": [
+      2.5316,
+      2.6579
+     ],
+     "base_median": 2.5554,
+     "cand_median": 2.5948,
+     "base_spread": 0.1359,
+     "cand_spread": 0.1262,
+     "noise": 0.1359,
+     "improvement": 0.0393,
+     "improvement_pct": 1.54,
+     "per_boot_margin_vs_base_median": [
+      -0.0238,
+      0.1025
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": 1.54,
+     "ms_step": -1.05,
+     "tok_s": 1.94,
+     "tok_s_from_acc_and_ms": 2.62,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "structured_c1": {
+    "tok_s": {
+     "base": [
+      82.509,
+      82.448
+     ],
+     "cand": [
+      83.731,
+      83.231
+     ],
+     "base_median": 82.479,
+     "cand_median": 83.481,
+     "base_spread": 0.062,
+     "cand_spread": 0.5,
+     "noise": 0.5,
+     "improvement": 1.003,
+     "improvement_pct": 1.22,
+     "per_boot_margin_vs_base_median": [
+      1.253,
+      0.753
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": true
+    },
+    "ms_step": {
+     "base": [
+      48.004,
+      48.04
+     ],
+     "cand": [
+      47.304,
+      47.588
+     ],
+     "base_median": 48.022,
+     "cand_median": 47.446,
+     "base_spread": 0.036,
+     "cand_spread": 0.284,
+     "noise": 0.284,
+     "improvement": 0.576,
+     "improvement_pct": 1.2,
+     "per_boot_margin_vs_base_median": [
+      0.718,
+      0.434
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": true
+    },
+    "acceptance": {
+     "base": [
+      3.9608,
+      3.9608
+     ],
+     "cand": [
+      3.9608,
+      3.9608
+     ],
+     "base_median": 3.9608,
+     "cand_median": 3.9608,
+     "base_spread": 0.0,
+     "cand_spread": 0.0,
+     "noise": 0.0,
+     "improvement": 0.0,
+     "improvement_pct": 0.0,
+     "per_boot_margin_vs_base_median": [
+      0.0,
+      0.0
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": 0.0,
+     "ms_step": -1.2,
+     "tok_s": 1.22,
+     "tok_s_from_acc_and_ms": 1.21,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "prose_long_c2": {
+    "tok_s": {
+     "base": [
+      66.876,
+      71.658
+     ],
+     "cand": [
+      67.276,
+      66.872
+     ],
+     "base_median": 69.267,
+     "cand_median": 67.074,
+     "base_spread": 4.782,
+     "cand_spread": 0.405,
+     "noise": 4.782,
+     "improvement": -2.193,
+     "improvement_pct": -3.17,
+     "per_boot_margin_vs_base_median": [
+      -1.991,
+      -2.395
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      62.899,
+      62.045
+     ],
+     "cand": [
+      61.037,
+      62.597
+     ],
+     "base_median": 62.472,
+     "cand_median": 61.817,
+     "base_spread": 0.854,
+     "cand_spread": 1.56,
+     "noise": 1.56,
+     "improvement": 0.655,
+     "improvement_pct": 1.05,
+     "per_boot_margin_vs_base_median": [
+      1.435,
+      -0.125
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      2.1685,
+      2.2033
+     ],
+     "cand": [
+      2.1111,
+      2.1223
+     ],
+     "base_median": 2.1859,
+     "cand_median": 2.1167,
+     "base_spread": 0.0348,
+     "cand_spread": 0.0112,
+     "noise": 0.0348,
+     "improvement": -0.0692,
+     "improvement_pct": -3.16,
+     "per_boot_margin_vs_base_median": [
+      -0.0748,
+      -0.0635
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": false,
+    "pct_cand_vs_base": {
+     "acceptance": -3.16,
+     "ms_step": -1.05,
+     "tok_s": -3.17,
+     "tok_s_from_acc_and_ms": -2.14,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "bench_prose_c2": {
+    "tok_s": {
+     "base": [
+      83.637,
+      84.245
+     ],
+     "cand": [
+      84.802,
+      85.015
+     ],
+     "base_median": 83.941,
+     "cand_median": 84.908,
+     "base_spread": 0.608,
+     "cand_spread": 0.213,
+     "noise": 0.608,
+     "improvement": 0.967,
+     "improvement_pct": 1.15,
+     "per_boot_margin_vs_base_median": [
+      0.861,
+      1.073
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": true
+    },
+    "ms_step": {
+     "base": [
+      60.155,
+      59.852
+     ],
+     "cand": [
+      59.247,
+      59.488
+     ],
+     "base_median": 60.004,
+     "cand_median": 59.368,
+     "base_spread": 0.303,
+     "cand_spread": 0.24,
+     "noise": 0.303,
+     "improvement": 0.636,
+     "improvement_pct": 1.06,
+     "per_boot_margin_vs_base_median": [
+      0.756,
+      0.516
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": true
+    },
+    "acceptance": {
+     "base": [
+      2.6078,
+      2.5577
+     ],
+     "cand": [
+      2.5669,
+      2.5316
+     ],
+     "base_median": 2.5828,
+     "cand_median": 2.5493,
+     "base_spread": 0.0502,
+     "cand_spread": 0.0352,
+     "noise": 0.0502,
+     "improvement": -0.0335,
+     "improvement_pct": -1.3,
+     "per_boot_margin_vs_base_median": [
+      -0.0159,
+      -0.0511
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": -1.3,
+     "ms_step": -1.06,
+     "tok_s": 1.15,
+     "tok_s_from_acc_and_ms": -0.24,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "structured_c2": {
+    "tok_s": {
+     "base": [
+      136.159,
+      137.071
+     ],
+     "cand": [
+      138.044,
+      137.801
+     ],
+     "base_median": 136.615,
+     "cand_median": 137.923,
+     "base_spread": 0.913,
+     "cand_spread": 0.243,
+     "noise": 0.913,
+     "improvement": 1.308,
+     "improvement_pct": 0.96,
+     "per_boot_margin_vs_base_median": [
+      1.429,
+      1.186
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": true
+    },
+    "ms_step": {
+     "base": [
+      57.92,
+      56.062
+     ],
+     "cand": [
+      55.173,
+      56.518
+     ],
+     "base_median": 56.991,
+     "cand_median": 55.846,
+     "base_spread": 1.858,
+     "cand_spread": 1.345,
+     "noise": 1.858,
+     "improvement": 1.145,
+     "improvement_pct": 2.01,
+     "per_boot_margin_vs_base_median": [
+      1.818,
+      0.473
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      3.9608,
+      3.9608
+     ],
+     "cand": [
+      3.9608,
+      3.9608
+     ],
+     "base_median": 3.9608,
+     "cand_median": 3.9608,
+     "base_spread": 0.0,
+     "cand_spread": 0.0,
+     "noise": 0.0,
+     "improvement": 0.0,
+     "improvement_pct": 0.0,
+     "per_boot_margin_vs_base_median": [
+      0.0,
+      0.0
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": 0.0,
+     "ms_step": -2.01,
+     "tok_s": 0.96,
+     "tok_s_from_acc_and_ms": 2.05,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   }
+  },
+  "W_relative_to_S_all_cells": {
+   "lail": {
+    "tok_s": {
+     "base": [
+      42.791,
+      42.785
+     ],
+     "cand": [
+      42.814,
+      43.624
+     ],
+     "base_median": 42.788,
+     "cand_median": 43.219,
+     "base_spread": 0.006,
+     "cand_spread": 0.81,
+     "noise": 0.81,
+     "improvement": 0.431,
+     "improvement_pct": 1.01,
+     "per_boot_margin_vs_base_median": [
+      0.026,
+      0.836
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      48.897,
+      48.827
+     ],
+     "cand": [
+      49.576,
+      49.619
+     ],
+     "base_median": 48.862,
+     "cand_median": 49.597,
+     "base_spread": 0.07,
+     "cand_spread": 0.043,
+     "noise": 0.07,
+     "improvement": -0.735,
+     "improvement_pct": -1.5,
+     "per_boot_margin_vs_base_median": [
+      -0.714,
+      -0.757
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      2.1004,
+      2.1381
+     ],
+     "cand": [
+      2.1579,
+      2.2
+     ],
+     "base_median": 2.1193,
+     "cand_median": 2.179,
+     "base_spread": 0.0377,
+     "cand_spread": 0.0421,
+     "noise": 0.0421,
+     "improvement": 0.0597,
+     "improvement_pct": 2.82,
+     "per_boot_margin_vs_base_median": [
+      0.0386,
+      0.0807
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": false,
+    "pct_cand_vs_base": {
+     "acceptance": 2.82,
+     "ms_step": 1.5,
+     "tok_s": 1.01,
+     "tok_s_from_acc_and_ms": 1.29,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "prose_long_c1": {
+    "tok_s": {
+     "base": [
+      44.739,
+      43.336
+     ],
+     "cand": [
+      44.257,
+      44.196
+     ],
+     "base_median": 44.038,
+     "cand_median": 44.227,
+     "base_spread": 1.403,
+     "cand_spread": 0.061,
+     "noise": 1.403,
+     "improvement": 0.189,
+     "improvement_pct": 0.43,
+     "per_boot_margin_vs_base_median": [
+      0.219,
+      0.158
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      49.177,
+      48.987
+     ],
+     "cand": [
+      49.89,
+      49.48
+     ],
+     "base_median": 49.082,
+     "cand_median": 49.685,
+     "base_spread": 0.19,
+     "cand_spread": 0.41,
+     "noise": 0.41,
+     "improvement": -0.603,
+     "improvement_pct": -1.23,
+     "per_boot_margin_vs_base_median": [
+      -0.808,
+      -0.398
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      2.1978,
+      2.1277
+     ],
+     "cand": [
+      2.1868,
+      2.1868
+     ],
+     "base_median": 2.1627,
+     "cand_median": 2.1868,
+     "base_spread": 0.0701,
+     "cand_spread": 0.0,
+     "noise": 0.0701,
+     "improvement": 0.0241,
+     "improvement_pct": 1.11,
+     "per_boot_margin_vs_base_median": [
+      0.0241,
+      0.0241
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": 1.11,
+     "ms_step": 1.23,
+     "tok_s": 0.43,
+     "tok_s_from_acc_and_ms": -0.11,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "four_prose_c1": {
+    "tok_s": {
+     "base": [
+      52.46,
+      52.72
+     ],
+     "cand": [
+      54.68,
+      52.38
+     ],
+     "base_median": 52.59,
+     "cand_median": 53.53,
+     "base_spread": 0.26,
+     "cand_spread": 2.3,
+     "noise": 2.3,
+     "improvement": 0.94,
+     "improvement_pct": 1.79,
+     "per_boot_margin_vs_base_median": [
+      2.09,
+      -0.21
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      48.061,
+      47.726
+     ],
+     "cand": [
+      48.705,
+      49.314
+     ],
+     "base_median": 47.893,
+     "cand_median": 49.009,
+     "base_spread": 0.335,
+     "cand_spread": 0.61,
+     "noise": 0.61,
+     "improvement": -1.116,
+     "improvement_pct": -2.33,
+     "per_boot_margin_vs_base_median": [
+      -0.811,
+      -1.421
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      2.5316,
+      2.519
+     ],
+     "cand": [
+      2.6533,
+      2.5769
+     ],
+     "base_median": 2.5253,
+     "cand_median": 2.6151,
+     "base_spread": 0.0127,
+     "cand_spread": 0.0764,
+     "noise": 0.0764,
+     "improvement": 0.0898,
+     "improvement_pct": 3.56,
+     "per_boot_margin_vs_base_median": [
+      0.128,
+      0.0516
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": false,
+    "pct_cand_vs_base": {
+     "acceptance": 3.56,
+     "ms_step": 2.33,
+     "tok_s": 1.79,
+     "tok_s_from_acc_and_ms": 1.2,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "bench_prose_c1": {
+    "tok_s": {
+     "base": [
+      51.781,
+      53.658
+     ],
+     "cand": [
+      50.067,
+      53.368
+     ],
+     "base_median": 52.719,
+     "cand_median": 51.718,
+     "base_spread": 1.878,
+     "cand_spread": 3.302,
+     "noise": 3.302,
+     "improvement": -1.002,
+     "improvement_pct": -1.9,
+     "per_boot_margin_vs_base_median": [
+      -2.653,
+      0.649
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      49.027,
+      48.72
+     ],
+     "cand": [
+      49.219,
+      49.57
+     ],
+     "base_median": 48.874,
+     "cand_median": 49.395,
+     "base_spread": 0.307,
+     "cand_spread": 0.351,
+     "noise": 0.351,
+     "improvement": -0.521,
+     "improvement_pct": -1.07,
+     "per_boot_margin_vs_base_median": [
+      -0.346,
+      -0.697
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      2.5316,
+      2.6579
+     ],
+     "cand": [
+      2.4875,
+      2.6234
+     ],
+     "base_median": 2.5948,
+     "cand_median": 2.5554,
+     "base_spread": 0.1262,
+     "cand_spread": 0.1359,
+     "noise": 0.1359,
+     "improvement": -0.0393,
+     "improvement_pct": -1.52,
+     "per_boot_margin_vs_base_median": [
+      -0.1073,
+      0.0286
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": -1.52,
+     "ms_step": 1.07,
+     "tok_s": -1.9,
+     "tok_s_from_acc_and_ms": -2.55,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "structured_c1": {
+    "tok_s": {
+     "base": [
+      83.731,
+      83.231
+     ],
+     "cand": [
+      82.509,
+      82.448
+     ],
+     "base_median": 83.481,
+     "cand_median": 82.479,
+     "base_spread": 0.5,
+     "cand_spread": 0.062,
+     "noise": 0.5,
+     "improvement": -1.003,
+     "improvement_pct": -1.2,
+     "per_boot_margin_vs_base_median": [
+      -0.972,
+      -1.033
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      47.304,
+      47.588
+     ],
+     "cand": [
+      48.004,
+      48.04
+     ],
+     "base_median": 47.446,
+     "cand_median": 48.022,
+     "base_spread": 0.284,
+     "cand_spread": 0.036,
+     "noise": 0.284,
+     "improvement": -0.576,
+     "improvement_pct": -1.21,
+     "per_boot_margin_vs_base_median": [
+      -0.558,
+      -0.594
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      3.9608,
+      3.9608
+     ],
+     "cand": [
+      3.9608,
+      3.9608
+     ],
+     "base_median": 3.9608,
+     "cand_median": 3.9608,
+     "base_spread": 0.0,
+     "cand_spread": 0.0,
+     "noise": 0.0,
+     "improvement": 0.0,
+     "improvement_pct": 0.0,
+     "per_boot_margin_vs_base_median": [
+      0.0,
+      0.0
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": 0.0,
+     "ms_step": 1.21,
+     "tok_s": -1.2,
+     "tok_s_from_acc_and_ms": -1.2,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "prose_long_c2": {
+    "tok_s": {
+     "base": [
+      67.276,
+      66.872
+     ],
+     "cand": [
+      66.876,
+      71.658
+     ],
+     "base_median": 67.074,
+     "cand_median": 69.267,
+     "base_spread": 0.405,
+     "cand_spread": 4.782,
+     "noise": 4.782,
+     "improvement": 2.193,
+     "improvement_pct": 3.27,
+     "per_boot_margin_vs_base_median": [
+      -0.198,
+      4.584
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      61.037,
+      62.597
+     ],
+     "cand": [
+      62.899,
+      62.045
+     ],
+     "base_median": 61.817,
+     "cand_median": 62.472,
+     "base_spread": 1.56,
+     "cand_spread": 0.854,
+     "noise": 1.56,
+     "improvement": -0.655,
+     "improvement_pct": -1.06,
+     "per_boot_margin_vs_base_median": [
+      -1.082,
+      -0.228
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      2.1111,
+      2.1223
+     ],
+     "cand": [
+      2.1685,
+      2.2033
+     ],
+     "base_median": 2.1167,
+     "cand_median": 2.1859,
+     "base_spread": 0.0112,
+     "cand_spread": 0.0348,
+     "noise": 0.0348,
+     "improvement": 0.0692,
+     "improvement_pct": 3.27,
+     "per_boot_margin_vs_base_median": [
+      0.0518,
+      0.0866
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": true
+    },
+    "acceptance_per_boot_intervals_overlap": false,
+    "pct_cand_vs_base": {
+     "acceptance": 3.27,
+     "ms_step": 1.06,
+     "tok_s": 3.27,
+     "tok_s_from_acc_and_ms": 2.18,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "bench_prose_c2": {
+    "tok_s": {
+     "base": [
+      84.802,
+      85.015
+     ],
+     "cand": [
+      83.637,
+      84.245
+     ],
+     "base_median": 84.908,
+     "cand_median": 83.941,
+     "base_spread": 0.213,
+     "cand_spread": 0.608,
+     "noise": 0.608,
+     "improvement": -0.967,
+     "improvement_pct": -1.14,
+     "per_boot_margin_vs_base_median": [
+      -1.271,
+      -0.663
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      59.247,
+      59.488
+     ],
+     "cand": [
+      60.155,
+      59.852
+     ],
+     "base_median": 59.368,
+     "cand_median": 60.004,
+     "base_spread": 0.24,
+     "cand_spread": 0.303,
+     "noise": 0.303,
+     "improvement": -0.636,
+     "improvement_pct": -1.07,
+     "per_boot_margin_vs_base_median": [
+      -0.788,
+      -0.484
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      2.5669,
+      2.5316
+     ],
+     "cand": [
+      2.6078,
+      2.5577
+     ],
+     "base_median": 2.5493,
+     "cand_median": 2.5828,
+     "base_spread": 0.0352,
+     "cand_spread": 0.0502,
+     "noise": 0.0502,
+     "improvement": 0.0335,
+     "improvement_pct": 1.31,
+     "per_boot_margin_vs_base_median": [
+      0.0586,
+      0.0084
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": 1.31,
+     "ms_step": 1.07,
+     "tok_s": -1.14,
+     "tok_s_from_acc_and_ms": 0.24,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "structured_c2": {
+    "tok_s": {
+     "base": [
+      138.044,
+      137.801
+     ],
+     "cand": [
+      136.159,
+      137.071
+     ],
+     "base_median": 137.923,
+     "cand_median": 136.615,
+     "base_spread": 0.243,
+     "cand_spread": 0.913,
+     "noise": 0.913,
+     "improvement": -1.308,
+     "improvement_pct": -0.95,
+     "per_boot_margin_vs_base_median": [
+      -1.764,
+      -0.851
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      55.173,
+      56.518
+     ],
+     "cand": [
+      57.92,
+      56.062
+     ],
+     "base_median": 55.846,
+     "cand_median": 56.991,
+     "base_spread": 1.345,
+     "cand_spread": 1.858,
+     "noise": 1.858,
+     "improvement": -1.145,
+     "improvement_pct": -2.05,
+     "per_boot_margin_vs_base_median": [
+      -2.074,
+      -0.216
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      3.9608,
+      3.9608
+     ],
+     "cand": [
+      3.9608,
+      3.9608
+     ],
+     "base_median": 3.9608,
+     "cand_median": 3.9608,
+     "base_spread": 0.0,
+     "cand_spread": 0.0,
+     "noise": 0.0,
+     "improvement": 0.0,
+     "improvement_pct": 0.0,
+     "per_boot_margin_vs_base_median": [
+      0.0,
+      0.0
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": 0.0,
+     "ms_step": 2.05,
+     "tok_s": -0.95,
+     "tok_s_from_acc_and_ms": -2.01,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   }
+  },
+  "non_inferiority_W_vs_S_context": {
+   "pp_warm_8k": {
+    "base": [
+     761.4,
+     744.2
+    ],
+    "cand": [
+     776.8,
+     745.6
+    ],
+    "base_median": 752.8,
+    "cand_median": 761.2,
+    "delta": 8.4,
+    "base_spread": 17.2,
+    "cand_spread": 31.2,
+    "noise": 31.2,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   },
+   "pp_warm_32k": {
+    "base": [
+     765.2,
+     760.7
+    ],
+    "cand": [
+     768.8,
+     766.8
+    ],
+    "base_median": 762.95,
+    "cand_median": 767.8,
+    "delta": 4.85,
+    "base_spread": 4.5,
+    "cand_spread": 2.0,
+    "noise": 4.5,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   },
+   "pp_novel_8k": {
+    "base": [
+     831.0,
+     821.6
+    ],
+    "cand": [
+     806.6,
+     815.7
+    ],
+    "base_median": 826.3,
+    "cand_median": 811.15,
+    "delta": -15.15,
+    "base_spread": 9.4,
+    "cand_spread": 9.1,
+    "noise": 9.4,
+    "ok_vs_larger_spread": false,
+    "ok_vs_base_spread_only": false
+   },
+   "pp_novel_32k": {
+    "base": [
+     820.5,
+     805.8
+    ],
+    "cand": [
+     806.0,
+     811.7
+    ],
+    "base_median": 813.15,
+    "cand_median": 808.85,
+    "delta": -4.3,
+    "base_spread": 14.7,
+    "cand_spread": 5.7,
+    "noise": 14.7,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   },
+   "prose_long_c2_agg_tok_s": {
+    "base": [
+     67.276,
+     66.872
+    ],
+    "cand": [
+     66.876,
+     71.658
+    ],
+    "base_median": 67.074,
+    "cand_median": 69.267,
+    "delta": 2.193,
+    "base_spread": 0.405,
+    "cand_spread": 4.782,
+    "noise": 4.782,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   },
+   "warm_prefix_hit_fraction": {
+    "base": [
+     1.0,
+     1.0
+    ],
+    "cand": [
+     1.0,
+     1.0
+    ],
+    "base_median": 1.0,
+    "cand_median": 1.0,
+    "delta": 0.0,
+    "base_spread": 0.0,
+    "cand_spread": 0.0,
+    "noise": 0.0,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   }
+  }
+ },
+ "pair2_S1024_vs_S": {
+  "gate_S1024_minus_S_tok_s": {
+   "lail_tok_s": {
+    "base": [
+     42.36,
+     42.871
+    ],
+    "cand": [
+     43.167,
+     43.615
+    ],
+    "base_median": 42.615,
+    "cand_median": 43.391,
+    "improvement": 0.776,
+    "noise": 0.511,
+    "per_boot_margin_vs_base_median": [
+     0.552,
+     1.0
+    ],
+    "armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median": true,
+    "s9_rule_every_boot_margin_gt_noise": true
+   },
+   "prose_long_c1_tok_s": {
+    "base": [
+     42.788,
+     42.195
+    ],
+    "cand": [
+     44.174,
+     43.728
+    ],
+    "base_median": 42.491,
+    "cand_median": 43.951,
+    "improvement": 1.46,
+    "noise": 0.593,
+    "per_boot_margin_vs_base_median": [
+     1.683,
+     1.237
+    ],
+    "armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median": true,
+    "s9_rule_every_boot_margin_gt_noise": true
+   }
+  },
+  "S1024_relative_to_S_all_cells": {
+   "lail": {
+    "tok_s": {
+     "base": [
+      42.36,
+      42.871
+     ],
+     "cand": [
+      43.167,
+      43.615
+     ],
+     "base_median": 42.615,
+     "cand_median": 43.391,
+     "base_spread": 0.511,
+     "cand_spread": 0.448,
+     "noise": 0.511,
+     "improvement": 0.776,
+     "improvement_pct": 1.82,
+     "per_boot_margin_vs_base_median": [
+      0.552,
+      1.0
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": true
+    },
+    "ms_step": {
+     "base": [
+      48.694,
+      48.58
+     ],
+     "cand": [
+      49.219,
+      49.0
+     ],
+     "base_median": 48.637,
+     "cand_median": 49.11,
+     "base_spread": 0.115,
+     "cand_spread": 0.219,
+     "noise": 0.219,
+     "improvement": -0.473,
+     "improvement_pct": -0.97,
+     "per_boot_margin_vs_base_median": [
+      -0.582,
+      -0.364
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      2.0819,
+      2.1313
+     ],
+     "cand": [
+      2.1331,
+      2.1856
+     ],
+     "base_median": 2.1066,
+     "cand_median": 2.1593,
+     "base_spread": 0.0494,
+     "cand_spread": 0.0525,
+     "noise": 0.0525,
+     "improvement": 0.0528,
+     "improvement_pct": 2.5,
+     "per_boot_margin_vs_base_median": [
+      0.0265,
+      0.079
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": false,
+    "pct_cand_vs_base": {
+     "acceptance": 2.5,
+     "ms_step": 0.97,
+     "tok_s": 1.82,
+     "tok_s_from_acc_and_ms": 1.52,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "prose_long_c1": {
+    "tok_s": {
+     "base": [
+      42.788,
+      42.195
+     ],
+     "cand": [
+      44.174,
+      43.728
+     ],
+     "base_median": 42.491,
+     "cand_median": 43.951,
+     "base_spread": 0.593,
+     "cand_spread": 0.446,
+     "noise": 0.593,
+     "improvement": 1.46,
+     "improvement_pct": 3.44,
+     "per_boot_margin_vs_base_median": [
+      1.683,
+      1.237
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": true
+    },
+    "ms_step": {
+     "base": [
+      49.125,
+      48.986
+     ],
+     "cand": [
+      48.802,
+      49.488
+     ],
+     "base_median": 49.056,
+     "cand_median": 49.145,
+     "base_spread": 0.139,
+     "cand_spread": 0.686,
+     "noise": 0.686,
+     "improvement": -0.09,
+     "improvement_pct": -0.18,
+     "per_boot_margin_vs_base_median": [
+      0.253,
+      -0.432
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      2.0729,
+      2.0515
+     ],
+     "cand": [
+      2.163,
+      2.1739
+     ],
+     "base_median": 2.0622,
+     "cand_median": 2.1685,
+     "base_spread": 0.0214,
+     "cand_spread": 0.0109,
+     "noise": 0.0214,
+     "improvement": 0.1062,
+     "improvement_pct": 5.15,
+     "per_boot_margin_vs_base_median": [
+      0.1008,
+      0.1117
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": true,
+     "gate_pass": true,
+     "every_cand_boot_margin_gt_noise": true
+    },
+    "acceptance_per_boot_intervals_overlap": false,
+    "pct_cand_vs_base": {
+     "acceptance": 5.15,
+     "ms_step": 0.18,
+     "tok_s": 3.44,
+     "tok_s_from_acc_and_ms": 4.96,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "four_prose_c1": {
+    "tok_s": {
+     "base": [
+      53.26,
+      53.63
+     ],
+     "cand": [
+      53.67,
+      52.04
+     ],
+     "base_median": 53.445,
+     "cand_median": 52.855,
+     "base_spread": 0.37,
+     "cand_spread": 1.63,
+     "noise": 1.63,
+     "improvement": -0.59,
+     "improvement_pct": -1.1,
+     "per_boot_margin_vs_base_median": [
+      0.225,
+      -1.405
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      48.096,
+      47.713
+     ],
+     "cand": [
+      48.104,
+      48.072
+     ],
+     "base_median": 47.904,
+     "cand_median": 48.088,
+     "base_spread": 0.384,
+     "cand_spread": 0.032,
+     "noise": 0.384,
+     "improvement": -0.184,
+     "improvement_pct": -0.38,
+     "per_boot_margin_vs_base_median": [
+      -0.2,
+      -0.168
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      2.557,
+      2.519
+     ],
+     "cand": [
+      2.5769,
+      2.5
+     ],
+     "base_median": 2.538,
+     "cand_median": 2.5385,
+     "base_spread": 0.038,
+     "cand_spread": 0.0769,
+     "noise": 0.0769,
+     "improvement": 0.0005,
+     "improvement_pct": 0.02,
+     "per_boot_margin_vs_base_median": [
+      0.0389,
+      -0.038
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": 0.02,
+     "ms_step": 0.38,
+     "tok_s": -1.1,
+     "tok_s_from_acc_and_ms": -0.36,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "bench_prose_c1": {
+    "tok_s": {
+     "base": [
+      52.437,
+      52.005
+     ],
+     "cand": [
+      51.986,
+      52.076
+     ],
+     "base_median": 52.221,
+     "cand_median": 52.031,
+     "base_spread": 0.432,
+     "cand_spread": 0.09,
+     "noise": 0.432,
+     "improvement": -0.191,
+     "improvement_pct": -0.37,
+     "per_boot_margin_vs_base_median": [
+      -0.236,
+      -0.146
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      48.476,
+      48.79
+     ],
+     "cand": [
+      48.637,
+      49.28
+     ],
+     "base_median": 48.633,
+     "cand_median": 48.958,
+     "base_spread": 0.314,
+     "cand_spread": 0.644,
+     "noise": 0.644,
+     "improvement": -0.325,
+     "improvement_pct": -0.67,
+     "per_boot_margin_vs_base_median": [
+      -0.004,
+      -0.647
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      2.5443,
+      2.5
+     ],
+     "cand": [
+      2.5513,
+      2.557
+     ],
+     "base_median": 2.5222,
+     "cand_median": 2.5541,
+     "base_spread": 0.0443,
+     "cand_spread": 0.0057,
+     "noise": 0.0443,
+     "improvement": 0.032,
+     "improvement_pct": 1.27,
+     "per_boot_margin_vs_base_median": [
+      0.0291,
+      0.0348
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": false,
+    "pct_cand_vs_base": {
+     "acceptance": 1.27,
+     "ms_step": 0.67,
+     "tok_s": -0.37,
+     "tok_s_from_acc_and_ms": 0.59,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "structured_c1": {
+    "tok_s": {
+     "base": [
+      83.606,
+      83.535
+     ],
+     "cand": [
+      83.812,
+      83.455
+     ],
+     "base_median": 83.571,
+     "cand_median": 83.633,
+     "base_spread": 0.071,
+     "cand_spread": 0.357,
+     "noise": 0.357,
+     "improvement": 0.063,
+     "improvement_pct": 0.07,
+     "per_boot_margin_vs_base_median": [
+      0.241,
+      -0.116
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      47.374,
+      47.415
+     ],
+     "cand": [
+      47.258,
+      47.46
+     ],
+     "base_median": 47.394,
+     "cand_median": 47.359,
+     "base_spread": 0.04,
+     "cand_spread": 0.202,
+     "noise": 0.202,
+     "improvement": 0.035,
+     "improvement_pct": 0.07,
+     "per_boot_margin_vs_base_median": [
+      0.136,
+      -0.066
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      3.9608,
+      3.9608
+     ],
+     "cand": [
+      3.9608,
+      3.9608
+     ],
+     "base_median": 3.9608,
+     "cand_median": 3.9608,
+     "base_spread": 0.0,
+     "cand_spread": 0.0,
+     "noise": 0.0,
+     "improvement": 0.0,
+     "improvement_pct": 0.0,
+     "per_boot_margin_vs_base_median": [
+      0.0,
+      0.0
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": 0.0,
+     "ms_step": -0.07,
+     "tok_s": 0.07,
+     "tok_s_from_acc_and_ms": 0.07,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "prose_long_c2": {
+    "tok_s": {
+     "base": [
+      69.325,
+      65.109
+     ],
+     "cand": [
+      65.239,
+      65.625
+     ],
+     "base_median": 67.217,
+     "cand_median": 65.432,
+     "base_spread": 4.217,
+     "cand_spread": 0.386,
+     "noise": 4.217,
+     "improvement": -1.785,
+     "improvement_pct": -2.66,
+     "per_boot_margin_vs_base_median": [
+      -1.978,
+      -1.592
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      61.128,
+      61.939
+     ],
+     "cand": [
+      61.37,
+      62.562
+     ],
+     "base_median": 61.533,
+     "cand_median": 61.966,
+     "base_spread": 0.811,
+     "cand_spread": 1.192,
+     "noise": 1.192,
+     "improvement": -0.432,
+     "improvement_pct": -0.7,
+     "per_boot_margin_vs_base_median": [
+      0.164,
+      -1.029
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      2.1277,
+      2.0725
+     ],
+     "cand": [
+      2.0619,
+      2.089
+     ],
+     "base_median": 2.1001,
+     "cand_median": 2.0754,
+     "base_spread": 0.0551,
+     "cand_spread": 0.0271,
+     "noise": 0.0551,
+     "improvement": -0.0247,
+     "improvement_pct": -1.17,
+     "per_boot_margin_vs_base_median": [
+      -0.0382,
+      -0.0111
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": -1.17,
+     "ms_step": 0.7,
+     "tok_s": -2.66,
+     "tok_s_from_acc_and_ms": -1.86,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "bench_prose_c2": {
+    "tok_s": {
+     "base": [
+      80.825,
+      82.531
+     ],
+     "cand": [
+      82.379,
+      81.686
+     ],
+     "base_median": 81.678,
+     "cand_median": 82.033,
+     "base_spread": 1.706,
+     "cand_spread": 0.693,
+     "noise": 1.706,
+     "improvement": 0.354,
+     "improvement_pct": 0.43,
+     "per_boot_margin_vs_base_median": [
+      0.701,
+      0.008
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      59.914,
+      59.293
+     ],
+     "cand": [
+      60.564,
+      60.306
+     ],
+     "base_median": 59.604,
+     "cand_median": 60.435,
+     "base_spread": 0.621,
+     "cand_spread": 0.257,
+     "noise": 0.621,
+     "improvement": -0.831,
+     "improvement_pct": -1.39,
+     "per_boot_margin_vs_base_median": [
+      -0.96,
+      -0.703
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      2.5063,
+      2.5577
+     ],
+     "cand": [
+      2.5541,
+      2.5478
+     ],
+     "base_median": 2.532,
+     "cand_median": 2.551,
+     "base_spread": 0.0514,
+     "cand_spread": 0.0064,
+     "noise": 0.0514,
+     "improvement": 0.019,
+     "improvement_pct": 0.75,
+     "per_boot_margin_vs_base_median": [
+      0.0222,
+      0.0158
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": 0.75,
+     "ms_step": 1.39,
+     "tok_s": 0.43,
+     "tok_s_from_acc_and_ms": -0.64,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   },
+   "structured_c2": {
+    "tok_s": {
+     "base": [
+      139.166,
+      138.967
+     ],
+     "cand": [
+      138.597,
+      138.238
+     ],
+     "base_median": 139.067,
+     "cand_median": 138.418,
+     "base_spread": 0.198,
+     "cand_spread": 0.36,
+     "noise": 0.36,
+     "improvement": -0.649,
+     "improvement_pct": -0.47,
+     "per_boot_margin_vs_base_median": [
+      -0.469,
+      -0.829
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      55.985,
+      54.884
+     ],
+     "cand": [
+      55.135,
+      55.09
+     ],
+     "base_median": 55.435,
+     "cand_median": 55.112,
+     "base_spread": 1.1,
+     "cand_spread": 0.045,
+     "noise": 1.1,
+     "improvement": 0.322,
+     "improvement_pct": 0.58,
+     "per_boot_margin_vs_base_median": [
+      0.3,
+      0.344
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance": {
+     "base": [
+      3.9608,
+      3.9608
+     ],
+     "cand": [
+      3.9608,
+      3.9608
+     ],
+     "base_median": 3.9608,
+     "cand_median": 3.9608,
+     "base_spread": 0.0,
+     "cand_spread": 0.0,
+     "noise": 0.0,
+     "improvement": 0.0,
+     "improvement_pct": 0.0,
+     "per_boot_margin_vs_base_median": [
+      0.0,
+      0.0
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "acceptance_per_boot_intervals_overlap": true,
+    "pct_cand_vs_base": {
+     "acceptance": 0.0,
+     "ms_step": -0.58,
+     "tok_s": -0.47,
+     "tok_s_from_acc_and_ms": 0.58,
+     "note": "arm medians; tok/s ~ tokens per step / ms per step, so the last value is the acceptance change net of the ms/step change"
+    }
+   }
+  },
+  "non_inferiority": {
+   "pp_warm_8k": {
+    "base": [
+     759.3,
+     759.6
+    ],
+    "cand": [
+     757.6,
+     753.8
+    ],
+    "base_median": 759.45,
+    "cand_median": 755.7,
+    "delta": -3.75,
+    "base_spread": 0.3,
+    "cand_spread": 3.8,
+    "noise": 3.8,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": false
+   },
+   "pp_warm_32k": {
+    "base": [
+     765.9,
+     774.2
+    ],
+    "cand": [
+     763.0,
+     769.5
+    ],
+    "base_median": 770.05,
+    "cand_median": 766.25,
+    "delta": -3.8,
+    "base_spread": 8.3,
+    "cand_spread": 6.5,
+    "noise": 8.3,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   },
+   "pp_novel_8k": {
+    "base": [
+     806.3,
+     826.3
+    ],
+    "cand": [
+     821.4,
+     807.4
+    ],
+    "base_median": 816.3,
+    "cand_median": 814.4,
+    "delta": -1.9,
+    "base_spread": 20.0,
+    "cand_spread": 14.0,
+    "noise": 20.0,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   },
+   "pp_novel_32k": {
+    "base": [
+     808.4,
+     818.6
+    ],
+    "cand": [
+     806.2,
+     806.3
+    ],
+    "base_median": 813.5,
+    "cand_median": 806.25,
+    "delta": -7.25,
+    "base_spread": 10.2,
+    "cand_spread": 0.1,
+    "noise": 10.2,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   },
+   "prose_long_c2_agg_tok_s": {
+    "base": [
+     69.325,
+     65.109
+    ],
+    "cand": [
+     65.239,
+     65.625
+    ],
+    "base_median": 67.217,
+    "cand_median": 65.432,
+    "delta": -1.785,
+    "base_spread": 4.217,
+    "cand_spread": 0.386,
+    "noise": 4.217,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   },
+   "warm_prefix_hit_fraction": {
+    "base": [
+     1.0,
+     1.0
+    ],
+    "cand": [
+     1.0,
+     1.0
+    ],
+    "base_median": 1.0,
+    "cand_median": 1.0,
+    "delta": 0.0,
+    "base_spread": 0.0,
+    "cand_spread": 0.0,
+    "noise": 0.0,
+    "ok_vs_larger_spread": true,
+    "ok_vs_base_spread_only": true
+   }
+  }
+ },
+ "quality": {
+  "quick_pass": {
+   "W-1": true,
+   "S-1": true,
+   "W-2": true,
+   "S-2": true,
+   "S-3": true,
+   "S1024-1": true,
+   "S-4": true,
+   "S1024-2": true
+  },
+  "per_boot": {
+   "W-1": {
+    "file": "W-1/quality_quick.json",
+    "mode": "quick",
+    "passed": true,
+    "nll": 0.243875,
+    "decode_median_dlp": 0.02144,
+    "gen_nll_prefill": 0.36047,
+    "aa_hazard": 0.01397,
+    "golden_hazard": 0.01503,
+    "hazard_limit": 0.03206,
+    "selfcons_identical": "5/12",
+    "tools_exact": "22/22",
+    "tools_exact_failed": [],
+    "tools_json": 1.0,
+    "no_call": 1.0,
+    "needle": "6/6",
+    "failed_gates": [],
+    "extra": {}
+   },
+   "S-1": {
+    "file": "S-1/quality_quick.json",
+    "mode": "quick",
+    "passed": true,
+    "nll": 0.243172,
+    "decode_median_dlp": 0.01135,
+    "gen_nll_prefill": 0.3108,
+    "aa_hazard": 0.01675,
+    "golden_hazard": 0.02286,
+    "hazard_limit": 0.03206,
+    "selfcons_identical": "5/12",
+    "tools_exact": "21/22",
+    "tools_exact_failed": [
+     "t09"
+    ],
+    "tools_json": 1.0,
+    "no_call": 1.0,
+    "needle": "6/6",
+    "failed_gates": [],
+    "extra": {}
+   },
+   "W-2": {
+    "file": "W-2/quality_quick.json",
+    "mode": "quick",
+    "passed": true,
+    "nll": 0.242232,
+    "decode_median_dlp": 0.01136,
+    "gen_nll_prefill": 0.27644,
+    "aa_hazard": 0.01681,
+    "golden_hazard": 0.01459,
+    "hazard_limit": 0.03206,
+    "selfcons_identical": "4/12",
+    "tools_exact": "20/22",
+    "tools_exact_failed": [
+     "t01",
+     "t09"
+    ],
+    "tools_json": 1.0,
+    "no_call": 1.0,
+    "needle": "6/6",
+    "failed_gates": [],
+    "extra": {}
+   },
+   "S-2": {
+    "file": "S-2/quality_quick.json",
+    "mode": "quick",
+    "passed": true,
+    "nll": 0.244445,
+    "decode_median_dlp": 0.01702,
+    "gen_nll_prefill": 0.3077,
+    "aa_hazard": 0.01138,
+    "golden_hazard": 0.02267,
+    "hazard_limit": 0.03206,
+    "selfcons_identical": "5/12",
+    "tools_exact": "21/22",
+    "tools_exact_failed": [
+     "t09"
+    ],
+    "tools_json": 1.0,
+    "no_call": 1.0,
+    "needle": "6/6",
+    "failed_gates": [],
+    "extra": {}
+   },
+   "S-3": {
+    "file": "S-3/quality_quick.json",
+    "mode": "quick",
+    "passed": true,
+    "nll": 0.243159,
+    "decode_median_dlp": 0.01576,
+    "gen_nll_prefill": 0.34442,
+    "aa_hazard": 0.0232,
+    "golden_hazard": 0.01689,
+    "hazard_limit": 0.03206,
+    "selfcons_identical": "3/12",
+    "tools_exact": "21/22",
+    "tools_exact_failed": [
+     "t09"
+    ],
+    "tools_json": 1.0,
+    "no_call": 1.0,
+    "needle": "6/6",
+    "failed_gates": [],
+    "extra": {}
+   },
+   "S1024-1": {
+    "file": "S1024-1/quality_quick.json",
+    "mode": "quick",
+    "passed": true,
+    "nll": 0.244484,
+    "decode_median_dlp": 0.01379,
+    "gen_nll_prefill": 0.3393,
+    "aa_hazard": 0.01549,
+    "golden_hazard": 0.01307,
+    "hazard_limit": 0.03206,
+    "selfcons_identical": "5/12",
+    "tools_exact": "21/22",
+    "tools_exact_failed": [
+     "t09"
+    ],
+    "tools_json": 1.0,
+    "no_call": 1.0,
+    "needle": "6/6",
+    "failed_gates": [],
+    "extra": {}
+   },
+   "S-4": {
+    "file": "S-4/quality_quick.json",
+    "mode": "quick",
+    "passed": true,
+    "nll": 0.243261,
+    "decode_median_dlp": 0.01398,
+    "gen_nll_prefill": 0.32692,
+    "aa_hazard": 0.01887,
+    "golden_hazard": 0.01446,
+    "hazard_limit": 0.03206,
+    "selfcons_identical": "4/12",
+    "tools_exact": "21/22",
+    "tools_exact_failed": [
+     "t09"
+    ],
+    "tools_json": 1.0,
+    "no_call": 1.0,
+    "needle": "6/6",
+    "failed_gates": [],
+    "extra": {}
+   },
+   "S1024-2": {
+    "file": "S1024-2/quality_quick.json",
+    "mode": "quick",
+    "passed": true,
+    "nll": 0.243487,
+    "decode_median_dlp": 0.01399,
+    "gen_nll_prefill": 0.3585,
+    "aa_hazard": 0.01887,
+    "golden_hazard": 0.01456,
+    "hazard_limit": 0.03206,
+    "selfcons_identical": "4/12",
+    "tools_exact": "21/22",
+    "tools_exact_failed": [
+     "t09"
+    ],
+    "tools_json": 1.0,
+    "no_call": 1.0,
+    "needle": "6/6",
+    "failed_gates": [],
+    "extra": {}
+   }
+  },
+  "greedy_output": {
+   "note": "quality_quick selfcons: 12 greedy prompts x 128 tokens, 2 runs per boot. Hazard = first-divergence events / tokens at risk, pooled over every run pair of the named boots (decision-addons-compute.py.txt hazard()). If an arm changed the greedy output, arm-vs-S would diverge more than S-vs-S across boots.",
+   "within_boot_aa": {
+    "W-1": {
+     "hazard": 0.01397,
+     "diverged": 7,
+     "pairs": 12
+    },
+    "S-1": {
+     "hazard": 0.01675,
+     "diverged": 7,
+     "pairs": 12
+    },
+    "W-2": {
+     "hazard": 0.01681,
+     "diverged": 8,
+     "pairs": 12
+    },
+    "S-2": {
+     "hazard": 0.01138,
+     "diverged": 7,
+     "pairs": 12
+    },
+    "S-3": {
+     "hazard": 0.0232,
+     "diverged": 9,
+     "pairs": 12
+    },
+    "S1024-1": {
+     "hazard": 0.01549,
+     "diverged": 7,
+     "pairs": 12
+    },
+    "S-4": {
+     "hazard": 0.01887,
+     "diverged": 8,
+     "pairs": 12
+    },
+    "S1024-2": {
+     "hazard": 0.01887,
+     "diverged": 8,
+     "pairs": 12
+    }
+   },
+   "counted_pair1": {
+    "W_x_S": {
+     "hazard": 0.0201,
+     "diverged": 129,
+     "pairs": 192
+    },
+    "S_x_S": {
+     "hazard": 0.02605,
+     "diverged": 36,
+     "pairs": 48
+    },
+    "W_x_W": {
+     "hazard": 0.02194,
+     "diverged": 35,
+     "pairs": 48
+    }
+   },
+   "counted_pair2": {
+    "S1024_x_S": {
+     "hazard": 0.01691,
+     "diverged": 124,
+     "pairs": 192
+    },
+    "S_x_S": {
+     "hazard": 0.016,
+     "diverged": 32,
+     "pairs": 48
+    },
+    "S1024_x_S1024": {
+     "hazard": 0.01923,
+     "diverged": 33,
+     "pairs": 48
+    }
+   },
+   "Scfg10_x_Scfg10_cross_boot": {
+    "hazard": 0.01924,
+    "diverged": 1459,
+    "pairs": 2160
+   },
+   "W_x_Scfg10": {
+    "hazard": 0.01838,
+    "diverged": 639,
+    "pairs": 960
+   },
+   "S1024_x_Scfg10": {
+    "hazard": 0.01789,
+    "diverged": 634,
+    "pairs": 960
+   }
+  },
+  "context_tools_exact_failed_K_config_boots": {
+   "K-1": [
+    "21/22",
+    [
+     "t09"
+    ]
+   ],
+   "K-2": [
+    "20/22",
+    [
+     "t01",
+     "t09"
+    ]
+   ],
+   "CUR-1": [
+    "21/22",
+    [
+     "t09"
+    ]
+   ],
+   "CUR-2": [
+    "20/22",
+    [
+     "t01",
+     "t09"
+    ]
+   ],
+   "Kp-1": [
+    "20/22",
+    [
+     "t01",
+     "t09"
+    ]
+   ],
+   "Kp-2": [
+    "20/22",
+    [
+     "t01",
+     "t09"
+    ]
+   ]
+  },
+  "reading": [
+   "Quality quick passes on every component on all 8 P6 boots (failed_gates empty on each; s9 requires one boot per arm): True.",
+   "tools.exact_args: W-1 22/22 []; S-1 21/22 ['t09']; W-2 20/22 ['t01', 't09']; S-2 21/22 ['t09']; S-3 21/22 ['t09']; S1024-1 21/22 ['t09']; S-4 21/22 ['t09']; S1024-2 21/22 ['t09']. 21/22 sits exactly at the 0.9545 limit and 20/22 passes by the gate's one-item slack. The same t09 (and t01) misses show on the 6 earlier K-config boots of the S config (context_tools_exact_failed_K_config_boots), so they are not an arm effect.",
+   "Greedy output: W-vs-S and S1024-vs-S cross-arm divergence hazards are at the S-vs-S and all-S-config cross-boot level, consistent with s9's 'greedy verify keeps the output exact, only acceptance moves'."
+  ]
+ },
+ "robustness_context_not_the_gate": {
+  "gate_cells_against_other_S_baselines": {
+   "W_vs_S1to4": {
+    "lail_tok_s": {
+     "base": [
+      42.791,
+      42.785,
+      42.36,
+      42.871
+     ],
+     "cand": [
+      42.814,
+      43.624
+     ],
+     "base_median": 42.788,
+     "cand_median": 43.219,
+     "improvement": 0.431,
+     "noise": 0.81,
+     "per_boot_margin_vs_base_median": [
+      0.026,
+      0.836
+     ],
+     "armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median": false,
+     "s9_rule_every_boot_margin_gt_noise": false
+    },
+    "prose_long_c1_tok_s": {
+     "base": [
+      44.739,
+      43.336,
+      42.788,
+      42.195
+     ],
+     "cand": [
+      44.257,
+      44.196
+     ],
+     "base_median": 43.062,
+     "cand_median": 44.227,
+     "improvement": 1.165,
+     "noise": 2.545,
+     "per_boot_margin_vs_base_median": [
+      1.195,
+      1.134
+     ],
+     "armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median": false,
+     "s9_rule_every_boot_margin_gt_noise": false
+    }
+   },
+   "W_vs_Scfg10": {
+    "lail_tok_s": {
+     "base": [
+      43.567,
+      42.531,
+      42.927,
+      43.123,
+      43.493,
+      41.899,
+      42.791,
+      42.785,
+      42.36,
+      42.871
+     ],
+     "cand": [
+      42.814,
+      43.624
+     ],
+     "base_median": 42.831,
+     "cand_median": 43.219,
+     "improvement": 0.388,
+     "noise": 1.667,
+     "per_boot_margin_vs_base_median": [
+      -0.017,
+      0.793
+     ],
+     "armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median": false,
+     "s9_rule_every_boot_margin_gt_noise": false
+    },
+    "prose_long_c1_tok_s": {
+     "base": [
+      43.688,
+      43.923,
+      44.893,
+      43.395,
+      44.259,
+      43.695,
+      44.739,
+      43.336,
+      42.788,
+      42.195
+     ],
+     "cand": [
+      44.257,
+      44.196
+     ],
+     "base_median": 43.691,
+     "cand_median": 44.227,
+     "improvement": 0.535,
+     "noise": 2.699,
+     "per_boot_margin_vs_base_median": [
+      0.566,
+      0.505
+     ],
+     "armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median": false,
+     "s9_rule_every_boot_margin_gt_noise": false
+    }
+   },
+   "S1024_vs_S1to4": {
+    "lail_tok_s": {
+     "base": [
+      42.791,
+      42.785,
+      42.36,
+      42.871
+     ],
+     "cand": [
+      43.167,
+      43.615
+     ],
+     "base_median": 42.788,
+     "cand_median": 43.391,
+     "improvement": 0.603,
+     "noise": 0.511,
+     "per_boot_margin_vs_base_median": [
+      0.379,
+      0.827
+     ],
+     "armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median": true,
+     "s9_rule_every_boot_margin_gt_noise": false
+    },
+    "prose_long_c1_tok_s": {
+     "base": [
+      44.739,
+      43.336,
+      42.788,
+      42.195
+     ],
+     "cand": [
+      44.174,
+      43.728
+     ],
+     "base_median": 43.062,
+     "cand_median": 43.951,
+     "improvement": 0.889,
+     "noise": 2.545,
+     "per_boot_margin_vs_base_median": [
+      1.112,
+      0.666
+     ],
+     "armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median": false,
+     "s9_rule_every_boot_margin_gt_noise": false
+    }
+   },
+   "S1024_vs_Scfg10": {
+    "lail_tok_s": {
+     "base": [
+      43.567,
+      42.531,
+      42.927,
+      43.123,
+      43.493,
+      41.899,
+      42.791,
+      42.785,
+      42.36,
+      42.871
+     ],
+     "cand": [
+      43.167,
+      43.615
+     ],
+     "base_median": 42.831,
+     "cand_median": 43.391,
+     "improvement": 0.56,
+     "noise": 1.667,
+     "per_boot_margin_vs_base_median": [
+      0.336,
+      0.785
+     ],
+     "armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median": false,
+     "s9_rule_every_boot_margin_gt_noise": false
+    },
+    "prose_long_c1_tok_s": {
+     "base": [
+      43.688,
+      43.923,
+      44.893,
+      43.395,
+      44.259,
+      43.695,
+      44.739,
+      43.336,
+      42.788,
+      42.195
+     ],
+     "cand": [
+      44.174,
+      43.728
+     ],
+     "base_median": 43.691,
+     "cand_median": 43.951,
+     "improvement": 0.26,
+     "noise": 2.699,
+     "per_boot_margin_vs_base_median": [
+      0.483,
+      0.037
+     ],
+     "armsmd_rule_median_imp_gt_noise_and_every_boot_beats_median": false,
+     "s9_rule_every_boot_margin_gt_noise": false
+    }
+   }
+  },
+  "S1024_vs_Scfg10_acceptance_and_ms_step": {
+   "S1024_vs_Scfg10_lail": {
+    "acceptance": {
+     "base": [
+      2.107,
+      2.1048,
+      2.118,
+      2.1225,
+      2.1269,
+      2.0727,
+      2.1004,
+      2.1381,
+      2.0819,
+      2.1313
+     ],
+     "cand": [
+      2.1331,
+      2.1856
+     ],
+     "base_median": 2.1125,
+     "cand_median": 2.1593,
+     "base_spread": 0.0654,
+     "cand_spread": 0.0525,
+     "noise": 0.0654,
+     "improvement": 0.0468,
+     "improvement_pct": 2.22,
+     "per_boot_margin_vs_base_median": [
+      0.0205,
+      0.0731
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      48.328,
+      48.909,
+      49.371,
+      48.638,
+      48.547,
+      48.541,
+      48.897,
+      48.827,
+      48.694,
+      48.58
+     ],
+     "cand": [
+      49.219,
+      49.0
+     ],
+     "base_median": 48.666,
+     "cand_median": 49.11,
+     "base_spread": 1.043,
+     "cand_spread": 0.219,
+     "noise": 1.043,
+     "improvement": -0.444,
+     "improvement_pct": -0.91,
+     "per_boot_margin_vs_base_median": [
+      -0.553,
+      -0.335
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    }
+   },
+   "S1024_vs_Scfg10_prose_long_c1": {
+    "acceptance": {
+     "base": [
+      2.117,
+      2.1505,
+      2.2222,
+      2.117,
+      2.1505,
+      2.117,
+      2.1978,
+      2.1277,
+      2.0729,
+      2.0515
+     ],
+     "cand": [
+      2.163,
+      2.1739
+     ],
+     "base_median": 2.1223,
+     "cand_median": 2.1685,
+     "base_spread": 0.1707,
+     "cand_spread": 0.0109,
+     "noise": 0.1707,
+     "improvement": 0.0461,
+     "improvement_pct": 2.17,
+     "per_boot_margin_vs_base_median": [
+      0.0407,
+      0.0516
+     ],
+     "every_cand_boot_beats_base_median": true,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    },
+    "ms_step": {
+     "base": [
+      49.01,
+      48.702,
+      49.101,
+      48.675,
+      48.744,
+      48.924,
+      49.177,
+      48.987,
+      49.125,
+      48.986
+     ],
+     "cand": [
+      48.802,
+      49.488
+     ],
+     "base_median": 48.987,
+     "cand_median": 49.145,
+     "base_spread": 0.502,
+     "cand_spread": 0.686,
+     "noise": 0.686,
+     "improvement": -0.159,
+     "improvement_pct": -0.32,
+     "per_boot_margin_vs_base_median": [
+      0.184,
+      -0.501
+     ],
+     "every_cand_boot_beats_base_median": false,
+     "beyond_noise": false,
+     "gate_pass": false,
+     "every_cand_boot_margin_gt_noise": false
+    }
+   }
+  },
+  "per_boot_exact_rank_tests_in_Scfg10": {
+   "W_in_Scfg10_lail_tok_s": {
+    "n_pop": 12,
+    "n_sub": 2,
+    "rank_sum": 8.0,
+    "p_one_sided_low": 0.1818,
+    "subsets": 66,
+    "rank_of_sub_best_first": [
+     7,
+     1
+    ],
+    "direction": "best = highest"
+   },
+   "W_in_Scfg10_lail_acceptance": {
+    "n_pop": 12,
+    "n_sub": 2,
+    "rank_sum": 3.0,
+    "p_one_sided_low": 0.0152,
+    "subsets": 66,
+    "rank_of_sub_best_first": [
+     2,
+     1
+    ],
+    "direction": "best = highest"
+   },
+   "W_in_Scfg10_lail_ms_step": {
+    "n_pop": 12,
+    "n_sub": 2,
+    "rank_sum": 23.0,
+    "p_one_sided_low": 1.0,
+    "subsets": 66,
+    "rank_of_sub_best_first": [
+     11,
+     12
+    ],
+    "direction": "best = lowest"
+   },
+   "W_in_Scfg10_prose_long_c1_tok_s": {
+    "n_pop": 12,
+    "n_sub": 2,
+    "rank_sum": 9.0,
+    "p_one_sided_low": 0.2424,
+    "subsets": 66,
+    "rank_of_sub_best_first": [
+     4,
+     5
+    ],
+    "direction": "best = highest"
+   },
+   "W_in_Scfg10_prose_long_c1_acceptance": {
+    "n_pop": 12,
+    "n_sub": 2,
+    "rank_sum": 7.0,
+    "p_one_sided_low": 0.1212,
+    "subsets": 66,
+    "rank_of_sub_best_first": [
+     3,
+     4
+    ],
+    "direction": "best = highest"
+   },
+   "W_in_Scfg10_prose_long_c1_ms_step": {
+    "n_pop": 12,
+    "n_sub": 2,
+    "rank_sum": 23.0,
+    "p_one_sided_low": 1.0,
+    "subsets": 66,
+    "rank_of_sub_best_first": [
+     12,
+     11
+    ],
+    "direction": "best = lowest"
+   },
+   "S1024_in_Scfg10_lail_tok_s": {
+    "n_pop": 12,
+    "n_sub": 2,
+    "rank_sum": 5.0,
+    "p_one_sided_low": 0.0606,
+    "subsets": 66,
+    "rank_of_sub_best_first": [
+     4,
+     1
+    ],
+    "direction": "best = highest"
+   },
+   "S1024_in_Scfg10_lail_acceptance": {
+    "n_pop": 12,
+    "n_sub": 2,
+    "rank_sum": 4.0,
+    "p_one_sided_low": 0.0303,
+    "subsets": 66,
+    "rank_of_sub_best_first": [
+     3,
+     1
+    ],
+    "direction": "best = highest"
+   },
+   "S1024_in_Scfg10_lail_ms_step": {
+    "n_pop": 12,
+    "n_sub": 2,
+    "rank_sum": 21.0,
+    "p_one_sided_low": 0.9697,
+    "subsets": 66,
+    "rank_of_sub_best_first": [
+     11,
+     10
+    ],
+    "direction": "best = lowest"
+   },
+   "S1024_in_Scfg10_prose_long_c1_tok_s": {
+    "n_pop": 12,
+    "n_sub": 2,
+    "rank_sum": 10.0,
+    "p_one_sided_low": 0.303,
+    "subsets": 66,
+    "rank_of_sub_best_first": [
+     4,
+     6
+    ],
+    "direction": "best = highest"
+   },
+   "S1024_in_Scfg10_prose_long_c1_acceptance": {
+    "n_pop": 12,
+    "n_sub": 2,
+    "rank_sum": 7.0,
+    "p_one_sided_low": 0.1212,
+    "subsets": 66,
+    "rank_of_sub_best_first": [
+     4,
+     3
+    ],
+    "direction": "best = highest"
+   },
+   "S1024_in_Scfg10_prose_long_c1_ms_step": {
+    "n_pop": 12,
+    "n_sub": 2,
+    "rank_sum": 16.0,
+    "p_one_sided_low": 0.7576,
+    "subsets": 66,
+    "rank_of_sub_best_first": [
+     4,
+     12
+    ],
+    "direction": "best = lowest"
+   }
+  },
+  "per_run_mann_whitney": {
+   "note": "per-run Mann-Whitney U, y = the candidate arm; L.A.I.L 10 runs per boot, prose_long c=1 5 runs, four prose c=1 9 runs",
+   "W_vs_S_lail_tok": {
+    "n_x": 20,
+    "n_y": 20,
+    "U_y": 239.0,
+    "z": 1.041,
+    "p_two_sided_normal": 0.29768,
+    "hodges_lehmann_y_minus_x": 0.8197
+   },
+   "W_vs_S_lail_acc": {
+    "n_x": 20,
+    "n_y": 20,
+    "U_y": 288.0,
+    "z": 2.367,
+    "p_two_sided_normal": 0.01791,
+    "hodges_lehmann_y_minus_x": 0.0684
+   },
+   "W_vs_S_prose_long_c1_acc": {
+    "n_x": 10,
+    "n_y": 10,
+    "U_y": 57.5,
+    "z": 0.531,
+    "p_two_sided_normal": 0.59531,
+    "hodges_lehmann_y_minus_x": 0.0263
+   },
+   "W_vs_S_four_prose_c1_acc": {
+    "n_x": 18,
+    "n_y": 18,
+    "U_y": 216.0,
+    "z": 1.694,
+    "p_two_sided_normal": 0.09023,
+    "hodges_lehmann_y_minus_x": 0.0656
+   },
+   "S1024_vs_S34_lail_tok": {
+    "n_x": 20,
+    "n_y": 20,
+    "U_y": 223.0,
+    "z": 0.609,
+    "p_two_sided_normal": 0.54277,
+    "hodges_lehmann_y_minus_x": 0.8868
+   },
+   "S1024_vs_S34_lail_acc": {
+    "n_x": 20,
+    "n_y": 20,
+    "U_y": 245.5,
+    "z": 1.218,
+    "p_two_sided_normal": 0.22338,
+    "hodges_lehmann_y_minus_x": 0.0506
+   },
+   "S1024_vs_S34_prose_long_c1_acc": {
+    "n_x": 10,
+    "n_y": 10,
+    "U_y": 82.5,
+    "z": 2.426,
+    "p_two_sided_normal": 0.01525,
+    "hodges_lehmann_y_minus_x": 0.0779
+   },
+   "S1024_vs_S34_four_prose_c1_acc": {
+    "n_x": 18,
+    "n_y": 18,
+    "U_y": 154.0,
+    "z": -0.237,
+    "p_two_sided_normal": 0.8123,
+    "hodges_lehmann_y_minus_x": -0.0125
+   },
+   "S1024_vs_Scfg10_lail_tok": {
+    "n_x": 100,
+    "n_y": 20,
+    "U_y": 1166.0,
+    "z": 1.165,
+    "p_two_sided_normal": 0.24385,
+    "hodges_lehmann_y_minus_x": 0.702
+   },
+   "S1024_vs_Scfg10_lail_acc": {
+    "n_x": 100,
+    "n_y": 20,
+    "U_y": 1277.0,
+    "z": 1.947,
+    "p_two_sided_normal": 0.05149,
+    "hodges_lehmann_y_minus_x": 0.0464
+   },
+   "S1024_vs_Scfg10_prose_long_c1_acc": {
+    "n_x": 50,
+    "n_y": 10,
+    "U_y": 315.0,
+    "z": 1.281,
+    "p_two_sided_normal": 0.20022,
+    "hodges_lehmann_y_minus_x": 0.0349
+   },
+   "W_vs_Scfg10_lail_acc": {
+    "n_x": 100,
+    "n_y": 20,
+    "U_y": 1448.5,
+    "z": 3.155,
+    "p_two_sided_normal": 0.0016,
+    "hodges_lehmann_y_minus_x": 0.0712
+   },
+   "W_vs_Scfg10_prose_long_c1_acc": {
+    "n_x": 50,
+    "n_y": 10,
+    "U_y": 313.0,
+    "z": 1.241,
+    "p_two_sided_normal": 0.21467,
+    "hodges_lehmann_y_minus_x": 0.0498
+   },
+   "S1024_vs_S34_pp_warm_8k": {
+    "n_x": 6,
+    "n_y": 6,
+    "U_y": 10.0,
+    "z": -1.201,
+    "p_two_sided_normal": 0.22977,
+    "hodges_lehmann_y_minus_x": -4.55
+   },
+   "S1024_vs_Scfg10_pp_warm_8k": {
+    "n_x": 30,
+    "n_y": 6,
+    "U_y": 65.0,
+    "z": -1.04,
+    "p_two_sided_normal": 0.29832,
+    "hodges_lehmann_y_minus_x": -5.8
+   },
+   "pp_warm_8k_runs": {
+    "S-3": [
+     765.7,
+     759.3,
+     752.0
+    ],
+    "S-4": [
+     763.4,
+     759.6,
+     720.8
+    ],
+    "S1024-1": [
+     758.9,
+     757.6,
+     747.4
+    ],
+    "S1024-2": [
+     759.0,
+     753.8,
+     733.7
+    ]
+   },
+   "pp_warm_8k_per_boot_Scfg10_range": [
+    743.1,
+    784.4
+   ]
+  }
+ },
+ "decision": {
+  "checks": {
+   "validity_all_eight_counted_boots": true,
+   "docker_patch_identical_all_P6_and_S_config_boots": true,
+   "code_diff_between_first_and_last_counted_boot_outside_results": "empty",
+   "quality_quick_every_P6_boot": true,
+   "W_vs_S_revert_gate": {
+    "lail_tok_s": false,
+    "prose_long_c1_tok_s": false
+   },
+   "W_vs_S_revert_gate_either_cell": false,
+   "S1024_vs_S_gate_s9_per_boot": {
+    "lail_tok_s": true,
+    "prose_long_c1_tok_s": true
+   },
+   "S1024_vs_S_gate_armsmd_median": {
+    "lail_tok_s": true,
+    "prose_long_c1_tok_s": true
+   },
+   "S1024_non_inferiority_vs_larger_spread": {
+    "pp_warm_8k": true,
+    "pp_warm_32k": true,
+    "pp_novel_8k": true,
+    "pp_novel_32k": true,
+    "prose_long_c2_agg_tok_s": true,
+    "warm_prefix_hit_fraction": true
+   },
+   "S1024_non_inferiority_vs_S_spread_only": {
+    "pp_warm_8k": false,
+    "pp_warm_32k": true,
+    "pp_novel_8k": true,
+    "pp_novel_32k": true,
+    "prose_long_c2_agg_tok_s": true,
+    "warm_prefix_hit_fraction": true
+   },
+   "quality_quick_both_S1024_boots": true,
+   "quality_quick_both_W_boots": true
+  },
+  "revert_sparse_markov": false,
+  "promote_topk_1024": true,
+  "promote": [
+   "DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024"
+  ],
+  "reject": [
+   "DSV41_DSPARK_SPARSE_MARKOV=0"
+  ],
+  "sparse_markov_verdict": "KEEP DSV41_DSPARK_SPARSE_MARKOV=1 (the round-34 default); the revert DSV41_DSPARK_SPARSE_MARKOV=0 is rejected. s9 gate, W minus S tok/s on the counted pair (noise = larger boot-to-boot spread): L.A.I.L W 42.814/43.624 vs S 42.791/42.785, +0.431 against noise 0.81; prose_long c=1 W 44.257/44.196 vs S 44.739/43.336, +0.189 against noise 1.403. Both W boots sit above the S median on both cells, but neither improvement exceeds the noise, so 'W beats S beyond the noise' does not hold and S stays. The trade the task asks about, S relative to W at the same workloads (arm medians): L.A.I.L acceptance -2.74% (-0.0597, noise 0.0421), ms/step -1.48% (-0.735 ms, noise 0.07), tok/s -1%; prose_long c=1 acceptance -1.1% (per-boot intervals overlap, so matched), ms/step -0.603 ms against noise 0.41 with both S boots below the W median, tok/s -0.43%. The acceptance cost roughly cancels the step saving on the two gate cells, and the remaining point difference (W ahead by 1% and 0.43%) is inside the noise. Where acceptance is matched, ARMS.md's primary metric favours S: the prose_long c=1 ms/step reading above, and structured c=1 (acceptance 3.9608 on every boot) -0.576 ms/step (noise 0.284) and +1.003 tok/s (noise 0.5), both beyond the noise.",
+  "topk_verdict": "PROMOTE DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024 under s9 as written. Counted pair S-3, S1024-1, S-4, S1024-2: L.A.I.L S 42.36/42.871 (median 42.615) vs S1024 43.167/43.615, per-boot margins 0.552/1 against noise 0.511; prose_long c=1 S 42.788/42.195 (median 42.491) vs S1024 44.174/43.728, margins 1.683/1.237 against noise 0.593. Every S1024 boot beats the S median by more than the noise on both gate cells, so both the s9 per-boot reading and the ARMS.md median reading pass. The gain comes through acceptance: prose_long c=1 +0.1062 (+5.15%, noise 0.0214), L.A.I.L +0.0528 (+2.5%, noise 0.0525, so at the noise, not beyond it). The top-1024 gather costs L.A.I.L +0.473 ms/step (noise 0.219); the other c=1 ms/step cells move inside the noise. Four prose c=1, the one primary cell with matched per-boot acceptance, shows no change (+0.184 ms/step against noise 0.384; -0.59 tok/s against 1.63). Non-inferiority holds on every row against the larger spread; the closest is pp_warm_8k (-3.75 against 3.8). Quality quick passes on both S1024 boots, and the greedy S1024-vs-S divergence hazard (0.01691) is at the cross-boot level of the S config itself (S-3 vs S-4 0.016; all 10 S-config boots 0.01924).",
+  "caveats": [
+   "The TOPK pass depends on the pair's own S baseline. Among the 10 S-config boots of this window, S-3 and S-4 rank 2/1 of 10 from the bottom on prose_long c=1 tok/s (42.788/42.195) and 2/1 of 10 on its per-boot acceptance (2.0729/2.0515). Against S-1..S-4 the rule is not met on prose_long c=1 (+0.889 against noise 2.545); L.A.I.L passes the ARMS.md median reading (+0.603 against 0.511) but not the s9 per-boot one (margins 0.379/0.827). Against all 10 S-config boots neither cell meets it (L.A.I.L +0.56 against 1.667; prose_long c=1 +0.26 against 2.699).",
+   "Per-boot ranks of the two S1024 boots among 12 (10 S-config + 2 S1024), best first: L.A.I.L acceptance [3, 1] (exact one-sided p 0.0303), L.A.I.L tok/s [4, 1] (p 0.0606), prose_long c=1 acceptance [4, 3] (p 0.1212), prose_long c=1 tok/s [4, 6] (p 0.303). Per run, L.A.I.L acceptance S1024 vs the 10 S-config boots: Hodges-Lehmann +0.0464, p 0.05149. So the L.A.I.L acceptance gain, the mechanism s9 expects (a winner outside the top 1024 is rarer than outside the top 256), holds up across the window's S population, while the prose_long c=1 tok/s gain does not separate from S's own boot-to-boot range outside the pair. No multiple-testing correction is applied.",
+   "The rule and its baseline (the S boots interleaved with S1024, ARMS.md: 'the reference is the A boots of the same ABAB sequence') were fixed before the data. Re-baselining after seeing the result is the post-hoc choice the fixed rule exists to prevent, and the P5 decision applied the same principle in the other direction. The measured downside is small either way: +0.473 ms/step on L.A.I.L from the gather, greedy output unchanged, quality quick PASS. After this promotion the next window's A boots carry TOPK=1024 (ARMS-r3 s0), which will add same-config readings.",
+   "W-1's counted four_numbers ran about 9 min later in the boot than planned (the first capture was killed by a timeout wrapper, W-1/notes.txt DEVIATION), so W-1's four prose and prose_long cells came after extra traffic. The fresh L.A.I.L (lail10.txt, before any four_numbers) is unaffected, and the L.A.I.L gate cell alone already fails the revert (+0.431 against 0.81), so the SPARSE_MARKOV verdict does not depend on it.",
+   "If W were a promotion candidate it would also fail non-inferiority on pp_novel_8k (W minus S -15.15 against the larger spread 9.4). Recorded only; the revert already fails the speed gate."
+  ],
+  "promoted_config_after_P6": [
+   "DSV41_P2B_COOP=2",
+   "DSV41_DENSE_GEMV=1",
+   "DSV41_MHC_DET_SPLITS=16",
+   "DSV41_ENGRAM_NATIVE_STAGE=1",
+   "DSV41_ENGRAM_EARLY_HASH=1",
+   "DSV41_ATTN_T2R_DEDUP=1",
+   "DSV41_SWA_META_FUSED=1",
+   "DSV41_MOE_PREP_FUSED=1",
+   "DSV41_CANDIDATE_MASK_BOUNDED=1",
+   "DSV41_INDEXER_WP_GEMV=1",
+   "DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024"
+  ],
+  "defaults_unchanged": "DSV41_DSPARK_SPARSE_MARKOV=1 and DSV41_WOA_PREPACK=1 stay (round-34 defaults)."
+ },
+ "serve_state_at_decision": "down on both nodes (2026-09-27T02:14:36Z: docker ps on spark1 shows only the unrelated conduit container; spark2 shows no container). This stage booted nothing.",
+ "per_boot_raw": {
+  "W-1": {
+   "commit": "172359d876dd728c822a99e115351dbeb2f56ab9",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 48.704634814258135,
+   "prose_long_c1_ms_step": 49.88969737106674,
+   "lail_ms_step": 49.575726492358314,
+   "bench_prose_c1_ms_step": 49.21939481941826,
+   "structured_c1_ms_step": 48.004012626277095,
+   "bench_prose_c2_ms_step": 60.155399098613096,
+   "structured_c2_ms_step": 57.91972870650797,
+   "prose_long_c2_ms_step": 62.8991853180374,
+   "lail_tok_s": 42.81374443871691,
+   "four_prose_c1_tok_s": 54.68,
+   "bench_prose_c1_tok_s": 50.066750589584274,
+   "structured_c1_tok_s": 82.50944237851861,
+   "prose_long_c1_tok_s": 44.2571590300484,
+   "bench_prose_c2_agg_tok_s": 83.63722039989554,
+   "structured_c2_agg_tok_s": 136.15872886223661,
+   "prose_long_c2_agg_tok_s": 66.87648176551686,
+   "lail_after_c2_3x_tok_s": 41.56,
+   "pp_warm_8k": 776.8,
+   "pp_warm_32k": 768.8,
+   "pp_novel_8k": 806.6,
+   "pp_novel_32k": 806.0,
+   "pp_runs": {
+    "pp_warm_8k": [
+     796.8,
+     770.7,
+     776.8
+    ],
+    "pp_novel_8k": [
+     806.6,
+     830.0,
+     793.3
+    ],
+    "pp_warm_32k": [
+     773.8,
+     768.8,
+     752.1
+    ],
+    "pp_novel_32k": [
+     806.0,
+     812.9,
+     800.8
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.6533333333333333,
+   "acc_four_prose_c1_runs": [
+    2.3976,
+    2.4938,
+    2.5844,
+    2.7297,
+    2.6892,
+    2.6234,
+    2.6892,
+    2.6533,
+    2.7297
+   ],
+   "acc_prose_long_c1": 2.186813186813187,
+   "acc_prose_long_c1_runs": [
+    2.2989,
+    2.1868,
+    2.0303,
+    2.2111,
+    2.0612
+   ],
+   "acc_lail": 2.1579087331134987,
+   "acc_lail_range": [
+    2.0772357723577235,
+    2.4150943396226414
+   ],
+   "acc_bench_prose_c1": 2.4875,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    49.48,
+    50.75,
+    49.5,
+    49.81,
+    49.55,
+    49.59,
+    50.1,
+    49.37,
+    49.56,
+    49.87
+   ],
+   "lail_tok_runs": [
+    42.41,
+    42.39,
+    45.77,
+    42.3,
+    44.73,
+    41.8,
+    41.89,
+    44.32,
+    43.22,
+    48.2
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "25Gi"
+   ],
+   "acc_prose_long_c2": 2.1684782608695654,
+   "acc_bench_prose_c2": 2.607843137254902,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.1152263374485596,
+    2.1645569620253164,
+    2.271111111111111,
+    2.12396694214876,
+    2.2217391304347824,
+    2.0772357723577235,
+    2.1152263374485596,
+    2.1931330472103,
+    2.1512605042016806,
+    2.4150943396226414
+   ],
+   "lail_tok_runs_full": [
+    42.40614690282549,
+    42.38530119087594,
+    45.7656487631285,
+    42.296676632312455,
+    44.73047006111852,
+    41.80311715073862,
+    41.88747991560032,
+    44.31674498996013,
+    43.22134197460832,
+    48.198019301831025
+   ],
+   "four_partial": false
+  },
+  "S-1": {
+   "commit": "81b7cadb42ab6ac7fadb8336ac318f2d5a34effc",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 48.06060012909121,
+   "prose_long_c1_ms_step": 49.17719535165157,
+   "lail_ms_step": 48.89700114084497,
+   "bench_prose_c1_ms_step": 49.027461801669766,
+   "structured_c1_ms_step": 47.30360719228213,
+   "bench_prose_c2_ms_step": 59.247353394689654,
+   "structured_c2_ms_step": 55.17331813635285,
+   "prose_long_c2_ms_step": 61.036888354149326,
+   "lail_tok_s": 42.79112772782827,
+   "four_prose_c1_tok_s": 52.46,
+   "bench_prose_c1_tok_s": 51.780500804085655,
+   "structured_c1_tok_s": 83.73112641548647,
+   "prose_long_c1_tok_s": 44.73943497551203,
+   "bench_prose_c2_agg_tok_s": 84.80189959535072,
+   "structured_c2_agg_tok_s": 138.04402772133764,
+   "prose_long_c2_agg_tok_s": 67.27643327933751,
+   "lail_after_c2_3x_tok_s": 43.47,
+   "pp_warm_8k": 761.4,
+   "pp_warm_32k": 765.2,
+   "pp_novel_8k": 831.0,
+   "pp_novel_32k": 820.5,
+   "pp_runs": {
+    "pp_warm_8k": [
+     766.6,
+     755.2,
+     761.4
+    ],
+    "pp_novel_8k": [
+     801.6,
+     831.0,
+     833.2
+    ],
+    "pp_warm_32k": [
+     759.0,
+     765.2,
+     773.5
+    ],
+    "pp_novel_32k": [
+     820.5,
+     826.9,
+     811.9
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.5316455696202533,
+   "acc_four_prose_c1_runs": [
+    2.5316,
+    2.5125,
+    2.4691,
+    2.314,
+    2.8857,
+    2.5443,
+    2.7778,
+    2.314,
+    2.5897
+   ],
+   "acc_prose_long_c1": 2.197802197802198,
+   "acc_prose_long_c1_runs": [
+    2.1613,
+    2.2584,
+    2.1978,
+    2.2088,
+    2.0833
+   ],
+   "acc_lail": 2.100409836065574,
+   "acc_lail_range": [
+    1.954198473282443,
+    2.2755555555555556
+   ],
+   "acc_bench_prose_c1": 2.5316455696202533,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.53,
+    55.39,
+    48.78,
+    52.2,
+    48.71,
+    49.15,
+    48.94,
+    48.8,
+    48.92,
+    48.88
+   ],
+   "lail_tok_runs": [
+    42.89,
+    37.42,
+    42.32,
+    37.29,
+    45.11,
+    44.9,
+    42.7,
+    42.83,
+    46.31,
+    42.75
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "22Gi",
+    "24Gi"
+   ],
+   "acc_prose_long_c2": 2.111111111111111,
+   "acc_bench_prose_c2": 2.56687898089172,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.0857142857142854,
+    2.089430894308943,
+    2.0728744939271255,
+    1.954198473282443,
+    2.2025862068965516,
+    2.212121212121212,
+    2.1065573770491803,
+    2.098360655737705,
+    2.2755555555555556,
+    2.1024590163934427
+   ],
+   "lail_tok_runs_full": [
+    42.88525738362445,
+    37.4224547588973,
+    42.318838963335075,
+    37.29412433943128,
+    45.11426209330783,
+    44.901172321250655,
+    42.7033987209438,
+    42.827501293371746,
+    46.31445912610178,
+    42.75475416228479
+   ],
+   "four_partial": false
+  },
+  "W-2": {
+   "commit": "b6cb1edf501d6927e372eaffc8168388321fc696",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 49.3141991787516,
+   "prose_long_c1_ms_step": 49.47982027430784,
+   "lail_ms_step": 49.61892961555864,
+   "bench_prose_c1_ms_step": 49.57045515489188,
+   "structured_c1_ms_step": 48.039930946581705,
+   "bench_prose_c2_ms_step": 59.85194672380191,
+   "structured_c2_ms_step": 56.06197550785832,
+   "prose_long_c2_ms_step": 62.04537084067327,
+   "lail_tok_s": 43.623739653163824,
+   "four_prose_c1_tok_s": 52.38,
+   "bench_prose_c1_tok_s": 53.36838458694152,
+   "structured_c1_tok_s": 82.44775201966273,
+   "prose_long_c1_tok_s": 44.19606164068222,
+   "bench_prose_c2_agg_tok_s": 84.24547790784467,
+   "structured_c2_agg_tok_s": 137.07144727751634,
+   "prose_long_c2_agg_tok_s": 71.65808637602815,
+   "lail_after_c2_3x_tok_s": 43.54,
+   "pp_warm_8k": 745.6,
+   "pp_warm_32k": 766.8,
+   "pp_novel_8k": 815.7,
+   "pp_novel_32k": 811.7,
+   "pp_runs": {
+    "pp_warm_8k": [
+     743.0,
+     745.6,
+     750.6
+    ],
+    "pp_novel_8k": [
+     791.4,
+     832.7,
+     815.7
+    ],
+    "pp_warm_32k": [
+     766.8,
+     778.6,
+     762.7
+    ],
+    "pp_novel_32k": [
+     825.4,
+     805.7,
+     811.7
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.5769230769230766,
+   "acc_four_prose_c1_runs": [
+    2.5844,
+    2.5769,
+    2.5974,
+    2.5513,
+    2.557,
+    2.5,
+    2.6104,
+    2.2874,
+    2.6447
+   ],
+   "acc_prose_long_c1": 2.186813186813187,
+   "acc_prose_long_c1_runs": [
+    2.1978,
+    2.236,
+    2.1868,
+    2.117,
+    2.1868
+   ],
+   "acc_lail": 2.200005549800207,
+   "acc_lail_range": [
+    2.0942622950819674,
+    2.4312796208530805
+   ],
+   "acc_bench_prose_c1": 2.6233766233766236,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    49.13,
+    50.87,
+    49.47,
+    50.43,
+    54.66,
+    49.33,
+    49.77,
+    49.32,
+    49.44,
+    49.85
+   ],
+   "lail_tok_runs": [
+    44.73,
+    41.42,
+    43.67,
+    43.57,
+    40.55,
+    42.37,
+    45.72,
+    44.37,
+    42.8,
+    48.44
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "25Gi"
+   ],
+   "acc_prose_long_c2": 2.2032967032967035,
+   "acc_bench_prose_c2": 2.5576923076923075,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.2025862068965516,
+    2.1115702479338845,
+    2.173728813559322,
+    2.2025862068965516,
+    2.226086956521739,
+    2.0942622950819674,
+    2.28125,
+    2.1974248927038627,
+    2.12448132780083,
+    2.4312796208530805
+   ],
+   "lail_tok_runs_full": [
+    44.72996950341599,
+    41.419505867389475,
+    43.67250764643724,
+    43.5749716598904,
+    40.54772776976369,
+    42.36697155067665,
+    45.72042196619074,
+    44.365933521740985,
+    42.795926083790896,
+    48.442908266039815
+   ],
+   "four_partial": false
+  },
+  "S-2": {
+   "commit": "e9c11c1371fe0d34e12abc233ffb72ea01ef32de",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 47.72602506877191,
+   "prose_long_c1_ms_step": 48.98703630244876,
+   "lail_ms_step": 48.8270586992178,
+   "bench_prose_c1_ms_step": 48.72017212514238,
+   "structured_c1_ms_step": 47.5877141916763,
+   "bench_prose_c2_ms_step": 59.48771636588565,
+   "structured_c2_ms_step": 56.51817705306927,
+   "prose_long_c2_ms_step": 62.59706673537193,
+   "lail_tok_s": 42.78513726433546,
+   "four_prose_c1_tok_s": 52.72,
+   "bench_prose_c1_tok_s": 53.65822014018149,
+   "structured_c1_tok_s": 83.23123690648461,
+   "prose_long_c1_tok_s": 43.33621992830707,
+   "bench_prose_c2_agg_tok_s": 85.01466052926081,
+   "structured_c2_agg_tok_s": 137.80125199807992,
+   "prose_long_c2_agg_tok_s": 66.87185340011396,
+   "lail_after_c2_3x_tok_s": 43.4,
+   "pp_warm_8k": 744.2,
+   "pp_warm_32k": 760.7,
+   "pp_novel_8k": 821.6,
+   "pp_novel_32k": 805.8,
+   "pp_runs": {
+    "pp_warm_8k": [
+     742.2,
+     744.2,
+     767.6
+    ],
+    "pp_novel_8k": [
+     846.6,
+     801.7,
+     821.6
+    ],
+    "pp_warm_32k": [
+     760.7,
+     759.7,
+     780.6
+    ],
+    "pp_novel_32k": [
+     806.6,
+     798.0,
+     805.8
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.518987341772152,
+   "acc_four_prose_c1_runs": [
+    2.5,
+    2.3412,
+    2.5897,
+    2.5974,
+    2.5,
+    2.4815,
+    2.557,
+    2.5897,
+    2.519
+   ],
+   "acc_prose_long_c1": 2.127659574468085,
+   "acc_prose_long_c1_runs": [
+    2.1277,
+    1.9135,
+    2.1978,
+    2.1277,
+    2.117
+   ],
+   "acc_lail": 2.138112745098039,
+   "acc_lail_range": [
+    1.9429657794676807,
+    2.294642857142857
+   ],
+   "acc_bench_prose_c1": 2.6578947368421053,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.75,
+    54.44,
+    48.49,
+    51.89,
+    49.15,
+    48.7,
+    48.64,
+    48.64,
+    49.1,
+    48.9
+   ],
+   "lail_tok_runs": [
+    41.51,
+    37.32,
+    41.4,
+    41.98,
+    43.59,
+    44.36,
+    43.68,
+    39.87,
+    43.63,
+    46.54
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "24Gi"
+   ],
+   "acc_prose_long_c2": 2.122340425531915,
+   "acc_bench_prose_c2": 2.5316455696202533,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.0277777777777777,
+    2.043824701195219,
+    2.015748031496063,
+    2.1965811965811968,
+    2.159663865546219,
+    2.165254237288136,
+    2.1291666666666664,
+    1.9429657794676807,
+    2.1470588235294117,
+    2.294642857142857
+   ],
+   "lail_tok_runs_full": [
+    41.50819199387859,
+    37.32384397586203,
+    41.40463337726784,
+    41.98365966999441,
+    43.586614858676505,
+    44.362030762648146,
+    43.6759393431551,
+    39.87357397429436,
+    43.62703511266273,
+    46.53534039807109
+   ],
+   "four_partial": false
+  },
+  "S-3": {
+   "commit": "c0da1bce20536ac49a6c5c36cb79dce072ff743a",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 48.09634163285588,
+   "prose_long_c1_ms_step": 49.12503359997456,
+   "lail_ms_step": 48.694258043010734,
+   "bench_prose_c1_ms_step": 48.47576907092725,
+   "structured_c1_ms_step": 47.37422339987927,
+   "bench_prose_c2_ms_step": 59.9140658757496,
+   "structured_c2_ms_step": 55.98465622055305,
+   "prose_long_c2_ms_step": 61.12789481355495,
+   "lail_tok_s": 42.359634487410474,
+   "four_prose_c1_tok_s": 53.26,
+   "bench_prose_c1_tok_s": 52.43749859754023,
+   "structured_c1_tok_s": 83.60631646228916,
+   "prose_long_c1_tok_s": 42.78767183788487,
+   "bench_prose_c2_agg_tok_s": 80.82515496437247,
+   "structured_c2_agg_tok_s": 139.16561635787397,
+   "prose_long_c2_agg_tok_s": 69.32542883036785,
+   "lail_after_c2_3x_tok_s": 46.36,
+   "pp_warm_8k": 759.3,
+   "pp_warm_32k": 765.9,
+   "pp_novel_8k": 806.3,
+   "pp_novel_32k": 808.4,
+   "pp_runs": {
+    "pp_warm_8k": [
+     765.7,
+     759.3,
+     752.0
+    ],
+    "pp_novel_8k": [
+     806.3,
+     836.0,
+     794.8
+    ],
+    "pp_warm_32k": [
+     765.9,
+     761.0,
+     770.1
+    ],
+    "pp_novel_32k": [
+     796.2,
+     808.4,
+     818.9
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.556962025316456,
+   "acc_four_prose_c1_runs": [
+    2.5125,
+    2.525,
+    2.557,
+    2.6892,
+    2.5,
+    2.5974,
+    2.9851,
+    2.2697,
+    2.7639
+   ],
+   "acc_prose_long_c1": 2.072916666666667,
+   "acc_prose_long_c1_runs": [
+    2.0729,
+    2.0729,
+    2.1053,
+    2.0722,
+    2.172
+   ],
+   "acc_lail": 2.0818512396694215,
+   "acc_lail_range": [
+    1.9883268482490273,
+    2.403755868544601
+   ],
+   "acc_bench_prose_c1": 2.5443037974683547,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.56,
+    49.9,
+    48.98,
+    48.92,
+    60.46,
+    48.38,
+    48.52,
+    48.72,
+    48.62,
+    48.67
+   ],
+   "lail_tok_runs": [
+    43.75,
+    40.88,
+    41.65,
+    43.07,
+    33.47,
+    41.34,
+    47.11,
+    40.73,
+    48.75,
+    49.16
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "22Gi",
+    "24Gi"
+   ],
+   "acc_prose_long_c2": 2.127659574468085,
+   "acc_bench_prose_c2": 2.50625,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.132780082987552,
+    2.044,
+    2.048,
+    2.115702479338843,
+    2.0317460317460316,
+    2.015686274509804,
+    2.295964125560538,
+    1.9883268482490273,
+    2.3813953488372093,
+    2.403755868544601
+   ],
+   "lail_tok_runs_full": [
+    43.75400819265158,
+    40.88223124883431,
+    41.64963803541415,
+    43.0696309394068,
+    33.47250559173083,
+    41.337148165290216,
+    47.106907610978375,
+    40.73340734799079,
+    48.74947074542352,
+    49.15869099475743
+   ],
+   "four_partial": false
+  },
+  "S1024-1": {
+   "commit": "7c38bed8ad79c25db3c17577900ca25e3bc1d1f8",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 48.104226999245135,
+   "prose_long_c1_ms_step": 48.80217403208123,
+   "lail_ms_step": 49.219368919715734,
+   "bench_prose_c1_ms_step": 48.63653633624734,
+   "structured_c1_ms_step": 47.25808332977856,
+   "bench_prose_c2_ms_step": 60.56376576046164,
+   "structured_c2_ms_step": 55.13478472062123,
+   "prose_long_c2_ms_step": 61.369572594537345,
+   "lail_tok_s": 43.16745020253909,
+   "four_prose_c1_tok_s": 53.67,
+   "bench_prose_c1_tok_s": 51.98556554367509,
+   "structured_c1_tok_s": 83.81178487680427,
+   "prose_long_c1_tok_s": 44.17430396882382,
+   "bench_prose_c2_agg_tok_s": 82.37912964825068,
+   "structured_c2_agg_tok_s": 138.59732935757546,
+   "prose_long_c2_agg_tok_s": 65.23855395501873,
+   "lail_after_c2_3x_tok_s": 43.68,
+   "pp_warm_8k": 757.6,
+   "pp_warm_32k": 763.0,
+   "pp_novel_8k": 821.4,
+   "pp_novel_32k": 806.2,
+   "pp_runs": {
+    "pp_warm_8k": [
+     758.9,
+     757.6,
+     747.4
+    ],
+    "pp_novel_8k": [
+     835.7,
+     821.4,
+     816.9
+    ],
+    "pp_warm_32k": [
+     749.3,
+     769.3,
+     763.0
+    ],
+    "pp_novel_32k": [
+     801.5,
+     806.2,
+     813.4
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.5769230769230766,
+   "acc_four_prose_c1_runs": [
+    2.6579,
+    2.5125,
+    2.5316,
+    2.5769,
+    2.5513,
+    2.9412,
+    2.525,
+    2.6316,
+    3.0303
+   ],
+   "acc_prose_long_c1": 2.1630434782608696,
+   "acc_prose_long_c1_runs": [
+    2.163,
+    2.163,
+    2.163,
+    2.117,
+    2.1489
+   ],
+   "acc_lail": 2.1330567081604426,
+   "acc_lail_range": [
+    2.048,
+    2.3424657534246576
+   ],
+   "acc_bench_prose_c1": 2.551282051282051,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.69,
+    49.79,
+    48.64,
+    48.62,
+    50.02,
+    49.68,
+    49.33,
+    55.4,
+    48.93,
+    49.1
+   ],
+   "lail_tok_runs": [
+    43.09,
+    46.75,
+    42.45,
+    43.33,
+    42.29,
+    42.76,
+    43.24,
+    36.82,
+    45.89,
+    44.37
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "24Gi"
+   ],
+   "acc_prose_long_c2": 2.0618556701030926,
+   "acc_bench_prose_c2": 2.554140127388535,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.102880658436214,
+    2.3424657534246576,
+    2.0688259109311744,
+    2.1115702479338845,
+    2.132780082987552,
+    2.1333333333333333,
+    2.1464435146443517,
+    2.048,
+    2.255506607929515,
+    2.183760683760684
+   ],
+   "lail_tok_runs_full": [
+    43.09290814081578,
+    46.746275747042475,
+    42.44640601585966,
+    43.33387034181146,
+    42.294303805741805,
+    42.76259715571274,
+    43.2419922642624,
+    36.82077418843668,
+    45.89006975314646,
+    44.36959129940429
+   ],
+   "four_partial": false
+  },
+  "S-4": {
+   "commit": "d6502a8069c4d9fd8e46083bd32f284d0288f10d",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 47.71264762384817,
+   "prose_long_c1_ms_step": 48.986110617132745,
+   "lail_ms_step": 48.57959202218847,
+   "bench_prose_c1_ms_step": 48.79023473804963,
+   "structured_c1_ms_step": 47.41463908354966,
+   "bench_prose_c2_ms_step": 59.29327165130897,
+   "structured_c2_ms_step": 54.88448014969852,
+   "prose_long_c2_ms_step": 61.93857827337481,
+   "lail_tok_s": 42.8707970469754,
+   "four_prose_c1_tok_s": 53.63,
+   "bench_prose_c1_tok_s": 52.005356930553226,
+   "structured_c1_tok_s": 83.53505141621272,
+   "prose_long_c1_tok_s": 42.194603719656506,
+   "bench_prose_c2_agg_tok_s": 82.5313416553184,
+   "structured_c2_agg_tok_s": 138.9673902098971,
+   "prose_long_c2_agg_tok_s": 65.10856097378485,
+   "lail_after_c2_3x_tok_s": 42.47,
+   "pp_warm_8k": 759.6,
+   "pp_warm_32k": 774.2,
+   "pp_novel_8k": 826.3,
+   "pp_novel_32k": 818.6,
+   "pp_runs": {
+    "pp_warm_8k": [
+     763.4,
+     759.6,
+     720.8
+    ],
+    "pp_novel_8k": [
+     841.5,
+     826.3,
+     785.0
+    ],
+    "pp_warm_32k": [
+     766.6,
+     774.2,
+     775.0
+    ],
+    "pp_novel_32k": [
+     829.8,
+     813.2,
+     818.6
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.518987341772152,
+   "acc_four_prose_c1_runs": [
+    2.4815,
+    2.8986,
+    2.519,
+    2.4875,
+    2.4938,
+    2.6667,
+    2.726,
+    2.6104,
+    2.4875
+   ],
+   "acc_prose_long_c1": 2.051546391752577,
+   "acc_prose_long_c1_runs": [
+    2.0947,
+    2.0515,
+    1.951,
+    2.2989,
+    1.99
+   ],
+   "acc_lail": 2.131295682216705,
+   "acc_lail_range": [
+    2.00390625,
+    2.4265402843601898
+   ],
+   "acc_bench_prose_c1": 2.5,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.38,
+    48.49,
+    48.58,
+    48.47,
+    61.68,
+    48.58,
+    48.72,
+    48.85,
+    48.53,
+    49.01
+   ],
+   "lail_tok_runs": [
+    44.47,
+    41.08,
+    49.72,
+    43.65,
+    34.59,
+    44.47,
+    41.54,
+    42.09,
+    41.21,
+    44.27
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "22Gi",
+    "24Gi"
+   ],
+   "acc_prose_long_c2": 2.072538860103627,
+   "acc_bench_prose_c2": 2.5576923076923075,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.1603375527426163,
+    2.00390625,
+    2.4265402843601898,
+    2.120331950207469,
+    2.1422594142259417,
+    2.165254237288136,
+    2.0317460317460316,
+    2.068548387096774,
+    2.003921568627451,
+    2.1779661016949152
+   ],
+   "lail_tok_runs_full": [
+    44.467101293598056,
+    41.08177893734393,
+    49.715245831088,
+    43.65231814963662,
+    34.589581236839585,
+    44.46910589496004,
+    41.53799657033488,
+    42.089275944314174,
+    41.209515430215966,
+    44.26990781961837
+   ],
+   "four_partial": false
+  },
+  "S1024-2": {
+   "commit": "cbaf68be0760c2b8729094ac5662e64b5efe7515",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 48.072260199508634,
+   "prose_long_c1_ms_step": 49.48802372695654,
+   "lail_ms_step": 49.00043300618798,
+   "bench_prose_c1_ms_step": 49.28037914966421,
+   "structured_c1_ms_step": 47.46025879840763,
+   "bench_prose_c2_ms_step": 60.30637173844012,
+   "structured_c2_ms_step": 55.09016549946821,
+   "prose_long_c2_ms_step": 62.56182007220201,
+   "lail_tok_s": 43.61546714202656,
+   "four_prose_c1_tok_s": 52.04,
+   "bench_prose_c1_tok_s": 52.07578541201963,
+   "structured_c1_tok_s": 83.45475591587758,
+   "prose_long_c1_tok_s": 43.72833383866282,
+   "bench_prose_c2_agg_tok_s": 81.68605290359335,
+   "structured_c2_agg_tok_s": 138.2377243984616,
+   "prose_long_c2_agg_tok_s": 65.62498095776019,
+   "lail_after_c2_3x_tok_s": 42.46,
+   "pp_warm_8k": 753.8,
+   "pp_warm_32k": 769.5,
+   "pp_novel_8k": 807.4,
+   "pp_novel_32k": 806.3,
+   "pp_runs": {
+    "pp_warm_8k": [
+     759.0,
+     753.8,
+     733.7
+    ],
+    "pp_novel_8k": [
+     795.1,
+     822.2,
+     807.4
+    ],
+    "pp_warm_32k": [
+     775.3,
+     769.5,
+     751.4
+    ],
+    "pp_novel_32k": [
+     797.7,
+     806.3,
+     817.5
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.5,
+   "acc_four_prose_c1_runs": [
+    2.3103,
+    2.3976,
+    2.4875,
+    2.369,
+    2.7778,
+    2.5,
+    2.5316,
+    2.5,
+    2.5844
+   ],
+   "acc_prose_long_c1": 2.1739130434782608,
+   "acc_prose_long_c1_runs": [
+    2.0947,
+    2.1739,
+    2.117,
+    2.1739,
+    2.3103
+   ],
+   "acc_lail": 2.185604131810577,
+   "acc_lail_range": [
+    1.9653846153846155,
+    2.3063063063063063
+   ],
+   "acc_bench_prose_c1": 2.556962025316456,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.76,
+    61.55,
+    48.73,
+    48.98,
+    48.99,
+    49.04,
+    49.35,
+    49.02,
+    48.7,
+    49.01
+   ],
+   "lail_tok_runs": [
+    42.86,
+    36.32,
+    40.25,
+    42.5,
+    46.66,
+    44.62,
+    42.87,
+    46.21,
+    44.36,
+    46.84
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "22Gi",
+    "24Gi"
+   ],
+   "acc_prose_long_c2": 2.0890052356020945,
+   "acc_bench_prose_c2": 2.547770700636943,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.0942622950819674,
+    2.2358078602620086,
+    1.9653846153846155,
+    2.0857142857142854,
+    2.291479820627803,
+    2.201716738197425,
+    2.132780082987552,
+    2.2800000000000002,
+    2.169491525423729,
+    2.3063063063063063
+   ],
+   "lail_tok_runs_full": [
+    42.86303949557779,
+    36.323909796004806,
+    40.2536879304953,
+    42.495523661337224,
+    46.658325186620324,
+    44.61915597864768,
+    42.87001133765829,
+    46.21226498472889,
+    44.36092294639484,
+    46.84444368708211
+   ],
+   "four_partial": false
+  },
+  "K-1": {
+   "commit": "ae0255acca350f9756bfb83dab70741b7a6692a8",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 47.1560545382523,
+   "prose_long_c1_ms_step": 49.00970390936987,
+   "lail_ms_step": 48.32780877738019,
+   "bench_prose_c1_ms_step": 48.24415804741052,
+   "structured_c1_ms_step": 46.877193532961016,
+   "bench_prose_c2_ms_step": 57.83615603317536,
+   "structured_c2_ms_step": 55.76820945016813,
+   "prose_long_c2_ms_step": 60.724448714206446,
+   "lail_tok_s": 43.56675930683842,
+   "four_prose_c1_tok_s": 54.42,
+   "bench_prose_c1_tok_s": 52.33794312502315,
+   "structured_c1_tok_s": 84.49277815534161,
+   "prose_long_c1_tok_s": 43.68788244097843,
+   "bench_prose_c2_agg_tok_s": 87.58465034847032,
+   "structured_c2_agg_tok_s": 139.83553547197005,
+   "prose_long_c2_agg_tok_s": 68.06313262634637,
+   "lail_after_c2_3x_tok_s": 41.79,
+   "pp_warm_8k": 758.1,
+   "pp_warm_32k": 769.7,
+   "pp_novel_8k": 804.0,
+   "pp_novel_32k": 799.5,
+   "pp_runs": {
+    "pp_warm_8k": [
+     770.2,
+     758.1,
+     743.8
+    ],
+    "pp_novel_8k": [
+     804.0,
+     809.3,
+     794.9
+    ],
+    "pp_warm_32k": [
+     769.7,
+     757.7,
+     775.8
+    ],
+    "pp_novel_32k": [
+     802.1,
+     798.4,
+     799.5
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.556962025316456,
+   "acc_four_prose_c1_runs": [
+    2.4875,
+    2.5897,
+    2.314,
+    2.6104,
+    2.557,
+    2.4875,
+    3.0606,
+    2.5513,
+    2.5641
+   ],
+   "acc_prose_long_c1": 2.117021276595745,
+   "acc_prose_long_c1_runs": [
+    2.0,
+    2.117,
+    2.0,
+    2.2472,
+    2.1613
+   ],
+   "acc_lail": 2.1070485029128845,
+   "acc_lail_range": [
+    1.9693486590038314,
+    2.251101321585903
+   ],
+   "acc_bench_prose_c1": 2.525,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    47.91,
+    48.1,
+    48.36,
+    48.18,
+    48.23,
+    48.51,
+    48.35,
+    48.3,
+    48.5,
+    48.65
+   ],
+   "lail_tok_runs": [
+    41.91,
+    43.45,
+    41.2,
+    44.65,
+    43.68,
+    41.39,
+    43.94,
+    46.49,
+    40.29,
+    44.21
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "22Gi",
+    "24Gi"
+   ],
+   "acc_prose_long_c2": 2.094736842105263,
+   "acc_bench_prose_c2": 2.5316455696202533,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.0118110236220472,
+    2.0942622950819674,
+    1.99609375,
+    2.1561181434599157,
+    2.1198347107438016,
+    2.0118110236220472,
+    2.1333333333333333,
+    2.251101321585903,
+    1.9693486590038314,
+    2.1561181434599157
+   ],
+   "lail_tok_runs_full": [
+    41.908175130897746,
+    43.44935978783545,
+    41.1993253914655,
+    44.65312486962035,
+    43.684158825841386,
+    41.391528141210046,
+    43.93670802111431,
+    46.49073687105649,
+    40.289732747393266,
+    44.2146872053674
+   ],
+   "four_partial": false
+  },
+  "K-2": {
+   "commit": "f03792b5f424d75900abd720651fc684cd3778b0",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 48.245367656866286,
+   "prose_long_c1_ms_step": 48.70193581426585,
+   "lail_ms_step": 48.90902445516396,
+   "bench_prose_c1_ms_step": 48.7639723964645,
+   "structured_c1_ms_step": 47.19568664925289,
+   "bench_prose_c2_ms_step": 59.20920606870809,
+   "structured_c2_ms_step": 57.277433163402364,
+   "prose_long_c2_ms_step": 61.41536775611755,
+   "lail_tok_s": 42.53146165591678,
+   "four_prose_c1_tok_s": 53.43,
+   "bench_prose_c1_tok_s": 53.531110820226566,
+   "structured_c1_tok_s": 83.92259112916602,
+   "prose_long_c1_tok_s": 43.923343479026634,
+   "bench_prose_c2_agg_tok_s": 85.45682323649928,
+   "structured_c2_agg_tok_s": 139.03807252504782,
+   "prose_long_c2_agg_tok_s": 68.25869174093044,
+   "lail_after_c2_3x_tok_s": 44.23,
+   "pp_warm_8k": 784.4,
+   "pp_warm_32k": 758.9,
+   "pp_novel_8k": 825.6,
+   "pp_novel_32k": 811.4,
+   "pp_runs": {
+    "pp_warm_8k": [
+     734.2,
+     784.9,
+     784.4
+    ],
+    "pp_novel_8k": [
+     838.5,
+     825.6,
+     809.5
+    ],
+    "pp_warm_32k": [
+     744.4,
+     774.6,
+     758.9
+    ],
+    "pp_novel_32k": [
+     811.4,
+     807.7,
+     824.6
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.5316455696202533,
+   "acc_four_prose_c1_runs": [
+    2.525,
+    2.557,
+    2.5316,
+    2.519,
+    2.3256,
+    2.8986,
+    2.5443,
+    2.6184,
+    2.4568
+   ],
+   "acc_prose_long_c1": 2.150537634408602,
+   "acc_prose_long_c1_runs": [
+    2.1505,
+    2.2333,
+    2.2472,
+    2.117,
+    2.1053
+   ],
+   "acc_lail": 2.104764715803677,
+   "acc_lail_range": [
+    1.9285714285714286,
+    2.3004484304932733
+   ],
+   "acc_bench_prose_c1": 2.5897435897435894,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.51,
+    49.14,
+    49.12,
+    52.49,
+    55.96,
+    48.38,
+    48.67,
+    49.5,
+    48.6,
+    48.69
+   ],
+   "lail_tok_runs": [
+    42.9,
+    44.15,
+    39.04,
+    40.14,
+    36.02,
+    42.16,
+    44.2,
+    40.09,
+    47.03,
+    46.32
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "24Gi"
+   ],
+   "acc_prose_long_c2": 2.127659574468085,
+   "acc_bench_prose_c2": 2.5125,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.0979591836734697,
+    2.178723404255319,
+    1.9285714285714286,
+    2.1115702479338845,
+    2.0237154150197627,
+    2.052,
+    2.1561181434599157,
+    1.9883268482490273,
+    2.3004484304932733,
+    2.274336283185841
+   ],
+   "lail_tok_runs_full": [
+    42.90370969124288,
+    44.148791675271546,
+    39.03657117164551,
+    40.143852506620064,
+    36.02074210495974,
+    42.15921362059068,
+    44.20309006260889,
+    40.09304400859818,
+    47.03373853021284,
+    46.3192448368072
+   ],
+   "four_partial": false
+  },
+  "CUR-1": {
+   "commit": "7db92e93a10cd457968f4105293aac01a560e086",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 47.75260039452022,
+   "prose_long_c1_ms_step": 49.100899430577364,
+   "lail_ms_step": 49.37074582934551,
+   "bench_prose_c1_ms_step": 48.280295980370326,
+   "structured_c1_ms_step": 46.9923140063125,
+   "bench_prose_c2_ms_step": 60.66636137042894,
+   "structured_c2_ms_step": 56.3796294062949,
+   "prose_long_c2_ms_step": 60.19700558000798,
+   "lail_tok_s": 42.92744602947299,
+   "four_prose_c1_tok_s": 54.11,
+   "bench_prose_c1_tok_s": 53.688386934820336,
+   "structured_c1_tok_s": 84.28579008034029,
+   "prose_long_c1_tok_s": 44.89324633390732,
+   "bench_prose_c2_agg_tok_s": 81.62613285101664,
+   "structured_c2_agg_tok_s": 138.83927364063365,
+   "prose_long_c2_agg_tok_s": 70.08897611108246,
+   "lail_after_c2_3x_tok_s": 41.17,
+   "pp_warm_8k": 762.5,
+   "pp_warm_32k": 763.0,
+   "pp_novel_8k": 809.7,
+   "pp_novel_32k": 811.7,
+   "pp_runs": {
+    "pp_warm_8k": [
+     744.5,
+     779.6,
+     762.5
+    ],
+    "pp_novel_8k": [
+     807.5,
+     809.7,
+     817.4
+    ],
+    "pp_warm_32k": [
+     763.0,
+     760.1,
+     763.3
+    ],
+    "pp_novel_32k": [
+     811.0,
+     813.8,
+     811.7
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.6184210526315788,
+   "acc_four_prose_c1_runs": [
+    2.6316,
+    2.4875,
+    2.6184,
+    2.519,
+    2.6447,
+    2.4875,
+    2.6579,
+    2.6892,
+    2.4268
+   ],
+   "acc_prose_long_c1": 2.2222222222222223,
+   "acc_prose_long_c1_runs": [
+    2.0619,
+    2.2222,
+    2.2472,
+    2.0825,
+    2.2472
+   ],
+   "acc_lail": 2.1180257878673574,
+   "acc_lail_range": [
+    2.007843137254902,
+    2.291479820627803
+   ],
+   "acc_bench_prose_c1": 2.5844155844155843,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.34,
+    50.0,
+    48.4,
+    52.17,
+    51.4,
+    48.99,
+    49.73,
+    49.01,
+    48.86,
+    53.27
+   ],
+   "lail_tok_runs": [
+    42.03,
+    44.72,
+    43.53,
+    41.24,
+    40.17,
+    43.91,
+    40.22,
+    43.16,
+    42.95,
+    42.91
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "24Gi"
+   ],
+   "acc_prose_long_c2": 2.117021276595745,
+   "acc_bench_prose_c2": 2.5125,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.0358565737051793,
+    2.2412280701754383,
+    2.1115702479338845,
+    2.1561181434599157,
+    2.064516129032258,
+    2.1561181434599157,
+    2.007843137254902,
+    2.12448132780083,
+    2.102880658436214,
+    2.291479820627803
+   ],
+   "lail_tok_runs_full": [
+    42.03066314818108,
+    44.71694154451676,
+    43.53297225212834,
+    41.23651460550491,
+    40.16701816466235,
+    43.910480228464145,
+    40.21960850464647,
+    43.16482536203657,
+    42.949796092535536,
+    42.90509596641044
+   ],
+   "four_partial": false
+  },
+  "CUR-2": {
+   "commit": "fcfb092461ee4a80ebee4672a785c90da64876b9",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 47.715380925837586,
+   "prose_long_c1_ms_step": 48.67531853010199,
+   "lail_ms_step": 48.63760307082137,
+   "bench_prose_c1_ms_step": 48.355495678170364,
+   "structured_c1_ms_step": 47.312848776826115,
+   "bench_prose_c2_ms_step": 59.17040849672389,
+   "structured_c2_ms_step": 56.17998220107338,
+   "prose_long_c2_ms_step": 62.20024223006184,
+   "lail_tok_s": 43.12289227988116,
+   "four_prose_c1_tok_s": 53.34,
+   "bench_prose_c1_tok_s": 52.36341078413534,
+   "structured_c1_tok_s": 83.71477127510205,
+   "prose_long_c1_tok_s": 43.394579443445245,
+   "bench_prose_c2_agg_tok_s": 84.65901446724939,
+   "structured_c2_agg_tok_s": 139.2185716428146,
+   "prose_long_c2_agg_tok_s": 66.09344902354401,
+   "lail_after_c2_3x_tok_s": 43.66,
+   "pp_warm_8k": 743.1,
+   "pp_warm_32k": 772.0,
+   "pp_novel_8k": 810.2,
+   "pp_novel_32k": 821.0,
+   "pp_runs": {
+    "pp_warm_8k": [
+     740.3,
+     743.1,
+     750.3
+    ],
+    "pp_novel_8k": [
+     810.2,
+     802.4,
+     813.2
+    ],
+    "pp_warm_32k": [
+     772.0,
+     759.9,
+     779.6
+    ],
+    "pp_novel_32k": [
+     824.3,
+     793.0,
+     821.0
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.5443037974683547,
+   "acc_four_prose_c1_runs": [
+    2.5443,
+    2.4938,
+    2.9412,
+    2.3976,
+    2.5641,
+    2.4512,
+    2.5897,
+    2.525,
+    2.6184
+   ],
+   "acc_prose_long_c1": 2.117021276595745,
+   "acc_prose_long_c1_runs": [
+    2.2222,
+    2.0833,
+    2.117,
+    2.1398,
+    1.932
+   ],
+   "acc_lail": 2.122451790633609,
+   "acc_lail_range": [
+    2.044,
+    2.2314410480349345
+   ],
+   "acc_bench_prose_c1": 2.518987341772152,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.32,
+    48.49,
+    55.82,
+    48.67,
+    48.54,
+    48.64,
+    48.47,
+    48.65,
+    48.63,
+    48.73
+   ],
+   "lail_tok_runs": [
+    42.56,
+    43.46,
+    38.38,
+    43.65,
+    44.32,
+    42.79,
+    45.33,
+    42.1,
+    41.94,
+    45.68
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "24Gi"
+   ],
+   "acc_prose_long_c2": 2.121693121693122,
+   "acc_bench_prose_c2": 2.556962025316456,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.0522088353413652,
+    2.1115702479338845,
+    2.1470588235294117,
+    2.1333333333333333,
+    2.1561181434599157,
+    2.089795918367347,
+    2.2025862068965516,
+    2.0522088353413652,
+    2.044,
+    2.2314410480349345
+   ],
+   "lail_tok_runs_full": [
+    42.55846488003574,
+    43.456345807769,
+    38.376386431787836,
+    43.65384532819066,
+    44.31906049019746,
+    42.789438751993316,
+    45.33490239304762,
+    42.1009166571885,
+    41.94210049864479,
+    45.683842674584554
+   ],
+   "four_partial": false
+  },
+  "Kp-1": {
+   "commit": "36392cea5300c5eec15987ea0e9b9e46778f3896",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 48.0834179517415,
+   "prose_long_c1_ms_step": 48.744342555621216,
+   "lail_ms_step": 48.54703684095671,
+   "bench_prose_c1_ms_step": 48.21416304751186,
+   "structured_c1_ms_step": 47.13903696244405,
+   "bench_prose_c2_ms_step": 58.33183214629203,
+   "structured_c2_ms_step": 54.84753878137602,
+   "prose_long_c2_ms_step": 61.315991818282306,
+   "lail_tok_s": 43.49332676840156,
+   "four_prose_c1_tok_s": 54.52,
+   "bench_prose_c1_tok_s": 51.95271698502124,
+   "structured_c1_tok_s": 84.0234457246352,
+   "prose_long_c1_tok_s": 44.258811424536184,
+   "bench_prose_c2_agg_tok_s": 85.5576846730342,
+   "structured_c2_agg_tok_s": 138.90869828330298,
+   "prose_long_c2_agg_tok_s": 68.3226634753882,
+   "lail_after_c2_3x_tok_s": 44.26,
+   "pp_warm_8k": 752.0,
+   "pp_warm_32k": 765.4,
+   "pp_novel_8k": 803.7,
+   "pp_novel_32k": 811.1,
+   "pp_runs": {
+    "pp_warm_8k": [
+     749.6,
+     752.0,
+     756.7
+    ],
+    "pp_novel_8k": [
+     803.7,
+     799.7,
+     820.4
+    ],
+    "pp_warm_32k": [
+     766.4,
+     765.4,
+     765.1
+    ],
+    "pp_novel_32k": [
+     822.5,
+     811.1,
+     807.7
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.5897435897435894,
+   "acc_four_prose_c1_runs": [
+    2.2955,
+    2.369,
+    2.7917,
+    2.726,
+    2.6316,
+    2.5844,
+    2.5897,
+    2.7162,
+    2.5897
+   ],
+   "acc_prose_long_c1": 2.150537634408602,
+   "acc_prose_long_c1_runs": [
+    2.0101,
+    2.0408,
+    2.2841,
+    2.1505,
+    2.236
+   ],
+   "acc_lail": 2.126914831079913,
+   "acc_lail_range": [
+    2.060483870967742,
+    2.271111111111111
+   ],
+   "acc_bench_prose_c1": 2.525,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.36,
+    49.86,
+    48.41,
+    48.56,
+    53.73,
+    48.48,
+    48.54,
+    48.51,
+    48.61,
+    48.69
+   ],
+   "lail_tok_runs": [
+    42.86,
+    41.92,
+    42.47,
+    46.25,
+    39.37,
+    43.1,
+    43.95,
+    46.7,
+    43.88,
+    44.0
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "23Gi",
+    "25Gi"
+   ],
+   "acc_prose_long_c2": 2.105263157894737,
+   "acc_bench_prose_c2": 2.537974683544304,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.0772357723577235,
+    2.098360655737705,
+    2.060483870967742,
+    2.251101321585903,
+    2.1115702479338845,
+    2.1024590163934427,
+    2.1422594142259417,
+    2.271111111111111,
+    2.1464435146443517,
+    2.1470588235294117
+   ],
+   "lail_tok_runs_full": [
+    42.864917675296866,
+    41.91697553678656,
+    42.47350890276999,
+    46.24535146271455,
+    39.374643080728454,
+    43.1037413769925,
+    43.954193902522306,
+    46.70061517830873,
+    43.882912159810616,
+    44.001064917998505
+   ],
+   "four_partial": false
+  },
+  "Kp-2": {
+   "commit": "71dccac71064a064dffefde929852594380a7d2f",
+   "contaminated": false,
+   "four_prose_c1_ms_step": 47.5222177108088,
+   "prose_long_c1_ms_step": 48.924284907985786,
+   "lail_ms_step": 48.54094056973399,
+   "bench_prose_c1_ms_step": 48.490111342802095,
+   "structured_c1_ms_step": 46.96995448441316,
+   "bench_prose_c2_ms_step": 59.417225246897885,
+   "structured_c2_ms_step": 56.08674292973629,
+   "prose_long_c2_ms_step": 61.64715226129998,
+   "lail_tok_s": 41.89940780156915,
+   "four_prose_c1_tok_s": 54.85,
+   "bench_prose_c1_tok_s": 52.10559452425695,
+   "structured_c1_tok_s": 84.32591338873587,
+   "prose_long_c1_tok_s": 43.69471497027246,
+   "bench_prose_c2_agg_tok_s": 85.35693350336462,
+   "structured_c2_agg_tok_s": 138.99801775613057,
+   "prose_long_c2_agg_tok_s": 68.52858285098635,
+   "lail_after_c2_3x_tok_s": 44.19,
+   "pp_warm_8k": 774.5,
+   "pp_warm_32k": 768.7,
+   "pp_novel_8k": 813.1,
+   "pp_novel_32k": 804.7,
+   "pp_runs": {
+    "pp_warm_8k": [
+     788.1,
+     774.5,
+     765.4
+    ],
+    "pp_novel_8k": [
+     800.1,
+     823.7,
+     813.1
+    ],
+    "pp_warm_32k": [
+     768.5,
+     768.7,
+     778.7
+    ],
+    "pp_novel_32k": [
+     804.7,
+     793.5,
+     806.9
+    ]
+   },
+   "warm_prefix_hit_fraction": 1.0,
+   "acc_four_prose_c1": 2.5844155844155843,
+   "acc_four_prose_c1_runs": [
+    2.3765,
+    2.6184,
+    2.6667,
+    2.7534,
+    2.3412,
+    2.5844,
+    2.519,
+    2.5316,
+    2.7027
+   ],
+   "acc_prose_long_c1": 2.117021276595745,
+   "acc_prose_long_c1_runs": [
+    2.117,
+    2.2697,
+    2.163,
+    1.9802,
+    2.0303
+   ],
+   "acc_lail": 2.0727438944756433,
+   "acc_lail_range": [
+    1.972972972972973,
+    2.212121212121212
+   ],
+   "acc_bench_prose_c1": 2.5125,
+   "acc_structured_c1": 3.9607843137254903,
+   "lail_ms_runs": [
+    48.56,
+    55.52,
+    52.88,
+    48.45,
+    53.26,
+    48.25,
+    48.42,
+    48.5,
+    48.52,
+    48.63
+   ],
+   "lail_tok_runs": [
+    43.21,
+    36.74,
+    41.74,
+    44.59,
+    38.61,
+    40.81,
+    42.81,
+    42.06,
+    41.38,
+    44.99
+   ],
+   "prose_long_c1_finish": "length",
+   "prose_long_c1_post_eos": 0.0,
+   "prose_long_c2_finish": "length",
+   "prose_long_c2_post_eos": 0.0,
+   "lail_finish": [
+    "length"
+   ],
+   "serve_env_ranks_match": true,
+   "lever_disarmed": false,
+   "disarm_lines": {
+    "spark1": [],
+    "spark2": []
+   },
+   "disarm_scan_rc": [
+    0
+   ],
+   "gpu_guard_rc": [
+    0
+   ],
+   "e2e_rc": [
+    0
+   ],
+   "correctness": "8/8",
+   "memavail_after_smoke_gib": [
+    "22Gi",
+    "24Gi"
+   ],
+   "acc_prose_long_c2": 2.128342245989305,
+   "acc_bench_prose_c2": 2.518987341772152,
+   "acc_structured_c2": 3.9607843137254903,
+   "acc_lail_runs": [
+    2.102880658436214,
+    2.044,
+    2.212121212121212,
+    2.165254237288136,
+    2.064516129032258,
+    1.972972972972973,
+    2.0809716599190287,
+    2.048,
+    2.0118110236220472,
+    2.1931330472103
+   ],
+   "lail_tok_runs_full": [
+    43.214128056525674,
+    36.73932335831065,
+    41.736398392662686,
+    44.586717617864394,
+    38.60819424265876,
+    40.80998458649016,
+    42.80657818776953,
+    42.06241721047561,
+    41.37784183505533,
+    44.99107790621808
+   ],
+   "four_partial": false
+  }
+ }
+}
