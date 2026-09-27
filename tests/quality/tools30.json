@@ -1,0 +1,927 @@
+{
+ "tools": {
+  "get_weather": {
+   "type": "function",
+   "function": {
+    "name": "get_weather",
+    "description": "Get current weather for a city",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "city": {
+       "type": "string"
+      },
+      "unit": {
+       "type": "string",
+       "enum": [
+        "c",
+        "f"
+       ]
+      }
+     },
+     "required": [
+      "city"
+     ]
+    }
+   }
+  },
+  "convert_currency": {
+   "type": "function",
+   "function": {
+    "name": "convert_currency",
+    "description": "Convert an amount between currencies (ISO 4217 codes)",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "amount": {
+       "type": "number"
+      },
+      "from": {
+       "type": "string",
+       "description": "ISO 4217 code"
+      },
+      "to": {
+       "type": "string",
+       "description": "ISO 4217 code"
+      }
+     },
+     "required": [
+      "amount",
+      "from",
+      "to"
+     ]
+    }
+   }
+  },
+  "create_calendar_event": {
+   "type": "function",
+   "function": {
+    "name": "create_calendar_event",
+    "description": "Create a calendar event",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "title": {
+       "type": "string"
+      },
+      "date": {
+       "type": "string",
+       "description": "YYYY-MM-DD"
+      },
+      "start_time": {
+       "type": "string",
+       "description": "HH:MM, 24-hour"
+      },
+      "duration_minutes": {
+       "type": "integer"
+      },
+      "attendees": {
+       "type": "array",
+       "items": {
+        "type": "string",
+        "description": "email"
+       }
+      }
+     },
+     "required": [
+      "title",
+      "date",
+      "start_time",
+      "duration_minutes"
+     ]
+    }
+   }
+  },
+  "search_flights": {
+   "type": "function",
+   "function": {
+    "name": "search_flights",
+    "description": "Search flights between airports (IATA codes)",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "origin": {
+       "type": "string"
+      },
+      "destination": {
+       "type": "string"
+      },
+      "date": {
+       "type": "string",
+       "description": "YYYY-MM-DD"
+      },
+      "passengers": {
+       "type": "integer"
+      },
+      "cabin": {
+       "type": "string",
+       "enum": [
+        "economy",
+        "business",
+        "first"
+       ]
+      }
+     },
+     "required": [
+      "origin",
+      "destination",
+      "date",
+      "passengers",
+      "cabin"
+     ]
+    }
+   }
+  },
+  "set_thermostat": {
+   "type": "function",
+   "function": {
+    "name": "set_thermostat",
+    "description": "Set the home thermostat (degrees Celsius)",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "temperature": {
+       "type": "number"
+      },
+      "mode": {
+       "type": "string",
+       "enum": [
+        "heat",
+        "cool",
+        "auto"
+       ]
+      }
+     },
+     "required": [
+      "temperature",
+      "mode"
+     ]
+    }
+   }
+  },
+  "send_email": {
+   "type": "function",
+   "function": {
+    "name": "send_email",
+    "description": "Send an email",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "to": {
+       "type": "string"
+      },
+      "subject": {
+       "type": "string"
+      },
+      "body": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "to",
+      "subject",
+      "body"
+     ]
+    }
+   }
+  },
+  "add_todo": {
+   "type": "function",
+   "function": {
+    "name": "add_todo",
+    "description": "Add a todo item",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "task": {
+       "type": "string"
+      },
+      "priority": {
+       "type": "string",
+       "enum": [
+        "low",
+        "medium",
+        "high"
+       ]
+      },
+      "tags": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "task",
+      "priority"
+     ]
+    }
+   }
+  },
+  "lookup_stock_price": {
+   "type": "function",
+   "function": {
+    "name": "lookup_stock_price",
+    "description": "Get the latest price for a stock ticker",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "ticker": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "ticker"
+     ]
+    }
+   }
+  },
+  "calculate_loan_payment": {
+   "type": "function",
+   "function": {
+    "name": "calculate_loan_payment",
+    "description": "Monthly payment for a fixed-rate loan",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "principal": {
+       "type": "number"
+      },
+      "annual_rate_percent": {
+       "type": "number"
+      },
+      "years": {
+       "type": "integer"
+      }
+     },
+     "required": [
+      "principal",
+      "annual_rate_percent",
+      "years"
+     ]
+    }
+   }
+  },
+  "update_user_profile": {
+   "type": "function",
+   "function": {
+    "name": "update_user_profile",
+    "description": "Update a user's settings",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "user_id": {
+       "type": "integer"
+      },
+      "settings": {
+       "type": "object",
+       "properties": {
+        "newsletter": {
+         "type": "boolean"
+        },
+        "language": {
+         "type": "string",
+         "description": "ISO 639-1 code"
+        }
+       },
+       "required": []
+      }
+     },
+     "required": [
+      "user_id",
+      "settings"
+     ]
+    }
+   }
+  },
+  "translate_text": {
+   "type": "function",
+   "function": {
+    "name": "translate_text",
+    "description": "Translate text",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "text": {
+       "type": "string"
+      },
+      "target_language": {
+       "type": "string",
+       "description": "ISO 639-1 code"
+      }
+     },
+     "required": [
+      "text",
+      "target_language"
+     ]
+    }
+   }
+  },
+  "book_restaurant": {
+   "type": "function",
+   "function": {
+    "name": "book_restaurant",
+    "description": "Book a restaurant table",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "restaurant": {
+       "type": "string"
+      },
+      "party_size": {
+       "type": "integer"
+      },
+      "date": {
+       "type": "string",
+       "description": "YYYY-MM-DD"
+      },
+      "time": {
+       "type": "string",
+       "description": "HH:MM, 24-hour"
+      }
+     },
+     "required": [
+      "restaurant",
+      "party_size",
+      "date",
+      "time"
+     ]
+    }
+   }
+  },
+  "get_directions": {
+   "type": "function",
+   "function": {
+    "name": "get_directions",
+    "description": "Directions between two places",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "from": {
+       "type": "string"
+      },
+      "to": {
+       "type": "string"
+      },
+      "mode": {
+       "type": "string",
+       "enum": [
+        "driving",
+        "walking",
+        "transit",
+        "cycling"
+       ]
+      }
+     },
+     "required": [
+      "from",
+      "to",
+      "mode"
+     ]
+    }
+   }
+  },
+  "set_timer": {
+   "type": "function",
+   "function": {
+    "name": "set_timer",
+    "description": "Start a countdown timer",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "minutes": {
+       "type": "integer"
+      },
+      "label": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "minutes"
+     ]
+    }
+   }
+  },
+  "query_database": {
+   "type": "function",
+   "function": {
+    "name": "query_database",
+    "description": "Query a table with filters",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "table": {
+       "type": "string"
+      },
+      "filters": {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "field": {
+          "type": "string"
+         },
+         "op": {
+          "type": "string",
+          "enum": [
+           "eq",
+           "neq",
+           "gt",
+           "lt",
+           "gte",
+           "lte"
+          ]
+         },
+         "value": {
+          "type": [
+           "string",
+           "number"
+          ]
+         }
+        },
+        "required": [
+         "field",
+         "op",
+         "value"
+        ]
+       }
+      },
+      "limit": {
+       "type": "integer"
+      }
+     },
+     "required": [
+      "table",
+      "filters"
+     ]
+    }
+   }
+  },
+  "resize_image": {
+   "type": "function",
+   "function": {
+    "name": "resize_image",
+    "description": "Resize an image",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "image_id": {
+       "type": "string"
+      },
+      "width": {
+       "type": "integer"
+      },
+      "height": {
+       "type": "integer"
+      },
+      "keep_aspect": {
+       "type": "boolean"
+      }
+     },
+     "required": [
+      "image_id",
+      "width",
+      "height",
+      "keep_aspect"
+     ]
+    }
+   }
+  }
+ },
+ "items": [
+  {
+   "id": "t01",
+   "prompt": "What's the weather in Tokyo in Celsius?",
+   "tools": [
+    "get_weather",
+    "lookup_stock_price"
+   ],
+   "expect": {
+    "name": "get_weather",
+    "args": {
+     "city": "Tokyo",
+     "unit": "c"
+    }
+   }
+  },
+  {
+   "id": "t02",
+   "prompt": "Convert 250 USD to EUR.",
+   "tools": [
+    "convert_currency"
+   ],
+   "expect": {
+    "name": "convert_currency",
+    "args": {
+     "amount": 250,
+     "from": "USD",
+     "to": "EUR"
+    }
+   }
+  },
+  {
+   "id": "t03",
+   "prompt": "Create a calendar event titled 'Design review' on 2026-10-05 at 14:30 for 45 minutes with attendees alice@example.com and bob@example.com.",
+   "tools": [
+    "create_calendar_event",
+    "send_email"
+   ],
+   "expect": {
+    "name": "create_calendar_event",
+    "args": {
+     "title": "Design review",
+     "date": "2026-10-05",
+     "start_time": "14:30",
+     "duration_minutes": 45,
+     "attendees": [
+      "alice@example.com",
+      "bob@example.com"
+     ]
+    }
+   }
+  },
+  {
+   "id": "t04",
+   "prompt": "Find business class flights from SFO to JFK on 2026-11-12 for 2 passengers.",
+   "tools": [
+    "search_flights",
+    "book_restaurant"
+   ],
+   "expect": {
+    "name": "search_flights",
+    "args": {
+     "origin": "SFO",
+     "destination": "JFK",
+     "date": "2026-11-12",
+     "passengers": 2,
+     "cabin": "business"
+    }
+   }
+  },
+  {
+   "id": "t05",
+   "prompt": "Set the thermostat to 21.5 degrees in heat mode.",
+   "tools": [
+    "set_thermostat"
+   ],
+   "expect": {
+    "name": "set_thermostat",
+    "args": {
+     "temperature": 21.5,
+     "mode": "heat"
+    }
+   }
+  },
+  {
+   "id": "t06",
+   "prompt": "Send an email to carol@example.com with subject 'Quarterly report' telling her the report is attached.",
+   "tools": [
+    "send_email",
+    "add_todo"
+   ],
+   "expect": {
+    "name": "send_email",
+    "args": {
+     "to": "carol@example.com",
+     "subject": "Quarterly report"
+    }
+   },
+   "ignore": [
+    "body"
+   ]
+  },
+  {
+   "id": "t07",
+   "prompt": "Add a high priority todo 'Renew passport' tagged 'personal' and 'travel'.",
+   "tools": [
+    "add_todo"
+   ],
+   "expect": {
+    "name": "add_todo",
+    "args": {
+     "task": "Renew passport",
+     "priority": "high",
+     "tags": [
+      "personal",
+      "travel"
+     ]
+    }
+   }
+  },
+  {
+   "id": "t08",
+   "prompt": "What's NVIDIA's stock price? The ticker is NVDA.",
+   "tools": [
+    "get_weather",
+    "lookup_stock_price",
+    "convert_currency"
+   ],
+   "expect": {
+    "name": "lookup_stock_price",
+    "args": {
+     "ticker": "NVDA"
+    }
+   }
+  },
+  {
+   "id": "t09",
+   "prompt": "What is the monthly payment on a 300000 loan at 6.5 percent annual interest over 30 years?",
+   "tools": [
+    "calculate_loan_payment"
+   ],
+   "expect": {
+    "name": "calculate_loan_payment",
+    "args": {
+     "principal": 300000,
+     "annual_rate_percent": 6.5,
+     "years": 30
+    }
+   }
+  },
+  {
+   "id": "t10",
+   "prompt": "For user 4821, turn off the newsletter and set the language to 'de'.",
+   "tools": [
+    "update_user_profile"
+   ],
+   "expect": {
+    "name": "update_user_profile",
+    "args": {
+     "user_id": 4821,
+     "settings": {
+      "newsletter": false,
+      "language": "de"
+     }
+    }
+   }
+  },
+  {
+   "id": "t11",
+   "prompt": "Translate 'Good morning, everyone' into Spanish (language code es).",
+   "tools": [
+    "translate_text"
+   ],
+   "expect": {
+    "name": "translate_text",
+    "args": {
+     "text": "Good morning, everyone",
+     "target_language": "es"
+    }
+   }
+  },
+  {
+   "id": "t12",
+   "prompt": "Book a table at Luigi's for 4 people on 2026-10-10 at 19:00.",
+   "tools": [
+    "book_restaurant",
+    "search_flights"
+   ],
+   "expect": {
+    "name": "book_restaurant",
+    "args": {
+     "restaurant": "Luigi's",
+     "party_size": 4,
+     "date": "2026-10-10",
+     "time": "19:00"
+    }
+   }
+  },
+  {
+   "id": "t13",
+   "prompt": "Get transit directions from 'Louvre Museum' to 'Eiffel Tower'.",
+   "tools": [
+    "get_directions",
+    "get_weather"
+   ],
+   "expect": {
+    "name": "get_directions",
+    "args": {
+     "from": "Louvre Museum",
+     "to": "Eiffel Tower",
+     "mode": "transit"
+    }
+   }
+  },
+  {
+   "id": "t14",
+   "prompt": "Set a 25 minute timer labeled 'pomodoro'.",
+   "tools": [
+    "set_timer"
+   ],
+   "expect": {
+    "name": "set_timer",
+    "args": {
+     "minutes": 25,
+     "label": "pomodoro"
+    }
+   }
+  },
+  {
+   "id": "t15",
+   "prompt": "Query the 'orders' table for rows where status equals 'shipped' and total is greater than 100, limit 20.",
+   "tools": [
+    "query_database"
+   ],
+   "expect": {
+    "name": "query_database",
+    "args": {
+     "table": "orders",
+     "filters": [
+      {
+       "field": "status",
+       "op": "eq",
+       "value": "shipped"
+      },
+      {
+       "field": "total",
+       "op": "gt",
+       "value": 100
+      }
+     ],
+     "limit": 20
+    }
+   }
+  },
+  {
+   "id": "t16",
+   "prompt": "Resize image img_778 to 800x600 without keeping the aspect ratio.",
+   "tools": [
+    "resize_image"
+   ],
+   "expect": {
+    "name": "resize_image",
+    "args": {
+     "image_id": "img_778",
+     "width": 800,
+     "height": 600,
+     "keep_aspect": false
+    }
+   }
+  },
+  {
+   "id": "t17",
+   "prompt": "Is it hot in Phoenix right now? Use Fahrenheit.",
+   "tools": [
+    "get_weather",
+    "set_thermostat"
+   ],
+   "expect": {
+    "name": "get_weather",
+    "args": {
+     "city": "Phoenix",
+     "unit": "f"
+    }
+   }
+  },
+  {
+   "id": "t18",
+   "prompt": "How many Japanese yen is 1200 British pounds?",
+   "tools": [
+    "convert_currency",
+    "lookup_stock_price"
+   ],
+   "expect": {
+    "name": "convert_currency",
+    "args": {
+     "amount": 1200,
+     "from": "GBP",
+     "to": "JPY"
+    }
+   }
+  },
+  {
+   "id": "t19",
+   "prompt": "Add a low priority todo 'Water the plants'.",
+   "tools": [
+    "add_todo"
+   ],
+   "expect": {
+    "name": "add_todo",
+    "args": {
+     "task": "Water the plants",
+     "priority": "low"
+    }
+   },
+   "ignore": [
+    "tags"
+   ]
+  },
+  {
+   "id": "t20",
+   "prompt": "Cool the house to 19 degrees.",
+   "tools": [
+    "set_thermostat",
+    "set_timer"
+   ],
+   "expect": {
+    "name": "set_thermostat",
+    "args": {
+     "temperature": 19,
+     "mode": "cool"
+    }
+   }
+  },
+  {
+   "id": "t21",
+   "prompt": "Schedule 'Standup' on 2026-09-30 at 09:00 for 15 minutes with dave@example.com.",
+   "tools": [
+    "create_calendar_event"
+   ],
+   "expect": {
+    "name": "create_calendar_event",
+    "args": {
+     "title": "Standup",
+     "date": "2026-09-30",
+     "start_time": "09:00",
+     "duration_minutes": 15,
+     "attendees": [
+      "dave@example.com"
+     ]
+    }
+   }
+  },
+  {
+   "id": "t22",
+   "prompt": "Please search one economy ticket from LHR to CDG on 2026-12-01.",
+   "tools": [
+    "search_flights"
+   ],
+   "expect": {
+    "name": "search_flights",
+    "args": {
+     "origin": "LHR",
+     "destination": "CDG",
+     "date": "2026-12-01",
+     "passengers": 1,
+     "cabin": "economy"
+    }
+   }
+  },
+  {
+   "id": "n01",
+   "prompt": "What is the capital of Canada? Answer directly.",
+   "tools": [
+    "get_weather"
+   ],
+   "expect": null
+  },
+  {
+   "id": "n02",
+   "prompt": "Write a haiku about autumn.",
+   "tools": [
+    "send_email",
+    "add_todo"
+   ],
+   "expect": null
+  },
+  {
+   "id": "n03",
+   "prompt": "What is 12 times 12?",
+   "tools": [
+    "calculate_loan_payment"
+   ],
+   "expect": null
+  },
+  {
+   "id": "n04",
+   "prompt": "Explain what a hash map is in one sentence.",
+   "tools": [
+    "query_database"
+   ],
+   "expect": null
+  },
+  {
+   "id": "n05",
+   "prompt": "Thanks, that's all for now!",
+   "tools": [
+    "set_timer"
+   ],
+   "expect": null
+  },
+  {
+   "id": "n06",
+   "prompt": "Who wrote Pride and Prejudice?",
+   "tools": [
+    "lookup_stock_price",
+    "translate_text"
+   ],
+   "expect": null
+  },
+  {
+   "id": "n07",
+   "prompt": "What does the word 'thermostat' mean? One sentence.",
+   "tools": [
+    "set_thermostat"
+   ],
+   "expect": null
+  },
+  {
+   "id": "n08",
+   "prompt": "Is a tomato a fruit or a vegetable? One sentence.",
+   "tools": [
+    "get_directions"
+   ],
+   "expect": null
+  }
+ ]
+}

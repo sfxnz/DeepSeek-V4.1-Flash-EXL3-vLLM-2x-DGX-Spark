@@ -78,7 +78,7 @@ The API is `http://127.0.0.1:8000/v1`. The served model is `deepseek-ai/DeepSeek
 
 The promoted recipe additionally ships, all default-on and individually A/B'd (results/RESULTS.md rounds 15–33): `NUM_SPECULATIVE_TOKENS=3` with cudagraph capture sizes `[1,3,4,6,8]`, `MAX_NUM_BATCHED_TOKENS=8192`, the NCCL AR-tail set (`NCCL_BUFFSIZE=1048576`, `NCCL_LL128_BUFFSIZE=262144`, `NCCL_PROTO=^LL128`, `NCCL_MAX_NCHANNELS=8`), the mem-hygiene bundle (`DSV41_DROP_PAGE_CACHE=1`, `DSV41_INDEXER_PREFILL_FACTOR=1`, `DSV41_PREFILL_EMPTY_CACHE_TOKENS=8192`, `DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB=2.5`, `VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=256`), Engram prefetch v3 + gather v2 + census (`DSV41_ENGRAM_PREFETCH=1`, `DSV41_ENGRAM_GATHER_V2=1`, `DSV41_ENGRAM_CENSUS=1`), and lm_head mxfp8 (`DSV41_LMHEAD_MXFP8=1`, pack revision `2.0bpw-mcg-lmhead-mxfp8` — the stock pack with only `model-00043` re-encoded; `tools/quantize_lmhead_mxfp8.py` builds it from `2.0bpw-mcg` in ~10 min).
 
-The `smoke_chat.py` default prompt is `What is 17*19? Return only the integer.` Thinking is off. The pass is `content` matching `323` (`--expect ''` accepts any non-empty content). `smoke_vision.py` sends OpenAI `image_url` and must not return HTTP 400 `is not a multimodal model`. `bench_decode.py` is streamed greedy, thinking off, 200 completion tokens, 3-run median by default (the headline cell uses `--runs 9`).
+The `smoke_chat.py` default prompt is `What is 17*19? Return only the integer.` Thinking is off. The pass is `content` matching `323` (`--expect ''` accepts any non-empty content). `smoke_vision.py` sends a 64x64 solid-red PNG as OpenAI `image_url`. It must not return HTTP 400 `is not a multimodal model`, and the answer must contain `red`. `bench_decode.py` is streamed greedy, thinking off, 200 completion tokens, 3-run median by default (the headline cell uses `--runs 9`).
 
 If `ORCHESTRATE=auto` (the default) and SSH to `WORKER_HOST` fails, `run.sh` exits 1. It does not start a TP=2 head rank alone.
 
@@ -87,6 +87,37 @@ When you are done:
 ```bash
 ./stop.sh
 ```
+
+## Quality eval
+
+`tests/quality_eval.py` measures output quality against a running serve. It is stdlib-only and uses HTTP only. `--quick` (~6-9 min) covers:
+
+- teacher-forced NLL on 40 public-domain passages (`prompt_logprobs`, with BOS)
+- a decode-vs-prefill logprob probe
+- 30 tool-call items (JSON-valid, exact-args and no-call rates)
+- needle recall at 8k/32k × 3 depths, on generated filler
+- a 12×2 greedy self-consistency control
+- a c=2 sanity check
+- the red-PNG vision check
+
+`--full` adds GSM8K-100 with thinking off, GSM8K-40 with thinking on, MMLU 4×57, and the needle at 128k. The run exits 1 when a gate fails.
+
+```bash
+python3 tests/quality_eval.py --quick --out /tmp/q.json \
+  --baseline results/2026-09-24-review/quality-baseline/quick.json
+```
+
+With `--baseline`, it gates on the following:
+
+| Metric | Gate |
+|--------|------|
+| NLL | ≤ baseline + max(0.01, 3× repeat noise) nats |
+| Decode probe | median \|Δlogprob\| ≤ baseline + 0.05, and greedy-text NLL ≤ baseline + 0.15 |
+| Rates | Wilson 95% upper bound with one item of slack ((k+1)/n) ≥ baseline rate |
+| Needle | found ≥ baseline |
+| Golden flip hazard | ≤ 2× max(baseline A/A hazard, 0.005); the run's own A/A hazard has the same limit |
+
+Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-gates two saved runs offline with no traffic, which is how an A/B compares two boots. Run it serialized: never next to a bench, and never with a third stream. The vendored data and licenses are in `tests/quality/README.md`. The baseline numbers are in `results/2026-09-24-review/quality-baseline/README.md`.
 
 ## Defaults
 
