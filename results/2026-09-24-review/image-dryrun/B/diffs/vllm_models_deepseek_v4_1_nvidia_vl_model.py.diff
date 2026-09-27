@@ -1,0 +1,37 @@
+--- /tmp/orig/vllm/models/deepseek_v4_1/nvidia/vl_model.py	2026-09-10 06:38:20.000000000 +0000
++++ /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/nvidia/vl_model.py	2026-09-24 15:13:44.319096938 +0000
+@@ -343,7 +343,33 @@
+         # must not run on a partially loaded model).
+         mapped = sorted(self.hf_to_vllm_mapper.apply(weights), key=lambda x: x[0])
+         loader = AutoWeightsLoader(self)
+-        loaded_params = loader.load_weights(mapped)
++        # # --- g8-stream-feed --- drain-in-place: H2D copies pin each source
++        # tensor's host pages until the tensor is freed; retaining the whole
++        # sorted list (184k expert tensors) balloons host anon ~27 GiB stock /
++        # ~53 GiB G8 (OOM). Yield the identical order but drop each item as
++        # consumed. The list moves into a box and `mapped` is deleted, so the
++        # generator holds the only reference to it.
++        # Gate: DSV41_LOAD_PF_G8=1 or DSV41_STREAM_FEED=1.
++        import os as _os
++
++        if (
++            _os.environ.get("DSV41_LOAD_PF_G8", "0") == "1"
++            or _os.environ.get("DSV41_STREAM_FEED", "0") == "1"
++        ):
++
++            def _drained(box):
++                lst = box[0]
++                box[0] = None
++                for _i in range(len(lst)):
++                    _item = lst[_i]
++                    lst[_i] = None
++                    yield _item
++
++            _box = [mapped]
++            del mapped
++            loaded_params = loader.load_weights(_drained(_box))
++        else:
++            loaded_params = loader.load_weights(mapped)
+         # The child's load_weights already ran its post-load finalization.
+         self._weights_finalized = True
+         return loaded_params

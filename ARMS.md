@@ -90,20 +90,31 @@ One boot = one lever. Every arm produces the four numbers via
    L.A.I.L prose 33.23 tok/s. Both force `ignore_eos`: the frozen prose
    prompt stops at 78 of 200 tokens
    (`results/2026-09-24-review/bench-honesty/smoke-prose.txt`), so most of
-   that cell is post-EOS text. They stay for continuity only. prose_long, pp_novel,
-   c=2 and warm-prefix have no baseline until the first ABAB boot records
-   one.
+   that cell is post-EOS text. They stay for continuity only. Round 34
+   reference (s13, the round-34 defaults, `four_numbers.sh`): prose 40.37
+   at 63.03 ms/step, prose_long c=1 33.13 at 62.88 ms/step, prose_long c=2
+   45.94 aggregate, pp_novel 8k/32k 808.8/800.2, pp_warm 759.6/766.8,
+   L.A.I.L 3x 33.98 (`results/2026-09-24-review/campaign/s13-promote-final/`).
+   Warm-prefix hits depend on the prompt length: a repeat of N tokens
+   missed entirely when N ran only 10-58 tokens past the last 128-token
+   boundary, and hit at 68-127 (results/RESULTS.md round 34). Read a 0.0
+   `hit_fraction_of_expected` with that in mind.
 
 ## Exact restore sequence
 
-Current serve = canonical image `dsv41-flash-exl3-sm121:canonical-e12` on
-both nodes, launched via `serve.sh` from this repo on spark1 (head). To
-restore after any arm:
+Current serve (round 34) = `dsv41-flash-exl3-sm121:canonical-e13` on both
+nodes with the round-34 defaults (`DSV41_ENGRAM_WILLNEED=1`,
+`DSV41_STREAM_FEED=1`, `DSV41_WOA_PREPACK=1`,
+`DSV41_DSPARK_SPARSE_MARKOV=1`), launched with `AUDIT=strict ./run.sh` from
+the perf-review-0924 worktree. Until that branch merges, the main checkout
+keeps the R33 defaults and boot-lm.sh below restores the R33 config. After
+the merge, boot-lm.sh exports only its own names, so it would inherit the
+round-34 lever defaults on e12. Use the "levers off" line further down instead.
 
 ```bash
 cd /home/sfxnz/projects/ai-lab/recipes/DeepSeek-V4.1-Flash-EXL3-vLLM-2x-DGX-Spark
 ./stop.sh                                  # both nodes (stops spark2 via ssh)
-./serve.sh                                 # defaults = boot-lm.sh config (canonical-e12, lmhead pack)
+bash results/2026-09-22-endgame2/boot-lm.sh   # R33 config (canonical-e12, lmhead pack), old code
 # readiness: python3 smoke_chat.py && python3 smoke_vision.py
 # then: tools/four_numbers.sh --arm <label> to re-confirm baseline cells
 ```
@@ -113,6 +124,10 @@ cd /home/sfxnz/projects/ai-lab/recipes/DeepSeek-V4.1-Flash-EXL3-vLLM-2x-DGX-Spar
   `docker/patch` to /tmp there, launches worker container with the full env
   forwarded), sleeps 25s for NCCL, then starts head rank 0 and `wait_ready`
   (`/health` + `/v1/models`; allow up to 60 min, plan ≥20).
-- Kernel arms rollback: `IMAGE=dsv41-flash-exl3-sm121:canonical-e12 ./serve.sh`.
+- Kernel arms rollback: `IMAGE=dsv41-flash-exl3-sm121:canonical-e12 DSV41_WOA_PREPACK=0 ./serve.sh`
+  (on e12 the WOA lever logs `the lever is OFF` and a strict audit fails).
+- Round-34 levers off on the new code (the s3 B1 config):
+  `IMAGE=dsv41-flash-exl3-sm121:canonical-e12 DSV41_ENGRAM_WILLNEED=0 DSV41_STREAM_FEED=0 DSV41_WOA_PREPACK=0 DSV41_DSPARK_SPARSE_MARKOV=0 ./run.sh`.
+  An empty value keeps the default, so use `0`.
 - Patch-script changes (`docker/patch/engram_*`) take effect on restart
   without an image rebuild (patch dir is volume-mounted read-only).

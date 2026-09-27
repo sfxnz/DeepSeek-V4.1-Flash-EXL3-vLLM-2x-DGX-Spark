@@ -1,0 +1,202 @@
+{
+ "steps": 232.0,
+ "kernel_ms_per_step": 64.459,
+ "rows": [
+  {
+   "pattern": "argmax",
+   "grid": [
+    1,
+    1,
+    1
+   ],
+   "calls": 700,
+   "total_us": 16145.9,
+   "name": "void at::native::reduce_kernel<512, 1, at::native::ReduceOp<c10::BFloat16, at::native::ArgMaxOps<flo",
+   "us_per_call": 23.07,
+   "calls_per_step": 3.02,
+   "ms_per_step": 0.07
+  },
+  {
+   "pattern": "markov_gemm",
+   "grid": [
+    8,
+    505,
+    1
+   ],
+   "calls": 699,
+   "total_us": 193559.7,
+   "name": "void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_32x32_128x1_tn_align8>(cutlass_",
+   "us_per_call": 276.91,
+   "calls_per_step": 3.01,
+   "ms_per_step": 0.834
+  },
+  {
+   "pattern": "mhc_pre_norm_fused",
+   "grid": [
+    4,
+    1,
+    1
+   ],
+   "calls": 18560,
+   "total_us": 113904.5,
+   "name": "mhc_pre_big_fuse_with_norm_tilelang_kernel",
+   "us_per_call": 6.14,
+   "calls_per_step": 80.0,
+   "ms_per_step": 0.491
+  },
+  {
+   "pattern": "mhc_pre_norm_fused",
+   "grid": [
+    3,
+    1,
+    1
+   ],
+   "calls": 1398,
+   "total_us": 7791.9,
+   "name": "mhc_pre_big_fuse_with_norm_tilelang_kernel",
+   "us_per_call": 5.57,
+   "calls_per_step": 6.03,
+   "ms_per_step": 0.034
+  },
+  {
+   "pattern": "mhc_pre_norm_fused",
+   "grid": [
+    61,
+    1,
+    1
+   ],
+   "calls": 80,
+   "total_us": 675.4,
+   "name": "mhc_pre_big_fuse_with_norm_tilelang_kernel",
+   "us_per_call": 8.44,
+   "calls_per_step": 0.34,
+   "ms_per_step": 0.003
+  },
+  {
+   "pattern": "mhc_prenorm_gemm",
+   "grid": [
+    40,
+    1,
+    1
+   ],
+   "calls": 19805,
+   "total_us": 308889.0,
+   "name": "void deep_gemm::sm120_tf32_hc_prenorm_gemm_impl<24u, 20480u, 128u, 32u, 64u, 40u, 4u, 256u, 128u>(un",
+   "us_per_call": 15.6,
+   "calls_per_step": 85.37,
+   "ms_per_step": 1.331
+  },
+  {
+   "pattern": "mhc_prenorm_gemm",
+   "grid": [
+    20,
+    1,
+    1
+   ],
+   "calls": 233,
+   "total_us": 1431.6,
+   "name": "void deep_gemm::sm120_tf32_hc_prenorm_gemm_impl<24u, 5120u, 128u, 32u, 64u, 20u, 4u, 256u, 128u>(uns",
+   "us_per_call": 6.14,
+   "calls_per_step": 1.0,
+   "ms_per_step": 0.006
+  },
+  {
+   "pattern": "topk",
+   "grid": [
+    4,
+    1,
+    1
+   ],
+   "calls": 21112,
+   "total_us": 261668.6,
+   "name": "_compute_global_topk_indices_and_lens_kernel",
+   "us_per_call": 12.39,
+   "calls_per_step": 91.0,
+   "ms_per_step": 1.128
+  },
+  {
+   "pattern": "topk",
+   "grid": [
+    256,
+    1,
+    1
+   ],
+   "calls": 2088,
+   "total_us": 7757.0,
+   "name": "void at::native::mbtopk::computeBlockDigitCounts<float, unsigned int, unsigned int, 2>(at::cuda::det",
+   "us_per_call": 3.72,
+   "calls_per_step": 9.0,
+   "ms_per_step": 0.033
+  },
+  {
+   "pattern": "topk",
+   "grid": [
+    1,
+    1,
+    1
+   ],
+   "calls": 2131,
+   "total_us": 6134.9,
+   "name": "void vllm::moe::topkGatingSoftplusSqrt<4, 128, 4, 16, 32, false, int, int, float>(float const*, bool",
+   "us_per_call": 2.88,
+   "calls_per_step": 9.19,
+   "ms_per_step": 0.026
+  },
+  {
+   "pattern": "topk",
+   "grid": [
+    4,
+    10,
+    1
+   ],
+   "calls": 1856,
+   "total_us": 2957.3,
+   "name": "void vllm::topKPerRowDecode<512, true, true, false>(float const*, int const*, int*, int, int, int, i",
+   "us_per_call": 1.59,
+   "calls_per_step": 8.0,
+   "ms_per_step": 0.013
+  },
+  {
+   "pattern": "topk",
+   "grid": [
+    61,
+    1,
+    1
+   ],
+   "calls": 86,
+   "total_us": 823.3,
+   "name": "_dsv4_topk_kernel",
+   "us_per_call": 9.57,
+   "calls_per_step": 0.37,
+   "ms_per_step": 0.004
+  },
+  {
+   "pattern": "woa_einsum",
+   "grid": [
+    48,
+    1,
+    1
+   ],
+   "calls": 9979,
+   "total_us": 810904.7,
+   "name": "void deep_gemm::sm120_fp8_fp4_gemm_1d1d_impl<0u, 4u, 4096u, 32u, 32u, 4u, 128u, 16u, 128u, 128u, 128",
+   "us_per_call": 81.26,
+   "calls_per_step": 43.01,
+   "ms_per_step": 3.495
+  },
+  {
+   "pattern": "woa_pack",
+   "grid": [
+    12,
+    1,
+    1
+   ],
+   "calls": 699,
+   "total_us": 1037.3,
+   "name": "void deep_gemm::transpose_and_pack_fp32_into_ue8m0<512u, 48u, 40u, 1u, false>(float*, unsigned int*,",
+   "us_per_call": 1.48,
+   "calls_per_step": 3.01,
+   "ms_per_step": 0.004
+  }
+ ]
+}

@@ -1,0 +1,710 @@
+{
+  "site": "/usr/local/lib/python3.12/dist-packages",
+  "retargeted": true,
+  "steps": [
+    {
+      "step": "apply_engram_disk",
+      "phase": "build",
+      "outcome": "changed",
+      "touched": [
+        "vllm/model_executor/model_loader/weight_utils.py",
+        "vllm/models/deepseek_v41/common/engram.py",
+        "vllm/models/deepseek_v41/common/engram_disk.py"
+      ]
+    },
+    {
+      "step": "apply_engram_prestage",
+      "phase": "build",
+      "outcome": "error:apply_engram_prestage: missing marker staged_rows",
+      "touched": []
+    },
+    {
+      "step": "widen_b12x_smalls",
+      "phase": "build",
+      "outcome": "changed",
+      "touched": [
+        "flashinfer/gemm/kernels/dense_blockscaled_gemm_sm120_b12x.py"
+      ]
+    },
+    {
+      "step": "probe_wo_a",
+      "phase": "build",
+      "outcome": "changed",
+      "touched": [
+        "vllm/models/deepseek_v4/nvidia/ops/o_proj.py"
+      ]
+    },
+    {
+      "step": "fix_o_proj_woa_fp8",
+      "phase": "build",
+      "outcome": "changed",
+      "touched": [
+        "vllm/models/deepseek_v4/nvidia/ops/o_proj.py"
+      ]
+    },
+    {
+      "step": "prefer_b12x_mxfp8",
+      "phase": "runtime",
+      "outcome": "changed",
+      "touched": [
+        "vllm/model_executor/kernels/linear/mxfp8/flashinfer.py"
+      ]
+    },
+    {
+      "step": "indexer_workspace",
+      "phase": "runtime",
+      "outcome": "changed",
+      "touched": [
+        "vllm/v1/attention/backends/mla/indexer.py"
+      ]
+    },
+    {
+      "step": "widen_mla_io2 (off by default)",
+      "phase": "runtime",
+      "outcome": "changed",
+      "touched": [
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh"
+      ]
+    },
+    {
+      "step": "widen_mla_tile32",
+      "phase": "runtime",
+      "outcome": "changed",
+      "touched": [
+        "flashinfer/data/csrc/sparse_mla_sm120_decode_dsv4.cu",
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh",
+        "flashinfer/mla/_core.py",
+        "flashinfer/mla/_sparse_mla_sm120.py"
+      ]
+    },
+    {
+      "step": "persistent_topk",
+      "phase": "runtime",
+      "outcome": "error:ValueError: persistent_topk dispatch not found",
+      "touched": []
+    },
+    {
+      "step": "kpool_persistent_topk",
+      "phase": "runtime",
+      "outcome": "changed",
+      "touched": [
+        "vllm/model_executor/layers/sparse_attn_indexer_kpool.py"
+      ]
+    },
+    {
+      "step": "swa_prefill_image_width",
+      "phase": "runtime",
+      "outcome": "changed",
+      "touched": [
+        "vllm/v1/attention/backends/mla/sparse_swa.py"
+      ]
+    },
+    {
+      "step": "attention_image_width",
+      "phase": "runtime",
+      "outcome": "changed",
+      "touched": [
+        "vllm/models/deepseek_v41/attention.py"
+      ]
+    },
+    {
+      "step": "native_indexer_decode",
+      "phase": "runtime",
+      "outcome": "changed",
+      "touched": [
+        "vllm/v1/attention/backends/mla/indexer.py"
+      ]
+    },
+    {
+      "step": "indexer_adaptive",
+      "phase": "runtime",
+      "outcome": "changed",
+      "touched": [
+        "vllm/v1/attention/backends/mla/indexer.py"
+      ]
+    },
+    {
+      "step": "indexer_short_context",
+      "phase": "runtime",
+      "outcome": "changed",
+      "touched": [
+        "vllm/models/deepseek_v41/attention.py"
+      ]
+    },
+    {
+      "step": "engram_stage_census",
+      "phase": "runtime",
+      "outcome": "changed",
+      "touched": [
+        "vllm/models/deepseek_v41/common/engram_disk.py"
+      ]
+    },
+    {
+      "step": "engram_stage_fast",
+      "phase": "runtime",
+      "outcome": "error:SystemExit: engram_stage_fast: stage() anchor missing",
+      "touched": []
+    },
+    {
+      "step": "engram_prefetch_v3",
+      "phase": "runtime",
+      "outcome": "error:SystemExit: engram_prefetch_v3: stager init anchor missing",
+      "touched": []
+    },
+    {
+      "step": "engram_cpu_hash",
+      "phase": "runtime",
+      "outcome": "error:SystemExit: engram_cpu_hash: fast-stage stage() anchor missing (apply engram_stage_fast first)",
+      "touched": []
+    },
+    {
+      "step": "engram_gather_v2",
+      "phase": "runtime",
+      "outcome": "changed",
+      "touched": [
+        "vllm/models/deepseek_v41/common/engram_disk.py"
+      ]
+    },
+    {
+      "step": "engram_defer",
+      "phase": "runtime",
+      "outcome": "error:SystemExit: engram_defer: stager init anchor missing",
+      "touched": []
+    }
+  ],
+  "unresolved_refs": [
+    {
+      "patch": "drop_page_cache.py",
+      "module": "vllm.v1.worker.gpu_worker.Worker",
+      "name": "._dsv41_drop_page_cache",
+      "status": "missing-attr"
+    },
+    {
+      "patch": "sitecustomize.py",
+      "module": "vllm.models.deepseek_v41.common.engram_disk",
+      "name": "DiskEngramTable",
+      "status": "missing-module"
+    },
+    {
+      "patch": "sitecustomize.py",
+      "module": "vllm.models.deepseek_v41.common.engram_disk.DiskEngramTable",
+      "name": ".gather_dequant",
+      "status": "missing-attr"
+    },
+    {
+      "patch": "sm120_page.py",
+      "module": "vllm.models.deepseek_v41.common.engram",
+      "name": "EngramDiskStager",
+      "status": "missing-name"
+    },
+    {
+      "patch": "sm120_page.py",
+      "module": "vllm.models.deepseek_v41.common.engram.EngramDiskStager",
+      "name": ".stage",
+      "status": "missing-attr"
+    }
+  ],
+  "anchors": [
+    {
+      "patch": "apply_engram_disk",
+      "anchor": "IMPORT_OLD",
+      "n_files": 181,
+      "files": [
+        "vllm/lora/model_manager.py",
+        "vllm/v1/spec_decode/ngram_proposer_gpu.py",
+        "vllm/model_executor/model_loader/runai_streamer_loader.py",
+        "vllm/model_executor/model_loader/tensorizer.py",
+        "vllm/model_executor/model_loader/default_loader.py"
+      ]
+    },
+    {
+      "patch": "apply_engram_disk",
+      "anchor": "SIG_OLD",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "apply_engram_disk",
+      "anchor": "ALLOC_OLD",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "apply_engram_disk",
+      "anchor": "LOOKUP_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/models/deepseek_v41/common/engram.py"
+      ]
+    },
+    {
+      "patch": "apply_engram_disk",
+      "anchor": "FWD_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/models/deepseek_v41/common/engram.py"
+      ]
+    },
+    {
+      "patch": "apply_engram_disk",
+      "anchor": "CTOR_OLD",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "apply_engram_disk",
+      "anchor": "WU_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/model_executor/model_loader/weight_utils.py"
+      ]
+    },
+    {
+      "patch": "apply_engram_prestage",
+      "anchor": "PREPARE_OLD",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "apply_engram_prestage",
+      "anchor": "STAGED_OLD",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "apply_engram_prestage",
+      "anchor": "DISK_OLD",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "apply_engram_prestage",
+      "anchor": "MS_IMPORT_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/models/deepseek_v41/nvidia/model_state.py"
+      ]
+    },
+    {
+      "patch": "apply_engram_prestage",
+      "anchor": "MS_INIT_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/models/deepseek_v41/nvidia/model_state.py"
+      ]
+    },
+    {
+      "patch": "apply_engram_prestage",
+      "anchor": "MS_PREP_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/models/deepseek_v41/nvidia/model_state.py"
+      ]
+    },
+    {
+      "patch": "c1_graph_safe_adaptive",
+      "anchor": "GATE_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/v1/worker/gpu/spec_decode/adaptive_verification.py"
+      ]
+    },
+    {
+      "patch": "c1_graph_safe_adaptive",
+      "anchor": "BUDGET_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/v1/worker/gpu/spec_decode/adaptive_verification.py"
+      ]
+    },
+    {
+      "patch": "c1_graph_safe_adaptive",
+      "anchor": "VARLEN_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/v1/worker/gpu/model_runner.py"
+      ]
+    },
+    {
+      "patch": "engram_cpu_hash",
+      "anchor": "OLD_STAGE",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_cpu_hash",
+      "anchor": "RUNNER_ANCHOR",
+      "n_files": 1,
+      "files": [
+        "vllm/v1/worker/gpu/model_runner.py"
+      ]
+    },
+    {
+      "patch": "engram_cpu_hash",
+      "anchor": "COMMIT_ANCHOR",
+      "n_files": 1,
+      "files": [
+        "vllm/v1/worker/gpu/model_runner.py"
+      ]
+    },
+    {
+      "patch": "engram_cpu_hash",
+      "anchor": "STAGE_DEF_ANCHOR",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_defer",
+      "anchor": "STAGER_INIT_TAIL",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_defer",
+      "anchor": "STAGE_DEF_ANCHOR",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_defer",
+      "anchor": "CH_STAGE_OLD",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_defer",
+      "anchor": "EPI_OLD",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_defer",
+      "anchor": "SIG_OLD",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_defer",
+      "anchor": "RUNNER_V3_HOOK_TAIL",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_defer",
+      "anchor": "RUNNER_ANCHOR",
+      "n_files": 1,
+      "files": [
+        "vllm/v1/worker/gpu/model_runner.py"
+      ]
+    },
+    {
+      "patch": "engram_gather_v2",
+      "anchor": "GD_DEF",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_gather_v2",
+      "anchor": "DISPATCH_OLD",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_prefetch_v3",
+      "anchor": "STAGER_INIT_TAIL",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_prefetch_v3",
+      "anchor": "STAGE_DEF_ANCHOR",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_prefetch_v3",
+      "anchor": "RUNNER_ANCHOR",
+      "n_files": 1,
+      "files": [
+        "vllm/v1/worker/gpu/model_runner.py"
+      ]
+    },
+    {
+      "patch": "engram_prefetch_v3",
+      "anchor": "CENSUS_OLD",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_stage_fast",
+      "anchor": "STAGE_ANCHOR",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "engram_stage_fast",
+      "anchor": "INIT_ANCHOR",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "fix_o_proj_woa_fp8",
+      "anchor": "ANCHOR_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/models/deepseek_v4/nvidia/ops/o_proj.py"
+      ]
+    },
+    {
+      "patch": "fix_o_proj_woa_fp8",
+      "anchor": "ANCHOR_NEW",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "fix_o_proj_woa_fp8",
+      "anchor": "HELPER_ANCHOR",
+      "n_files": 1,
+      "files": [
+        "vllm/models/deepseek_v4/nvidia/ops/o_proj.py"
+      ]
+    },
+    {
+      "patch": "g8_stream_feed",
+      "anchor": "INSTALL_OLD",
+      "n_files": 2,
+      "files": [
+        "vllm/models/deepseek_v41/amd/vl_model.py",
+        "vllm/models/deepseek_v41/nvidia/vl_model.py"
+      ]
+    },
+    {
+      "patch": "indexer_workspace",
+      "anchor": "OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/v1/attention/backends/mla/indexer.py"
+      ]
+    },
+    {
+      "patch": "prefer_b12x_bmm",
+      "anchor": "BMM_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/model_executor/kernels/linear/__init__.py"
+      ]
+    },
+    {
+      "patch": "prefer_b12x_mxfp8",
+      "anchor": "OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/model_executor/kernels/linear/mxfp8/flashinfer.py"
+      ]
+    },
+    {
+      "patch": "probe_wo_a",
+      "anchor": "OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/models/deepseek_v4/nvidia/ops/o_proj.py"
+      ]
+    },
+    {
+      "patch": "sm120_page",
+      "anchor": "PERSISTENT_TOPK_OLD",
+      "n_files": 0,
+      "files": []
+    },
+    {
+      "patch": "sm120_page",
+      "anchor": "KPOOL_PERSISTENT_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/model_executor/layers/sparse_attn_indexer_kpool.py"
+      ]
+    },
+    {
+      "patch": "sm120_page",
+      "anchor": "NATIVE_DECODE_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/v1/attention/backends/mla/indexer.py"
+      ]
+    },
+    {
+      "patch": "sm120_page",
+      "anchor": "INDEXER_MISMATCH_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/v1/attention/backends/mla/indexer.py"
+      ]
+    },
+    {
+      "patch": "sm120_page",
+      "anchor": "INDEXER_CG_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/v1/attention/backends/mla/indexer.py"
+      ]
+    },
+    {
+      "patch": "sm120_page",
+      "anchor": "INDEXER_SKIP_OLD",
+      "n_files": 2,
+      "files": [
+        "vllm/models/deepseek_v4/attention.py",
+        "vllm/models/deepseek_v41/attention.py"
+      ]
+    },
+    {
+      "patch": "sm120_page",
+      "anchor": "SWA_IMAGE_WIDTH_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/v1/attention/backends/mla/sparse_swa.py"
+      ]
+    },
+    {
+      "patch": "sm120_page",
+      "anchor": "ATTN_IMAGE_WIDTH_OLD",
+      "n_files": 2,
+      "files": [
+        "vllm/models/deepseek_v4/attention.py",
+        "vllm/models/deepseek_v41/attention.py"
+      ]
+    },
+    {
+      "patch": "sm120_wo_a",
+      "anchor": "IS_BMM_OLD",
+      "n_files": 2,
+      "files": [
+        "vllm/models/deepseek_v4/attention.py",
+        "vllm/models/deepseek_v41/attention.py"
+      ]
+    },
+    {
+      "patch": "sm120_wo_a",
+      "anchor": "SCALE_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/model_executor/kernels/linear/mxfp8/flashinfer.py"
+      ]
+    },
+    {
+      "patch": "sm120_wo_a",
+      "anchor": "OPROJ_OLD",
+      "n_files": 1,
+      "files": [
+        "vllm/models/deepseek_v4/nvidia/ops/o_proj.py"
+      ]
+    },
+    {
+      "patch": "widen_b12x_smalls",
+      "anchor": "OLD_EM",
+      "n_files": 1,
+      "files": [
+        "flashinfer/gemm/kernels/dense_blockscaled_gemm_sm120_b12x.py"
+      ]
+    },
+    {
+      "patch": "widen_mla_io2",
+      "anchor": "IO_OLD",
+      "n_files": 1,
+      "files": [
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh"
+      ]
+    },
+    {
+      "patch": "widen_mla_io2",
+      "anchor": "ENTRY_OLD",
+      "n_files": 2,
+      "files": [
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh",
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv3_2_kernel.cuh"
+      ]
+    },
+    {
+      "patch": "widen_mla_io2",
+      "anchor": "IO_TID_OLD",
+      "n_files": 1,
+      "files": [
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh"
+      ]
+    },
+    {
+      "patch": "widen_mla_io2",
+      "anchor": "EXPECT_OLD",
+      "n_files": 1,
+      "files": [
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh"
+      ]
+    },
+    {
+      "patch": "widen_mla_kv_buf",
+      "anchor": "OLD",
+      "n_files": 1,
+      "files": [
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh"
+      ]
+    },
+    {
+      "patch": "widen_mla_kv_buf",
+      "anchor": "BUF_OLD",
+      "n_files": 2,
+      "files": [
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh",
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv3_2_kernel.cuh"
+      ]
+    },
+    {
+      "patch": "widen_mla_tile32",
+      "anchor": "N_WARPS_OLD",
+      "n_files": 1,
+      "files": [
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh"
+      ]
+    },
+    {
+      "patch": "widen_mla_tile32",
+      "anchor": "WIN_OLD",
+      "n_files": 1,
+      "files": [
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh"
+      ]
+    },
+    {
+      "patch": "widen_mla_tile32",
+      "anchor": "WFP8_OLD",
+      "n_files": 2,
+      "files": [
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv4_kernel.cuh",
+        "flashinfer/data/include/flashinfer/attention/sparse_mla_sm120/decode_dsv3_2_kernel.cuh"
+      ]
+    },
+    {
+      "patch": "widen_mla_tile32",
+      "anchor": "CU_WFP8_OLD",
+      "n_files": 1,
+      "files": [
+        "flashinfer/data/csrc/sparse_mla_sm120_decode_dsv4.cu"
+      ]
+    },
+    {
+      "patch": "widen_mla_tile32",
+      "anchor": "PY_BI_OLD",
+      "n_files": 1,
+      "files": [
+        "flashinfer/mla/_sparse_mla_sm120.py"
+      ]
+    },
+    {
+      "patch": "widen_mla_tile32",
+      "anchor": "CORE_OLD",
+      "n_files": 1,
+      "files": [
+        "flashinfer/mla/_core.py"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,491 @@
+{
+ "stage": "s5-C1-decode-bundle",
+ "what": "Decode-lever bundle arm C, boot 1 of 2 (ABAB: B1=s3, C1=this, B2, C2). Boot from perf-review-0924 (HEAD in git_head.txt) with IMAGE=review-e13 + DSV41_WOA_PREPACK=1 DSV41_MHC_DECODE_SPLITS=40 + the s4-promoted prefill levers DSV41_ENGRAM_WILLNEED=1 DSV41_STREAM_FEED=1, AUDIT=strict. DSV41_P2B_SRC_SORT, DSV41_DSPARK_SPARSE_MARKOV, DSV41_DENSE_DG_SMALLM stay off (s1 decisions). DECODE protocol (L.A.I.L first, before any c=2 traffic, same order as s2/s3) then C2-STRESS. Then a SEPARATE profiler boot (same env + EXTRA_ARGS --profiler-config) for one two-rank profile window, so the measured arm carries no profiler flag.",
+ "boot": {
+  "cmd": "nohup env AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e13 DSV41_WOA_PREPACK=1 DSV41_MHC_DECODE_SPLITS=40 DSV41_ENGRAM_WILLNEED=1 DSV41_STREAM_FEED=1 ./run.sh > boot.log",
+  "image": "dsv41-flash-exl3-sm121:review-e13 sha256:c81762335a12 on both ranks (serve_cmd_spark1/2.txt)",
+  "pack": "2.0bpw-mcg-lmhead-mxfp8",
+  "start": "2026-09-24T21:31:39Z",
+  "api_ready": "2026-09-24T21:41:19Z (last APIServer INFO before 'Application startup complete')",
+  "run_sh_exit0": "2026-09-24T21:41:45Z (boot.log mtime)",
+  "start_to_api_ready_s": 580,
+  "start_to_run_sh_exit_s": 606,
+  "ref": {
+   "s3": {
+    "api_ready_s": 587,
+    "exit_s": 627
+   },
+   "s4_E1": {
+    "api_ready_s": 566,
+    "exit_s": 580
+   }
+  },
+  "loading_weights_s": {
+   "TP0_spark1": [
+    309.6,
+    22.47
+   ],
+   "TP1_spark2": [
+    149.68,
+    23.56
+   ]
+  },
+  "loading_weights_s_ref": {
+   "s3": {
+    "TP0": [
+     334.25,
+     31.42
+    ],
+    "TP1": [
+     190.68,
+     27.56
+    ]
+   },
+   "s4_E1": {
+    "TP0": [
+     313.24,
+     27.93
+    ],
+    "TP1": [
+     151.42,
+     25.89
+    ]
+   }
+  },
+  "audit_strict": "==> audit ok: every expected patch engaged on head, worker",
+  "warmup": {
+   "greedy": "2.0s '323'",
+   "t07": "1.6s",
+   "prefill_3k_nonce_s": 6.9
+  },
+  "min_memavail_during_load_MB": {
+   "spark1": 26063,
+   "spark2": 26805,
+   "log": "mem-during-load.log (10 s samples until run.sh exit)"
+  },
+  "env": "head/worker env identical except VLLM_HOST_IP/HOSTNAME. DSV41_/NCCL_/VLLM_ diff vs s4-E1: only DSV41_MHC_DECODE_SPLITS 0->40 and DSV41_WOA_PREPACK unset->1 (serve_env_spark1/2.txt)"
+ },
+ "lever_engagement": {
+  "woa_prepack": {
+   "head": "43x '[woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32)' (bitwise self-test passed per layer), 0 REJECTED; 43 [woa-requant] lines",
+   "worker": "43 engaged, 0 REJECTED; 43 [woa-requant]",
+   "trace": "woa_pack grid (22,4,1) absent on both ranks (trace3 baseline 43.17 calls/step, 0.826 ms/step); only the draft-MoE (12,1,1) pack remains (0.005/0.004 ms/step)",
+   "verdict": "ENGAGED both ranks"
+  },
+  "mhc_splits_40": {
+   "head": "'dsv41: MHC prenorm split-K forced to 40 for num_tokens <= 64' (4 procs), 'dsv41-patch ok decode_levers'",
+   "worker": "same (3 procs)",
+   "trace": "sm120_tf32_hc_prenorm_gemm grid (40,1,1) at 85.37 calls/step on both ranks (baseline grid (16,1,1))",
+   "verdict": "ENGAGED both ranks"
+  },
+  "p2b_srcsort": "not part of this arm (s1: off). vllm_exl3_c .so 14632824 bytes with 1 DSV41_P2B_SRC_SORT marker on both ranks; env unset, so SORT=0 path",
+  "lever_is_OFF_or_FAILED_lines": {
+   "head": 0,
+   "worker": 0
+  },
+  "dsv41_patch_FAIL": {
+   "head": 0,
+   "worker": 0
+  }
+ },
+ "smoke": {
+  "chat": "323",
+  "vision": "Red (took ~14 s: see jit_spike)"
+ },
+ "lail_fresh_10": {
+  "cmd": "python3 tools/measure_lail_prose.py --runs 10",
+  "log": "03-lail-prose-fresh.log",
+  "median_tok_s": 34.01,
+  "runs": [
+   34.1,
+   33.79,
+   32.44,
+   33.93,
+   31.13,
+   35.52,
+   34.49,
+   34.45,
+   35.18,
+   32.67
+  ],
+  "median_acceptance_len": 2.147,
+  "median_ttft_s": 0.316,
+  "post_eos_fraction": 0.0,
+  "ms_per_step_decode_s_over_chunks": {
+   "median": 63.4,
+   "runs": [
+    62.3,
+    62.1,
+    66.6,
+    62.4,
+    63.8,
+    62.4,
+    64.8,
+    63.0,
+    63.8,
+    64.2
+   ]
+  },
+  "vs_B1_s3": "34.11 tok/s, acc 2.160, ms/step median 62.94 (62.5-63.4) -> 34.01 (-0.3%), acc 2.147, ms/step 63.36 (62.1-66.6)"
+ },
+ "bench_decode_9": {
+  "cmd": "python3 bench_decode.py --runs 9",
+  "log": "04-bench-decode.log",
+  "rows": "04-bench-decode.summary.json",
+  "prose_c1": {
+   "tok_s": 39.59,
+   "ms_step": 63.82,
+   "acceptance_len_pooled": 2.573,
+   "median_run_acceptance_len": 2.551,
+   "post_eos_fraction": 0.57,
+   "per_run_tok_s": [
+    47.02,
+    40.86,
+    37.81,
+    35.39,
+    35.78,
+    39.59,
+    47.11,
+    42.71,
+    36.89
+   ],
+   "per_run_ms_step": [
+    63.5,
+    62.4,
+    63.7,
+    68.9,
+    63.9,
+    64.6,
+    63.4,
+    63.8,
+    65.2
+   ]
+  },
+  "prose_c2": {
+   "per_stream_tok_s": 28.3,
+   "agg_tok_s": 55.31,
+   "ms_step": 88.45,
+   "acceptance_len_pooled": 2.494,
+   "post_eos_fraction": 0.57
+  },
+  "structured_c1": {
+   "tok_s": 62.39,
+   "ms_step": 63.49,
+   "acceptance_len": 3.961,
+   "post_eos_fraction": 0.0
+  },
+  "structured_c2": {
+   "per_stream_tok_s": 44.67,
+   "agg_tok_s": 89.34,
+   "ms_step": 88.66,
+   "acceptance_len": 3.961,
+   "post_eos_fraction": 0.0
+  },
+  "vs_B1_s3": "prose c1 39.10 -> 39.59 tok/s (+1.3%), ms/step 64.26 -> 63.82 (-0.44 ms; per-run ranges s3 63.5-65.4 vs 62.4-68.9 overlap). prose c2 agg 56.99 -> 55.31; structured c1 62.08 -> 62.39 (63.80 -> 63.49 ms/step); structured c2 agg 87.66 -> 89.34"
+ },
+ "micro_novel_8k_1run": {
+  "cmd": "python3 benches/micro.py --contexts 8192 --runs 1",
+  "log": "05-micro-8k-1run.log",
+  "pp_novel_8k": 823.4,
+  "pp_warm_8k": 707.0,
+  "tg_8k": 35.4,
+  "ref_s4_E1": "novel 798.3 / warm 747.2 (3 runs)"
+ },
+ "quality_quick": {
+  "cmd": "python3 tests/quality_eval.py --quick --baseline results/2026-09-24-review/quality-baseline/quick.json --out <stage>/quality.json",
+  "log": "07-quality.log",
+  "pass": false,
+  "fail": "selfcons.aa_hazard 0.03409 > limit 0.03206 (A/A: 9/12 pairs diverged, first_div [62,30,7,-,-,-,18,5,9,23,10,11], identical 3)",
+  "nll": 0.243318,
+  "decode_median_dlp": 0.01417,
+  "decode_gen_nll_prefill": 0.36264,
+  "tools_exact": 0.9545,
+  "tools_json": 1.0,
+  "tools_nocall": 1.0,
+  "needle": "6/6",
+  "selfcons_golden_hazard": 0.01946,
+  "c2": true,
+  "vision": true,
+  "selfcons_reruns": {
+   "cmd": "python3 tests/quality_eval.py --quick --only selfcons --baseline .../quick.json --out quality-selfcons-rerun{1,2}.json",
+   "rerun1": {
+    "aa_hazard": 0.0194,
+    "golden_hazard": 0.01599,
+    "identical": 3,
+    "pass": true
+   },
+   "rerun2": {
+    "aa_hazard": 0.02162,
+    "golden_hazard": 0.02066,
+    "identical": 4,
+    "pass": true
+   }
+  },
+  "ref_aa_hazard": {
+   "quality_baseline": 0.01603,
+   "s2": 0.01636,
+   "s3": 0.01743
+  },
+  "vs_s3": "nll 0.242797 -> 0.243318; decode_median_dlp 0.00528 -> 0.01417 (baseline 0.01794, s2 0.01838); tools/needle/c2/vision equal"
+ },
+ "memory": {
+  "ready": {
+   "spark1": "used 97Gi avail 24Gi swap 6.6Gi",
+   "spark2": "used 96Gi avail 25Gi swap 4.4Gi"
+  },
+  "after_micro_8k": {
+   "spark1": "avail 21Gi",
+   "spark2": "avail 22Gi"
+  },
+  "after_full": {
+   "spark1": "used 100Gi avail 21Gi swap 6.5Gi",
+   "spark2": "used 98Gi avail 23Gi swap 4.4Gi"
+  },
+  "end": {
+   "spark1": "used 100Gi avail 21Gi swap 6.4Gi",
+   "spark2": "used 98Gi avail 23Gi swap 4.4Gi"
+  }
+ },
+ "engagement": {
+  "audit_after_full": "tools/engagement_audit.py --mode strict 0=head 1=worker: audit ok (rc 0)",
+  "audit_final": "audit ok (rc 0)",
+  "disarm_scan_after_full_rc": 0,
+  "disarm_scan_final_rc": 0,
+  "grep": "no bad snapshot / IndexError / _prefetch_worker / 'disabled after' on either rank; prefetch v3 armed on both ranks; 'disabled' hits only vLLM info lines; only Traceback is the harmless usage_lib cpuinfo one on TP0"
+ },
+ "jit_spike": {
+  "finding": "With DSV41_MHC_DECODE_SPLITS=40, both ranks JIT-compile mhc_pre_big_fuse_with_norm_tilelang twice after ready (21:42:19-21:42:32, 'TileLang JIT compilation during inference' warning once per rank), during the first smoke_vision request, which took ~14 s (s3: ~2 s). 8 TileLang compiles per rank vs 6 in s3; s2/s3/s4 have 0 'JIT compilation during inference' TileLang warnings. Reproduced in the profile boot (vision 14 s). One-time latency spike, before the L.A.I.L runs, so decode numbers are not affected. Warmup keys do not cover every fused-kernel variant the forced split needs."
+ },
+ "c2_stress": {
+  "script": "c2_stress.py (copy of s2/s3)",
+  "log": "10-c2-stress.log",
+  "rounds": 6,
+  "requests_ok": 12,
+  "requests_failed": 0
+ },
+ "lail_after_c2_10": {
+  "median_tok_s": 33.44,
+  "runs": [
+   31.0,
+   33.67,
+   33.61,
+   33.89,
+   34.44,
+   32.69,
+   33.27,
+   30.92,
+   34.55,
+   30.48
+  ],
+  "median_acceptance_len": 2.114,
+  "median_ttft_s": 0.319,
+  "post_eos_fraction": 0.0,
+  "ms_per_step_decode_s_over_chunks": {
+   "median": 63.45,
+   "runs": [
+    62.6,
+    63.9,
+    63.2,
+    63.8,
+    63.0,
+    63.9,
+    62.8,
+    63.7,
+    63.1,
+    64.1
+   ]
+  },
+  "log": "11-lail-prose-after-c2.log",
+  "delta_vs_fresh": "-0.57 tok/s (-1.7%); s3 -0.64 (-1.9%) 34.11->33.47 (ms/step 62.94->63.87); s2 -1.6%",
+  "logs_after": "no prefetch disable / IndexError / bad snapshot on either rank; disarm_scan rc 0; audit ok"
+ },
+ "profile": {
+  "how": "Separate boot (the flag's idle steady-state cost is not measured, and the active profiler adds ~3-5 ms/step per trace3 ATTRIBUTION.md, so it was kept out of the measured boot): same env + EXTRA_ARGS='--profiler-config {\"profiler\":\"torch\",\"torch_profiler_dir\":\"/tmp/dsv41-traces\"}'. Start 22:04:00Z, run.sh exit 22:13:44Z; audit ok; 43/43 woa packed both ranks; smoke 323 + Red (vision again ~14 s = same JIT). tools/profile_window.sh: warmup, start_profile, one 512-token L.A.I.L stream (wall 14.94 s), stop_profile. The stop_profile curl timed out at 120 s (rc 28, set -e ended the script) but 'Profiler stopped successfully' was logged and both ranks' traces were complete; docker cp was done by hand before ./stop.sh. MemAvail on spark1 fell to 2.2 GiB after the export (spark2 8.2 GiB); stop.sh rc 0 immediately after cp.",
+  "traces": "spark1 and spark2: /home/sfxnz/projects/data/dsv41-traces/<see profile/trace_out_dir.txt>/rank{0,1} (112 MB / 108 MB gz, not committed)",
+  "parse_cmd": "python3 kernel_study/decode_levers/trace_kernels.py <rank trace> --json profile/rank{0,1}-trace-kernels.json (rank1 parsed on spark2 with the serve down)",
+  "steps": 232.0,
+  "kernel_ms_per_step": {
+   "rank0": 64.645,
+   "rank1": 64.459,
+   "trace3_baseline": 71.092,
+   "note": "not like-for-like: trace3 baseline (results/2026-09-24-review/decode-levers/baseline-trace3-kernels.json) is an older config and day, not a same-day B trace"
+  },
+  "rank0_rows": [
+   {
+    "pattern": "mhc_pre_norm_fused",
+    "grid": [
+     4,
+     1,
+     1
+    ],
+    "calls_per_step": 80.0,
+    "us_per_call": 6.36,
+    "ms_per_step": 0.509
+   },
+   {
+    "pattern": "mhc_pre_norm_fused",
+    "grid": [
+     3,
+     1,
+     1
+    ],
+    "calls_per_step": 6.03,
+    "us_per_call": 5.81,
+    "ms_per_step": 0.035
+   },
+   {
+    "pattern": "mhc_pre_norm_fused",
+    "grid": [
+     61,
+     1,
+     1
+    ],
+    "calls_per_step": 0.34,
+    "us_per_call": 7.82,
+    "ms_per_step": 0.003
+   },
+   {
+    "pattern": "mhc_prenorm_gemm",
+    "grid": [
+     40,
+     1,
+     1
+    ],
+    "calls_per_step": 85.37,
+    "us_per_call": 16.66,
+    "ms_per_step": 1.422
+   },
+   {
+    "pattern": "mhc_prenorm_gemm",
+    "grid": [
+     20,
+     1,
+     1
+    ],
+    "calls_per_step": 1.0,
+    "us_per_call": 6.15,
+    "ms_per_step": 0.006
+   },
+   {
+    "pattern": "woa_einsum",
+    "grid": [
+     48,
+     1,
+     1
+    ],
+    "calls_per_step": 43.01,
+    "us_per_call": 83.71,
+    "ms_per_step": 3.6
+   },
+   {
+    "pattern": "woa_pack",
+    "grid": [
+     12,
+     1,
+     1
+    ],
+    "calls_per_step": 3.01,
+    "us_per_call": 1.58,
+    "ms_per_step": 0.005
+   }
+  ],
+  "rank1_rows": [
+   {
+    "pattern": "mhc_pre_norm_fused",
+    "grid": [
+     4,
+     1,
+     1
+    ],
+    "calls_per_step": 80.0,
+    "us_per_call": 6.14,
+    "ms_per_step": 0.491
+   },
+   {
+    "pattern": "mhc_pre_norm_fused",
+    "grid": [
+     3,
+     1,
+     1
+    ],
+    "calls_per_step": 6.03,
+    "us_per_call": 5.57,
+    "ms_per_step": 0.034
+   },
+   {
+    "pattern": "mhc_pre_norm_fused",
+    "grid": [
+     61,
+     1,
+     1
+    ],
+    "calls_per_step": 0.34,
+    "us_per_call": 8.44,
+    "ms_per_step": 0.003
+   },
+   {
+    "pattern": "mhc_prenorm_gemm",
+    "grid": [
+     40,
+     1,
+     1
+    ],
+    "calls_per_step": 85.37,
+    "us_per_call": 15.6,
+    "ms_per_step": 1.331
+   },
+   {
+    "pattern": "mhc_prenorm_gemm",
+    "grid": [
+     20,
+     1,
+     1
+    ],
+    "calls_per_step": 1.0,
+    "us_per_call": 6.14,
+    "ms_per_step": 0.006
+   },
+   {
+    "pattern": "woa_einsum",
+    "grid": [
+     48,
+     1,
+     1
+    ],
+    "calls_per_step": 43.01,
+    "us_per_call": 81.26,
+    "ms_per_step": 3.495
+   },
+   {
+    "pattern": "woa_pack",
+    "grid": [
+     12,
+     1,
+     1
+    ],
+    "calls_per_step": 3.01,
+    "us_per_call": 1.48,
+    "ms_per_step": 0.004
+   }
+  ],
+  "targeted_kernel_delta_ms_per_step_vs_trace3": {
+   "woa": {
+    "pack_22_4_1": "-0.826 (gone, both ranks)",
+    "einsum_48_1_1": "80.9 us/call -> 83.71 (r0) / 81.26 (r1): +0.12 / +0.015 ms/step (template <0u,3u,...> in trace3 vs <0u,4u,...> now)",
+    "net": "r0 -0.71, r1 -0.81"
+   },
+   "mhc": {
+    "prenorm_gemm": "(16,1,1) 86.35 x 22.06 us = 1.905 -> (40,1,1) 85.37 x 16.66 us = 1.422 (r0) / x 15.60 us = 1.331 (r1), plus (20,1,1) 1.0 x 6.15 us = 0.006",
+    "fused_norm": "(4,1,1) 6.32 us -> 6.36 (r0) / 6.14 (r1): flat",
+    "net": "prenorm+fused 2.449 -> 1.975 (r0, -0.474) / 1.865 (r1, -0.584)"
+   },
+   "total_targeted": "r0 -1.18 ms/step, r1 -1.39 ms/step of device time"
+  },
+  "vs_s1_expectation": {
+   "woa": "s1 microbench 6.76-7.82 us/call saved at M=3-8 (x43 = 0.29-0.34 ms/step). In serve the (22,4,1) pack cost 19.1 us/call, so the trace saving (0.71-0.81 ms/step) is larger than the microbench predicted",
+   "mhc": "s1 pre_us 18.08 -> 11.17 us at T=4 (-6.9 us/call incl. fused, x~86 = ~0.59 ms/step). Trace: GEMM -5.4 (r0) / -6.5 (r1) us/call, fused flat -> -0.47 / -0.58 ms/step; README M gate (>= 0.4 ms/step) met on both ranks"
+  }
+ },
+ "e2e_vs_device": "Profile shows ~1.2-1.4 ms/step less targeted device time vs the trace3 baseline, but e2e c=1 ms/step moved -0.44 (bench prose) and +0.42 (L.A.I.L decode_s/chunks) against B1, both inside run-to-run spread. One C boot only: the B2/C2 boots decide.",
+ "stop": "measured serve: ./stop.sh rc 0 (14-stop.log); profile serve: ./stop.sh rc 0 (profile/04-stop.log). docker ps: only conduit on spark1, nothing on spark2; MemAvailable 116Gi / 117Gi"
+}

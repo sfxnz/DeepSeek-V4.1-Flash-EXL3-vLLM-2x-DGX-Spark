@@ -1,0 +1,12 @@
+--- /tmp/orig/vllm/v1/attention/backends/mla/indexer.py	2026-09-19 13:28:02.000000000 +0000
++++ /usr/local/lib/python3.12/dist-packages/vllm/v1/attention/backends/mla/indexer.py	2026-09-24 15:14:27.684648703 +0000
+@@ -644,6 +644,9 @@
+     # within the flashmla_sparse workspace.
+     # For DeepSeek-V3.2, the max_model_len is 163840.
+     #   40 * 163840 * 132 = 865075200 bytes = 825 MB
++    _factor = __import__("os").environ.get("DSV41_INDEXER_PREFILL_FACTOR", "")  # dsv41-indexer-workspace
++    if _factor.strip():
++        return max_model_len * max(1, int(_factor))
+     return max_model_len * 40
+ 
+ 

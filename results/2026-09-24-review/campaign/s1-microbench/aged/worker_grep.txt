@@ -1,0 +1,20 @@
+8:2026-09-22T11:55:43.643043926Z dsv41: engram prefetch v3 stager installed
+9:2026-09-22T11:55:43.643046070Z dsv41: engram prefetch v3 runner hook installed
+41:2026-09-22T11:56:41.868056119Z (Worker pid=464) WARNING 09-22 11:56:41 [flashinfer_all_reduce.py:383] FlashInfer All Reduce is disabled because it is not supported for world_size=2.
+42:2026-09-22T11:56:41.874119604Z (Worker pid=464) WARNING 09-22 11:56:41 [custom_all_reduce.py:201] Custom collectives are disabled because this multi-node group does not have MNNVL-capable GPUs on every rank.
+56:2026-09-22T11:56:47.242159874Z (Worker_TP1 pid=464) INFO 09-22 11:56:47 [weight_utils.py:893] Auto-prefetch is disabled because the filesystem (EXT4) is not a recognized network FS (NFS/Lustre) and the checkpoint size (332.92 GiB) exceeds 90% of available RAM (40.13 GiB).
+103:2026-09-22T11:59:52.384339718Z (Worker_TP1 pid=464) INFO 09-22 11:59:52 [weight_utils.py:893] Auto-prefetch is disabled because the filesystem (EXT4) is not a recognized network FS (NFS/Lustre) and the checkpoint size (332.92 GiB) exceeds 90% of available RAM (31.00 GiB).
+113:2026-09-22T12:00:34.954856921Z (Worker_TP1 pid=464) dsv41: engram prefetch v3 armed (ngram=4 heads=8 depth=3 layers=[0, 1] mult=(2, 4) primes=(2, 3, 8) offsets=(2, 24))
+829:2026-09-24T13:38:55.900484660Z (Worker_TP1 pid=464) dsv41: engram prefetch worker error 1
+830:2026-09-24T13:38:55.900518644Z (Worker_TP1 pid=464) Traceback (most recent call last):
+831:2026-09-24T13:38:55.900522724Z (Worker_TP1 pid=464)   File "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/common/engram.py", line 1598, in _prefetch_worker
+837:2026-09-24T13:38:55.900560852Z (Worker_TP1 pid=464) IndexError: list index out of range
+839:2026-09-24T13:38:57.409208837Z (Worker_TP1 pid=464) dsv41: engram prefetch worker error 2
+840:2026-09-24T13:38:57.409241925Z (Worker_TP1 pid=464) Traceback (most recent call last):
+841:2026-09-24T13:38:57.409244805Z (Worker_TP1 pid=464)   File "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/common/engram.py", line 1598, in _prefetch_worker
+847:2026-09-24T13:38:57.409257477Z (Worker_TP1 pid=464) IndexError: list index out of range
+864:2026-09-24T13:42:58.751611689Z (Worker_TP1 pid=464) dsv41: engram prefetch worker error 3
+865:2026-09-24T13:42:58.751659081Z (Worker_TP1 pid=464) Traceback (most recent call last):
+866:2026-09-24T13:42:58.751662937Z (Worker_TP1 pid=464)   File "/usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4_1/common/engram.py", line 1598, in _prefetch_worker
+872:2026-09-24T13:42:58.751678681Z (Worker_TP1 pid=464) IndexError: list index out of range
+874:2026-09-24T13:42:58.751683049Z (Worker_TP1 pid=464) dsv41: engram prefetch disabled after 3 errors: IndexError('list index out of range')

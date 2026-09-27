@@ -1,0 +1,212 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.e13
+#1 transferring dockerfile: 2.55kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/dsv41-flash-exl3-sm121:canonical-e12
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 transferring context: 1.07MB 0.0s done
+#4 DONE 0.0s
+
+#5 [1/4] FROM docker.io/library/dsv41-flash-exl3-sm121:canonical-e12
+#5 CACHED
+
+#6 [2/4] COPY patch /opt/dsv41-patch
+#6 DONE 0.1s
+
+#7 [3/4] RUN apt-get update  && apt-get install -y --no-install-recommends git  && git clone https://github.com/vcruz305/vllm-exl3.git /opt/vllm-exl3  && git -C /opt/vllm-exl3 checkout "d3cfd394920360d69f820d2dc96f8292a9e10283"  && python3 /opt/dsv41-patch/fix_vllm_exl3_setup.py /opt/vllm-exl3/setup.py  && python3 /opt/dsv41-patch/widen_p2b_shapes.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_mrow.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_cfg1.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_codebook.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_fshift.py /opt/vllm-exl3  && python3 /opt/dsv41-patch/widen_p2b_srcsort.py /opt/vllm-exl3  && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps --force-reinstall /opt/vllm-exl3  && python3 -c "import torch, vllm_exl3, vllm_exl3_c; assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); assert b'DSV41_P2B_SRC_SORT' in open(vllm_exl3_c.__file__, 'rb').read(); print('vllm_exl3 srcsort cuda ok')"  && rm -rf /opt/vllm-exl3 /var/lib/apt/lists/*
+#7 0.276 Get:1 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa  InRelease [1576 B]
+#7 0.276 Get:2 http://ports.ubuntu.com/ubuntu-ports noble InRelease [256 kB]
+#7 0.283 Get:3 https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu noble InRelease [17.8 kB]
+#7 0.453 Get:4 https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu noble/main arm64 Packages [52.1 kB]
+#7 0.463 Get:5 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease [126 kB]
+#7 0.510 Get:6 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease [126 kB]
+#7 0.557 Get:7 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease [126 kB]
+#7 0.604 Get:8 http://ports.ubuntu.com/ubuntu-ports noble/restricted arm64 Packages [113 kB]
+#7 0.616 Get:9 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 Packages [1776 kB]
+#7 0.745 Get:10 http://ports.ubuntu.com/ubuntu-ports noble/multiverse arm64 Packages [274 kB]
+#7 0.751 Get:11 http://ports.ubuntu.com/ubuntu-ports noble/universe arm64 Packages [19.0 MB]
+#7 1.091 Get:12 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 Packages [1671 kB]
+#7 1.099 Get:13 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 Packages [2200 kB]
+#7 1.111 Get:14 http://ports.ubuntu.com/ubuntu-ports noble-updates/multiverse arm64 Packages [94.8 kB]
+#7 1.112 Get:15 http://ports.ubuntu.com/ubuntu-ports noble-updates/restricted arm64 Packages [2949 kB]
+#7 1.125 Get:16 http://ports.ubuntu.com/ubuntu-ports noble-backports/multiverse arm64 Packages [671 B]
+#7 1.125 Get:17 http://ports.ubuntu.com/ubuntu-ports noble-backports/main arm64 Packages [49.0 kB]
+#7 1.125 Get:18 http://ports.ubuntu.com/ubuntu-ports noble-backports/universe arm64 Packages [36.3 kB]
+#7 1.126 Get:19 http://ports.ubuntu.com/ubuntu-ports noble-security/universe arm64 Packages [1635 kB]
+#7 1.142 Get:20 http://ports.ubuntu.com/ubuntu-ports noble-security/multiverse arm64 Packages [89.7 kB]
+#7 1.160 Get:21 http://ports.ubuntu.com/ubuntu-ports noble-security/main arm64 Packages [1355 kB]
+#7 1.172 Get:22 http://ports.ubuntu.com/ubuntu-ports noble-security/restricted arm64 Packages [2811 kB]
+#7 1.336 Get:23 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa  Packages [1729 kB]
+#7 1.836 Fetched 36.5 MB in 2s (22.3 MB/s)
+#7 1.836 Reading package lists...
+#7 2.373 W: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/InRelease: Key is stored in legacy trusted.gpg keyring (/etc/apt/trusted.gpg), see the DEPRECATION section in apt-key(8) for details.
+#7 2.390 Reading package lists...
+#7 2.903 Building dependency tree...
+#7 3.046 Reading state information...
+#7 3.237 git is already the newest version (1:2.43.0-1ubuntu7.3).
+#7 3.237 0 upgraded, 0 newly installed, 0 to remove and 78 not upgraded.
+#7 3.245 Cloning into '/opt/vllm-exl3'...
+#7 3.895 Note: switching to 'd3cfd394920360d69f820d2dc96f8292a9e10283'.
+#7 3.895 
+#7 3.895 You are in 'detached HEAD' state. You can look around, make experimental
+#7 3.895 changes and commit them, and you can discard any commits you make in this
+#7 3.895 state without impacting any branches by switching back to a branch.
+#7 3.895 
+#7 3.895 If you want to create a new branch to retain commits you create, you may
+#7 3.895 do so (now or later) by using -c with the switch command. Example:
+#7 3.895 
+#7 3.895   git switch -c <new-branch-name>
+#7 3.895 
+#7 3.895 Or undo this operation with:
+#7 3.895 
+#7 3.895   git switch -
+#7 3.895 
+#7 3.895 Turn off this advice by setting config variable advice.detachedHead to false
+#7 3.895 
+#7 3.895 HEAD is now at d3cfd39 chore: remove one-time SUH cache maintenance workflow
+#7 7.152 INFO 09-24 19:19:35 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+#7 7.152 INFO 09-24 19:19:35 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+#7 7.234 WARNING 09-24 19:19:35 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 7.257 W0924 19:19:35.606000 307 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#7 7.671 WARNING 09-24 19:19:36 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 7.674 WARNING 09-24 19:19:36 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 7.901 patched /opt/vllm-exl3/setup.py
+#7 12.17 INFO 09-24 19:19:40 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+#7 12.17 INFO 09-24 19:19:40 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+#7 12.25 WARNING 09-24 19:19:40 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 12.28 W0924 19:19:40.625000 396 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#7 12.64 WARNING 09-24 19:19:40 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 12.64 WARNING 09-24 19:19:40 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 12.83 patched /opt/vllm-exl3/csrc/p2b_moe.cu
+#7 12.83 patched /opt/vllm-exl3/src/vllm_exl3/exl3.py
+#7 17.02 INFO 09-24 19:19:45 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+#7 17.02 INFO 09-24 19:19:45 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+#7 17.10 WARNING 09-24 19:19:45 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 17.13 W0924 19:19:45.475000 528 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#7 17.47 WARNING 09-24 19:19:45 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 17.47 WARNING 09-24 19:19:45 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 17.64 patched /opt/vllm-exl3/csrc/p2b_moe.cu
+#7 17.64 patched /opt/vllm-exl3/src/vllm_exl3/exl3.py
+#7 21.87 INFO 09-24 19:19:50 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+#7 21.87 INFO 09-24 19:19:50 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+#7 21.96 WARNING 09-24 19:19:50 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 21.98 W0924 19:19:50.326000 660 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#7 22.33 WARNING 09-24 19:19:50 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 22.34 WARNING 09-24 19:19:50 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 22.51 patched /opt/vllm-exl3/csrc/p2b_moe.cu
+#7 26.65 INFO 09-24 19:19:55 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+#7 26.65 INFO 09-24 19:19:55 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+#7 26.73 WARNING 09-24 19:19:55 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 26.75 W0924 19:19:55.102000 792 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#7 27.10 WARNING 09-24 19:19:55 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 27.10 WARNING 09-24 19:19:55 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 27.27 patched /opt/vllm-exl3/csrc/p2b_moe.cu
+#7 27.27 patched /opt/vllm-exl3/src/vllm_exl3/exl3.py
+#7 31.47 INFO 09-24 19:19:59 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+#7 31.47 INFO 09-24 19:19:59 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+#7 31.55 WARNING 09-24 19:19:59 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 31.57 W0924 19:19:59.918000 924 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#7 31.95 WARNING 09-24 19:20:00 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 31.95 WARNING 09-24 19:20:00 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 32.12 patched /opt/vllm-exl3/csrc/p2b_moe.cu
+#7 36.33 INFO 09-24 19:20:04 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+#7 36.33 INFO 09-24 19:20:04 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+#7 36.41 WARNING 09-24 19:20:04 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 36.44 W0924 19:20:04.785000 1056 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#7 36.77 WARNING 09-24 19:20:05 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 36.78 WARNING 09-24 19:20:05 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 36.95 patched /opt/vllm-exl3/csrc/p2b_moe.cu
+#7 41.10 INFO 09-24 19:20:09 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+#7 41.10 INFO 09-24 19:20:09 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+#7 41.18 WARNING 09-24 19:20:09 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 41.21 W0924 19:20:09.554000 1188 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#7 41.55 WARNING 09-24 19:20:09 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 41.55 WARNING 09-24 19:20:09 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 41.84 Processing /opt/vllm-exl3
+#7 41.84   Preparing metadata (pyproject.toml): started
+#7 46.80   Preparing metadata (pyproject.toml): finished with status 'done'
+#7 46.80 Building wheels for collected packages: vllm-exl3
+#7 46.81   Building wheel for vllm-exl3 (pyproject.toml): started
+#7 80.19   Building wheel for vllm-exl3 (pyproject.toml): finished with status 'done'
+#7 80.19   Created wheel for vllm-exl3: filename=vllm_exl3-0.4.2-cp312-cp312-linux_aarch64.whl size=3964430 sha256=7dc5b162690abc2fef239a48a99fff46eb306faba39be892a66b0ed1ebf97368
+#7 80.19   Stored in directory: /tmp/pip-ephem-wheel-cache-t7ngthkm/wheels/2c/23/97/261c957ec2b335d5405f2e9ff7e5f99a3b21aef9f54e133d06
+#7 80.20 Successfully built vllm-exl3
+#7 80.20 Installing collected packages: vllm-exl3
+#7 80.20   Attempting uninstall: vllm-exl3
+#7 80.20     Found existing installation: vllm-exl3 0.4.2
+#7 80.21     Uninstalling vllm-exl3-0.4.2:
+#7 80.56       Successfully uninstalled vllm-exl3-0.4.2
+#7 80.62 Successfully installed vllm-exl3-0.4.2
+#7 80.62 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#7 80.62 DEPRECATION: Unexpected import of 'tabulate' after pip install started. pip 26.3 will enforce this behaviour change. Discussion can be found at https://github.com/pypa/pip/issues/13842 (/usr/local/lib/python3.12/dist-packages/torch/_dynamo/utils.py:249)
+#7 80.62 DEPRECATION: Unexpected import of 'wcwidth' after pip install started. pip 26.3 will enforce this behaviour change. Discussion can be found at https://github.com/pypa/pip/issues/13842 (/usr/local/lib/python3.12/dist-packages/tabulate/__init__.py:27)
+#7 80.62 DEPRECATION: Unexpected import of 'tabulate.version' after pip install started. pip 26.3 will enforce this behaviour change. Discussion can be found at https://github.com/pypa/pip/issues/13842 (/usr/local/lib/python3.12/dist-packages/tabulate/__init__.py:38)
+#7 84.67 INFO 09-24 19:20:53 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+#7 84.67 INFO 09-24 19:20:53 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+#7 84.74 WARNING 09-24 19:20:53 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 84.77 W0924 19:20:53.114000 1775 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#7 85.09 WARNING 09-24 19:20:53 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 85.09 WARNING 09-24 19:20:53 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 85.29 vllm_exl3 srcsort cuda ok
+#7 DONE 86.5s
+
+#8 [4/4] RUN python3 /opt/dsv41-patch/fix_o_proj_woa_fp8.py /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py  && grep -q "_woa_prepacked_scale" /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py  && cp /opt/dsv41-patch/sitecustomize.py /usr/lib/python3.12/sitecustomize.py  && python3 -m py_compile /usr/lib/python3.12/sitecustomize.py /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+#8 3.526 INFO 09-24 19:20:58 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+#8 3.526 INFO 09-24 19:20:58 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+#8 3.605 WARNING 09-24 19:20:58 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#8 3.626 W0924 19:20:58.526000 7 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#8 4.010 WARNING 09-24 19:20:58 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#8 4.012 WARNING 09-24 19:20:58 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#8 4.228 patched /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+#8 5.294 dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+#8 5.304 dsv41-patch ok prefer_b12x_mxfp8
+#8 5.313 dsv41-indexer-workspace: applied (/usr/local/lib/python3.12/dist-packages/vllm/v1/attention/backends/mla/indexer.py)
+#8 5.314 dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+#8 5.314 dsv41-patch ok persistent_topk: already applied
+#8 5.314 dsv41-patch ok kpool_persistent_topk: already applied
+#8 8.363 INFO 09-24 19:21:03 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+#8 8.363 INFO 09-24 19:21:03 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+#8 8.443 WARNING 09-24 19:21:03 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#8 8.463 W0924 19:21:03.363000 98 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#8 8.809 WARNING 09-24 19:21:03 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#8 8.810 WARNING 09-24 19:21:03 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#8 8.860 dsv41-patch ok load_general_plugins
+#8 8.860 dsv41-patch ok exl3_weight_block_size
+#8 8.939 dsv41-patch ok warmup_stubs
+#8 8.942 dsv41-patch ok cudagraph_worker_stub
+#8 8.945 dsv41-patch ok swa_page_coerce
+#8 8.971 dsv41-patch ok kernel_block_sizes
+#8 8.971 dsv41-patch ok extra_page_bump
+#8 8.971 dsv41-patch ok v41_config_vision
+#8 8.971 dsv41-patch ok swa_image_width: already applied
+#8 8.971 dsv41-patch ok attention_image_width: already applied
+#8 8.971 dsv41-patch ok native_indexer_decode: already applied
+#8 8.971 dsv41-patch ok indexer_adaptive: already applied
+#8 8.971 dsv41-patch ok indexer_short_context: already applied
+#8 8.992 dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+#8 8.992 dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+#8 8.992 dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+#8 8.992 dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+#8 8.992 dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+#8 9.017 dsv41-patch ok decode_levers
+#8 9.030 dsv41: engram disk gather census instrumented
+#8 9.030 dsv41: engram parallel stage installed
+#8 9.030 dsv41: engram prefetch v3 stager installed
+#8 9.030 dsv41: engram prefetch v3 runner hook installed
+#8 9.030 dsv41: engram census pf_hit accounting fixed (v3)
+#8 9.030 dsv41: engram gather v2 installed (DSV41_ENGRAM_GATHER_V2)
+#8 DONE 10.3s
+
+#9 exporting to image
+#9 exporting layers 0.1s done
+#9 writing image sha256:c81762335a12ddc809e84794be0fac0dd8cb263ebd3fef09c4aa00be052cbde2 done
+#9 naming to docker.io/library/dsv41-flash-exl3-sm121:review-e13 done
+#9 DONE 0.1s

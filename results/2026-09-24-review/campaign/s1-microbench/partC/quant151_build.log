@@ -1,0 +1,96 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.quant151
+#1 transferring dockerfile: 1.34kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/dsv41-flash-exl3-sm121:canonical-e12
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/3] FROM docker.io/library/dsv41-flash-exl3-sm121:canonical-e12
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 79B done
+#5 DONE 0.0s
+
+#6 [2/3] COPY patch/patch_exllamav3_aarch64.py /opt/dsv41-patch/patch_exllamav3_aarch64.py
+#6 CACHED
+
+#7 [3/3] RUN git clone https://github.com/turboderp-org/exllamav3.git /opt/exllamav3  && git -C /opt/exllamav3 checkout "958ec933361b24eb8426ec7222e5b0062a679dcd"  && python3 /opt/dsv41-patch/patch_exllamav3_aarch64.py /opt/exllamav3/exllamav3/exllamav3_ext  && MAX_JOBS="8" TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps --force-reinstall /opt/exllamav3  && python3 -S -c "import sys; sys.path.append('/usr/local/lib/python3.12/dist-packages'); import importlib.metadata as md, exllamav3; from exllamav3.modules.quant.exl3_lib.quantize import refit_scales; print('exllamav3', md.version('exllamav3'))"  && rm -rf /opt/exllamav3
+#7 0.140 Cloning into '/opt/exllamav3'...
+#7 2.016 Note: switching to '958ec933361b24eb8426ec7222e5b0062a679dcd'.
+#7 2.016 
+#7 2.016 You are in 'detached HEAD' state. You can look around, make experimental
+#7 2.016 changes and commit them, and you can discard any commits you make in this
+#7 2.016 state without impacting any branches by switching back to a branch.
+#7 2.016 
+#7 2.016 If you want to create a new branch to retain commits you create, you may
+#7 2.016 do so (now or later) by using -c with the switch command. Example:
+#7 2.016 
+#7 2.016   git switch -c <new-branch-name>
+#7 2.016 
+#7 2.016 Or undo this operation with:
+#7 2.016 
+#7 2.016   git switch -
+#7 2.016 
+#7 2.016 Turn off this advice by setting config variable advice.detachedHead to false
+#7 2.016 
+#7 2.016 HEAD is now at 958ec93 Bump to v1.5.1
+#7 5.073 INFO 09-24 19:14:43 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+#7 5.073 INFO 09-24 19:14:43 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+#7 5.151 WARNING 09-24 19:14:43 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 5.172 W0924 19:14:43.944000 25 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#7 5.553 WARNING 09-24 19:14:44 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 5.555 WARNING 09-24 19:14:44 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 5.773 patched /opt/exllamav3/exllamav3/exllamav3_ext/avx2_target.h
+#7 5.773 patched /opt/exllamav3/exllamav3/exllamav3_ext/avx512_target.h
+#7 5.773 patched /opt/exllamav3/exllamav3/exllamav3_ext/avx2_target.cpp
+#7 5.773 patched /opt/exllamav3/exllamav3/exllamav3_ext/avx512_target.cpp
+#7 5.773 patched /opt/exllamav3/exllamav3/exllamav3_ext/parallel/all_reduce_cpu_avx2.cpp
+#7 5.773 patched /opt/exllamav3/exllamav3/exllamav3_ext/parallel/all_reduce_cpu_avx512.cpp
+#7 5.773 patched /opt/exllamav3/exllamav3/exllamav3_ext/cpu/moe_mul1.cpp
+#7 5.773 patched /opt/exllamav3/exllamav3/exllamav3_ext/cpu/moe_handoff.cu
+#7 5.773 patched /opt/exllamav3/exllamav3/exllamav3_ext/parallel/all_reduce_cpu.cu
+#7 9.950 INFO 09-24 19:14:48 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+#7 9.950 INFO 09-24 19:14:48 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+#7 10.03 WARNING 09-24 19:14:48 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 10.05 W0924 19:14:48.827000 114 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#7 10.42 WARNING 09-24 19:14:49 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 10.43 WARNING 09-24 19:14:49 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+#7 10.71 Processing /opt/exllamav3
+#7 10.71   Preparing metadata (pyproject.toml): started
+#7 15.60   Preparing metadata (pyproject.toml): finished with status 'done'
+#7 15.61 Building wheels for collected packages: exllamav3
+#7 15.61   Building wheel for exllamav3 (pyproject.toml): started
+#7 79.27   Building wheel for exllamav3 (pyproject.toml): still running...
+#7 139.3   Building wheel for exllamav3 (pyproject.toml): still running...
+#7 200.4   Building wheel for exllamav3 (pyproject.toml): still running...
+#7 215.0   Building wheel for exllamav3 (pyproject.toml): finished with status 'done'
+#7 215.1   Created wheel for exllamav3: filename=exllamav3-1.5.1-cp312-cp312-linux_aarch64.whl size=104145832 sha256=59a6362d0642bf922cd12f14a494bf8da13e6d2118b8e36b08cd7b8744c4a928
+#7 215.1   Stored in directory: /tmp/pip-ephem-wheel-cache-sbzgoqrp/wheels/66/31/22/52c7f1731161c8b0d5fd515bdafc549cddbaf9d4f6b0057a0f
+#7 215.1 Successfully built exllamav3
+#7 215.1 Installing collected packages: exllamav3
+#7 215.1   Attempting uninstall: exllamav3
+#7 215.1     Found existing installation: exllamav3 1.4.9
+#7 215.1     Uninstalling exllamav3-1.4.9:
+#7 215.7       Successfully uninstalled exllamav3-1.4.9
+#7 216.7 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#7 216.7 Successfully installed exllamav3-1.5.1
+#7 216.7 DEPRECATION: Unexpected import of 'tabulate' after pip install started. pip 26.3 will enforce this behaviour change. Discussion can be found at https://github.com/pypa/pip/issues/13842 (/usr/local/lib/python3.12/dist-packages/torch/_dynamo/utils.py:249)
+#7 216.7 DEPRECATION: Unexpected import of 'wcwidth' after pip install started. pip 26.3 will enforce this behaviour change. Discussion can be found at https://github.com/pypa/pip/issues/13842 (/usr/local/lib/python3.12/dist-packages/tabulate/__init__.py:27)
+#7 216.7 DEPRECATION: Unexpected import of 'tabulate.version' after pip install started. pip 26.3 will enforce this behaviour change. Discussion can be found at https://github.com/pypa/pip/issues/13842 (/usr/local/lib/python3.12/dist-packages/tabulate/__init__.py:38)
+#7 218.3 W0924 19:18:17.074000 4155 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+#7 218.4 exllamav3 1.5.1
+#7 DONE 218.9s
+
+#8 exporting to image
+#8 exporting layers
+#8 exporting layers 0.6s done
+#8 writing image sha256:ba0ac163ef95dcdce2b403293956f6dc08e2df8d80a4dbadae39d37736c27d6f done
+#8 naming to docker.io/library/dsv41-quant151 done
+#8 DONE 0.7s

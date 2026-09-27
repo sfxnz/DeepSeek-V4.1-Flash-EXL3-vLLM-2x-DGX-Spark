@@ -1,0 +1,40 @@
+## host spark1 2026-09-24T19:53:33+01:00
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi        98Gi       5.6Gi       264Mi        19Gi        22Gi
+Swap:           15Gi       6.7Gi       9.3Gi
+## swaps
+Filename				Type		Size		Used		Priority
+/swap.img                               file		16777212	6992988		-2
+## /proc/pressure/memory
+some avg10=0.00 avg60=0.00 avg300=0.00 total=3844058664
+full avg10=0.00 avg60=0.00 avg300=0.00 total=3775785427
+## /proc/pressure/io
+some avg10=0.00 avg60=0.00 avg300=0.00 total=5580757311
+full avg10=0.00 avg60=0.00 avg300=0.00 total=5324268792
+## meminfo
+MemTotal:       127600752 kB
+MemFree:         5916392 kB
+MemAvailable:   23875404 kB
+Cached:         17484860 kB
+SwapCached:       518224 kB
+Active:          4315980 kB
+Inactive:       17490660 kB
+Active(anon):    3087660 kB
+Inactive(anon):   371768 kB
+Active(file):    1228320 kB
+Inactive(file): 17118892 kB
+Unevictable:       25224 kB
+Mlocked:           25224 kB
+SwapTotal:      16777212 kB
+SwapFree:        9784224 kB
+Dirty:               276 kB
+AnonPages:       3176512 kB
+Shmem:            270796 kB
+ShmemHugePages:        0 kB
+ShmemPmdMapped:        0 kB
+HugePages_Total:       0
+Hugetlb:               0 kB
+## per-process swap (vllm/EngineCore/Worker/VLLM/python)
+pid=927621 comm=vllm VmRSS: 232240 kB RssAnon: 182436 kB RssFile: 49804 kB RssShmem: 0 kB VmSwap: 976252 kB  cmd=[/usr/bin/python3 /usr/local/bin/vllm serve /cache/huggingface/hub/models--sfxnz-]
+pid=928917 comm=VLLM::EngineCor VmRSS: 116348 kB RssAnon: 62548 kB RssFile: 42736 kB RssShmem: 11064 kB VmSwap: 846132 kB  cmd=[VLLM::EngineCore                                                                ]
+pid=929371 comm=VLLM::Worker_TP VmRSS: 2012172 kB RssAnon: 1315068 kB RssFile: 535996 kB RssShmem: 161108 kB VmSwap: 2263072 kB  cmd=[VLLM::Worker_TP0                                                                ]

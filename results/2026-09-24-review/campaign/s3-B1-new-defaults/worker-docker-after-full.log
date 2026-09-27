@@ -1,0 +1,728 @@
+2026-09-24T20:16:25.447122402Z dsv41-indexer-workspace: applied (/usr/local/lib/python3.12/dist-packages/vllm/v1/attention/backends/mla/indexer.py)
+2026-09-24T20:16:38.469771085Z [dsv41-drop-page-cache] armed (fadvise DONTNEED on shards after weight load)
+2026-09-24T20:16:38.469787437Z [dsv41-prefill-empty-cache] armed (threshold 8192 tokens, release when MemAvailable < 2.5 GiB)
+2026-09-24T20:16:39.634951264Z dsv41: engram disk gather census instrumented
+2026-09-24T20:16:39.634980512Z dsv41: engram parallel stage installed
+2026-09-24T20:16:39.634983088Z dsv41: engram prefetch v3 stager installed
+2026-09-24T20:16:39.634985168Z dsv41: engram prefetch v3 runner hook installed
+2026-09-24T20:16:39.634987104Z dsv41: engram census pf_hit accounting fixed (v3)
+2026-09-24T20:16:39.634988832Z dsv41: engram gather v2 installed (DSV41_ENGRAM_GATHER_V2)
+2026-09-24T20:16:39.635007648Z WARNING 09-24 20:16:39 [envs.py:2282] Unknown vLLM environment variable detected: VLLM_EXL3_MOE_KERNEL
+2026-09-24T20:16:46.008237862Z INFO 09-24 20:16:46 [model.py:692] Resolved architecture: DeepseekV41ForCausalLM
+2026-09-24T20:16:46.008490665Z INFO 09-24 20:16:46 [model.py:2034] Using max model len 1048576
+2026-09-24T20:16:47.395998548Z INFO 09-24 20:16:47 [cache.py:348] Using fp8 data type to store kv cache. It reduces the GPU memory footprint and boosts the performance. Meanwhile, it may cause accuracy drop without a proper scaling factor
+2026-09-24T20:16:47.396242054Z INFO 09-24 20:16:47 [arg_utils.py:2232] Inferred data_parallel_rank 0 from node_rank 1
+2026-09-24T20:16:47.398216173Z INFO 09-24 20:16:47 [model.py:692] Resolved architecture: DeepseekV41ForCausalLM
+2026-09-24T20:16:47.398228189Z INFO 09-24 20:16:47 [model.py:2034] Using max model len 1048576
+2026-09-24T20:16:54.379342509Z INFO 09-24 20:16:54 [scheduler.py:277] Chunked prefill is enabled with max_num_batched_tokens=8192.
+2026-09-24T20:16:54.380320536Z INFO 09-24 20:16:54 [kernel.py:373] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+2026-09-24T20:16:54.380499226Z WARNING 09-24 20:16:54 [cuda.py:336] Forcing --disable_chunked_mm_input for models with multimodal-bidirectional attention.
+2026-09-24T20:16:54.483044243Z INFO 09-24 20:16:54 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant
+2026-09-24T20:16:54.483082660Z INFO 09-24 20:16:54 [serve.py:217] Launching vLLM (v0.1.dev20904+g179dd0fa9) headless multiproc executor, with head node address 10.100.8.1:29524 for torch.distributed process group.
+2026-09-24T20:16:25.383325040Z dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+2026-09-24T20:16:25.401974540Z dsv41-patch ok prefer_b12x_mxfp8
+2026-09-24T20:16:25.449804546Z dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+2026-09-24T20:16:25.455486837Z dsv41-patch ok persistent_topk: already applied
+2026-09-24T20:16:25.455715032Z dsv41-patch ok kpool_persistent_topk: already applied
+2026-09-24T20:16:37.983736150Z dsv41-patch ok load_general_plugins
+2026-09-24T20:16:37.983768375Z dsv41-patch ok exl3_weight_block_size
+2026-09-24T20:16:38.458436730Z dsv41-patch ok warmup_stubs
+2026-09-24T20:16:38.469794206Z dsv41-patch skip cudagraph_worker_stub: DSV41_ALLOW_CUDA_GRAPHS=1
+2026-09-24T20:16:38.488192931Z dsv41-patch ok swa_page_coerce
+2026-09-24T20:16:38.636835119Z dsv41-patch ok kernel_block_sizes
+2026-09-24T20:16:38.636864720Z dsv41-patch ok extra_page_bump
+2026-09-24T20:16:38.636867952Z dsv41-patch ok v41_config_vision
+2026-09-24T20:16:38.636869808Z dsv41-patch ok swa_image_width: already applied
+2026-09-24T20:16:38.636871664Z dsv41-patch ok attention_image_width: already applied
+2026-09-24T20:16:38.636873504Z dsv41-patch ok native_indexer_decode: already applied
+2026-09-24T20:16:38.636875456Z dsv41-patch ok indexer_adaptive: already applied
+2026-09-24T20:16:38.636877152Z dsv41-patch ok indexer_short_context: already applied
+2026-09-24T20:16:38.638188367Z dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+2026-09-24T20:16:38.638210687Z dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+2026-09-24T20:16:38.638213375Z dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+2026-09-24T20:16:38.638215967Z dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+2026-09-24T20:16:38.638217887Z dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+2026-09-24T20:16:38.661301003Z dsv41-patch ok decode_levers
+2026-09-24T20:16:54.495531409Z dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+2026-09-24T20:16:54.497188660Z dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+2026-09-24T20:16:54.510958719Z dsv41-indexer-workspace: already applied
+2026-09-24T20:16:54.512125629Z dsv41-indexer-workspace: already applied
+2026-09-24T20:16:59.588499041Z [dsv41-drop-page-cache] armed (fadvise DONTNEED on shards after weight load)
+2026-09-24T20:16:59.594619542Z [dsv41-prefill-empty-cache] armed (threshold 8192 tokens, release when MemAvailable < 2.5 GiB)
+2026-09-24T20:16:54.508491076Z dsv41-patch ok prefer_b12x_mxfp8
+2026-09-24T20:16:54.509668609Z dsv41-patch ok prefer_b12x_mxfp8
+2026-09-24T20:16:54.511985867Z dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+2026-09-24T20:16:54.513135384Z dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+2026-09-24T20:16:54.517615771Z dsv41-patch ok persistent_topk: already applied
+2026-09-24T20:16:54.517731228Z dsv41-patch ok kpool_persistent_topk: already applied
+2026-09-24T20:16:54.518716935Z dsv41-patch ok persistent_topk: already applied
+2026-09-24T20:16:54.518844633Z dsv41-patch ok kpool_persistent_topk: already applied
+2026-09-24T20:16:59.455124869Z dsv41-patch ok load_general_plugins
+2026-09-24T20:16:59.455149317Z dsv41-patch ok exl3_weight_block_size
+2026-09-24T20:16:59.584639637Z dsv41-patch ok warmup_stubs
+2026-09-24T20:16:59.587912698Z dsv41-patch skip cudagraph_worker_stub: DSV41_ALLOW_CUDA_GRAPHS=1
+2026-09-24T20:16:59.594598597Z dsv41-patch ok swa_page_coerce
+2026-09-24T20:16:59.643182215Z dsv41-patch ok kernel_block_sizes
+2026-09-24T20:16:59.643202456Z dsv41-patch ok extra_page_bump
+2026-09-24T20:16:59.643203880Z dsv41-patch ok v41_config_vision
+2026-09-24T20:16:59.643205112Z dsv41-patch ok swa_image_width: already applied
+2026-09-24T20:16:59.643206232Z dsv41-patch ok attention_image_width: already applied
+2026-09-24T20:16:59.643207448Z dsv41-patch ok native_indexer_decode: already applied
+2026-09-24T20:16:59.643208552Z dsv41-patch ok indexer_adaptive: already applied
+2026-09-24T20:16:59.643209688Z dsv41-patch ok indexer_short_context: already applied
+2026-09-24T20:16:59.644717673Z dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+2026-09-24T20:16:59.644736137Z dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+2026-09-24T20:16:59.644737465Z dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+2026-09-24T20:16:59.644738873Z dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+2026-09-24T20:16:59.644739929Z dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+2026-09-24T20:16:59.647594073Z dsv41-patch ok decode_levers
+2026-09-24T20:16:59.690656077Z dsv41-patch ok load_general_plugins
+2026-09-24T20:16:59.690676221Z dsv41-patch ok exl3_weight_block_size
+2026-09-24T20:16:59.854852115Z dsv41-patch ok warmup_stubs
+2026-09-24T20:16:59.859417591Z [dsv41-drop-page-cache] armed (fadvise DONTNEED on shards after weight load)
+2026-09-24T20:16:59.860166815Z [dsv41-prefill-empty-cache] armed (threshold 8192 tokens, release when MemAvailable < 2.5 GiB)
+2026-09-24T20:17:00.331283979Z (Worker pid=466) INFO 09-24 20:17:00 [parallel_state.py:1817] world_size=2 rank=1 local_rank=0 distributed_init_method=tcp://10.100.8.1:29524 backend=nccl
+2026-09-24T20:17:49.204480348Z (Worker pid=466) WARNING 09-24 20:17:49 [symm_mem.py:67] SymmMemCommunicator: Device capability 12.1 not supported, communicator is not available.
+2026-09-24T20:17:49.233594972Z (Worker pid=466) WARNING 09-24 20:17:49 [flashinfer_all_reduce.py:383] FlashInfer All Reduce is disabled because it is not supported for world_size=2.
+2026-09-24T20:17:49.238518927Z (Worker pid=466) WARNING 09-24 20:17:49 [custom_all_reduce.py:201] Custom collectives are disabled because this multi-node group does not have MNNVL-capable GPUs on every rank.
+2026-09-24T20:17:49.399897173Z (Worker pid=466) INFO 09-24 20:17:49 [parallel_state.py:2234] rank 1 in world size 2 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 1, EP rank 1, EPLB rank N/A
+2026-09-24T20:17:49.399919334Z (Worker pid=466) INFO 09-24 20:17:49 [gpu_worker.py:436] Using V2 Model Runner
+2026-09-24T20:17:49.867449323Z (Worker_TP1 pid=466) INFO 09-24 20:17:49 [model_runner.py:383] Loading model from scratch...
+2026-09-24T20:17:49.890501483Z (Worker_TP1 pid=466) INFO 09-24 20:17:49 [cuda.py:581] Using backend AttentionBackendEnum.FLASH_ATTN for vit attention
+2026-09-24T20:17:49.890536700Z (Worker_TP1 pid=466) INFO 09-24 20:17:49 [mm_encoder_attention.py:372] Using AttentionBackendEnum.FLASH_ATTN for MMEncoderAttention.
+2026-09-24T20:17:50.143155961Z (Worker_TP1 pid=466) INFO 09-24 20:17:50 [quant_config.py:79] DeepSeek V4 expert_dtype resolved to 'fp4'
+2026-09-24T20:17:50.144241861Z (Worker_TP1 pid=466) INFO 09-24 20:17:50 [__init__.py:889] Using FlashInferCutlassMxfp8LinearKernel for MXFP8 GEMM
+2026-09-24T20:17:50.291802360Z (Worker_TP1 pid=466) INFO 09-24 20:17:50 [attention.py:140] Using DeepSeek's fp8_ds_mla KV cache format.
+2026-09-24T20:17:50.593955673Z (Worker_TP1 pid=466) INFO 09-24 20:17:50 [attention.py:1062] Using FP8 indexer cache for Lightning Indexer.
+2026-09-24T20:17:54.028231428Z (Worker_TP1 pid=466) INFO 09-24 20:17:54 [engram.py:442] Built engram token map (129280 -> 99092 ids) for layers (1, 14)
+2026-09-24T20:17:54.138182904Z (Worker_TP1 pid=466) dsv41: lm_head mxfp8 enabled (b12x, (64640, 5120))
+2026-09-24T20:17:54.187005827Z (Worker_TP1 pid=466) WARNING 09-24 20:17:54 [compilation.py:1354] Op 'quant_fp8' not present in model, enabling with '+quant_fp8' has no effect
+2026-09-24T20:17:54.301799530Z (Worker_TP1 pid=466) INFO 09-24 20:17:54 [weight_utils.py:863] Filesystem type for checkpoints: EXT4. Checkpoint size: 332.92 GiB. Available RAM: 39.44 GiB.
+2026-09-24T20:17:54.301821130Z (Worker_TP1 pid=466) INFO 09-24 20:17:54 [weight_utils.py:893] Auto-prefetch is disabled because the filesystem (EXT4) is not a recognized network FS (NFS/Lustre) and the checkpoint size (332.92 GiB) exceeds 90% of available RAM (39.44 GiB).
+2026-09-24T20:21:05.144736324Z (Worker_TP1 pid=466) INFO 09-24 20:21:04 [default_loader.py:430] Loading weights took 190.68 seconds
+2026-09-24T20:21:05.448780208Z (Worker_TP1 pid=466) INFO 09-24 20:21:05 [__init__.py:889] Using EmulationMxfp8LinearKernel for MXFP8 GEMM
+2026-09-24T20:21:08.997814020Z (Worker_TP1 pid=466) INFO 09-24 20:21:08 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:09.061613183Z (Worker_TP1 pid=466) INFO 09-24 20:21:09 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:09.117119528Z (Worker_TP1 pid=466) INFO 09-24 20:21:09 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:09.171482376Z (Worker_TP1 pid=466) INFO 09-24 20:21:09 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:09.226486621Z (Worker_TP1 pid=466) INFO 09-24 20:21:09 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:09.281222448Z (Worker_TP1 pid=466) INFO 09-24 20:21:09 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:09.336591992Z (Worker_TP1 pid=466) INFO 09-24 20:21:09 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:09.389634077Z (Worker_TP1 pid=466) INFO 09-24 20:21:09 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:09.446631746Z (Worker_TP1 pid=466) INFO 09-24 20:21:09 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:18.347106754Z (Worker_TP1 pid=466) INFO 09-24 20:21:18 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:18.412238930Z (Worker_TP1 pid=466) INFO 09-24 20:21:18 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:18.467541236Z (Worker_TP1 pid=466) INFO 09-24 20:21:18 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:18.522458259Z (Worker_TP1 pid=466) INFO 09-24 20:21:18 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:16:59.859181924Z dsv41-patch skip cudagraph_worker_stub: DSV41_ALLOW_CUDA_GRAPHS=1
+2026-09-24T20:16:59.865786686Z dsv41-patch ok swa_page_coerce
+2026-09-24T20:16:59.917679238Z dsv41-patch ok kernel_block_sizes
+2026-09-24T20:16:59.917707430Z dsv41-patch ok extra_page_bump
+2026-09-24T20:16:59.917710534Z dsv41-patch ok v41_config_vision
+2026-09-24T20:16:59.917712694Z dsv41-patch ok swa_image_width: already applied
+2026-09-24T20:16:59.917714710Z dsv41-patch ok attention_image_width: already applied
+2026-09-24T20:16:59.917716614Z dsv41-patch ok native_indexer_decode: already applied
+2026-09-24T20:16:59.917718326Z dsv41-patch ok indexer_adaptive: already applied
+2026-09-24T20:16:59.917720070Z dsv41-patch ok indexer_short_context: already applied
+2026-09-24T20:16:59.919305112Z dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+2026-09-24T20:16:59.919347977Z dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+2026-09-24T20:16:59.919350649Z dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+2026-09-24T20:16:59.919353033Z dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+2026-09-24T20:16:59.919354873Z dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+2026-09-24T20:16:59.922162968Z dsv41-patch ok decode_levers
+2026-09-24T20:21:18.577299218Z (Worker_TP1 pid=466) INFO 09-24 20:21:18 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:18.633176825Z (Worker_TP1 pid=466) INFO 09-24 20:21:18 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:18.688295930Z (Worker_TP1 pid=466) INFO 09-24 20:21:18 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:18.743692333Z (Worker_TP1 pid=466) INFO 09-24 20:21:18 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:18.801348001Z (Worker_TP1 pid=466) INFO 09-24 20:21:18 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:18.853872174Z (Worker_TP1 pid=466) INFO 09-24 20:21:18 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:18.905302146Z (Worker_TP1 pid=466) INFO 09-24 20:21:18 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:18.963149432Z (Worker_TP1 pid=466) INFO 09-24 20:21:18 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.021176735Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.083260022Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.137816706Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.192603839Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.248344437Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.302517085Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.359682974Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.415895847Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.470959175Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.528499546Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.585556345Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.642849355Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.697235045Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.750889834Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.805011650Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.857526126Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.911930377Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:19.966076801Z (Worker_TP1 pid=466) INFO 09-24 20:21:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:20.019506500Z (Worker_TP1 pid=466) INFO 09-24 20:21:20 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+2026-09-24T20:21:20.038334456Z (Worker_TP1 pid=466) INFO 09-24 20:21:20 [eagle3_utils.py:28] Using Eagle3 auxiliary layers from config: (37, 38, 39)
+2026-09-24T20:21:20.150340933Z (Worker_TP1 pid=466) INFO 09-24 20:21:20 [kernel.py:373] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+2026-09-24T20:21:20.231222814Z (Worker_TP1 pid=466) INFO 09-24 20:21:20 [mxfp4.py:715] Using 'DEEPGEMM_MXFP4' Mxfp4 MoE backend.
+2026-09-24T20:21:20.908953323Z (Worker_TP1 pid=466) INFO 09-24 20:21:20 [weight_utils.py:863] Filesystem type for checkpoints: EXT4. Checkpoint size: 332.92 GiB. Available RAM: 30.91 GiB.
+2026-09-24T20:21:20.908976667Z (Worker_TP1 pid=466) INFO 09-24 20:21:20 [weight_utils.py:893] Auto-prefetch is disabled because the filesystem (EXT4) is not a recognized network FS (NFS/Lustre) and the checkpoint size (332.92 GiB) exceeds 90% of available RAM (30.91 GiB).
+2026-09-24T20:21:48.357060631Z (Worker_TP1 pid=466) INFO 09-24 20:21:48 [dspark.py:515] DSpark draft model loaded: 97 params
+2026-09-24T20:21:48.482595148Z (Worker_TP1 pid=466) INFO 09-24 20:21:48 [default_loader.py:430] Loading weights took 27.56 seconds
+2026-09-24T20:21:48.896501621Z (Worker_TP1 pid=466) INFO 09-24 20:21:48 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+2026-09-24T20:21:49.044260609Z (Worker_TP1 pid=466) INFO 09-24 20:21:49 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+2026-09-24T20:21:49.047673931Z (Worker_TP1 pid=466) INFO 09-24 20:21:49 [deep_gemm.py:136] DeepGEMM E8M0 enabled on current platform.
+2026-09-24T20:21:50.325786569Z (Worker_TP1 pid=466) INFO 09-24 20:21:50 [mxfp4.py:1973] Using MoEPrepareAndFinalizeNoDPEPModular
+2026-09-24T20:21:50.326117340Z (Worker_TP1 pid=466) INFO 09-24 20:21:50 [mxfp4.py:1974] Using DeepGemmFP4Experts
+2026-09-24T20:21:50.497013173Z (Worker_TP1 pid=466) WARNING 09-24 20:21:50 [speculator.py:203] Draft model DSparkDeepseekV4ForCausalLM does not support external multimodal embeddings. Embeddings from the target model will not be passed to the drafter; using text-only draft inputs instead.
+2026-09-24T20:22:02.404705770Z (Worker_TP1 pid=466) INFO 09-24 20:22:02 [model_runner.py:408] Model loading took 75.43 GiB memory and 252.723641 seconds
+2026-09-24T20:22:02.730960626Z (Worker_TP1 pid=466) dsv41: engram prefetch v3 armed (ngram=4 heads=8 depth=3 layers=[0, 1] mult=(2, 4) primes=(2, 3, 8) offsets=(2, 24))
+2026-09-24T20:22:05.863048833Z (Worker_TP1 pid=466) [dsv41-drop-page-cache] dropped page cache of 48 shard files: MemFree 10.13GiB -> 38.14GiB
+2026-09-24T20:24:20.998256261Z INFO 09-24 20:24:20 [torch_utils.py:280] Reducing Torch threads from 20 to 1 for serving. Set OMP_NUM_THREADS in the external environment to override.
+2026-09-24T20:24:21.758470590Z (Worker_TP1 pid=466) INFO 09-24 20:24:21 [encoder_runner.py:131] Encoder cache will be initialized with a budget of 8192 tokens, and profiled with 7 image items of the maximum feature size.
+2026-09-24T20:24:43.252829965Z (Worker_TP1 pid=466) 2026-09-24 20:24:36  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-24T20:24:43.252884141Z (Worker_TP1 pid=466) 2026-09-24 20:24:41  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-24T20:24:43.252887501Z (Worker_TP1 pid=466) [wo_a-probe] wo_a.dtype=torch.bfloat16 wo_a.shape=(4096, 4096) use_fp8=False wo_b.dtype=torch.float8_e4m3fn n_groups=4
+2026-09-24T20:24:44.445888103Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:53.398971930Z (Worker_TP1 pid=466) 2026-09-24 20:24:45  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_post_tilelang` with `out_idx=None`
+2026-09-24T20:24:53.399013386Z (Worker_TP1 pid=466) 2026-09-24 20:24:46  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_post_tilelang`
+2026-09-24T20:24:53.399016890Z (Worker_TP1 pid=466) 2026-09-24 20:24:47  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-24T20:24:53.399019786Z (Worker_TP1 pid=466) 2026-09-24 20:24:52  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-24T20:24:53.399022458Z (Worker_TP1 pid=466) INFO 09-24 20:24:53 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8192)
+2026-09-24T20:24:53.793457371Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:54.662208399Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:54.851373597Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:55.004500672Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:55.158065269Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:55.312882753Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:55.476274066Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:55.640391846Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:55.794869521Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:55.949192170Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:56.110206203Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:56.273585467Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:56.428613383Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:56.583208689Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:56.737391161Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:56.891871570Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:57.061680696Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:57.217200822Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:45.739788996Z [20:24:45] : Warning: T.vectorized loop over `i_hci` with extent 4 is lowered as a serial loop because TileLang could not find a valid vectorization plan. Scalar accumulator updates inside the loop are a common cause; move reductions to T.unroll or T.serial if this is intended.
+2026-09-24T20:24:57.377269617Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:57.562390018Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:57.714814190Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:57.866585814Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:58.021790291Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:58.189012743Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:58.342741178Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:58.509171433Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:58.675646057Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:58.834347066Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:58.985532749Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:59.138629883Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:59.300707199Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:59.457240146Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:59.610992660Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:59.764475268Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:24:59.915832935Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:25:00.075444748Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:25:00.240289104Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:25:00.401599311Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:25:00.561746726Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:25:08.043001306Z (Worker_TP1 pid=466) 2026-09-24 20:25:01  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-24T20:25:08.043030314Z (Worker_TP1 pid=466) 2026-09-24 20:25:06  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-24T20:25:08.043048618Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:25:17.147649055Z (Worker_TP1 pid=466) 2026-09-24 20:25:09  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-24T20:25:17.147688175Z (Worker_TP1 pid=466) 2026-09-24 20:25:13  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-24T20:25:17.147690975Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:25:17.163351612Z (Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+2026-09-24T20:25:17.627607902Z (Worker_TP1 pid=466) INFO 09-24 20:25:17 [gpu_worker.py:551] Initial free memory 113.67 GiB, reserved 8.0 GiB memory for KV Cache as specified by kv_cache_memory_bytes config and skipped memory profiling. This does not respect the gpu_memory_utilization config. Only use kv_cache_memory_bytes config when you want manual control of KV cache memory size. If OOM'ed, check the difference of initial free memory between the current run and the previous run where kv_cache_memory_bytes is suggested and update it correspondingly.
+2026-09-24T20:25:18.339139929Z (Worker_TP1 pid=466) INFO 09-24 20:25:18 [indexer.py:741] DSA indexer decode path: use_flattening=False supports_varlen=False (next_n=4, use_fp4_cache=False)
+2026-09-24T20:25:18.721236609Z (Worker_TP1 pid=466) [dsv41-drop-page-cache] dropped page cache of 48 shard files: MemFree 25.93GiB -> 25.93GiB
+2026-09-24T20:25:18.985517664Z (Worker_TP1 pid=466) INFO 09-24 20:25:18 [breakable_cudagraph.py:290] Breakable CUDA graph enabled
+2026-09-24T20:25:32.236800034Z (Worker_TP1 pid=466) 2026-09-24 20:25:21  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-24T20:25:32.236830242Z (Worker_TP1 pid=466) 2026-09-24 20:25:25  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-24T20:25:32.236832226Z (Worker_TP1 pid=466) INFO 09-24 20:25:32 [speculator.py:141] Capturing model for DSpark speculator...
+2026-09-24T20:25:32.703853337Z (Worker_TP1 pid=466) INFO 09-24 20:25:32 [model_runner.py:974] Graph capturing finished in 14 secs, took 1.06 GiB
+2026-09-24T20:25:33.529195353Z (Worker_TP1 pid=466) dsv41: engram gather v2 self-check bit-exact (r=120)
+2026-09-24T20:25:33.532195098Z (Worker_TP1 pid=466) dsv41: engram fast stage self-check bit-exact (2 tables, n=10)
+2026-09-24T20:25:41.247790032Z (Worker_TP1 pid=466) INFO 09-24 20:25:41 [jit_monitor.py:85] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+2026-09-24T20:25:41.533968712Z (Worker_TP1 pid=466) INFO 09-24 20:25:41 [torch_utils.py:280] Reducing Torch threads from 20 to 1 for serving. Set OMP_NUM_THREADS in the external environment to override.
+2026-09-24T20:26:14.008532987Z (Worker_TP1 pid=466) WARNING 09-24 20:26:14 [jit_monitor.py:141] Triton kernel JIT compilation during inference: ComputePrefillMetadataKernel.kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:26:15.358215780Z (Worker_TP1 pid=466) WARNING 09-24 20:26:15 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _prepare_dflash_inputs_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:26:15.521434868Z (Worker_TP1 pid=466) WARNING 09-24 20:26:15 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _compute_local_logits_stats_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:26:15.639418375Z (Worker_TP1 pid=466) WARNING 09-24 20:26:15 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _rejection_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:26:15.836362212Z (Worker_TP1 pid=466) WARNING 09-24 20:26:15 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _resample_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:26:17.167520857Z (Worker_TP1 pid=466) WARNING 09-24 20:26:17 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _gumbel_sample_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:26:17.868258268Z (Worker_TP1 pid=466) WARNING 09-24 20:26:17 [jit_monitor.py:141] Triton kernel JIT compilation during inference: BuildPrefillChunkMetadataKernel.kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:26:17.900222254Z (Worker_TP1 pid=466) WARNING 09-24 20:26:17 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _ring_slot_mapping_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:26:43.236714890Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=2902 runs/call=5074.0 preads/call=5074.0 read=1435.996ms fadv/call=0.0 pf_hit=49%(28)
+2026-09-24T20:26:43.358591216Z (Worker_TP1 pid=466) WARNING 09-24 20:26:43 [jit_monitor.py:141] CuTeDSL JIT compilation during inference: MXFP8QuantizeSwizzledKernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:26:44.600770553Z (Worker_TP1 pid=466) INFO 09-24 20:26:44 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=3760)
+2026-09-24T20:26:46.245183919Z (Worker_TP1 pid=466) WARNING 09-24 20:26:46 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _block_scores_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:26:46.673061261Z (Worker_TP1 pid=466) WARNING 09-24 20:26:46 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _candidate_flags_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:26:46.714295773Z (Worker_TP1 pid=466) WARNING 09-24 20:26:46 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _mask_candidates_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:27:54.582688491Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=247 runs/call=219.0 preads/call=219.0 read=21.368ms fadv/call=0.0 pf_hit=69%(28)
+2026-09-24T20:27:55.575187179Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.665ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:27:56.574459192Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.659ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:27:57.573268142Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.668ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:27:58.567395816Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.630ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:27:59.564356156Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.679ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:00.562441009Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.697ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:01.558204421Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.708ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:02.554806361Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.718ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:03.567369961Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.632ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:04.571146441Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.639ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:05.569686057Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.449ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:06.583879683Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.648ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:07.581836087Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.696ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:08.590099787Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.766ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:09.621502222Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.116ms fadv/call=0.0 pf_hit=94%(32)
+2026-09-24T20:28:10.896614800Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=2.585ms fadv/call=0.0 pf_hit=96%(32)
+2026-09-24T20:28:11.902955803Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.944ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:12.920916571Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.972ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:13.918925587Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.928ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:14.936230855Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.918ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:15.931611817Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.969ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:16.950500924Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.874ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:17.966939277Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.767ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:18.985662374Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.919ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:20.003220516Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.159ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:21.017337485Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.913ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:22.019556294Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.872ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:23.017685110Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.783ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:24.274476418Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.022ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:28:25.333882311Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=2.983ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:26.358908414Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.614ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:27.355037713Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.702ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:28.367429809Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.775ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:29.393368335Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.786ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:30.399764424Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.772ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:31.409184955Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.732ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:32.405871100Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.716ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:33.419047881Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.573ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:34.421499789Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.698ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:35.420658045Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.665ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:36.433797437Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.144ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:37.433469431Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.818ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:38.427433216Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.799ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:39.690551655Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.838ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:28:40.700020307Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.283ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:41.725072054Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.260ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:42.724672681Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.640ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:43.723558468Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.668ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:44.718132582Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.659ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:45.716037684Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.638ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:46.713833037Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.672ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:47.730027036Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.547ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:48.727821213Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.606ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:49.726056220Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.649ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:50.721167191Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.593ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:51.741790346Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.245ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:52.772522665Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.795ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:53.798302540Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.200ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:55.053773021Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.246ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:28:56.064219949Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.531ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:57.061960971Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.613ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:58.078181614Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.530ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:28:59.075563234Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.592ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:00.097271063Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.183ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:01.110592784Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.604ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:02.127893783Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.621ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:03.125531756Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.681ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:04.127436513Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.714ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:05.139473571Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.721ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:06.143391210Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.731ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:07.156896666Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.654ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:08.151193819Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.614ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:09.148025892Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.604ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:10.402899459Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.681ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:29:11.449806962Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=2.312ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:12.450158030Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.713ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:13.464168071Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.696ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:14.481347836Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.723ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:15.500932119Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.169ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:16.520607967Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.532ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:17.519312912Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.678ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:18.535128301Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.637ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:19.531523387Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.586ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:20.546054682Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.545ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:21.546980134Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.555ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:22.542226514Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.565ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:23.539626821Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.668ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:24.814149210Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.617ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:29:25.839970138Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.704ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:26.877053786Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.784ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:27.902314415Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.167ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:28.919310521Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.127ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:29.937598837Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.677ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:30.955022345Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.673ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:31.972572441Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.287ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:33.000859912Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.082ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:34.020387466Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.263ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:35.029552119Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.684ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:36.047376073Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.685ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:37.064119858Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.652ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:38.064502875Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.769ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:39.060521708Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.738ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:40.075962739Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.816ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:41.353044739Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.740ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:29:42.398688397Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.906ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:43.413775286Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.608ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:44.440436545Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.773ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:45.453873210Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.720ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:46.470172525Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.268ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:47.489316665Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.738ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:48.507976383Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.130ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:49.520877127Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.836ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:50.542413363Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.776ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:51.557782463Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.775ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:52.558174209Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.670ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:53.553355161Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.556ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:54.572209193Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.687ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:55.586212991Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.771ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:56.872316895Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.921ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:29:57.876248063Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.783ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:58.925667675Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.883ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:29:59.950032448Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.835ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:00.948113002Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.721ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:01.963515071Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.693ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:02.983513637Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.729ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:03.978497222Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.764ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:04.977711478Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.758ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:05.974726217Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.848ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:07.012792786Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.305ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:08.011554198Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.722ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:09.012145550Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.667ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:10.030676163Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.713ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:11.047836175Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.519ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:12.322034705Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.449ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:30:13.348382942Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.071ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:14.363195012Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.080ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:15.413185860Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.214ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:16.441344046Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.766ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:17.439587774Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.660ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:18.438864495Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=95.5 preads/call=95.5 read=0.690ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:19.438371165Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.755ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:20.450896691Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.693ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:21.467221062Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.656ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:22.465353699Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.634ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:23.475342179Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.674ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:24.501292294Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.640ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:25.518796160Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.499ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:26.514044131Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.580ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:27.763620882Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.233ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:30:28.779402345Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.085ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:29.776530089Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.524ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:30.815961058Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.545ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:31.814272656Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.603ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:32.832890918Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.620ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:33.849535791Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.751ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:34.845475464Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.523ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:35.860908741Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.655ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:36.880794738Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.589ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:37.876642673Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.655ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:38.893426361Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.731ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:39.913491293Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.680ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:40.907993259Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.679ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:41.906969643Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.546ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:48.926008763Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=66 runs/call=133.5 preads/call=133.5 read=13.701ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:30:49.923391913Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.503ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:50.920400914Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.591ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:51.918335147Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.638ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:52.914339209Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.596ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:54.075816760Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=66 runs/call=133.5 preads/call=133.5 read=1.375ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:30:55.078760093Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.767ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:56.086505780Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.672ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:57.122050433Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.961ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:58.160574679Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.861ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:30:59.348167893Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=66 runs/call=133.5 preads/call=133.5 read=1.473ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:31:00.365333735Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.293ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:01.391594813Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.268ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:02.429143601Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.400ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:03.449521319Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.273ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:04.609596648Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=66 runs/call=133.5 preads/call=133.5 read=0.812ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:31:05.674470344Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=2.330ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:06.721298598Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.776ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:07.753211744Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.312ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:08.766488758Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.665ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:09.926100802Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=66 runs/call=133.5 preads/call=133.5 read=0.904ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:31:10.950865154Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.250ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:11.983086368Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.388ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:13.010762134Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.296ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:14.034722473Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.596ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:15.196141321Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=66 runs/call=133.5 preads/call=133.5 read=1.102ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:31:16.221714764Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.184ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:17.259050238Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.337ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:18.258288985Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.805ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:19.271463837Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.443ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:20.418406588Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=66 runs/call=133.5 preads/call=133.5 read=1.046ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:31:21.458123179Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=2.248ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:22.469932639Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.859ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:23.513529576Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=2.440ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:24.548216280Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.783ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:25.711179257Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=66 runs/call=133.5 preads/call=133.5 read=1.004ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:31:26.747355015Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.864ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:27.772376644Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.421ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:28.805657872Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.776ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:29.859404880Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=95.9 preads/call=95.9 read=2.835ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:31.029017978Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=66 runs/call=133.5 preads/call=133.5 read=1.002ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:31:32.032319452Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.771ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:33.049351366Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.224ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:34.086452321Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.323ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:35.097788236Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.280ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:36.596484057Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=127 runs/call=138.0 preads/call=138.0 read=1.712ms fadv/call=0.0 pf_hit=92%(32)
+2026-09-24T20:31:38.003349370Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=157.0 preads/call=157.0 read=2.286ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:39.420577553Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.282ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:40.825292861Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=191.9 preads/call=191.9 read=1.958ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:42.235236857Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.752ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:42.932272075Z (Worker_TP1 pid=466) WARNING 09-24 20:31:42 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _compute_global_topk_indices_and_lens_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:31:43.837457163Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=115 runs/call=222.0 preads/call=222.0 read=1.413ms fadv/call=0.0 pf_hit=88%(32)
+2026-09-24T20:31:45.265552679Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=3.139ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:46.671251054Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=187.5 preads/call=187.5 read=1.320ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:48.079994349Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.491ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:49.388625953Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=78 runs/call=156.0 preads/call=156.0 read=2.097ms fadv/call=0.0 pf_hit=96%(32)
+2026-09-24T20:31:50.626927784Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=97 runs/call=135.0 preads/call=135.0 read=1.618ms fadv/call=0.0 pf_hit=86%(32)
+2026-09-24T20:31:52.043128358Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=182.5 preads/call=182.5 read=1.716ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:53.463474926Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=2.435ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:54.896163638Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=2.722ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:56.327087567Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=191.9 preads/call=191.9 read=2.261ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:31:57.805513066Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=121 runs/call=187.5 preads/call=187.5 read=2.341ms fadv/call=0.0 pf_hit=91%(32)
+2026-09-24T20:31:59.194093254Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=102.0 preads/call=102.0 read=1.916ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:00.578100202Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=157.5 preads/call=157.5 read=1.854ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:02.032994321Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.866ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:03.464894545Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=2.320ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:05.004743389Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=130 runs/call=202.0 preads/call=202.0 read=2.270ms fadv/call=0.0 pf_hit=89%(32)
+2026-09-24T20:32:06.378657056Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=111.0 preads/call=111.0 read=1.099ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:07.773631125Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=139.5 preads/call=139.5 read=1.864ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:09.214828901Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=184.0 preads/call=184.0 read=2.372ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:10.638252821Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=191.9 preads/call=191.9 read=1.795ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:12.129401176Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=118 runs/call=237.0 preads/call=237.0 read=3.178ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:32:13.657894399Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.386ms fadv/call=0.0 pf_hit=98%(32)
+2026-09-24T20:32:15.086231218Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=3.016ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:16.479395293Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=145.0 preads/call=145.0 read=1.174ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:17.873525304Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=188.5 preads/call=188.5 read=1.359ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:19.400386544Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=127 runs/call=205.0 preads/call=205.0 read=3.169ms fadv/call=0.0 pf_hit=89%(32)
+2026-09-24T20:32:20.787591811Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=117.0 preads/call=117.0 read=2.244ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:22.214554723Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=169.5 preads/call=169.5 read=2.403ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:23.649112494Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=3.195ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:25.061980506Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=2.101ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:26.492503384Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=93 runs/call=186.0 preads/call=186.0 read=2.569ms fadv/call=0.0 pf_hit=97%(32)
+2026-09-24T20:32:28.068823191Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=118 runs/call=232.0 preads/call=232.0 read=2.431ms fadv/call=0.0 pf_hit=91%(32)
+2026-09-24T20:32:29.473343247Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=191.5 preads/call=191.5 read=2.033ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:30.882819815Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.493ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:32.317248975Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=2.461ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:33.767878612Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=3.441ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:35.251830059Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=127 runs/call=151.0 preads/call=151.0 read=1.439ms fadv/call=0.0 pf_hit=84%(32)
+2026-09-24T20:32:36.627223777Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=115.5 preads/call=115.5 read=1.005ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:38.040069724Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.462ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:39.438513734Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.442ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:40.869799680Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=191.9 preads/call=191.9 read=2.256ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:42.192308044Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=81 runs/call=162.0 preads/call=162.0 read=1.621ms fadv/call=0.0 pf_hit=88%(32)
+2026-09-24T20:32:43.190660192Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.835ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:45.340815773Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=64 runs/call=129.0 preads/call=129.0 read=8.479ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:32:46.357289874Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.704ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:47.373287042Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.803ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:48.397180832Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=64 runs/call=129.0 preads/call=129.0 read=0.957ms fadv/call=0.0 pf_hit=94%(32)
+2026-09-24T20:32:49.521290175Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.921ms fadv/call=0.0 pf_hit=96%(32)
+2026-09-24T20:32:50.521012454Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.880ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:51.515455476Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.848ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:52.659036841Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=64 runs/call=129.0 preads/call=129.0 read=1.113ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:32:53.669824772Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.687ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:54.674087473Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.674ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:55.814010462Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=64 runs/call=129.0 preads/call=129.0 read=1.011ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:32:56.816830865Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.686ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:57.828333988Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.914ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:32:58.962948306Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=64 runs/call=129.0 preads/call=129.0 read=0.991ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:32:59.968085830Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.721ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:00.969781913Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.687ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:01.998289653Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=64 runs/call=129.0 preads/call=129.0 read=0.957ms fadv/call=0.0 pf_hit=94%(32)
+2026-09-24T20:33:03.128007876Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.689ms fadv/call=0.0 pf_hit=96%(32)
+2026-09-24T20:33:04.127760807Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.812ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:05.127373832Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.642ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:06.265208574Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=64 runs/call=129.0 preads/call=129.0 read=0.894ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:33:07.268601224Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.762ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:08.277155860Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.686ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:09.417733692Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=64 runs/call=129.0 preads/call=129.0 read=1.072ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:33:10.430473636Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.814ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:11.436028300Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.882ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:12.574010529Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=64 runs/call=129.0 preads/call=129.0 read=0.961ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:33:13.571684724Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.857ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:14.570492857Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.901ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:15.593609261Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=64 runs/call=129.0 preads/call=129.0 read=0.993ms fadv/call=0.0 pf_hit=94%(32)
+2026-09-24T20:33:18.062604042Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=109 runs/call=219.0 preads/call=219.0 read=1.639ms fadv/call=0.0 pf_hit=96%(32)
+2026-09-24T20:33:19.462532699Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.424ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:20.862929065Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.333ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:22.403556797Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=117 runs/call=234.0 preads/call=234.0 read=1.623ms fadv/call=0.0 pf_hit=88%(32)
+2026-09-24T20:33:23.806631292Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.381ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:25.207519565Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.191ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:26.743074893Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=117 runs/call=234.0 preads/call=234.0 read=1.571ms fadv/call=0.0 pf_hit=88%(32)
+2026-09-24T20:33:28.139962724Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.326ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:29.537489177Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.348ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:30.943863629Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=93 runs/call=186.0 preads/call=186.0 read=1.445ms fadv/call=0.0 pf_hit=97%(32)
+2026-09-24T20:33:32.400836786Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=126 runs/call=129.0 preads/call=129.0 read=0.903ms fadv/call=0.0 pf_hit=86%(32)
+2026-09-24T20:33:33.767865521Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=96.0 preads/call=96.0 read=0.815ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:35.155512316Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=96.0 preads/call=96.0 read=0.708ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:36.755169683Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=126 runs/call=222.0 preads/call=222.0 read=1.539ms fadv/call=0.0 pf_hit=91%(32)
+2026-09-24T20:33:38.149703183Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.235ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:39.542677233Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.317ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:41.105883785Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=120 runs/call=240.0 preads/call=240.0 read=1.794ms fadv/call=0.0 pf_hit=89%(32)
+2026-09-24T20:33:42.495412131Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.395ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:43.886868945Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.324ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:45.265724105Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=180.0 preads/call=180.0 read=1.506ms fadv/call=0.0 pf_hit=97%(32)
+2026-09-24T20:33:46.835298372Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=123 runs/call=246.0 preads/call=246.0 read=1.871ms fadv/call=0.0 pf_hit=92%(32)
+2026-09-24T20:33:48.232791051Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.437ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:49.629656955Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.761ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:51.177540370Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=117 runs/call=234.0 preads/call=234.0 read=1.954ms fadv/call=0.0 pf_hit=88%(32)
+2026-09-24T20:33:52.570131928Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.488ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:53.972073246Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.559ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:55.518625744Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=117 runs/call=234.0 preads/call=234.0 read=1.946ms fadv/call=0.0 pf_hit=88%(32)
+2026-09-24T20:33:56.906270405Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.507ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:58.311221833Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.741ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:33:59.706685315Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=192.0 preads/call=192.0 read=1.605ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:34:00.866992524Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=64 runs/call=129.0 preads/call=129.0 read=1.256ms fadv/call=0.0 pf_hit=84%(32)
+2026-09-24T20:34:01.886189280Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.729ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:34:02.903069049Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.846ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:34:47.130357192Z (Worker_TP1 pid=466) INFO 09-24 20:34:47 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8055)
+2026-09-24T20:35:23.418486957Z (Worker_TP1 pid=466) INFO 09-24 20:35:23 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8094)
+2026-09-24T20:36:06.900182609Z (Worker_TP1 pid=466) INFO 09-24 20:36:06 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8143)
+2026-09-24T20:36:50.319482407Z (Worker_TP1 pid=466) INFO 09-24 20:36:50 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8144)
+2026-09-24T20:37:17.403644671Z (Worker_TP1 pid=466) INFO 09-24 20:37:17 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8146)
+2026-09-24T20:37:26.637826422Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=30469 runs/call=53933.8 preads/call=53933.8 read=8778.377ms fadv/call=0.0 pf_hit=91%(22)
+2026-09-24T20:37:42.337037548Z (Worker_TP1 pid=466) INFO 09-24 20:37:42 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=7996)
+2026-09-24T20:37:51.027011096Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=6042 runs/call=10031.8 preads/call=10031.8 read=780.984ms fadv/call=0.0 pf_hit=93%(30)
+2026-09-24T20:38:06.767992941Z (Worker_TP1 pid=466) INFO 09-24 20:38:06 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8190)
+2026-09-24T20:38:35.962179638Z (Worker_TP1 pid=466) [dsv41-prefill-empty-cache] skipped #1 (longest seq 16380, MemAvailable 23.04 GiB >= 2.5 GiB)
+2026-09-24T20:39:13.316620306Z (Worker_TP1 pid=466) INFO 09-24 20:39:13 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=7468)
+2026-09-24T20:40:12.992688853Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48175 runs/call=79861.1 preads/call=79861.1 read=4741.138ms fadv/call=0.0 pf_hit=100%(18)
+2026-09-24T20:40:13.453411158Z (Worker_TP1 pid=466) INFO 09-24 20:40:13 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=7594)
+2026-09-24T20:42:36.854472037Z (Worker_TP1 pid=466) INFO 09-24 20:42:36 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=7934)
+2026-09-24T20:44:51.613247089Z (Worker_TP1 pid=466) INFO 09-24 20:44:51 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8090)
+2026-09-24T20:45:41.140520089Z (Worker_TP1 pid=466) INFO 09-24 20:45:41 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8189)
+2026-09-24T20:45:49.976623051Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=73454 runs/call=135659.9 preads/call=135659.9 read=13470.426ms fadv/call=0.0 pf_hit=100%(6)
+2026-09-24T20:46:24.562869802Z (Worker_TP1 pid=466) INFO 09-24 20:46:24 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=7232)
+2026-09-24T20:46:32.188014007Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=23887 runs/call=39978.8 preads/call=39978.8 read=374.516ms fadv/call=0.0 pf_hit=96%(24)
+2026-09-24T20:46:51.261058759Z (Worker_TP1 pid=466) INFO 09-24 20:46:51 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8132)
+2026-09-24T20:47:01.325586611Z (Worker_TP1 pid=466) INFO 09-24 20:47:01 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=7954)
+2026-09-24T20:48:07.059795404Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=24341 runs/call=43203.9 preads/call=43203.9 read=3180.744ms fadv/call=0.0 pf_hit=92%(26)
+2026-09-24T20:48:07.115457023Z (Worker_TP1 pid=466) INFO 09-24 20:48:07 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8133)
+2026-09-24T20:48:16.479468808Z (Worker_TP1 pid=466) INFO 09-24 20:48:16 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8114)
+2026-09-24T20:48:27.576887846Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=12216 runs/call=19374.8 preads/call=19374.8 read=149.547ms fadv/call=0.0 pf_hit=93%(28)
+2026-09-24T20:48:27.867809317Z (Worker_TP1 pid=466) INFO 09-24 20:48:27 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8119)
+2026-09-24T20:48:45.893779941Z (Worker_TP1 pid=466) WARNING 09-24 20:48:45 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _topk_log_softmax_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+2026-09-24T20:48:50.180148183Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=1192 runs/call=2373.5 preads/call=2373.5 read=267.708ms fadv/call=0.0 pf_hit=92%(26)
+2026-09-24T20:49:30.267831696Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=6153 runs/call=12200.6 preads/call=12200.6 read=1536.196ms fadv/call=0.0
+2026-09-24T20:50:08.671953348Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=6153 runs/call=12043.9 preads/call=12043.9 read=1475.259ms fadv/call=0.0
+2026-09-24T20:50:21.754499200Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=1987 runs/call=3912.2 preads/call=3912.2 read=446.021ms fadv/call=0.0 pf_hit=93%(20)
+2026-09-24T20:50:22.780825148Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.467ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:23.787661165Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.786ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:24.798392140Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.956ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:25.802878743Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.810ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:27.424851119Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=211 runs/call=423.0 preads/call=423.0 read=3.730ms fadv/call=0.0 pf_hit=89%(30)
+2026-09-24T20:50:28.434255637Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.832ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:29.464479768Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.838ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:30.477595175Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.875ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:32.074909453Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=211 runs/call=418.5 preads/call=418.5 read=4.158ms fadv/call=0.0 pf_hit=89%(30)
+2026-09-24T20:50:33.077408164Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.824ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:34.086019426Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.636ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:35.083531690Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.780ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:36.097600796Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.781ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:37.733406042Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=211 runs/call=411.0 preads/call=411.0 read=4.498ms fadv/call=0.0 pf_hit=91%(30)
+2026-09-24T20:50:38.739235357Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.837ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:39.739460776Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.677ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:40.768560060Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.941ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:42.403309236Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=211 runs/call=423.0 preads/call=423.0 read=3.325ms fadv/call=0.0 pf_hit=89%(30)
+2026-09-24T20:50:43.412462345Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.794ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:44.409994663Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.792ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:45.427336856Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.756ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:47.012727758Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=211 runs/call=349.0 preads/call=349.0 read=3.159ms fadv/call=0.0 pf_hit=96%(30)
+2026-09-24T20:50:48.022418972Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.727ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:49.018821128Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.608ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:50.017971845Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.669ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:51.014058612Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.542ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:52.627973040Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=211 runs/call=414.0 preads/call=414.0 read=3.913ms fadv/call=0.0 pf_hit=91%(30)
+2026-09-24T20:50:53.644255504Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.213ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:54.648301338Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.769ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:55.681830670Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.952ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:57.263905906Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=211 runs/call=378.9 preads/call=378.9 read=4.187ms fadv/call=0.0 pf_hit=89%(30)
+2026-09-24T20:50:58.265058933Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.800ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:50:59.284383856Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.764ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:51:00.282411614Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.731ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:51:04.347706269Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=687 runs/call=1233.0 preads/call=1233.0 read=84.391ms fadv/call=0.0 pf_hit=97%(26)
+2026-09-24T20:51:06.788174588Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=339 runs/call=579.0 preads/call=579.0 read=33.027ms fadv/call=0.0 pf_hit=97%(30)
+2026-09-24T20:51:09.140352178Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=348 runs/call=572.5 preads/call=572.5 read=24.680ms fadv/call=0.0 pf_hit=97%(30)
+2026-09-24T20:51:10.549482045Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=190.0 preads/call=190.0 read=1.948ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:51:13.453095550Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=419 runs/call=754.0 preads/call=754.0 read=36.318ms fadv/call=0.0 pf_hit=92%(28)
+2026-09-24T20:51:15.384204462Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=237 runs/call=452.5 preads/call=452.5 read=7.741ms fadv/call=0.0 pf_hit=97%(30)
+2026-09-24T20:51:18.032641459Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=470 runs/call=803.0 preads/call=803.0 read=21.215ms fadv/call=0.0 pf_hit=92%(28)
+2026-09-24T20:51:20.157591218Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=244 runs/call=455.0 preads/call=455.0 read=19.120ms fadv/call=0.0 pf_hit=97%(30)
+2026-09-24T20:51:22.102883327Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=219 runs/call=418.5 preads/call=418.5 read=11.753ms fadv/call=0.0 pf_hit=97%(30)
+2026-09-24T20:51:24.873122198Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=538 runs/call=882.0 preads/call=882.0 read=22.415ms fadv/call=0.0 pf_hit=92%(28)
+2026-09-24T20:51:26.309585790Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=96 runs/call=181.5 preads/call=181.5 read=3.025ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:51:29.195239236Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=400 runs/call=740.0 preads/call=740.0 read=40.722ms fadv/call=0.0 pf_hit=92%(28)
+2026-09-24T20:51:31.200261369Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=235 runs/call=443.5 preads/call=443.5 read=12.931ms fadv/call=0.0 pf_hit=97%(30)
+2026-09-24T20:51:33.156874146Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=270 runs/call=484.5 preads/call=484.5 read=6.546ms fadv/call=0.0 pf_hit=97%(30)
+2026-09-24T20:51:35.136707861Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=276 runs/call=483.0 preads/call=483.0 read=6.868ms fadv/call=0.0 pf_hit=93%(30)
+2026-09-24T20:51:37.038494445Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=399 runs/call=727.5 preads/call=727.5 read=8.741ms fadv/call=0.0 pf_hit=96%(30)
+2026-09-24T20:51:39.508166471Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=281 runs/call=510.5 preads/call=510.5 read=9.758ms fadv/call=0.0 pf_hit=96%(28)
+2026-09-24T20:51:41.481317905Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=264 runs/call=491.5 preads/call=491.5 read=8.868ms fadv/call=0.0 pf_hit=97%(30)
+2026-09-24T20:51:43.349470587Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=398 runs/call=710.5 preads/call=710.5 read=8.175ms fadv/call=0.0 pf_hit=93%(30)
+2026-09-24T20:51:46.646137311Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=512 runs/call=940.5 preads/call=940.5 read=14.651ms fadv/call=0.0 pf_hit=87%(24)
+2026-09-24T20:51:48.599263338Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=380 runs/call=695.0 preads/call=695.0 read=8.665ms fadv/call=0.0 pf_hit=89%(30)
+2026-09-24T20:51:50.787733739Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=217 runs/call=413.5 preads/call=413.5 read=8.142ms fadv/call=0.0 pf_hit=96%(28)
+2026-09-24T20:52:06.674206934Z (Worker_TP1 pid=466) INFO 09-24 20:52:06 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8001)
+2026-09-24T20:52:27.898536540Z (Worker_TP1 pid=466) INFO 09-24 20:52:27 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8142)
+2026-09-24T20:53:57.576988680Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=42456 runs/call=54759.7 preads/call=54759.7 read=4339.913ms fadv/call=0.0 pf_hit=60%(20)
+2026-09-24T20:53:57.628683893Z (Worker_TP1 pid=466) INFO 09-24 20:53:57 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=7726)
+2026-09-24T20:55:06.467590025Z (Worker_TP1 pid=466) INFO 09-24 20:55:06 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=7603)
+2026-09-24T20:56:08.310840257Z (Worker_TP1 pid=466) INFO 09-24 20:56:08 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8096)
+2026-09-24T20:56:17.166236428Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48653 runs/call=62312.9 preads/call=62312.9 read=3502.734ms fadv/call=0.0 pf_hit=71%(14)
+2026-09-24T20:56:19.225475570Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=57 runs/call=115.5 preads/call=115.5 read=3.039ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:56:20.244457634Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.593ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:21.386862745Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=57 runs/call=114.0 preads/call=114.0 read=3.910ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:56:22.383485711Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.735ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:23.409362059Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.750ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:25.435131791Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=56 runs/call=112.5 preads/call=112.5 read=4.208ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:56:26.442235971Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.781ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:27.606860641Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=56 runs/call=112.5 preads/call=112.5 read=4.172ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:56:29.706463738Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=58 runs/call=117.0 preads/call=117.0 read=4.206ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:56:31.828602766Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=63 runs/call=127.5 preads/call=127.5 read=6.660ms fadv/call=0.0 pf_hit=79%(32)
+2026-09-24T20:56:32.835524897Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.845ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:33.848354277Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.710ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:34.873731881Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=54 runs/call=109.5 preads/call=109.5 read=2.520ms fadv/call=0.0 pf_hit=94%(32)
+2026-09-24T20:56:37.014493656Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=65 runs/call=130.5 preads/call=130.5 read=5.267ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:56:39.011482345Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.976ms fadv/call=0.0 pf_hit=96%(32)
+2026-09-24T20:56:40.038163957Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.323ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:41.216493959Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=56 runs/call=112.5 preads/call=112.5 read=4.457ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:56:42.216540184Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.823ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:43.228624649Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.808ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:44.401866237Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=58 runs/call=117.0 preads/call=117.0 read=4.096ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:56:45.417675623Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.811ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:46.421697850Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.872ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:47.434825566Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.853ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:48.448982454Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.799ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:49.653647450Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=58 runs/call=117.0 preads/call=117.0 read=5.370ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:56:50.656856721Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.858ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:51.685739026Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.868ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:52.800422297Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=57 runs/call=115.5 preads/call=115.5 read=2.052ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:56:53.841399552Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.740ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:54.964132671Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=57 runs/call=114.0 preads/call=114.0 read=1.675ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:56:56.027415848Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=3.288ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:57.071266797Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=2.037ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:56:58.206568376Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=56 runs/call=112.5 preads/call=112.5 read=2.167ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:56:59.242881946Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.959ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:57:00.342682187Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=56 runs/call=112.5 preads/call=112.5 read=1.011ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:57:01.447058321Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=58 runs/call=117.0 preads/call=117.0 read=0.925ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:57:02.643849022Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=63 runs/call=127.5 preads/call=127.5 read=2.258ms fadv/call=0.0 pf_hit=79%(32)
+2026-09-24T20:57:03.693258336Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=2.556ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:57:04.718210510Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.993ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:57:05.830588118Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=54 runs/call=109.5 preads/call=109.5 read=1.529ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:57:06.971137067Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=65 runs/call=130.5 preads/call=130.5 read=2.722ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:57:08.009673764Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.378ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:57:09.014039115Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.991ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:57:10.148245170Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=56 runs/call=112.5 preads/call=112.5 read=2.467ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:57:11.205228452Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=3.055ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:57:12.226882405Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.994ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:57:13.353557566Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=58 runs/call=117.0 preads/call=117.0 read=1.302ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:57:14.365519947Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.594ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:57:15.369093086Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.747ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:57:16.379574548Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.865ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:57:17.384397472Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.825ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:57:18.505856883Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=58 runs/call=117.0 preads/call=117.0 read=1.622ms fadv/call=0.0 pf_hit=90%(32)
+2026-09-24T20:57:19.553834318Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=2.997ms fadv/call=0.0 pf_hit=100%(32)
+2026-09-24T20:57:20.583454385Z (Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.518ms fadv/call=0.0 pf_hit=100%(32)

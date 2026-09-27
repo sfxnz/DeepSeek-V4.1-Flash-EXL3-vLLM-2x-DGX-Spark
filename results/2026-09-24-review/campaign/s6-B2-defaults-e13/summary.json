@@ -1,0 +1,105 @@
+{
+ "stage": "s6-B2-defaults-e13",
+ "what": "ABAB noise control, boot B2 (order B1=s3, C1=s5, B2=this, C2 next). Boot from perf-review-0924 (HEAD in git_head.txt) with IMAGE=review-e13, every decode lever OFF (new defaults) and the s4-promoted prefill levers DSV41_ENGRAM_WILLNEED=1 DSV41_STREAM_FEED=1, AUDIT=strict. DECODE protocol in the s2/s3/s5 order (L.A.I.L before any c=2 traffic), then C2-STRESS + post-stress L.A.I.L for parity with B1/C1.",
+ "boot": {
+  "cmd": "nohup env AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e13 DSV41_ENGRAM_WILLNEED=1 DSV41_STREAM_FEED=1 ./run.sh > boot.log",
+  "image": "sha256:c81762335a12ddc809e84794be0fac0dd8cb263ebd3fef09c4aa00be052cbde2 on both ranks (serve_cmd_spark1/2.txt)",
+  "pack": "2.0bpw-mcg-lmhead-mxfp8",
+  "start": "2026-09-24T22:20:50Z",
+  "api_ready": "2026-09-24T22:29:51Z (APIServer 'Application startup complete')",
+  "run_sh_exit0": "2026-09-24T22:30:18Z (boot.log mtime; log ends 'Ready' + audit ok + warmup + 'Stop with')",
+  "start_to_api_ready_s": 541,
+  "start_to_run_sh_exit_s": 568,
+  "ref": {"s3_B1": {"api_ready_s": 587, "exit_s": 627}, "s4_E1": {"api_ready_s": 566, "exit_s": 580}, "s5_C1": {"api_ready_s": 580, "exit_s": 606}},
+  "loading_weights_s": {"TP0_spark1": [311.74, 21.98], "TP1_spark2": [147.06, 26.34]},
+  "loading_weights_s_ref": {"s3_B1": {"TP0": [334.25, 31.42], "TP1": [190.68, 27.56]}, "s5_C1": {"TP0": [309.6, 22.47], "TP1": [149.68, 23.56]}},
+  "audit_strict": "==> audit ok: every expected patch engaged on head, worker",
+  "warmup": {"greedy": "2.0s '323'", "t07": "1.7s", "prefill_3k_nonce_s": 9.1},
+  "min_memavail_during_load_MB": {"spark1": 24054, "spark2": 25431, "log": "mem-during-load.log (10 s samples until run.sh exit; minimum is the last sample)"},
+  "env": "head/worker env identical except VLLM_HOST_IP. DSV41_/NCCL_/VLLM_ diff vs s5-C1: only DSV41_MHC_DECODE_SPLITS 40->0 and DSV41_WOA_PREPACK 1->unset. Diff vs s3-B1: only DSV41_ENGRAM_WILLNEED 0->1 and DSV41_STREAM_FEED 0->1 (plus image e12->e13). No HF token in either container env. Engine argv identical to s5 (captures [1,3,4,6,8] FULL_AND_PIECEWISE, dspark k=3, MNBT 8192)."
+ },
+ "lever_state": {
+  "decode_levers": "OFF on both ranks: 0 '[woa-prepack]' lines, 0 'split-K forced' lines, 'dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0' (4 head procs / 3 worker procs), SRC_SORT/SPARSE_MARKOV/DG_SMALLM unset/0",
+  "prefill_levers": "g8 stream feed installed on both ranks; census fadv active on prefill lines, fadv/call=0.0 on decode lines",
+  "other": "prefetch v3 armed on both ranks; gather v2 self-check bit-exact both ranks; lm_head mxfp8 enabled (b12x, (64640, 5120)) both ranks; 43 'fp8 einsum engaged' per rank",
+  "dsv41_patch_FAIL": {"head": 0, "worker": 0},
+  "lever_is_OFF_or_FAILED_lines": {"head": 0, "worker": 0}
+ },
+ "smoke": {"chat": "323 (1.37 s)", "vision": "Red (1.81 s)"},
+ "lail_fresh_10": {
+  "cmd": "python3 tools/measure_lail_prose.py --runs 10",
+  "log": "03-lail-prose-fresh.log",
+  "median_tok_s": 34.48,
+  "runs": [35.73, 35.49, 33.98, 30.64, 36.93, 35.79, 34.63, 34.33, 32.4, 33.55],
+  "median_acceptance_len": 2.183,
+  "run_acceptance_len": [2.231, 2.246, 2.138, 1.921, 2.333, 2.265, 2.192, 2.174, 2.06, 2.129],
+  "median_ttft_s": 0.363,
+  "post_eos_fraction": 0.0,
+  "ms_per_step_decode_s_over_chunks": {"median": 63.01, "runs": [62.3, 63.0, 62.8, 62.6, 63.0, 63.0, 62.9, 63.2, 63.5, 63.3]}
+ },
+ "bench_decode_9": {
+  "cmd": "python3 bench_decode.py --runs 9",
+  "log": "04-bench-decode.log",
+  "rows": "04-bench-decode.summary.json",
+  "prose_c1": {"tok_s": 40.12, "ms_step": 64.53, "acceptance_len_pooled": 2.621, "median_run_acceptance_len": 2.597, "post_eos_fraction": 0.63,
+   "per_run_tok_s": [45.72, 40.56, 36.4, 40.74, 36.71, 39.92, 40.12, 39.73, 47.48],
+   "per_run_ms_step": [65.0, 64.0, 64.3, 65.2, 64.5, 64.2, 65.4, 65.0, 63.8]},
+  "prose_c2": {"per_stream_tok_s": 28.95, "agg_tok_s": 57.43, "ms_step": 89.27, "acceptance_len_pooled": 2.561},
+  "structured_c1": {"tok_s": 62.04, "ms_step": 63.84, "acceptance_len": 3.961, "post_eos_fraction": 0.0},
+  "structured_c2": {"per_stream_tok_s": 44.47, "agg_tok_s": 87.88, "ms_step": 89.08, "acceptance_len": 3.961}
+ },
+ "micro_novel_8k_1run": {"cmd": "python3 benches/micro.py --contexts 8192 --runs 1", "log": "05-micro-8k-1run.log", "pp_novel_8k": 826.3, "pp_warm_8k": 727.7, "tg_8k": 32.9, "ref": "s5-C1 novel 823.4 / warm 707.0 / tg 35.4; s4-E1 novel 798.3 / warm 747.2 (3 runs)"},
+ "quality_quick": {
+  "cmd": "python3 tests/quality_eval.py --quick --baseline results/2026-09-24-review/quality-baseline/quick.json --out <stage>/quality.json",
+  "log": "07-quality.log", "pass": true,
+  "nll": 0.243748, "decode_median_dlp": 0.0155, "decode_gen_nll_prefill": 0.36321, "tools_exact": 0.9545, "tools_json": 1.0, "tools_nocall": 1.0, "needle": "6/6",
+  "selfcons_aa_hazard": 0.01458, "selfcons_golden_hazard": 0.01616, "selfcons_identical": 5, "c2": true, "vision": true,
+  "ref_aa_hazard": {"quality_baseline": 0.01603, "s2": 0.01636, "s3_B1": 0.01743, "s5_C1": "0.03409 (FAIL), reruns 0.0194 / 0.0216"}
+ },
+ "memory": {
+  "ready": {"spark1": "used 98Gi avail 23Gi swap 6.4Gi", "spark2": "used 96Gi avail 24Gi swap 4.2Gi"},
+  "after_micro_8k": {"spark1": "avail 21Gi", "spark2": "avail 22Gi"},
+  "after_full": {"spark1": "used 100Gi avail 21Gi swap 6.2Gi", "spark2": "used 98Gi avail 22Gi swap 4.2Gi"},
+  "end": {"spark1": "used 100Gi avail 21Gi swap 6.2Gi", "spark2": "used 98Gi avail 23Gi swap 4.2Gi"}
+ },
+ "engagement": {
+  "audit_after_full": "env <serve DSV41_/VLLM_ env> python3 tools/engagement_audit.py --mode strict 0=head-docker-after-full.log 1=worker-docker-after-full.log: audit ok (rc 0)",
+  "audit_final": "audit ok (rc 0)",
+  "disarm_scan_after_full_rc": 0,
+  "disarm_scan_final_rc": 0,
+  "grep": "no bad snapshot / IndexError / _prefetch_worker / 'disabled after' on either rank; prefetch v3 armed once per rank; 'disabled' hits only vLLM info lines (Auto-prefetch EXT4, custom collectives, FlashInfer AR, scale-out endpoints); only Traceback is the harmless usage_lib cpuinfo one on TP0"
+ },
+ "jit_spike_attribution": {
+  "finding": "The post-ready TileLang compile of mhc_pre_big_fuse_with_norm_tilelang that s5 attributed to MHC_DECODE_SPLITS=40 also happens in B2 with MHC_DECODE_SPLITS=0: 1 'TileLang JIT compilation during inference' warning per rank at 22:45:00 (compiles at 22:45:00 and 22:45:06), 8 TileLang compiles per head log (6 during warmup + 2 post-ready), same as s5-C1. e12 boots s3 and s4 have 0 such warnings and 6 compiles. So it follows the review-e13 image (both e13 boots), not the MHC lever. In B2 it fired in the quality_eval tools phase (vision smoke took 1.8 s); in C1 it fired on the first vision request.",
+  "counts_head_final": {"s3_e12": {"tilelang_jit_inference": 0, "tilelang_compiles": 6}, "s4_e12": {"tilelang_jit_inference": 0, "tilelang_compiles": 6}, "s5_e13_C1": {"tilelang_jit_inference": 1, "tilelang_compiles": 8}, "s6_e13_B2": {"tilelang_jit_inference": 1, "tilelang_compiles": 8}}
+ },
+ "c2_stress": {"script": "c2_stress.py (copy of s5)", "log": "10-c2-stress.log", "rounds": 6, "requests_ok": 12, "requests_failed": 0},
+ "lail_after_c2_10": {
+  "log": "11-lail-prose-after-c2.log",
+  "median_tok_s": 33.03,
+  "runs": [35.7, 32.64, 32.89, 35.07, 33.17, 30.43, 34.76, 32.01, 33.86, 31.29],
+  "median_acceptance_len": 2.118,
+  "median_ttft_s": 0.32,
+  "post_eos_fraction": 0.0,
+  "ms_per_step_decode_s_over_chunks": {"median": 64.17, "runs": [63.7, 64.3, 63.5, 64.6, 64.0, 64.5, 63.8, 64.8, 63.8, 64.9]},
+  "delta_vs_fresh": "-1.45 tok/s (-4.2%); ms/step 63.01 -> 64.17 (+1.16). s3-B1 -0.64 (-1.9%, 62.94->63.87); s5-C1 -0.57 (-1.7%, 63.36->63.44)",
+  "logs_after": "no prefetch disable / IndexError / bad snapshot on either rank; disarm_scan rc 0; audit ok"
+ },
+ "abab_spread": {
+  "caveat": "B1 (s3) ran image canonical-e12 without WILLNEED/STREAM_FEED; B2 runs review-e13 with them. B1-B2 is therefore noise + image/prefill-lever change, not pure run-to-run noise. C1 (s5) matches B2 exactly except the two decode levers.",
+  "lail_fresh_tok_s": {"B1": 34.11, "B2": 34.48, "B2_minus_B1": 0.37, "pct": 1.1, "C1": 34.01},
+  "lail_fresh_ms_step_median": {"B1": 62.94, "B1_range": [62.5, 63.4], "B2": 63.01, "B2_range": [62.3, 63.5], "B2_minus_B1": 0.07, "C1": 63.36, "C1_range": [62.1, 66.6]},
+  "lail_fresh_acceptance": {"B1": 2.16, "B2": 2.183, "B2_minus_B1": 0.023, "C1": 2.147},
+  "lail_after_c2_tok_s": {"B1": 33.47, "B2": 33.03, "B2_minus_B1": -0.44, "C1": 33.44},
+  "lail_after_c2_ms_step": {"B1": 63.87, "B2": 64.17, "B2_minus_B1": 0.3, "C1": 63.44},
+  "prose_c1_tok_s": {"B1": 39.1, "B2": 40.12, "B2_minus_B1": 1.02, "pct": 2.6, "C1": 39.59},
+  "prose_c1_ms_step": {"B1": 64.26, "B1_range": [63.5, 65.4], "B2": 64.53, "B2_range": [63.8, 65.4], "B2_minus_B1": 0.27, "C1": 63.82, "C1_range": [62.4, 68.9]},
+  "prose_c1_acceptance_pooled": {"B1": 2.566, "B2": 2.621, "B2_minus_B1": 0.055, "C1": 2.573},
+  "prose_c1_acceptance_median_run": {"B1": 2.513, "B2": 2.597, "C1": 2.551},
+  "structured_c1_ms_step": {"B1": 63.8, "B2": 63.84, "C1": 63.49},
+  "prose_c2_agg": {"B1": 56.99, "B2": 57.43, "C1": 55.31},
+  "structured_c2_agg": {"B1": 87.66, "B2": 87.88, "C1": 89.34},
+  "C1_vs_B_mean": "prose c1 ms/step: B mean 64.395, C1 63.82 (-0.575; B spread 0.27). L.A.I.L fresh ms/step: B mean 62.975, C1 63.36 (+0.385; B spread 0.07). structured c1: B mean 63.82, C1 63.49 (-0.33; B spread 0.04). Post-stress L.A.I.L ms/step: B mean 64.02, C1 63.44 (-0.58; B spread 0.30). The metrics disagree in sign; C2 decides."
+ },
+ "stop": "./stop.sh rc 0 (14-stop.log). docker ps: only conduit on spark1, nothing on spark2; MemAvailable 117Gi / 117Gi"
+}

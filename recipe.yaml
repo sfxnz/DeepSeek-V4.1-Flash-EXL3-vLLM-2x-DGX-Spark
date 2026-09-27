@@ -10,7 +10,7 @@ model:
 image:
   base: vllm/vllm-openai:deepseekv41-flash-0909
   digest: sha256:d84a123255b822fc22508635218000187221794f59c0694c33b0650d1e377d58
-  local_tag: &image dsv41-flash-exl3-sm121:canonical-e12
+  local_tag: &image dsv41-flash-exl3-sm121:canonical-e13
   build: docker/Dockerfile
 
 engine:
@@ -66,7 +66,11 @@ serve:
     DSV41_ENGRAM_PREFETCH: 1
     DSV41_ENGRAM_CENSUS: 1
     DSV41_ENGRAM_GATHER_V2: 1
+    DSV41_ENGRAM_WILLNEED: 1
     DSV41_LMHEAD_MXFP8: 1
+    DSV41_STREAM_FEED: 1
+    DSV41_WOA_PREPACK: 1
+    DSV41_DSPARK_SPARSE_MARKOV: 1
     NCCL_BUFFSIZE: 1048576
     NCCL_LL128_BUFFSIZE: 262144
     NCCL_PROTO: ^LL128
@@ -93,7 +97,10 @@ readme:
     - Speculative: "DSpark-{NUM_SPECULATIVE_TOKENS} (`SPEC={SPEC}`)"
     - CUDA graphs: "`FULL_AND_PIECEWISE`, capture sizes {1} ∪ {s·k, s·(k+1)} for s ≤ `--max-num-seqs` (`[1,3,4,6,8]` at k=3) (`ENFORCE_EAGER={ENFORCE_EAGER}`, `DSV41_ALLOW_CUDA_GRAPHS={DSV41_ALLOW_CUDA_GRAPHS}`)"
     - Engram prefetch / census / gather: "`DSV41_ENGRAM_PREFETCH={DSV41_ENGRAM_PREFETCH}` `DSV41_ENGRAM_CENSUS={DSV41_ENGRAM_CENSUS}` `DSV41_ENGRAM_GATHER_V2={DSV41_ENGRAM_GATHER_V2}`"
+    - Engram prefill read-ahead: "`DSV41_ENGRAM_WILLNEED={DSV41_ENGRAM_WILLNEED}` (gv2 calls with >= 512 rows fadvise their pages before the preadv loop)"
     - lm_head: "MXFP8 (`DSV41_LMHEAD_MXFP8={DSV41_LMHEAD_MXFP8}`), needs the `{SNAPSHOT_SHA}` pack; self-disarms on stock `2.0bpw-mcg`"
+    - Weight-load stream feed: "`DSV41_STREAM_FEED={DSV41_STREAM_FEED}`"
+    - Decode levers: "`DSV41_WOA_PREPACK={DSV41_WOA_PREPACK}` (needs the `{IMAGE}` o_proj stage) `DSV41_DSPARK_SPARSE_MARKOV={DSV41_DSPARK_SPARSE_MARKOV}` (top-k 256)"
     - NCCL AR-tail set: "`NCCL_BUFFSIZE={NCCL_BUFFSIZE}` `NCCL_LL128_BUFFSIZE={NCCL_LL128_BUFFSIZE}` `NCCL_PROTO={NCCL_PROTO}` `NCCL_MAX_NCHANNELS={NCCL_MAX_NCHANNELS}`"
     - Memory hygiene: "`DSV41_DROP_PAGE_CACHE={DSV41_DROP_PAGE_CACHE}` `DSV41_INDEXER_PREFILL_FACTOR={DSV41_INDEXER_PREFILL_FACTOR}` `DSV41_PREFILL_EMPTY_CACHE_TOKENS={DSV41_PREFILL_EMPTY_CACHE_TOKENS}` `DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB={DSV41_PREFILL_EMPTY_CACHE_MEMAVAIL_GIB}` `VLLM_SPARSE_INDEXER_MAX_LOGITS_MB={VLLM_SPARSE_INDEXER_MAX_LOGITS_MB}`"
     - Tokenizers / tools / reasoning: "`deepseek_v41`"
@@ -107,11 +114,14 @@ readme:
 
 measured:
   decode:
-    conditions: "Campaign capture 2026-09-22 (results/2026-09-22-close/) on the promoted recipe: DSpark-3 greedy + cudagraph captures [1,3,4,6,8] + Engram prefetch v3 (pf_hit 100%) + census + gather v2 (preadv/vectorized dequant) + NCCL AR-tail set + mem-hygiene bundle + lm_head mxfp8 (b12x path, pack revision 2.0bpw-mcg-lmhead-mxfp8 — stock 2.0bpw-mcg with only model-00043 re-encoded), image canonical-e12, vision on, Engram on disk. bench_decode.py prose = streamed greedy 200 tokens thinking off, 9-run median; L.A.I.L prose = 512 tokens temperature 0.2, pooled n=10. Full campaign history rounds 1-33 in results/RESULTS.md; verdict ledger in the Hermes mlops/recipes skill."
+    conditions: "Round 34 (2026-09-24 review campaign, results/2026-09-24-review/campaign/): pooled s8+s13, 2 boots. s8-S-sparse-markov and s13-promote-final ran the identical round-34 default config (image canonical-e13 = review-e13 sha256:c81762335a12, pack 2.0bpw-mcg-lmhead-mxfp8, DSpark-3 greedy + captures [1,3,4,6,8], Engram prefetch v3 + census + gather v2 + WILLNEED, NCCL AR-tail set, mem-hygiene bundle, lm_head mxfp8, STREAM_FEED, WOA_PREPACK, SPARSE_MARKOV k=256, vision on, Engram on disk, AUDIT=strict clean). Each row is the median of the per-run values pooled over both boots' logs (pool_s8_s13.py -> pooled-s8-s13.json). bench_decode.py = streamed greedy 200 tokens thinking off, 9 runs per boot (pooled n=18 runs; c=2 per-stream n=36), ignore_eos (prose post-EOS fraction 0.59); L.A.I.L prose = tools/measure_lail_prose.py 512 tokens temperature 0.2, 10 runs per boot (pooled n=20). Per boot: L.A.I.L 34.51 / 32.44, prose c=1 39.87 / 39.18, structured c=1 62.51 / 62.68. Same-protocol fresh boot of the pre-round-34 config (s2-old-fresh): L.A.I.L 32.44, prose c=1 37.07, structured c=1 58.57, prose c=2 agg 52.93, structured c=2 agg 84.04. SPARSE_MARKOV's acceptance effect is open (round-2 ABAB pending). History: results/RESULTS.md rounds 1-34."
     units: {decode: tok/s per stream (median), aggregate: tok/s, ttft_p50: s}
     rows:
-      - {phase: prose, concurrency: 1, decode: "39.6", aggregate: "39.6", ttft_p50: "0.31", evidence: results/2026-09-22-close/fournumbers/four_numbers.json}
-      - {phase: lail_prose, concurrency: 1, decode: "33.2", aggregate: "33.2", ttft_p50: "0.36", evidence: results/2026-09-22-close/lail_real1.json}
+      - {phase: prose, concurrency: 1, decode: "39.52", aggregate: "39.52", ttft_p50: "0.25", evidence: results/2026-09-24-review/campaign/pooled-s8-s13.json}
+      - {phase: prose, concurrency: 2, decode: "29.03", aggregate: "56.77", ttft_p50: "0.28", evidence: results/2026-09-24-review/campaign/pooled-s8-s13.json}
+      - {phase: structured, concurrency: 1, decode: "62.52", aggregate: "62.50", ttft_p50: "0.18", evidence: results/2026-09-24-review/campaign/pooled-s8-s13.json}
+      - {phase: structured, concurrency: 2, decode: "45.28", aggregate: "89.44", ttft_p50: "0.28", evidence: results/2026-09-24-review/campaign/pooled-s8-s13.json}
+      - {phase: lail_prose, concurrency: 1, decode: "33.68", aggregate: "33.68", ttft_p50: "0.34", evidence: results/2026-09-24-review/campaign/pooled-s8-s13.json}
 
 links:
   model: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash

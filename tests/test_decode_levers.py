@@ -226,7 +226,7 @@ class SparseMarkovTests(unittest.TestCase):
 class WiringTests(unittest.TestCase):
     NAMES = ("DSV41_DSPARK_SPARSE_MARKOV", "DSV41_DSPARK_SPARSE_MARKOV_TOPK", "DSV41_WOA_PREPACK")
 
-    def test_new_envs_forwarded_off_by_default(self):
+    def test_new_envs_forwarded(self):
         from test_recipe_ops import _forward_envs, _patch_env_reads
 
         fwd = _forward_envs()
@@ -235,7 +235,7 @@ class WiringTests(unittest.TestCase):
             self.assertIn(name, fwd)
             self.assertIn(name, reads)
         for name in self.NAMES:
-            self.assertEqual(fwd[name], "", name)  # unset in the container = off
+            self.assertEqual(fwd[name], "", name)  # default comes from the generated block, if any
 
     def test_dry_run_forwards_levers_to_both_ranks(self):
         from run_sh_harness import container_env, dry_run
@@ -253,9 +253,12 @@ class WiringTests(unittest.TestCase):
             self.assertEqual(env["DSV41_MHC_DECODE_SPLITS"], "40", role)
             self.assertEqual(env["DSV41_DSPARK_SPARSE_MARKOV"], "1", role)
             self.assertEqual(env["DSV41_DSPARK_SPARSE_MARKOV_TOPK"], "128", role)
-        plain = dry_run()
-        for name in self.NAMES:
-            self.assertNotIn(name, container_env(plain["head"]))
+        plain = container_env(dry_run()["head"])
+        # Round 34 (s7/s8) promoted WOA_PREPACK and SPARSE_MARKOV; TOPK keeps the in-code 256.
+        self.assertEqual(plain["DSV41_WOA_PREPACK"], "1")
+        self.assertEqual(plain["DSV41_DSPARK_SPARSE_MARKOV"], "1")
+        self.assertNotIn("DSV41_DSPARK_SPARSE_MARKOV_TOPK", plain)
+        self.assertEqual(plain["DSV41_MHC_DECODE_SPLITS"], "0")
 
     def test_sitecustomize_calls_install_once_at_the_end(self):
         site = (ROOT / "docker/patch/sitecustomize.py").read_text()

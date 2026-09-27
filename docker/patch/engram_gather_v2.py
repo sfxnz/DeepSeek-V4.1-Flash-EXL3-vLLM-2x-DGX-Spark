@@ -42,8 +42,8 @@ prefill call (5k-98k rows) waits ~350 us per NVMe row. With
 DSV41_ENGRAM_WILLNEED=1, calls with at least DSV41_ENGRAM_WILLNEED_MIN_ROWS
 rows (default 512; decode is 48-96) first issue one posix_fadvise(WILLNEED)
 per merged 4 KiB page span in both files, so the reads are in flight
-together. Advisory only: the bytes read do not change. Default off: only a
-CPU read bench backs it; it flips on after the E0/E1 serve ABAB passes.
+together. Advisory only: the bytes read do not change. Off when the env is
+unset; run.sh passes 1 since round 34 (s4 E1: novel 8k prefill 4.23x).
 DSV41_ENGRAM_GATHER_V2_MAX_ROWS=N (unset/0 = off) is the fallback arm:
 calls with more than N rows take the stock 32-thread pool instead.
 

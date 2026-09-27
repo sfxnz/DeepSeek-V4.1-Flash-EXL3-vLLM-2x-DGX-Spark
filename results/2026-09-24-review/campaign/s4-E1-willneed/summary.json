@@ -1,0 +1,79 @@
+{
+  "stage": "s4-E1-willneed",
+  "git_head_at_start": "586b682 (see git_head.txt)",
+  "failure_drill": {
+    "id": "ops-failure-drills (a) worker death",
+    "cmd": "nohup ./run.sh > drill/boot.log & ; after '==> Waiting for http://127.0.0.1:8000/health' + 20 s: ssh spark2 docker kill dsv41-flash-exl3",
+    "start": "2026-09-24T21:04:13Z", "kill": "2026-09-24T21:05:11Z", "run_sh_exit_observed": "2026-09-24T21:05:46Z (2 s poll)",
+    "kill_to_exit_s": 35, "exit_code": 1,
+    "messages": ["Worker dsv41-flash-exl3 on spark2 is not running. Last worker logs:", "Worker logs saved to .run-state/worker-20260924-220544.log", "Head start failed (exit 1). Removing dsv41-flash-exl3 on spark2.", "Head logs saved to .run-state/head-20260924-220545.log. Removing dsv41-flash-exl3 here."],
+    "orphans_after": "docker ps -a --filter name=dsv41-flash: none on spark1, none on spark2; MemAvailable 116Gi / 117Gi",
+    "note": "The worker was killed about 20 s after the head started, while the worker was still in patch/startup (its log ends at 'dsv41-patch ok decode_levers'), not deep in weight loading. Drill (b) head-failure was not run.",
+    "result": "pass", "logs": "drill/"
+  },
+  "E1_boot": {
+    "cmd": "nohup env AUDIT=strict DSV41_ENGRAM_WILLNEED=1 DSV41_STREAM_FEED=1 ./run.sh > E1/boot.log",
+    "image": "dsv41-flash-exl3-sm121:canonical-e12 (same as s2/s3)", "pack": "2.0bpw-mcg-lmhead-mxfp8",
+    "start": "2026-09-24T21:06:12Z", "api_ready": "2026-09-24T21:15:38Z", "run_sh_exit0": "2026-09-24T21:15:52Z",
+    "start_to_api_ready_s": 566, "start_to_run_sh_exit_s": 580,
+    "s3_ref": {"start_to_api_ready_s": 587, "start_to_run_sh_exit_s": 627},
+    "loading_weights_s": {"TP0_spark1": [313.24, 27.93], "TP1_spark2": [151.42, 25.89]},
+    "loading_weights_s_s3": {"TP0_spark1": [334.25, 31.42], "TP1_spark2": [190.68, 27.56]},
+    "loading_weights_s_s2": {"TP0_spark1": [330.18, 27.78], "TP1_spark2": [180.54, 20.83]},
+    "audit_strict": "==> audit ok: every expected patch engaged on head, worker",
+    "warmup": {"greedy": "1.9s '323'", "t07": "1.6s", "prefill_3k_nonce_s": 6.6, "s3_prefill_3k_nonce_s": 31.3},
+    "stream_feed_lines": "'dsv41: g8 stream feed installed' on both ranks (plus 'already present' in child processes)",
+    "env_diff_vs_s3": "only DSV41_ENGRAM_WILLNEED 0->1 and DSV41_STREAM_FEED 0->1; head/worker env identical except VLLM_HOST_IP; 0 HF token vars",
+    "dsv41_patch_FAIL_lines": {"head": 0, "worker": 0},
+    "mem_during_load": {"trace": "E1/mem-during-load.log (5 s MemAvailable/swap GiB, 21:06:12-21:16:06Z)", "min_memavail_gib": {"spark1": 23.38, "spark2": 25.00}, "peak_swap_gib": {"spark1": 6.76, "spark2": 4.67},
+      "note": "Minimum is reached at/after ready, not mid-load. s3 has no load-time trace, so min-MemAvail-during-load cannot be compared with s3."}
+  },
+  "prefill_protocol": {
+    "smoke": {"chat": "323", "vision": "Red"},
+    "micro": {"cmd": "python3 benches/micro.py --contexts 8192 32768 --runs 3", "log": "E1/05-micro.log", "position": "first long prefill after boot+warmup (same position as s3 pass 1)",
+      "pp_warm_8k": {"median": 747.2, "runs": [741.1, 752.2, 747.2]},
+      "pp_novel_8k": {"median": 798.3, "runs": [757.1, 798.3, 804.1], "median_ttft_s": 10.26},
+      "tg_8k": {"median": 38.7, "runs": [41.5, 30.6, 38.7]},
+      "pp_warm_32k": {"median": 771.9, "runs": [771.9, 776.9, 755.4]},
+      "pp_novel_32k": {"median": 805.7, "runs": [810.1, 794.7, 805.7], "median_ttft_s": 40.4},
+      "tg_32k": {"median": 34.5, "runs": [34.5, 32.0, 37.3]}},
+    "novel_pp_stdlib": {"cmd": "python3 novel_pp.py <seed> <ctx> (copied from scratchpad; python stdlib source text)", "log": "E1/05c-novel-pp-stdlib.log",
+      "seed101_8k": {"prompt_tokens": 8035, "ttft_s": 9.92, "tok_s": 810.3}, "seed102_8k": {"prompt_tokens": 8297, "ttft_s": 10.87, "tok_s": 763.3},
+      "median_8k_tok_s": 786.8, "seed201_32k": {"prompt_tokens": 29506, "ttft_s": 36.98, "tok_s": 798.0},
+      "resend_seed101_8k": {"ttft_s": 0.4, "note": "prefix-cache hit; not a measure of WILLNEED cost on hot calls"},
+      "no_s3_counterpart": true},
+    "lail_5": {"cmd": "python3 tools/measure_lail_prose.py --runs 5", "median_tok_s": 33.81, "runs": [34.92, 33.81, 33.50, 34.05, 33.49], "acceptance": 2.142, "ttft_s": 0.360, "post_eos": 0.0, "s3_fresh_10": 34.11},
+    "engram_census": {
+      "prefill_read_ms_per_1k_rows_median": {"E1_TP0": 13.35, "E1_TP1": 17.21, "s3_TP0": 79.41, "s3_TP1": 129.26},
+      "prefill_census_lines": {"E1": 11, "s3": 17},
+      "prefill_fadv_per_call": ">0 on all 16 prefill census lines per rank (e.g. rows/call 30684 -> fadv/call 37627.7 TP0)",
+      "decode_fadv_per_call": "0.0 on every decode census line (rows/call 48), pf_hit=100%(32) on both ranks"},
+    "memory": {"ready": {"spark1": "used 98Gi avail 23Gi swap 6.3Gi", "spark2": "used 96Gi avail 25Gi swap 4.3Gi"}, "end": {"spark1": "used 100Gi avail 21Gi swap 6.2Gi", "spark2": "used 98Gi avail 23Gi swap 4.3Gi"},
+      "s3": {"ready": "23Gi / 25Gi", "post_32k": "21Gi / 23Gi"}},
+    "engagement": {"audit": "tools/engagement_audit.py --mode strict: audit ok on 0, 1 (rc 0)", "disarm_scan_rc": 0, "prefetch_v3": "armed on both ranks", "gather_v2": "bit-exact self-check both ranks",
+      "grep": "no bad snapshot / IndexError / prefetch disable on either rank; 'disabled' hits are vLLM info lines only; one Traceback on TP0 = usage_lib cpuinfo (harmless, same as s2/s3)"}
+  },
+  "comparison": {
+    "pp_novel_8k": {"E1": 798.3, "s3": 188.8, "s3_repeat_pass": 250.9, "s2": 184.2, "ratio_vs_s3": 4.23, "ratio_vs_s3_repeat": 3.18, "ratio_vs_s2": 4.33},
+    "pp_novel_32k": {"E1": 805.7, "s3": 234.7, "s2": 231.1, "ratio_vs_s3": 3.43, "ratio_vs_s2": 3.49},
+    "pp_warm_8k": {"E1": 747.2, "s3_pass1": 210.4, "s3_repeat_warm_cache": 761.9, "ratio_vs_s3_repeat": 0.981},
+    "pp_warm_32k": {"E1": 771.9, "s3": 447.0, "ratio": 1.73},
+    "lail": {"E1_5run": 33.81, "s3_10run": 34.11, "pct": -0.9}
+  },
+  "gates": {
+    "E1-willneed-default (s3 = E0)": {
+      "a_novel8k_ge_1.5x": "PASS 798.3 vs 188.8 = 4.23x (micro pp_novel; s3 has no novel_pp seed 101/102 run)",
+      "b_micro8k_ge_650": "PASS 798.3",
+      "c_32k_ge_E0_and_700": "PASS 805.7 vs 234.7",
+      "d_hot_call_cost_le_5pct": "PASS by proxy: warm-page-cache 8k 747.2 vs s3 repeat 761.9 (-1.9%). The resend run was a prefix-cache hit (0.4 s), so it cannot measure this",
+      "e_lail_prose_ge_-3pct": "L.A.I.L PASS (33.81 vs 34.11, -0.9%, 5 runs). The 9-run prose bench_decode was not run (not in the PREFILL protocol)",
+      "f_decode_fadv_0": "PASS fadv/call=0.0 on all decode census lines on both ranks",
+      "g_smoke_323": "PASS"},
+    "hb-2-stream-feed (vs s3 as A)": {
+      "load_time_ge_5pct_both_ranks": "PASS TP0 313.24 vs 334.25 s (-6.3%), TP1 151.42 vs 190.68 s (-20.6%). vs s2: -5.1% / -16.1%. n=1 boot per arm",
+      "min_memavail_during_load": "not comparable (s3 has no load-time trace). Post-boot MemAvail is flat vs s3 (23/25 GiB at ready both)",
+      "smoke": "323"}
+  },
+  "E2_maxrows256": "not run: WILLNEED passed 1.3x on novel 8k (4.23x), so the conditional second boot was not needed",
+  "stop": "./stop.sh rc 0; docker ps: only conduit on spark1, nothing on spark2; MemAvailable 116Gi / 117Gi"
+}

@@ -1,0 +1,51 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-indexer-workspace: already applied
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+INFO 09-24 15:15:23 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-24 15:15:23 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 09-24 15:15:23 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+W0924 15:15:23.920000 1 torch/utils/cpp_extension.py:178] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+WARNING 09-24 15:15:24 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-24 15:15:24 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch skip cudagraph_worker_stub: DSV41_ALLOW_CUDA_GRAPHS=1
+[dsv41-drop-page-cache] armed (fadvise DONTNEED on shards after weight load)
+[dsv41-prefill-empty-cache] armed (threshold 8192 tokens, release when MemAvailable < 2.5 GiB)
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS is not 1
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41: g8 stream feed already present
+dsv41: MHC prenorm split-K forced to 32 for num_tokens <= 64
+dsv41-patch ok decode_levers
+dsv41: DSpark sparse Markov (gathered top-k) k=256
+dsv41: WARNING DSV41_WOA_PREPACK=1 but this image's o_proj.py has no prepack stage; the lever is OFF. Build docker/Dockerfile.woa-prepack.
+env {'DSV41_ENGRAM_WILLNEED': '1', 'DSV41_ENGRAM_GATHER_V2_MAX_ROWS': '256', 'DSV41_MHC_DECODE_SPLITS': '32', 'DSV41_DSPARK_SPARSE_MARKOV': '1', 'DSV41_WOA_PREPACK': '1'}
+gv2 WILLNEED True MIN 512 MAX_ROWS 256 GATHER_V2 [True]
+gv2 has _gv2_willneed True
+mhc patched fn decode_levers _install_mhc_splits.<locals>._splits
+  splits(K=16384, T=1) = 32
+  splits(K=16384, T=4) = 32
+  splits(K=16384, T=6) = 32
+  splits(K=16384, T=64) = 32
+  splits(K=1024, T=4) = 4
+tilelang imports compute_mhc_pre_num_splits at call time: True
+DeepSeek apply_markov_bias_gathered: True
+DSparkSpeculator.__init__ wrapped by: decode_levers
+DSparkSpeculator has _sample_sequential_topk: True
+gathered == dense on top-k: True

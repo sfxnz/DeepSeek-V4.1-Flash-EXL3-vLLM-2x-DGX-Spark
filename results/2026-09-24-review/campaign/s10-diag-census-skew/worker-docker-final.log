@@ -1,0 +1,839 @@
+dsv41-indexer-workspace: already applied
+[dsv41-drop-page-cache] armed (fadvise DONTNEED on shards after weight load)
+[dsv41-prefill-empty-cache] armed (threshold 8192 tokens, release when MemAvailable < 2.5 GiB)
+dsv41: g8 stream feed installed
+dsv41: DSpark sparse Markov (gathered top-k) k=256
+WARNING 09-25 00:12:34 [envs.py:2282] Unknown vLLM environment variable detected: VLLM_EXL3_MOE_KERNEL
+INFO 09-25 00:12:40 [model.py:692] Resolved architecture: DeepseekV41ForCausalLM
+INFO 09-25 00:12:40 [model.py:2034] Using max model len 1048576
+INFO 09-25 00:12:41 [cache.py:348] Using fp8 data type to store kv cache. It reduces the GPU memory footprint and boosts the performance. Meanwhile, it may cause accuracy drop without a proper scaling factor
+INFO 09-25 00:12:41 [arg_utils.py:2232] Inferred data_parallel_rank 0 from node_rank 1
+INFO 09-25 00:12:41 [model.py:692] Resolved architecture: DeepseekV41ForCausalLM
+INFO 09-25 00:12:41 [model.py:2034] Using max model len 1048576
+INFO 09-25 00:12:48 [scheduler.py:277] Chunked prefill is enabled with max_num_batched_tokens=8192.
+INFO 09-25 00:12:48 [kernel.py:373] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+WARNING 09-25 00:12:48 [cuda.py:336] Forcing --disable_chunked_mm_input for models with multimodal-bidirectional attention.
+INFO 09-25 00:12:48 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant
+INFO 09-25 00:12:48 [serve.py:217] Launching vLLM (v0.1.dev20904+g179dd0fa9) headless multiproc executor, with head node address 10.100.8.1:29524 for torch.distributed process group.
+dsv41-indexer-workspace: already applied
+dsv41-indexer-workspace: already applied
+[dsv41-drop-page-cache] armed (fadvise DONTNEED on shards after weight load)
+[dsv41-prefill-empty-cache] armed (threshold 8192 tokens, release when MemAvailable < 2.5 GiB)
+dsv41: g8 stream feed already present
+dsv41: DSpark sparse Markov (gathered top-k) k=256
+[dsv41-drop-page-cache] armed (fadvise DONTNEED on shards after weight load)
+[dsv41-prefill-empty-cache] armed (threshold 8192 tokens, release when MemAvailable < 2.5 GiB)
+dsv41: g8 stream feed already present
+dsv41: DSpark sparse Markov (gathered top-k) k=256
+(Worker pid=466) INFO 09-25 00:12:54 [parallel_state.py:1817] world_size=2 rank=1 local_rank=0 distributed_init_method=tcp://10.100.8.1:29524 backend=nccl
+(Worker pid=466) WARNING 09-25 00:13:33 [symm_mem.py:67] SymmMemCommunicator: Device capability 12.1 not supported, communicator is not available.
+(Worker pid=466) WARNING 09-25 00:13:33 [flashinfer_all_reduce.py:383] FlashInfer All Reduce is disabled because it is not supported for world_size=2.
+(Worker pid=466) WARNING 09-25 00:13:33 [custom_all_reduce.py:201] Custom collectives are disabled because this multi-node group does not have MNNVL-capable GPUs on every rank.
+(Worker pid=466) INFO 09-25 00:13:33 [parallel_state.py:2234] rank 1 in world size 2 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 1, EP rank 1, EPLB rank N/A
+(Worker pid=466) INFO 09-25 00:13:33 [gpu_worker.py:436] Using V2 Model Runner
+(Worker_TP1 pid=466) INFO 09-25 00:13:33 [model_runner.py:383] Loading model from scratch...
+(Worker_TP1 pid=466) INFO 09-25 00:13:33 [cuda.py:581] Using backend AttentionBackendEnum.FLASH_ATTN for vit attention
+(Worker_TP1 pid=466) INFO 09-25 00:13:33 [mm_encoder_attention.py:372] Using AttentionBackendEnum.FLASH_ATTN for MMEncoderAttention.
+(Worker_TP1 pid=466) INFO 09-25 00:13:34 [quant_config.py:79] DeepSeek V4 expert_dtype resolved to 'fp4'
+(Worker_TP1 pid=466) INFO 09-25 00:13:34 [__init__.py:889] Using FlashInferCutlassMxfp8LinearKernel for MXFP8 GEMM
+(Worker_TP1 pid=466) INFO 09-25 00:13:34 [attention.py:140] Using DeepSeek's fp8_ds_mla KV cache format.
+(Worker_TP1 pid=466) INFO 09-25 00:13:34 [attention.py:1062] Using FP8 indexer cache for Lightning Indexer.
+(Worker_TP1 pid=466) INFO 09-25 00:13:38 [engram.py:442] Built engram token map (129280 -> 99092 ids) for layers (1, 14)
+(Worker_TP1 pid=466) dsv41: lm_head mxfp8 enabled (b12x, (64640, 5120))
+(Worker_TP1 pid=466) WARNING 09-25 00:13:38 [compilation.py:1354] Op 'quant_fp8' not present in model, enabling with '+quant_fp8' has no effect
+(Worker_TP1 pid=466) INFO 09-25 00:13:38 [weight_utils.py:863] Filesystem type for checkpoints: EXT4. Checkpoint size: 332.92 GiB. Available RAM: 39.37 GiB.
+(Worker_TP1 pid=466) INFO 09-25 00:13:38 [weight_utils.py:893] Auto-prefetch is disabled because the filesystem (EXT4) is not a recognized network FS (NFS/Lustre) and the checkpoint size (332.92 GiB) exceeds 90% of available RAM (39.37 GiB).
+(Worker_TP1 pid=466) INFO 09-25 00:16:05 [default_loader.py:430] Loading weights took 146.75 seconds
+(Worker_TP1 pid=466) INFO 09-25 00:16:05 [__init__.py:889] Using EmulationMxfp8LinearKernel for MXFP8 GEMM
+(Worker_TP1 pid=466) INFO 09-25 00:16:09 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:09 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:09 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:09 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:09 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:10 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:10 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:10 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:10 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:19 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:20 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:20 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:20 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch skip cudagraph_worker_stub: DSV41_ALLOW_CUDA_GRAPHS=1
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch ok step_census
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch skip cudagraph_worker_stub: DSV41_ALLOW_CUDA_GRAPHS=1
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch ok step_census
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+dsv41-patch ok warmup_stubs
+dsv41-patch skip cudagraph_worker_stub: DSV41_ALLOW_CUDA_GRAPHS=1
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch ok step_census
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+[W925 00:13:04.373633138 socket.cpp:207] [c10d] The hostname of the client socket cannot be retrieved. err=-3
+(Worker_TP1 pid=466) INFO 09-25 00:16:20 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:20 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:20 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:20 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:20 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:20 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:20 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:20 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:20 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:21 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:21 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:21 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:21 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:21 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:21 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:21 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:21 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:21 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:21 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:21 [exl3.py:2087] EXL3 MCG trellis engaged for routed experts: bits=2 experts_local=384 hidden=5120 intermediate_local=1152 fused_moe=exl3_moe concurrency=6 (no BF16 expert reconstruct at load)
+(Worker_TP1 pid=466) INFO 09-25 00:16:21 [eagle3_utils.py:28] Using Eagle3 auxiliary layers from config: (37, 38, 39)
+(Worker_TP1 pid=466) INFO 09-25 00:16:21 [kernel.py:373] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+(Worker_TP1 pid=466) INFO 09-25 00:16:22 [mxfp4.py:715] Using 'DEEPGEMM_MXFP4' Mxfp4 MoE backend.
+(Worker_TP1 pid=466) INFO 09-25 00:16:22 [weight_utils.py:863] Filesystem type for checkpoints: EXT4. Checkpoint size: 332.92 GiB. Available RAM: 31.31 GiB.
+(Worker_TP1 pid=466) INFO 09-25 00:16:22 [weight_utils.py:893] Auto-prefetch is disabled because the filesystem (EXT4) is not a recognized network FS (NFS/Lustre) and the checkpoint size (332.92 GiB) exceeds 90% of available RAM (31.31 GiB).
+(Worker_TP1 pid=466) INFO 09-25 00:16:50 [dspark.py:515] DSpark draft model loaded: 97 params
+(Worker_TP1 pid=466) INFO 09-25 00:16:50 [default_loader.py:430] Loading weights took 27.50 seconds
+(Worker_TP1 pid=466) INFO 09-25 00:16:50 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+(Worker_TP1 pid=466) INFO 09-25 00:16:51 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+(Worker_TP1 pid=466) INFO 09-25 00:16:51 [deep_gemm.py:136] DeepGEMM E8M0 enabled on current platform.
+(Worker_TP1 pid=466) INFO 09-25 00:16:52 [mxfp4.py:1973] Using MoEPrepareAndFinalizeNoDPEPModular
+(Worker_TP1 pid=466) INFO 09-25 00:16:52 [mxfp4.py:1974] Using DeepGemmFP4Experts
+(Worker_TP1 pid=466) WARNING 09-25 00:16:52 [speculator.py:203] Draft model DSparkDeepseekV4ForCausalLM does not support external multimodal embeddings. Embeddings from the target model will not be passed to the drafter; using text-only draft inputs instead.
+(Worker_TP1 pid=466) INFO 09-25 00:17:04 [model_runner.py:408] Model loading took 75.43 GiB memory and 211.118100 seconds
+(Worker_TP1 pid=466) dsv41: engram prefetch v3 armed (ngram=4 heads=8 depth=3 layers=[0, 1] mult=(2, 4) primes=(2, 3, 8) offsets=(2, 24))
+(Worker_TP1 pid=466) [dsv41-drop-page-cache] dropped page cache of 48 shard files: MemFree 8.69GiB -> 38.15GiB
+INFO 09-25 00:19:54 [torch_utils.py:280] Reducing Torch threads from 20 to 1 for serving. Set OMP_NUM_THREADS in the external environment to override.
+(Worker_TP1 pid=466) INFO 09-25 00:19:54 [encoder_runner.py:131] Encoder cache will be initialized with a budget of 8192 tokens, and profiled with 7 image items of the maximum feature size.
+(Worker_TP1 pid=466) 2026-09-25 00:20:09  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+(Worker_TP1 pid=466) 2026-09-25 00:20:14  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+(Worker_TP1 pid=466) [wo_a-probe] wo_a.dtype=torch.bfloat16 wo_a.shape=(4096, 4096) use_fp8=False wo_b.dtype=torch.float8_e4m3fn n_groups=4
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) 2026-09-25 00:20:19  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_post_tilelang` with `out_idx=None`
+(Worker_TP1 pid=466) 2026-09-25 00:20:20  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_post_tilelang`
+(Worker_TP1 pid=466) 2026-09-25 00:20:21  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+(Worker_TP1 pid=466) 2026-09-25 00:20:26  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+(Worker_TP1 pid=466) INFO 09-25 00:20:27 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=8192)
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) 2026-09-25 00:20:37  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+(Worker_TP1 pid=466) 2026-09-25 00:20:42  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) 2026-09-25 00:20:44  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+(Worker_TP1 pid=466) 2026-09-25 00:20:49  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) [woa-requant] fp8 einsum engaged: (4, 1024, 4096)
+(Worker_TP1 pid=466) [woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32
+(Worker_TP1 pid=466) INFO 09-25 00:20:53 [gpu_worker.py:551] Initial free memory 113.65 GiB, reserved 8.0 GiB memory for KV Cache as specified by kv_cache_memory_bytes config and skipped memory profiling. This does not respect the gpu_memory_utilization config. Only use kv_cache_memory_bytes config when you want manual control of KV cache memory size. If OOM'ed, check the difference of initial free memory between the current run and the previous run where kv_cache_memory_bytes is suggested and update it correspondingly.
+(Worker_TP1 pid=466) INFO 09-25 00:20:54 [indexer.py:741] DSA indexer decode path: use_flattening=False supports_varlen=False (next_n=4, use_fp4_cache=False)
+(Worker_TP1 pid=466) INFO 09-25 00:20:54 [routed_experts_capturer.py:80] RoutedExpertsCapturer: allocating buffer with max_tokens=8192, num_layers=40, num_experts_per_tok=6 (hf_config.model_type=deepseek_v41)
+(Worker_TP1 pid=466) [dsv41-drop-page-cache] dropped page cache of 48 shard files: MemFree 25.97GiB -> 25.97GiB
+(Worker_TP1 pid=466) INFO 09-25 00:20:55 [breakable_cudagraph.py:290] Breakable CUDA graph enabled
+(Worker_TP1 pid=466) 2026-09-25 00:20:57  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+(Worker_TP1 pid=466) 2026-09-25 00:21:01  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+(Worker_TP1 pid=466) INFO 09-25 00:21:07 [speculator.py:141] Capturing model for DSpark speculator...
+[00:20:20] : Warning: T.vectorized loop over `i_hci` with extent 4 is lowered as a serial loop because TileLang could not find a valid vectorization plan. Scalar accumulator updates inside the loop are a common cause; move reductions to T.unroll or T.serial if this is intended.
+(Worker_TP1 pid=466) INFO 09-25 00:21:08 [model_runner.py:974] Graph capturing finished in 13 secs, took 1.18 GiB
+(Worker_TP1 pid=466) dsv41: engram gather v2 self-check bit-exact (r=120)
+(Worker_TP1 pid=466) dsv41: engram fast stage self-check bit-exact (2 tables, n=10)
+(Worker_TP1 pid=466) INFO 09-25 00:21:16 [sm120_page.py:893] step census draft n=8 sum_s=17.045 avg_ms=2130.6 engram n=6 sum_s=0.291 avg_ms=48.4 pre_draft n=5 sum_s=4.830 avg_ms=966.0 target n=11 sum_s=41.933 avg_ms=3812.1
+(Worker_TP1 pid=466) INFO 09-25 00:21:16 [jit_monitor.py:85] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+(Worker_TP1 pid=466) INFO 09-25 00:21:17 [torch_utils.py:280] Reducing Torch threads from 20 to 1 for serving. Set OMP_NUM_THREADS in the external environment to override.
+(Worker_TP1 pid=466) WARNING 09-25 00:21:47 [jit_monitor.py:141] Triton kernel JIT compilation during inference: ComputePrefillMetadataKernel.kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP1 pid=466) WARNING 09-25 00:21:49 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _prepare_dflash_inputs_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP1 pid=466) WARNING 09-25 00:21:49 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _compute_local_logits_stats_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP1 pid=466) WARNING 09-25 00:21:49 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _rejection_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP1 pid=466) WARNING 09-25 00:21:49 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _resample_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP1 pid=466) WARNING 09-25 00:21:51 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _gumbel_sample_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP1 pid=466) INFO 09-25 00:21:51 [sm120_page.py:893] step census draft n=16 sum_s=17.107 avg_ms=1069.2 engram n=14 sum_s=0.617 avg_ms=44.0 pre_draft n=12 sum_s=5.584 avg_ms=465.3 target n=18 sum_s=44.344 avg_ms=2463.6
+(Worker_TP1 pid=466) WARNING 09-25 00:21:52 [jit_monitor.py:141] Triton kernel JIT compilation during inference: BuildPrefillChunkMetadataKernel.kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP1 pid=466) WARNING 09-25 00:21:52 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _ring_slot_mapping_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=2607 runs/call=4497.4 preads/call=4497.4 read=70.391ms fadv/call=4053.8 pf_hit=51%(28)
+(Worker_TP1 pid=466) WARNING 09-25 00:21:53 [jit_monitor.py:141] CuTeDSL JIT compilation during inference: MXFP8QuantizeSwizzledKernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP1 pid=466) INFO 09-25 00:21:54 [exl3.py:1224] EXL3 fat-chunk slicing ACTIVE (tokens=3360)
+(Worker_TP1 pid=466) WARNING 09-25 00:21:55 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _block_scores_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP1 pid=466) WARNING 09-25 00:21:56 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _candidate_flags_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP1 pid=466) WARNING 09-25 00:21:56 [jit_monitor.py:141] Triton kernel JIT compilation during inference: _mask_candidates_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP1 pid=466) INFO 09-25 00:22:26 [sm120_page.py:893] step census draft n=24 sum_s=17.150 avg_ms=714.6 engram n=22 sum_s=1.515 avg_ms=68.9 pre_draft n=20 sum_s=5.745 avg_ms=287.2 target n=26 sum_s=50.312 avg_ms=1935.1
+(Worker_TP1 pid=466) INFO 09-25 00:22:42 [sm120_page.py:893] step census draft n=32 sum_s=17.194 avg_ms=537.3 engram n=30 sum_s=1.633 avg_ms=54.4 pre_draft n=28 sum_s=5.892 avg_ms=210.4 target n=34 sum_s=53.129 avg_ms=1562.6
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=247 runs/call=219.0 preads/call=219.0 read=9.837ms fadv/call=116.8 pf_hit=69%(28)
+(Worker_TP1 pid=466) INFO 09-25 00:22:43 [sm120_page.py:893] step census draft n=40 sum_s=17.237 avg_ms=430.9 engram n=38 sum_s=1.654 avg_ms=43.5 pre_draft n=36 sum_s=5.915 avg_ms=164.3 target n=42 sum_s=53.542 avg_ms=1274.8
+(Worker_TP1 pid=466) INFO 09-25 00:22:43 [sm120_page.py:893] step census draft n=48 sum_s=17.278 avg_ms=360.0 engram n=46 sum_s=1.669 avg_ms=36.3 pre_draft n=44 sum_s=5.937 avg_ms=134.9 target n=50 sum_s=53.948 avg_ms=1079.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.895ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:44 [sm120_page.py:893] step census draft n=56 sum_s=17.321 avg_ms=309.3 engram n=54 sum_s=1.685 avg_ms=31.2 pre_draft n=52 sum_s=5.960 avg_ms=114.6 target n=58 sum_s=54.353 avg_ms=937.1
+(Worker_TP1 pid=466) INFO 09-25 00:22:44 [sm120_page.py:893] step census draft n=64 sum_s=17.364 avg_ms=271.3 engram n=62 sum_s=1.701 avg_ms=27.4 pre_draft n=60 sum_s=5.983 avg_ms=99.7 target n=66 sum_s=54.767 avg_ms=829.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.737ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:45 [sm120_page.py:893] step census draft n=72 sum_s=17.410 avg_ms=241.8 engram n=70 sum_s=1.717 avg_ms=24.5 pre_draft n=68 sum_s=6.007 avg_ms=88.3 target n=74 sum_s=55.178 avg_ms=745.7
+(Worker_TP1 pid=466) INFO 09-25 00:22:45 [sm120_page.py:893] step census draft n=80 sum_s=17.452 avg_ms=218.1 engram n=78 sum_s=1.732 avg_ms=22.2 pre_draft n=76 sum_s=6.031 avg_ms=79.4 target n=82 sum_s=55.588 avg_ms=677.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.778ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:46 [sm120_page.py:893] step census draft n=88 sum_s=17.490 avg_ms=198.7 engram n=86 sum_s=1.746 avg_ms=20.3 pre_draft n=84 sum_s=6.064 avg_ms=72.2 target n=90 sum_s=56.012 avg_ms=622.4
+(Worker_TP1 pid=466) INFO 09-25 00:22:47 [sm120_page.py:893] step census draft n=96 sum_s=17.529 avg_ms=182.6 engram n=94 sum_s=1.761 avg_ms=18.7 pre_draft n=92 sum_s=6.088 avg_ms=66.2 target n=98 sum_s=56.418 avg_ms=575.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.784ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:47 [sm120_page.py:893] step census draft n=104 sum_s=17.569 avg_ms=168.9 engram n=102 sum_s=1.776 avg_ms=17.4 pre_draft n=100 sum_s=6.113 avg_ms=61.1 target n=106 sum_s=56.831 avg_ms=536.1
+(Worker_TP1 pid=466) INFO 09-25 00:22:48 [sm120_page.py:893] step census draft n=112 sum_s=17.609 avg_ms=157.2 engram n=110 sum_s=1.792 avg_ms=16.3 pre_draft n=108 sum_s=6.136 avg_ms=56.8 target n=114 sum_s=57.238 avg_ms=502.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.707ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:48 [sm120_page.py:893] step census draft n=120 sum_s=17.649 avg_ms=147.1 engram n=118 sum_s=1.807 avg_ms=15.3 pre_draft n=116 sum_s=6.159 avg_ms=53.1 target n=122 sum_s=57.643 avg_ms=472.5
+(Worker_TP1 pid=466) INFO 09-25 00:22:49 [sm120_page.py:893] step census draft n=128 sum_s=17.690 avg_ms=138.2 engram n=126 sum_s=1.823 avg_ms=14.5 pre_draft n=124 sum_s=6.181 avg_ms=49.8 target n=130 sum_s=58.055 avg_ms=446.6
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.697ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:49 [sm120_page.py:893] step census draft n=136 sum_s=17.732 avg_ms=130.4 engram n=134 sum_s=1.840 avg_ms=13.7 pre_draft n=132 sum_s=6.204 avg_ms=47.0 target n=138 sum_s=58.468 avg_ms=423.7
+(Worker_TP1 pid=466) INFO 09-25 00:22:50 [sm120_page.py:893] step census draft n=144 sum_s=17.772 avg_ms=123.4 engram n=142 sum_s=1.856 avg_ms=13.1 pre_draft n=140 sum_s=6.231 avg_ms=44.5 target n=146 sum_s=58.880 avg_ms=403.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.700ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:50 [sm120_page.py:893] step census draft n=152 sum_s=17.812 avg_ms=117.2 engram n=150 sum_s=1.873 avg_ms=12.5 pre_draft n=148 sum_s=6.253 avg_ms=42.2 target n=154 sum_s=59.291 avg_ms=385.0
+(Worker_TP1 pid=466) INFO 09-25 00:22:51 [sm120_page.py:893] step census draft n=160 sum_s=17.852 avg_ms=111.6 engram n=158 sum_s=1.889 avg_ms=12.0 pre_draft n=156 sum_s=6.274 avg_ms=40.2 target n=162 sum_s=59.698 avg_ms=368.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.653ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:51 [sm120_page.py:893] step census draft n=168 sum_s=17.894 avg_ms=106.5 engram n=166 sum_s=1.909 avg_ms=11.5 pre_draft n=164 sum_s=6.297 avg_ms=38.4 target n=170 sum_s=60.114 avg_ms=353.6
+(Worker_TP1 pid=466) INFO 09-25 00:22:52 [sm120_page.py:893] step census draft n=176 sum_s=17.934 avg_ms=101.9 engram n=174 sum_s=1.925 avg_ms=11.1 pre_draft n=172 sum_s=6.319 avg_ms=36.7 target n=178 sum_s=60.519 avg_ms=340.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.667ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:52 [sm120_page.py:893] step census draft n=184 sum_s=17.977 avg_ms=97.7 engram n=182 sum_s=1.942 avg_ms=10.7 pre_draft n=180 sum_s=6.340 avg_ms=35.2 target n=186 sum_s=60.914 avg_ms=327.5
+(Worker_TP1 pid=466) INFO 09-25 00:22:53 [sm120_page.py:893] step census draft n=192 sum_s=18.017 avg_ms=93.8 engram n=190 sum_s=1.958 avg_ms=10.3 pre_draft n=188 sum_s=6.362 avg_ms=33.8 target n=194 sum_s=61.330 avg_ms=316.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.690ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:53 [sm120_page.py:893] step census draft n=200 sum_s=18.058 avg_ms=90.3 engram n=198 sum_s=1.976 avg_ms=10.0 pre_draft n=196 sum_s=6.385 avg_ms=32.6 target n=202 sum_s=61.742 avg_ms=305.7
+(Worker_TP1 pid=466) INFO 09-25 00:22:54 [sm120_page.py:893] step census draft n=208 sum_s=18.098 avg_ms=87.0 engram n=206 sum_s=1.999 avg_ms=9.7 pre_draft n=204 sum_s=6.410 avg_ms=31.4 target n=210 sum_s=62.155 avg_ms=296.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.171ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:54 [sm120_page.py:893] step census draft n=216 sum_s=18.138 avg_ms=84.0 engram n=214 sum_s=2.012 avg_ms=9.4 pre_draft n=212 sum_s=6.434 avg_ms=30.3 target n=218 sum_s=62.567 avg_ms=287.0
+(Worker_TP1 pid=466) INFO 09-25 00:22:55 [sm120_page.py:893] step census draft n=224 sum_s=18.178 avg_ms=81.2 engram n=222 sum_s=2.024 avg_ms=9.1 pre_draft n=220 sum_s=6.456 avg_ms=29.3 target n=226 sum_s=62.980 avg_ms=278.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.682ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:55 [sm120_page.py:893] step census draft n=232 sum_s=18.218 avg_ms=78.5 engram n=230 sum_s=2.037 avg_ms=8.9 pre_draft n=228 sum_s=6.479 avg_ms=28.4 target n=234 sum_s=63.394 avg_ms=270.9
+(Worker_TP1 pid=466) INFO 09-25 00:22:56 [sm120_page.py:893] step census draft n=240 sum_s=18.258 avg_ms=76.1 engram n=238 sum_s=2.050 avg_ms=8.6 pre_draft n=236 sum_s=6.503 avg_ms=27.6 target n=242 sum_s=63.807 avg_ms=263.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.708ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:56 [sm120_page.py:893] step census draft n=248 sum_s=18.299 avg_ms=73.8 engram n=246 sum_s=2.062 avg_ms=8.4 pre_draft n=244 sum_s=6.526 avg_ms=26.7 target n=250 sum_s=64.229 avg_ms=256.9
+(Worker_TP1 pid=466) INFO 09-25 00:22:57 [sm120_page.py:893] step census draft n=256 sum_s=18.338 avg_ms=71.6 engram n=254 sum_s=2.075 avg_ms=8.2 pre_draft n=252 sum_s=6.555 avg_ms=26.0 target n=258 sum_s=64.637 avg_ms=250.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.704ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:57 [sm120_page.py:893] step census draft n=264 sum_s=18.378 avg_ms=69.6 engram n=262 sum_s=2.089 avg_ms=8.0 pre_draft n=260 sum_s=6.585 avg_ms=25.3 target n=266 sum_s=65.054 avg_ms=244.6
+(Worker_TP1 pid=466) INFO 09-25 00:22:58 [sm120_page.py:893] step census draft n=272 sum_s=18.420 avg_ms=67.7 engram n=270 sum_s=2.130 avg_ms=7.9 pre_draft n=268 sum_s=6.615 avg_ms=24.7 target n=274 sum_s=65.699 avg_ms=239.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.877ms fadv/call=91.3 pf_hit=90%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:22:59 [sm120_page.py:893] step census draft n=280 sum_s=18.463 avg_ms=65.9 engram n=278 sum_s=2.151 avg_ms=7.7 pre_draft n=276 sum_s=6.643 avg_ms=24.1 target n=282 sum_s=66.112 avg_ms=234.4
+(Worker_TP1 pid=466) INFO 09-25 00:22:59 [sm120_page.py:893] step census draft n=288 sum_s=18.504 avg_ms=64.3 engram n=286 sum_s=2.172 avg_ms=7.6 pre_draft n=284 sum_s=6.670 avg_ms=23.5 target n=290 sum_s=66.529 avg_ms=229.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.656ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:00 [sm120_page.py:893] step census draft n=296 sum_s=18.545 avg_ms=62.7 engram n=294 sum_s=2.193 avg_ms=7.5 pre_draft n=292 sum_s=6.698 avg_ms=22.9 target n=298 sum_s=66.940 avg_ms=224.6
+(Worker_TP1 pid=466) INFO 09-25 00:23:00 [sm120_page.py:893] step census draft n=304 sum_s=18.587 avg_ms=61.1 engram n=302 sum_s=2.216 avg_ms=7.3 pre_draft n=300 sum_s=6.726 avg_ms=22.4 target n=306 sum_s=67.354 avg_ms=220.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.697ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:01 [sm120_page.py:893] step census draft n=312 sum_s=18.630 avg_ms=59.7 engram n=310 sum_s=2.234 avg_ms=7.2 pre_draft n=308 sum_s=6.755 avg_ms=21.9 target n=314 sum_s=67.766 avg_ms=215.8
+(Worker_TP1 pid=466) INFO 09-25 00:23:01 [sm120_page.py:893] step census draft n=320 sum_s=18.673 avg_ms=58.4 engram n=318 sum_s=2.250 avg_ms=7.1 pre_draft n=316 sum_s=6.779 avg_ms=21.5 target n=322 sum_s=68.182 avg_ms=211.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.872ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:02 [sm120_page.py:893] step census draft n=328 sum_s=18.715 avg_ms=57.1 engram n=326 sum_s=2.268 avg_ms=7.0 pre_draft n=324 sum_s=6.802 avg_ms=21.0 target n=330 sum_s=68.599 avg_ms=207.9
+(Worker_TP1 pid=466) INFO 09-25 00:23:02 [sm120_page.py:893] step census draft n=336 sum_s=18.756 avg_ms=55.8 engram n=334 sum_s=2.284 avg_ms=6.8 pre_draft n=332 sum_s=6.823 avg_ms=20.6 target n=338 sum_s=69.005 avg_ms=204.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.931ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:03 [sm120_page.py:893] step census draft n=344 sum_s=18.798 avg_ms=54.6 engram n=342 sum_s=2.299 avg_ms=6.7 pre_draft n=340 sum_s=6.846 avg_ms=20.1 target n=346 sum_s=69.417 avg_ms=200.6
+(Worker_TP1 pid=466) INFO 09-25 00:23:03 [sm120_page.py:893] step census draft n=352 sum_s=18.842 avg_ms=53.5 engram n=350 sum_s=2.322 avg_ms=6.6 pre_draft n=348 sum_s=6.868 avg_ms=19.7 target n=354 sum_s=69.836 avg_ms=197.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.108ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:04 [sm120_page.py:893] step census draft n=360 sum_s=18.883 avg_ms=52.5 engram n=358 sum_s=2.339 avg_ms=6.5 pre_draft n=356 sum_s=6.890 avg_ms=19.4 target n=362 sum_s=70.247 avg_ms=194.1
+(Worker_TP1 pid=466) INFO 09-25 00:23:05 [sm120_page.py:893] step census draft n=368 sum_s=18.925 avg_ms=51.4 engram n=366 sum_s=2.356 avg_ms=6.4 pre_draft n=364 sum_s=6.913 avg_ms=19.0 target n=370 sum_s=70.656 avg_ms=191.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.648ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:05 [sm120_page.py:893] step census draft n=376 sum_s=18.967 avg_ms=50.4 engram n=374 sum_s=2.369 avg_ms=6.3 pre_draft n=372 sum_s=6.935 avg_ms=18.6 target n=378 sum_s=71.065 avg_ms=188.0
+(Worker_TP1 pid=466) INFO 09-25 00:23:06 [sm120_page.py:893] step census draft n=384 sum_s=19.011 avg_ms=49.5 engram n=382 sum_s=2.387 avg_ms=6.2 pre_draft n=380 sum_s=6.958 avg_ms=18.3 target n=386 sum_s=71.476 avg_ms=185.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.702ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:06 [sm120_page.py:893] step census draft n=392 sum_s=19.053 avg_ms=48.6 engram n=390 sum_s=2.402 avg_ms=6.2 pre_draft n=388 sum_s=6.980 avg_ms=18.0 target n=394 sum_s=71.890 avg_ms=182.5
+(Worker_TP1 pid=466) INFO 09-25 00:23:07 [sm120_page.py:893] step census draft n=400 sum_s=19.095 avg_ms=47.7 engram n=398 sum_s=2.415 avg_ms=6.1 pre_draft n=396 sum_s=7.002 avg_ms=17.7 target n=402 sum_s=72.298 avg_ms=179.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.700ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:07 [sm120_page.py:893] step census draft n=408 sum_s=19.135 avg_ms=46.9 engram n=406 sum_s=2.431 avg_ms=6.0 pre_draft n=404 sum_s=7.025 avg_ms=17.4 target n=410 sum_s=72.710 avg_ms=177.3
+(Worker_TP1 pid=466) INFO 09-25 00:23:08 [sm120_page.py:893] step census draft n=416 sum_s=19.178 avg_ms=46.1 engram n=414 sum_s=2.447 avg_ms=5.9 pre_draft n=412 sum_s=7.049 avg_ms=17.1 target n=418 sum_s=73.126 avg_ms=174.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.695ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:08 [sm120_page.py:893] step census draft n=424 sum_s=19.217 avg_ms=45.3 engram n=422 sum_s=2.460 avg_ms=5.8 pre_draft n=420 sum_s=7.079 avg_ms=16.9 target n=426 sum_s=73.539 avg_ms=172.6
+(Worker_TP1 pid=466) INFO 09-25 00:23:09 [sm120_page.py:893] step census draft n=432 sum_s=19.256 avg_ms=44.6 engram n=430 sum_s=2.475 avg_ms=5.8 pre_draft n=428 sum_s=7.107 avg_ms=16.6 target n=434 sum_s=73.955 avg_ms=170.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.666ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:09 [sm120_page.py:893] step census draft n=440 sum_s=19.295 avg_ms=43.9 engram n=438 sum_s=2.490 avg_ms=5.7 pre_draft n=436 sum_s=7.128 avg_ms=16.3 target n=442 sum_s=74.369 avg_ms=168.3
+(Worker_TP1 pid=466) INFO 09-25 00:23:10 [sm120_page.py:893] step census draft n=448 sum_s=19.336 avg_ms=43.2 engram n=446 sum_s=2.505 avg_ms=5.6 pre_draft n=444 sum_s=7.150 avg_ms=16.1 target n=450 sum_s=74.777 avg_ms=166.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.623ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:10 [sm120_page.py:893] step census draft n=456 sum_s=19.377 avg_ms=42.5 engram n=454 sum_s=2.522 avg_ms=5.6 pre_draft n=452 sum_s=7.172 avg_ms=15.9 target n=458 sum_s=75.185 avg_ms=164.2
+(Worker_TP1 pid=466) INFO 09-25 00:23:11 [sm120_page.py:893] step census draft n=464 sum_s=19.417 avg_ms=41.8 engram n=462 sum_s=2.540 avg_ms=5.5 pre_draft n=460 sum_s=7.194 avg_ms=15.6 target n=466 sum_s=75.584 avg_ms=162.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.602ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:11 [sm120_page.py:893] step census draft n=472 sum_s=19.458 avg_ms=41.2 engram n=470 sum_s=2.555 avg_ms=5.4 pre_draft n=468 sum_s=7.216 avg_ms=15.4 target n=474 sum_s=75.997 avg_ms=160.3
+(Worker_TP1 pid=466) INFO 09-25 00:23:12 [sm120_page.py:893] step census draft n=480 sum_s=19.499 avg_ms=40.6 engram n=478 sum_s=2.571 avg_ms=5.4 pre_draft n=476 sum_s=7.239 avg_ms=15.2 target n=482 sum_s=76.413 avg_ms=158.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.578ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:12 [sm120_page.py:893] step census draft n=488 sum_s=19.542 avg_ms=40.0 engram n=486 sum_s=2.590 avg_ms=5.3 pre_draft n=484 sum_s=7.261 avg_ms=15.0 target n=490 sum_s=76.824 avg_ms=156.8
+(Worker_TP1 pid=466) INFO 09-25 00:23:13 [sm120_page.py:893] step census draft n=496 sum_s=19.582 avg_ms=39.5 engram n=494 sum_s=2.610 avg_ms=5.3 pre_draft n=492 sum_s=7.283 avg_ms=14.8 target n=498 sum_s=77.222 avg_ms=155.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.700ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:13 [sm120_page.py:893] step census draft n=504 sum_s=19.623 avg_ms=38.9 engram n=502 sum_s=2.629 avg_ms=5.2 pre_draft n=500 sum_s=7.305 avg_ms=14.6 target n=506 sum_s=77.629 avg_ms=153.4
+(Worker_TP1 pid=466) INFO 09-25 00:23:14 [sm120_page.py:893] step census draft n=512 sum_s=19.664 avg_ms=38.4 engram n=510 sum_s=2.648 avg_ms=5.2 pre_draft n=508 sum_s=7.328 avg_ms=14.4 target n=514 sum_s=78.039 avg_ms=151.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.642ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:14 [sm120_page.py:893] step census draft n=520 sum_s=19.707 avg_ms=37.9 engram n=518 sum_s=2.669 avg_ms=5.2 pre_draft n=516 sum_s=7.351 avg_ms=14.2 target n=522 sum_s=78.448 avg_ms=150.3
+(Worker_TP1 pid=466) INFO 09-25 00:23:15 [sm120_page.py:893] step census draft n=528 sum_s=19.746 avg_ms=37.4 engram n=526 sum_s=2.690 avg_ms=5.1 pre_draft n=524 sum_s=7.373 avg_ms=14.1 target n=530 sum_s=78.856 avg_ms=148.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.684ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:16 [sm120_page.py:893] step census draft n=536 sum_s=19.788 avg_ms=36.9 engram n=534 sum_s=2.724 avg_ms=5.1 pre_draft n=532 sum_s=7.396 avg_ms=13.9 target n=538 sum_s=79.492 avg_ms=147.8
+(Worker_TP1 pid=466) INFO 09-25 00:23:16 [sm120_page.py:893] step census draft n=544 sum_s=19.831 avg_ms=36.5 engram n=542 sum_s=2.744 avg_ms=5.1 pre_draft n=540 sum_s=7.419 avg_ms=13.7 target n=546 sum_s=79.907 avg_ms=146.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.792ms fadv/call=91.3 pf_hit=90%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:17 [sm120_page.py:893] step census draft n=552 sum_s=19.875 avg_ms=36.0 engram n=550 sum_s=2.766 avg_ms=5.0 pre_draft n=548 sum_s=7.442 avg_ms=13.6 target n=554 sum_s=80.315 avg_ms=145.0
+(Worker_TP1 pid=466) INFO 09-25 00:23:17 [sm120_page.py:893] step census draft n=560 sum_s=19.916 avg_ms=35.6 engram n=558 sum_s=2.789 avg_ms=5.0 pre_draft n=556 sum_s=7.465 avg_ms=13.4 target n=562 sum_s=80.738 avg_ms=143.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.058ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:18 [sm120_page.py:893] step census draft n=568 sum_s=19.957 avg_ms=35.1 engram n=566 sum_s=2.805 avg_ms=5.0 pre_draft n=564 sum_s=7.487 avg_ms=13.3 target n=570 sum_s=81.148 avg_ms=142.4
+(Worker_TP1 pid=466) INFO 09-25 00:23:18 [sm120_page.py:893] step census draft n=576 sum_s=20.000 avg_ms=34.7 engram n=574 sum_s=2.820 avg_ms=4.9 pre_draft n=572 sum_s=7.510 avg_ms=13.1 target n=578 sum_s=81.574 avg_ms=141.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.603ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:19 [sm120_page.py:893] step census draft n=584 sum_s=20.044 avg_ms=34.3 engram n=582 sum_s=2.843 avg_ms=4.9 pre_draft n=580 sum_s=7.534 avg_ms=13.0 target n=586 sum_s=81.987 avg_ms=139.9
+(Worker_TP1 pid=466) INFO 09-25 00:23:19 [sm120_page.py:893] step census draft n=592 sum_s=20.085 avg_ms=33.9 engram n=590 sum_s=2.870 avg_ms=4.9 pre_draft n=588 sum_s=7.560 avg_ms=12.9 target n=594 sum_s=82.403 avg_ms=138.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.019ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:20 [sm120_page.py:893] step census draft n=600 sum_s=20.126 avg_ms=33.5 engram n=598 sum_s=2.884 avg_ms=4.8 pre_draft n=596 sum_s=7.591 avg_ms=12.7 target n=602 sum_s=82.823 avg_ms=137.6
+(Worker_TP1 pid=466) INFO 09-25 00:23:20 [sm120_page.py:893] step census draft n=608 sum_s=20.167 avg_ms=33.2 engram n=606 sum_s=2.897 avg_ms=4.8 pre_draft n=604 sum_s=7.618 avg_ms=12.6 target n=610 sum_s=83.233 avg_ms=136.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.624ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:21 [sm120_page.py:893] step census draft n=616 sum_s=20.207 avg_ms=32.8 engram n=614 sum_s=2.911 avg_ms=4.7 pre_draft n=612 sum_s=7.646 avg_ms=12.5 target n=618 sum_s=83.648 avg_ms=135.4
+(Worker_TP1 pid=466) INFO 09-25 00:23:21 [sm120_page.py:893] step census draft n=624 sum_s=20.246 avg_ms=32.4 engram n=622 sum_s=2.923 avg_ms=4.7 pre_draft n=620 sum_s=7.674 avg_ms=12.4 target n=626 sum_s=84.063 avg_ms=134.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.615ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:22 [sm120_page.py:893] step census draft n=632 sum_s=20.286 avg_ms=32.1 engram n=630 sum_s=2.936 avg_ms=4.7 pre_draft n=628 sum_s=7.701 avg_ms=12.3 target n=634 sum_s=84.472 avg_ms=133.2
+(Worker_TP1 pid=466) INFO 09-25 00:23:23 [sm120_page.py:893] step census draft n=640 sum_s=20.326 avg_ms=31.8 engram n=638 sum_s=2.950 avg_ms=4.6 pre_draft n=636 sum_s=7.730 avg_ms=12.2 target n=642 sum_s=84.885 avg_ms=132.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.671ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:23 [sm120_page.py:893] step census draft n=648 sum_s=20.365 avg_ms=31.4 engram n=646 sum_s=2.963 avg_ms=4.6 pre_draft n=644 sum_s=7.758 avg_ms=12.0 target n=650 sum_s=85.298 avg_ms=131.2
+(Worker_TP1 pid=466) INFO 09-25 00:23:24 [sm120_page.py:893] step census draft n=656 sum_s=20.404 avg_ms=31.1 engram n=654 sum_s=2.976 avg_ms=4.6 pre_draft n=652 sum_s=7.785 avg_ms=11.9 target n=658 sum_s=85.705 avg_ms=130.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.605ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:24 [sm120_page.py:893] step census draft n=664 sum_s=20.444 avg_ms=30.8 engram n=662 sum_s=2.988 avg_ms=4.5 pre_draft n=660 sum_s=7.810 avg_ms=11.8 target n=666 sum_s=86.116 avg_ms=129.3
+(Worker_TP1 pid=466) INFO 09-25 00:23:25 [sm120_page.py:893] step census draft n=672 sum_s=20.485 avg_ms=30.5 engram n=670 sum_s=3.001 avg_ms=4.5 pre_draft n=668 sum_s=7.832 avg_ms=11.7 target n=674 sum_s=86.531 avg_ms=128.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.572ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:25 [sm120_page.py:893] step census draft n=680 sum_s=20.524 avg_ms=30.2 engram n=678 sum_s=3.013 avg_ms=4.4 pre_draft n=676 sum_s=7.855 avg_ms=11.6 target n=682 sum_s=86.940 avg_ms=127.5
+(Worker_TP1 pid=466) INFO 09-25 00:23:26 [sm120_page.py:893] step census draft n=688 sum_s=20.565 avg_ms=29.9 engram n=686 sum_s=3.026 avg_ms=4.4 pre_draft n=684 sum_s=7.877 avg_ms=11.5 target n=690 sum_s=87.348 avg_ms=126.6
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.437ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:26 [sm120_page.py:893] step census draft n=696 sum_s=20.605 avg_ms=29.6 engram n=694 sum_s=3.038 avg_ms=4.4 pre_draft n=692 sum_s=7.900 avg_ms=11.4 target n=698 sum_s=87.757 avg_ms=125.7
+(Worker_TP1 pid=466) INFO 09-25 00:23:27 [sm120_page.py:893] step census draft n=704 sum_s=20.646 avg_ms=29.3 engram n=702 sum_s=3.052 avg_ms=4.3 pre_draft n=700 sum_s=7.922 avg_ms=11.3 target n=706 sum_s=88.171 avg_ms=124.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.506ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:27 [sm120_page.py:893] step census draft n=712 sum_s=20.687 avg_ms=29.1 engram n=710 sum_s=3.073 avg_ms=4.3 pre_draft n=708 sum_s=7.946 avg_ms=11.2 target n=714 sum_s=88.588 avg_ms=124.1
+(Worker_TP1 pid=466) INFO 09-25 00:23:28 [sm120_page.py:893] step census draft n=720 sum_s=20.729 avg_ms=28.8 engram n=718 sum_s=3.093 avg_ms=4.3 pre_draft n=716 sum_s=7.969 avg_ms=11.1 target n=722 sum_s=89.006 avg_ms=123.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.492ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:28 [sm120_page.py:893] step census draft n=728 sum_s=20.769 avg_ms=28.5 engram n=726 sum_s=3.106 avg_ms=4.3 pre_draft n=724 sum_s=7.992 avg_ms=11.0 target n=730 sum_s=89.413 avg_ms=122.5
+(Worker_TP1 pid=466) INFO 09-25 00:23:29 [sm120_page.py:893] step census draft n=736 sum_s=20.812 avg_ms=28.3 engram n=734 sum_s=3.119 avg_ms=4.2 pre_draft n=732 sum_s=8.015 avg_ms=10.9 target n=738 sum_s=89.829 avg_ms=121.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.567ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:29 [sm120_page.py:893] step census draft n=744 sum_s=20.853 avg_ms=28.0 engram n=742 sum_s=3.132 avg_ms=4.2 pre_draft n=740 sum_s=8.038 avg_ms=10.9 target n=746 sum_s=90.245 avg_ms=121.0
+(Worker_TP1 pid=466) INFO 09-25 00:23:30 [sm120_page.py:893] step census draft n=752 sum_s=20.894 avg_ms=27.8 engram n=750 sum_s=3.146 avg_ms=4.2 pre_draft n=748 sum_s=8.062 avg_ms=10.8 target n=754 sum_s=90.663 avg_ms=120.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.569ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:30 [sm120_page.py:893] step census draft n=760 sum_s=20.935 avg_ms=27.5 engram n=758 sum_s=3.161 avg_ms=4.2 pre_draft n=756 sum_s=8.088 avg_ms=10.7 target n=762 sum_s=91.074 avg_ms=119.5
+(Worker_TP1 pid=466) INFO 09-25 00:23:31 [sm120_page.py:893] step census draft n=768 sum_s=20.975 avg_ms=27.3 engram n=766 sum_s=3.175 avg_ms=4.1 pre_draft n=764 sum_s=8.120 avg_ms=10.6 target n=770 sum_s=91.493 avg_ms=118.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.636ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:32 [sm120_page.py:893] step census draft n=776 sum_s=21.017 avg_ms=27.1 engram n=774 sum_s=3.208 avg_ms=4.1 pre_draft n=772 sum_s=8.149 avg_ms=10.6 target n=778 sum_s=92.125 avg_ms=118.4
+(Worker_TP1 pid=466) INFO 09-25 00:23:32 [sm120_page.py:893] step census draft n=784 sum_s=21.058 avg_ms=26.9 engram n=782 sum_s=3.235 avg_ms=4.1 pre_draft n=780 sum_s=8.174 avg_ms=10.5 target n=786 sum_s=92.537 avg_ms=117.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.676ms fadv/call=91.3 pf_hit=90%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:33 [sm120_page.py:893] step census draft n=792 sum_s=21.101 avg_ms=26.6 engram n=790 sum_s=3.256 avg_ms=4.1 pre_draft n=788 sum_s=8.199 avg_ms=10.4 target n=794 sum_s=92.945 avg_ms=117.1
+(Worker_TP1 pid=466) INFO 09-25 00:23:33 [sm120_page.py:893] step census draft n=800 sum_s=21.143 avg_ms=26.4 engram n=798 sum_s=3.275 avg_ms=4.1 pre_draft n=796 sum_s=8.222 avg_ms=10.3 target n=802 sum_s=93.355 avg_ms=116.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.615ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:34 [sm120_page.py:893] step census draft n=808 sum_s=21.185 avg_ms=26.2 engram n=806 sum_s=3.294 avg_ms=4.1 pre_draft n=804 sum_s=8.246 avg_ms=10.3 target n=810 sum_s=93.766 avg_ms=115.8
+(Worker_TP1 pid=466) INFO 09-25 00:23:34 [sm120_page.py:893] step census draft n=816 sum_s=21.226 avg_ms=26.0 engram n=814 sum_s=3.311 avg_ms=4.1 pre_draft n=812 sum_s=8.269 avg_ms=10.2 target n=818 sum_s=94.175 avg_ms=115.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.651ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:35 [sm120_page.py:893] step census draft n=824 sum_s=21.269 avg_ms=25.8 engram n=822 sum_s=3.332 avg_ms=4.1 pre_draft n=820 sum_s=8.293 avg_ms=10.1 target n=826 sum_s=94.593 avg_ms=114.5
+(Worker_TP1 pid=466) INFO 09-25 00:23:35 [sm120_page.py:893] step census draft n=832 sum_s=21.311 avg_ms=25.6 engram n=830 sum_s=3.354 avg_ms=4.0 pre_draft n=828 sum_s=8.315 avg_ms=10.0 target n=834 sum_s=95.003 avg_ms=113.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.602ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:36 [sm120_page.py:893] step census draft n=840 sum_s=21.352 avg_ms=25.4 engram n=838 sum_s=3.379 avg_ms=4.0 pre_draft n=836 sum_s=8.338 avg_ms=10.0 target n=842 sum_s=95.415 avg_ms=113.3
+(Worker_TP1 pid=466) INFO 09-25 00:23:36 [sm120_page.py:893] step census draft n=848 sum_s=21.394 avg_ms=25.2 engram n=846 sum_s=3.403 avg_ms=4.0 pre_draft n=844 sum_s=8.360 avg_ms=9.9 target n=850 sum_s=95.824 avg_ms=112.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.956ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:37 [sm120_page.py:893] step census draft n=856 sum_s=21.438 avg_ms=25.0 engram n=854 sum_s=3.424 avg_ms=4.0 pre_draft n=852 sum_s=8.383 avg_ms=9.8 target n=858 sum_s=96.236 avg_ms=112.2
+(Worker_TP1 pid=466) INFO 09-25 00:23:37 [sm120_page.py:893] step census draft n=864 sum_s=21.479 avg_ms=24.9 engram n=862 sum_s=3.440 avg_ms=4.0 pre_draft n=860 sum_s=8.406 avg_ms=9.8 target n=866 sum_s=96.645 avg_ms=111.6
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.670ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:38 [sm120_page.py:893] step census draft n=872 sum_s=21.521 avg_ms=24.7 engram n=870 sum_s=3.457 avg_ms=4.0 pre_draft n=868 sum_s=8.428 avg_ms=9.7 target n=874 sum_s=97.055 avg_ms=111.0
+(Worker_TP1 pid=466) INFO 09-25 00:23:38 [sm120_page.py:893] step census draft n=880 sum_s=21.562 avg_ms=24.5 engram n=878 sum_s=3.474 avg_ms=4.0 pre_draft n=876 sum_s=8.450 avg_ms=9.6 target n=882 sum_s=97.458 avg_ms=110.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.570ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:39 [sm120_page.py:893] step census draft n=888 sum_s=21.604 avg_ms=24.3 engram n=886 sum_s=3.495 avg_ms=3.9 pre_draft n=884 sum_s=8.472 avg_ms=9.6 target n=890 sum_s=97.873 avg_ms=110.0
+(Worker_TP1 pid=466) INFO 09-25 00:23:39 [sm120_page.py:893] step census draft n=896 sum_s=21.644 avg_ms=24.2 engram n=894 sum_s=3.514 avg_ms=3.9 pre_draft n=892 sum_s=8.494 avg_ms=9.5 target n=898 sum_s=98.278 avg_ms=109.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.609ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:40 [sm120_page.py:893] step census draft n=904 sum_s=21.687 avg_ms=24.0 engram n=902 sum_s=3.531 avg_ms=3.9 pre_draft n=900 sum_s=8.516 avg_ms=9.5 target n=906 sum_s=98.690 avg_ms=108.9
+(Worker_TP1 pid=466) INFO 09-25 00:23:40 [sm120_page.py:893] step census draft n=912 sum_s=21.727 avg_ms=23.8 engram n=910 sum_s=3.555 avg_ms=3.9 pre_draft n=908 sum_s=8.538 avg_ms=9.4 target n=914 sum_s=99.101 avg_ms=108.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.884ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:41 [sm120_page.py:893] step census draft n=920 sum_s=21.773 avg_ms=23.7 engram n=918 sum_s=3.577 avg_ms=3.9 pre_draft n=916 sum_s=8.562 avg_ms=9.3 target n=922 sum_s=99.518 avg_ms=107.9
+(Worker_TP1 pid=466) INFO 09-25 00:23:42 [sm120_page.py:893] step census draft n=928 sum_s=21.815 avg_ms=23.5 engram n=926 sum_s=3.595 avg_ms=3.9 pre_draft n=924 sum_s=8.589 avg_ms=9.3 target n=930 sum_s=99.932 avg_ms=107.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.621ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:42 [sm120_page.py:893] step census draft n=936 sum_s=21.855 avg_ms=23.3 engram n=934 sum_s=3.611 avg_ms=3.9 pre_draft n=932 sum_s=8.621 avg_ms=9.2 target n=938 sum_s=100.347 avg_ms=107.0
+(Worker_TP1 pid=466) INFO 09-25 00:23:43 [sm120_page.py:893] step census draft n=944 sum_s=21.895 avg_ms=23.2 engram n=942 sum_s=3.625 avg_ms=3.8 pre_draft n=940 sum_s=8.646 avg_ms=9.2 target n=946 sum_s=100.756 avg_ms=106.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.689ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:43 [sm120_page.py:893] step census draft n=952 sum_s=21.938 avg_ms=23.0 engram n=950 sum_s=3.641 avg_ms=3.8 pre_draft n=948 sum_s=8.669 avg_ms=9.1 target n=954 sum_s=101.166 avg_ms=106.0
+(Worker_TP1 pid=466) INFO 09-25 00:23:44 [sm120_page.py:893] step census draft n=960 sum_s=21.978 avg_ms=22.9 engram n=958 sum_s=3.657 avg_ms=3.8 pre_draft n=956 sum_s=8.691 avg_ms=9.1 target n=962 sum_s=101.572 avg_ms=105.6
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.610ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:44 [sm120_page.py:893] step census draft n=968 sum_s=22.018 avg_ms=22.7 engram n=966 sum_s=3.673 avg_ms=3.8 pre_draft n=964 sum_s=8.713 avg_ms=9.0 target n=970 sum_s=101.981 avg_ms=105.1
+(Worker_TP1 pid=466) INFO 09-25 00:23:45 [sm120_page.py:893] step census draft n=976 sum_s=22.060 avg_ms=22.6 engram n=974 sum_s=3.693 avg_ms=3.8 pre_draft n=972 sum_s=8.737 avg_ms=9.0 target n=978 sum_s=102.391 avg_ms=104.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.654ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:45 [sm120_page.py:893] step census draft n=984 sum_s=22.101 avg_ms=22.5 engram n=982 sum_s=3.711 avg_ms=3.8 pre_draft n=980 sum_s=8.759 avg_ms=8.9 target n=986 sum_s=102.804 avg_ms=104.3
+(Worker_TP1 pid=466) INFO 09-25 00:23:46 [sm120_page.py:893] step census draft n=992 sum_s=22.142 avg_ms=22.3 engram n=990 sum_s=3.729 avg_ms=3.8 pre_draft n=988 sum_s=8.781 avg_ms=8.9 target n=994 sum_s=103.205 avg_ms=103.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.579ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:46 [sm120_page.py:893] step census draft n=1000 sum_s=22.185 avg_ms=22.2 engram n=998 sum_s=3.748 avg_ms=3.8 pre_draft n=996 sum_s=8.804 avg_ms=8.8 target n=1002 sum_s=103.631 avg_ms=103.4
+(Worker_TP1 pid=466) INFO 09-25 00:23:47 [sm120_page.py:893] step census draft n=1008 sum_s=22.227 avg_ms=22.1 engram n=1006 sum_s=3.766 avg_ms=3.7 pre_draft n=1004 sum_s=8.826 avg_ms=8.8 target n=1010 sum_s=104.043 avg_ms=103.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.485ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:23:47 [sm120_page.py:893] step census draft n=1016 sum_s=22.270 avg_ms=21.9 engram n=1014 sum_s=3.784 avg_ms=3.7 pre_draft n=1012 sum_s=8.849 avg_ms=8.7 target n=1018 sum_s=104.455 avg_ms=102.6
+(Worker_TP1 pid=466) INFO 09-25 00:23:48 [sm120_page.py:893] step census draft n=1024 sum_s=22.311 avg_ms=21.8 engram n=1022 sum_s=3.801 avg_ms=3.7 pre_draft n=1020 sum_s=8.873 avg_ms=8.7 target n=1026 sum_s=104.852 avg_ms=102.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.282ms fadv/call=91.3 pf_hit=97%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:08 [sm120_page.py:893] step census draft n=1032 sum_s=22.353 avg_ms=21.7 engram n=1030 sum_s=3.830 avg_ms=3.7 pre_draft n=1028 sum_s=8.900 avg_ms=8.7 target n=1034 sum_s=105.487 avg_ms=102.0
+(Worker_TP1 pid=466) INFO 09-25 00:24:09 [sm120_page.py:893] step census draft n=1040 sum_s=22.392 avg_ms=21.5 engram n=1038 sum_s=3.852 avg_ms=3.7 pre_draft n=1036 sum_s=8.923 avg_ms=8.6 target n=1042 sum_s=105.895 avg_ms=101.6
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.064ms fadv/call=0.0 pf_hit=96%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:10 [sm120_page.py:893] step census draft n=1048 sum_s=22.434 avg_ms=21.4 engram n=1046 sum_s=3.872 avg_ms=3.7 pre_draft n=1044 sum_s=8.946 avg_ms=8.6 target n=1050 sum_s=106.300 avg_ms=101.2
+(Worker_TP1 pid=466) INFO 09-25 00:24:10 [sm120_page.py:893] step census draft n=1056 sum_s=22.475 avg_ms=21.3 engram n=1054 sum_s=3.885 avg_ms=3.7 pre_draft n=1052 sum_s=8.968 avg_ms=8.5 target n=1058 sum_s=106.712 avg_ms=100.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.065ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:11 [sm120_page.py:893] step census draft n=1064 sum_s=22.514 avg_ms=21.2 engram n=1062 sum_s=3.899 avg_ms=3.7 pre_draft n=1060 sum_s=8.991 avg_ms=8.5 target n=1066 sum_s=107.126 avg_ms=100.5
+(Worker_TP1 pid=466) INFO 09-25 00:24:11 [sm120_page.py:893] step census draft n=1072 sum_s=22.555 avg_ms=21.0 engram n=1070 sum_s=3.911 avg_ms=3.7 pre_draft n=1068 sum_s=9.013 avg_ms=8.4 target n=1074 sum_s=107.532 avg_ms=100.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.606ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:12 [sm120_page.py:893] step census draft n=1080 sum_s=22.596 avg_ms=20.9 engram n=1078 sum_s=3.924 avg_ms=3.6 pre_draft n=1076 sum_s=9.036 avg_ms=8.4 target n=1082 sum_s=107.940 avg_ms=99.8
+(Worker_TP1 pid=466) INFO 09-25 00:24:12 [sm120_page.py:893] step census draft n=1088 sum_s=22.636 avg_ms=20.8 engram n=1086 sum_s=3.936 avg_ms=3.6 pre_draft n=1084 sum_s=9.059 avg_ms=8.4 target n=1090 sum_s=108.352 avg_ms=99.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.551ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:13 [sm120_page.py:893] step census draft n=1096 sum_s=22.677 avg_ms=20.7 engram n=1094 sum_s=3.950 avg_ms=3.6 pre_draft n=1092 sum_s=9.082 avg_ms=8.3 target n=1098 sum_s=108.762 avg_ms=99.1
+(Worker_TP1 pid=466) INFO 09-25 00:24:13 [sm120_page.py:893] step census draft n=1104 sum_s=22.718 avg_ms=20.6 engram n=1102 sum_s=3.963 avg_ms=3.6 pre_draft n=1100 sum_s=9.104 avg_ms=8.3 target n=1106 sum_s=109.175 avg_ms=98.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.644ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:14 [sm120_page.py:893] step census draft n=1112 sum_s=22.758 avg_ms=20.5 engram n=1110 sum_s=3.975 avg_ms=3.6 pre_draft n=1108 sum_s=9.126 avg_ms=8.2 target n=1114 sum_s=109.573 avg_ms=98.4
+(Worker_TP1 pid=466) INFO 09-25 00:24:14 [sm120_page.py:893] step census draft n=1120 sum_s=22.801 avg_ms=20.4 engram n=1118 sum_s=3.990 avg_ms=3.6 pre_draft n=1116 sum_s=9.151 avg_ms=8.2 target n=1122 sum_s=109.991 avg_ms=98.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.609ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:15 [sm120_page.py:893] step census draft n=1128 sum_s=22.840 avg_ms=20.2 engram n=1126 sum_s=4.004 avg_ms=3.6 pre_draft n=1124 sum_s=9.185 avg_ms=8.2 target n=1130 sum_s=110.407 avg_ms=97.7
+(Worker_TP1 pid=466) INFO 09-25 00:24:15 [sm120_page.py:893] step census draft n=1136 sum_s=22.881 avg_ms=20.1 engram n=1134 sum_s=4.016 avg_ms=3.5 pre_draft n=1132 sum_s=9.211 avg_ms=8.1 target n=1138 sum_s=110.822 avg_ms=97.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.646ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:16 [sm120_page.py:893] step census draft n=1144 sum_s=22.921 avg_ms=20.0 engram n=1142 sum_s=4.030 avg_ms=3.5 pre_draft n=1140 sum_s=9.233 avg_ms=8.1 target n=1146 sum_s=111.227 avg_ms=97.1
+(Worker_TP1 pid=466) INFO 09-25 00:24:16 [sm120_page.py:893] step census draft n=1152 sum_s=22.964 avg_ms=19.9 engram n=1150 sum_s=4.043 avg_ms=3.5 pre_draft n=1148 sum_s=9.255 avg_ms=8.1 target n=1154 sum_s=111.635 avg_ms=96.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.699ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:17 [sm120_page.py:893] step census draft n=1160 sum_s=23.005 avg_ms=19.8 engram n=1158 sum_s=4.057 avg_ms=3.5 pre_draft n=1156 sum_s=9.277 avg_ms=8.0 target n=1162 sum_s=112.042 avg_ms=96.4
+(Worker_TP1 pid=466) INFO 09-25 00:24:17 [sm120_page.py:893] step census draft n=1168 sum_s=23.046 avg_ms=19.7 engram n=1166 sum_s=4.071 avg_ms=3.5 pre_draft n=1164 sum_s=9.299 avg_ms=8.0 target n=1170 sum_s=112.448 avg_ms=96.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.701ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:18 [sm120_page.py:893] step census draft n=1176 sum_s=23.087 avg_ms=19.6 engram n=1174 sum_s=4.084 avg_ms=3.5 pre_draft n=1172 sum_s=9.321 avg_ms=8.0 target n=1178 sum_s=112.851 avg_ms=95.8
+(Worker_TP1 pid=466) INFO 09-25 00:24:18 [sm120_page.py:893] step census draft n=1184 sum_s=23.126 avg_ms=19.5 engram n=1182 sum_s=4.098 avg_ms=3.5 pre_draft n=1180 sum_s=9.342 avg_ms=7.9 target n=1186 sum_s=113.262 avg_ms=95.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.706ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:19 [sm120_page.py:893] step census draft n=1192 sum_s=23.169 avg_ms=19.4 engram n=1190 sum_s=4.116 avg_ms=3.5 pre_draft n=1188 sum_s=9.366 avg_ms=7.9 target n=1194 sum_s=113.670 avg_ms=95.2
+(Worker_TP1 pid=466) INFO 09-25 00:24:19 [sm120_page.py:893] step census draft n=1200 sum_s=23.209 avg_ms=19.3 engram n=1198 sum_s=4.133 avg_ms=3.4 pre_draft n=1196 sum_s=9.389 avg_ms=7.9 target n=1202 sum_s=114.083 avg_ms=94.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.637ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:20 [sm120_page.py:893] step census draft n=1208 sum_s=23.249 avg_ms=19.2 engram n=1206 sum_s=4.150 avg_ms=3.4 pre_draft n=1204 sum_s=9.411 avg_ms=7.8 target n=1210 sum_s=114.494 avg_ms=94.6
+(Worker_TP1 pid=466) INFO 09-25 00:24:20 [sm120_page.py:893] step census draft n=1216 sum_s=23.290 avg_ms=19.2 engram n=1214 sum_s=4.169 avg_ms=3.4 pre_draft n=1212 sum_s=9.434 avg_ms=7.8 target n=1218 sum_s=114.907 avg_ms=94.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.753ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:21 [sm120_page.py:893] step census draft n=1224 sum_s=23.332 avg_ms=19.1 engram n=1222 sum_s=4.191 avg_ms=3.4 pre_draft n=1220 sum_s=9.457 avg_ms=7.8 target n=1226 sum_s=115.317 avg_ms=94.1
+(Worker_TP1 pid=466) INFO 09-25 00:24:21 [sm120_page.py:893] step census draft n=1232 sum_s=23.374 avg_ms=19.0 engram n=1230 sum_s=4.211 avg_ms=3.4 pre_draft n=1228 sum_s=9.479 avg_ms=7.7 target n=1234 sum_s=115.727 avg_ms=93.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.665ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:22 [sm120_page.py:893] step census draft n=1240 sum_s=23.415 avg_ms=18.9 engram n=1238 sum_s=4.230 avg_ms=3.4 pre_draft n=1236 sum_s=9.501 avg_ms=7.7 target n=1242 sum_s=116.137 avg_ms=93.5
+(Worker_TP1 pid=466) INFO 09-25 00:24:22 [sm120_page.py:893] step census draft n=1248 sum_s=23.457 avg_ms=18.8 engram n=1246 sum_s=4.247 avg_ms=3.4 pre_draft n=1244 sum_s=9.524 avg_ms=7.7 target n=1250 sum_s=116.552 avg_ms=93.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.668ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:23 [sm120_page.py:893] step census draft n=1256 sum_s=23.501 avg_ms=18.7 engram n=1254 sum_s=4.264 avg_ms=3.4 pre_draft n=1252 sum_s=9.546 avg_ms=7.6 target n=1258 sum_s=116.963 avg_ms=93.0
+(Worker_TP1 pid=466) INFO 09-25 00:24:24 [sm120_page.py:893] step census draft n=1264 sum_s=23.543 avg_ms=18.6 engram n=1262 sum_s=4.280 avg_ms=3.4 pre_draft n=1260 sum_s=9.569 avg_ms=7.6 target n=1266 sum_s=117.376 avg_ms=92.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.714ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:24 [sm120_page.py:893] step census draft n=1272 sum_s=23.587 avg_ms=18.5 engram n=1270 sum_s=4.302 avg_ms=3.4 pre_draft n=1268 sum_s=9.592 avg_ms=7.6 target n=1274 sum_s=117.791 avg_ms=92.5
+(Worker_TP1 pid=466) INFO 09-25 00:24:25 [sm120_page.py:893] step census draft n=1280 sum_s=23.630 avg_ms=18.5 engram n=1278 sum_s=4.321 avg_ms=3.4 pre_draft n=1276 sum_s=9.615 avg_ms=7.5 target n=1282 sum_s=118.205 avg_ms=92.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.671ms fadv/call=91.3 pf_hit=90%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:25 [sm120_page.py:893] step census draft n=1288 sum_s=23.678 avg_ms=18.4 engram n=1286 sum_s=4.366 avg_ms=3.4 pre_draft n=1284 sum_s=9.640 avg_ms=7.5 target n=1290 sum_s=118.853 avg_ms=92.1
+(Worker_TP1 pid=466) INFO 09-25 00:24:26 [sm120_page.py:893] step census draft n=1296 sum_s=23.716 avg_ms=18.3 engram n=1294 sum_s=4.382 avg_ms=3.4 pre_draft n=1292 sum_s=9.669 avg_ms=7.5 target n=1298 sum_s=119.274 avg_ms=91.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.054ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:26 [sm120_page.py:893] step census draft n=1304 sum_s=23.758 avg_ms=18.2 engram n=1302 sum_s=4.397 avg_ms=3.4 pre_draft n=1300 sum_s=9.695 avg_ms=7.5 target n=1306 sum_s=119.687 avg_ms=91.6
+(Worker_TP1 pid=466) INFO 09-25 00:24:27 [sm120_page.py:893] step census draft n=1312 sum_s=23.799 avg_ms=18.1 engram n=1310 sum_s=4.418 avg_ms=3.4 pre_draft n=1308 sum_s=9.720 avg_ms=7.4 target n=1314 sum_s=120.093 avg_ms=91.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.908ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:27 [sm120_page.py:893] step census draft n=1320 sum_s=23.839 avg_ms=18.1 engram n=1318 sum_s=4.434 avg_ms=3.4 pre_draft n=1316 sum_s=9.744 avg_ms=7.4 target n=1322 sum_s=120.503 avg_ms=91.2
+(Worker_TP1 pid=466) INFO 09-25 00:24:28 [sm120_page.py:893] step census draft n=1328 sum_s=23.879 avg_ms=18.0 engram n=1326 sum_s=4.451 avg_ms=3.4 pre_draft n=1324 sum_s=9.768 avg_ms=7.4 target n=1330 sum_s=120.906 avg_ms=90.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.726ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:28 [sm120_page.py:893] step census draft n=1336 sum_s=23.920 avg_ms=17.9 engram n=1334 sum_s=4.471 avg_ms=3.4 pre_draft n=1332 sum_s=9.792 avg_ms=7.4 target n=1338 sum_s=121.321 avg_ms=90.7
+(Worker_TP1 pid=466) INFO 09-25 00:24:29 [sm120_page.py:893] step census draft n=1344 sum_s=23.960 avg_ms=17.8 engram n=1342 sum_s=4.490 avg_ms=3.3 pre_draft n=1340 sum_s=9.816 avg_ms=7.3 target n=1346 sum_s=121.739 avg_ms=90.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.724ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:30 [sm120_page.py:893] step census draft n=1352 sum_s=24.000 avg_ms=17.8 engram n=1350 sum_s=4.510 avg_ms=3.3 pre_draft n=1348 sum_s=9.838 avg_ms=7.3 target n=1354 sum_s=122.152 avg_ms=90.2
+(Worker_TP1 pid=466) INFO 09-25 00:24:30 [sm120_page.py:893] step census draft n=1360 sum_s=24.041 avg_ms=17.7 engram n=1358 sum_s=4.544 avg_ms=3.3 pre_draft n=1356 sum_s=9.862 avg_ms=7.3 target n=1362 sum_s=122.567 avg_ms=90.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.534ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:31 [sm120_page.py:893] step census draft n=1368 sum_s=24.083 avg_ms=17.6 engram n=1366 sum_s=4.566 avg_ms=3.3 pre_draft n=1364 sum_s=9.887 avg_ms=7.2 target n=1370 sum_s=122.988 avg_ms=89.8
+(Worker_TP1 pid=466) INFO 09-25 00:24:31 [sm120_page.py:893] step census draft n=1376 sum_s=24.123 avg_ms=17.5 engram n=1374 sum_s=4.585 avg_ms=3.3 pre_draft n=1372 sum_s=9.909 avg_ms=7.2 target n=1378 sum_s=123.393 avg_ms=89.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.818ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:32 [sm120_page.py:893] step census draft n=1384 sum_s=24.164 avg_ms=17.5 engram n=1382 sum_s=4.607 avg_ms=3.3 pre_draft n=1380 sum_s=9.931 avg_ms=7.2 target n=1386 sum_s=123.796 avg_ms=89.3
+(Worker_TP1 pid=466) INFO 09-25 00:24:32 [sm120_page.py:893] step census draft n=1392 sum_s=24.206 avg_ms=17.4 engram n=1390 sum_s=4.630 avg_ms=3.3 pre_draft n=1388 sum_s=9.955 avg_ms=7.2 target n=1394 sum_s=124.206 avg_ms=89.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.788ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:33 [sm120_page.py:893] step census draft n=1400 sum_s=24.248 avg_ms=17.3 engram n=1398 sum_s=4.651 avg_ms=3.3 pre_draft n=1396 sum_s=9.978 avg_ms=7.1 target n=1402 sum_s=124.621 avg_ms=88.9
+(Worker_TP1 pid=466) INFO 09-25 00:24:33 [sm120_page.py:893] step census draft n=1408 sum_s=24.289 avg_ms=17.3 engram n=1406 sum_s=4.672 avg_ms=3.3 pre_draft n=1404 sum_s=10.001 avg_ms=7.1 target n=1410 sum_s=125.032 avg_ms=88.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.614ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:34 [sm120_page.py:893] step census draft n=1416 sum_s=24.331 avg_ms=17.2 engram n=1414 sum_s=4.689 avg_ms=3.3 pre_draft n=1412 sum_s=10.024 avg_ms=7.1 target n=1418 sum_s=125.441 avg_ms=88.5
+(Worker_TP1 pid=466) INFO 09-25 00:24:34 [sm120_page.py:893] step census draft n=1424 sum_s=24.372 avg_ms=17.1 engram n=1422 sum_s=4.714 avg_ms=3.3 pre_draft n=1420 sum_s=10.047 avg_ms=7.1 target n=1426 sum_s=125.854 avg_ms=88.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.797ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:35 [sm120_page.py:893] step census draft n=1432 sum_s=24.412 avg_ms=17.0 engram n=1430 sum_s=4.732 avg_ms=3.3 pre_draft n=1428 sum_s=10.070 avg_ms=7.1 target n=1434 sum_s=126.267 avg_ms=88.1
+(Worker_TP1 pid=466) INFO 09-25 00:24:35 [sm120_page.py:893] step census draft n=1440 sum_s=24.453 avg_ms=17.0 engram n=1438 sum_s=4.755 avg_ms=3.3 pre_draft n=1436 sum_s=10.097 avg_ms=7.0 target n=1442 sum_s=126.677 avg_ms=87.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.839ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:36 [sm120_page.py:893] step census draft n=1448 sum_s=24.493 avg_ms=16.9 engram n=1446 sum_s=4.776 avg_ms=3.3 pre_draft n=1444 sum_s=10.122 avg_ms=7.0 target n=1450 sum_s=127.090 avg_ms=87.6
+(Worker_TP1 pid=466) INFO 09-25 00:24:36 [sm120_page.py:893] step census draft n=1456 sum_s=24.531 avg_ms=16.8 engram n=1454 sum_s=4.796 avg_ms=3.3 pre_draft n=1452 sum_s=10.147 avg_ms=7.0 target n=1458 sum_s=127.505 avg_ms=87.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.769ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:37 [sm120_page.py:893] step census draft n=1464 sum_s=24.573 avg_ms=16.8 engram n=1462 sum_s=4.817 avg_ms=3.3 pre_draft n=1460 sum_s=10.174 avg_ms=7.0 target n=1466 sum_s=127.925 avg_ms=87.3
+(Worker_TP1 pid=466) INFO 09-25 00:24:37 [sm120_page.py:893] step census draft n=1472 sum_s=24.613 avg_ms=16.7 engram n=1470 sum_s=4.836 avg_ms=3.3 pre_draft n=1468 sum_s=10.199 avg_ms=6.9 target n=1474 sum_s=128.338 avg_ms=87.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.876ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:38 [sm120_page.py:893] step census draft n=1480 sum_s=24.655 avg_ms=16.7 engram n=1478 sum_s=4.855 avg_ms=3.3 pre_draft n=1476 sum_s=10.222 avg_ms=6.9 target n=1482 sum_s=128.753 avg_ms=86.9
+(Worker_TP1 pid=466) INFO 09-25 00:24:38 [sm120_page.py:893] step census draft n=1488 sum_s=24.695 avg_ms=16.6 engram n=1486 sum_s=4.873 avg_ms=3.3 pre_draft n=1484 sum_s=10.246 avg_ms=6.9 target n=1490 sum_s=129.168 avg_ms=86.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.793ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:39 [sm120_page.py:893] step census draft n=1496 sum_s=24.737 avg_ms=16.5 engram n=1494 sum_s=4.889 avg_ms=3.3 pre_draft n=1492 sum_s=10.271 avg_ms=6.9 target n=1498 sum_s=129.588 avg_ms=86.5
+(Worker_TP1 pid=466) INFO 09-25 00:24:40 [sm120_page.py:893] step census draft n=1504 sum_s=24.778 avg_ms=16.5 engram n=1502 sum_s=4.904 avg_ms=3.3 pre_draft n=1500 sum_s=10.295 avg_ms=6.9 target n=1506 sum_s=130.003 avg_ms=86.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.728ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:40 [sm120_page.py:893] step census draft n=1512 sum_s=24.817 avg_ms=16.4 engram n=1510 sum_s=4.920 avg_ms=3.3 pre_draft n=1508 sum_s=10.319 avg_ms=6.8 target n=1514 sum_s=130.413 avg_ms=86.1
+(Worker_TP1 pid=466) INFO 09-25 00:24:41 [sm120_page.py:893] step census draft n=1520 sum_s=24.856 avg_ms=16.4 engram n=1518 sum_s=4.935 avg_ms=3.3 pre_draft n=1516 sum_s=10.342 avg_ms=6.8 target n=1522 sum_s=130.824 avg_ms=86.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.691ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:42 [sm120_page.py:893] step census draft n=1528 sum_s=24.897 avg_ms=16.3 engram n=1526 sum_s=5.177 avg_ms=3.4 pre_draft n=1524 sum_s=10.369 avg_ms=6.8 target n=1530 sum_s=131.434 avg_ms=85.9
+(Worker_TP1 pid=466) INFO 09-25 00:24:42 [sm120_page.py:893] step census draft n=1536 sum_s=24.937 avg_ms=16.2 engram n=1534 sum_s=5.194 avg_ms=3.4 pre_draft n=1532 sum_s=10.394 avg_ms=6.8 target n=1538 sum_s=131.840 avg_ms=85.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=73 runs/call=147.0 preads/call=147.0 read=13.400ms fadv/call=0.0 pf_hit=90%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:43 [sm120_page.py:893] step census draft n=1544 sum_s=24.977 avg_ms=16.2 engram n=1542 sum_s=5.210 avg_ms=3.4 pre_draft n=1540 sum_s=10.418 avg_ms=6.8 target n=1546 sum_s=132.247 avg_ms=85.5
+(Worker_TP1 pid=466) INFO 09-25 00:24:43 [sm120_page.py:893] step census draft n=1552 sum_s=25.019 avg_ms=16.1 engram n=1550 sum_s=5.226 avg_ms=3.4 pre_draft n=1548 sum_s=10.442 avg_ms=6.7 target n=1554 sum_s=132.659 avg_ms=85.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.751ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:44 [sm120_page.py:893] step census draft n=1560 sum_s=25.060 avg_ms=16.1 engram n=1558 sum_s=5.241 avg_ms=3.4 pre_draft n=1556 sum_s=10.465 avg_ms=6.7 target n=1562 sum_s=133.069 avg_ms=85.2
+(Worker_TP1 pid=466) INFO 09-25 00:24:44 [sm120_page.py:893] step census draft n=1568 sum_s=25.100 avg_ms=16.0 engram n=1566 sum_s=5.257 avg_ms=3.4 pre_draft n=1564 sum_s=10.490 avg_ms=6.7 target n=1570 sum_s=133.477 avg_ms=85.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.685ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:45 [sm120_page.py:893] step census draft n=1576 sum_s=25.143 avg_ms=16.0 engram n=1574 sum_s=5.275 avg_ms=3.4 pre_draft n=1572 sum_s=10.514 avg_ms=6.7 target n=1578 sum_s=133.891 avg_ms=84.8
+(Worker_TP1 pid=466) INFO 09-25 00:24:45 [sm120_page.py:893] step census draft n=1584 sum_s=25.185 avg_ms=15.9 engram n=1582 sum_s=5.293 avg_ms=3.3 pre_draft n=1580 sum_s=10.537 avg_ms=6.7 target n=1586 sum_s=134.308 avg_ms=84.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.642ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:46 [sm120_page.py:893] step census draft n=1592 sum_s=25.226 avg_ms=15.8 engram n=1590 sum_s=5.309 avg_ms=3.3 pre_draft n=1588 sum_s=10.562 avg_ms=6.7 target n=1594 sum_s=134.718 avg_ms=84.5
+(Worker_TP1 pid=466) INFO 09-25 00:24:46 [sm120_page.py:893] step census draft n=1600 sum_s=25.267 avg_ms=15.8 engram n=1598 sum_s=5.328 avg_ms=3.3 pre_draft n=1596 sum_s=10.585 avg_ms=6.6 target n=1602 sum_s=135.128 avg_ms=84.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.735ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:47 [sm120_page.py:893] step census draft n=1608 sum_s=25.307 avg_ms=15.7 engram n=1606 sum_s=5.345 avg_ms=3.3 pre_draft n=1604 sum_s=10.609 avg_ms=6.6 target n=1610 sum_s=135.539 avg_ms=84.2
+(Worker_TP1 pid=466) INFO 09-25 00:24:47 [sm120_page.py:893] step census draft n=1616 sum_s=25.350 avg_ms=15.7 engram n=1614 sum_s=5.371 avg_ms=3.3 pre_draft n=1612 sum_s=10.634 avg_ms=6.6 target n=1618 sum_s=135.963 avg_ms=84.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.129ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:48 [sm120_page.py:893] step census draft n=1624 sum_s=25.389 avg_ms=15.6 engram n=1622 sum_s=5.388 avg_ms=3.3 pre_draft n=1620 sum_s=10.663 avg_ms=6.6 target n=1626 sum_s=136.377 avg_ms=83.9
+(Worker_TP1 pid=466) INFO 09-25 00:24:48 [sm120_page.py:893] step census draft n=1632 sum_s=25.429 avg_ms=15.6 engram n=1630 sum_s=5.406 avg_ms=3.3 pre_draft n=1628 sum_s=10.698 avg_ms=6.6 target n=1634 sum_s=136.790 avg_ms=83.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.846ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:49 [sm120_page.py:893] step census draft n=1640 sum_s=25.469 avg_ms=15.5 engram n=1638 sum_s=5.422 avg_ms=3.3 pre_draft n=1636 sum_s=10.728 avg_ms=6.6 target n=1642 sum_s=137.206 avg_ms=83.6
+(Worker_TP1 pid=466) INFO 09-25 00:24:49 [sm120_page.py:893] step census draft n=1648 sum_s=25.510 avg_ms=15.5 engram n=1646 sum_s=5.436 avg_ms=3.3 pre_draft n=1644 sum_s=10.758 avg_ms=6.5 target n=1650 sum_s=137.626 avg_ms=83.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.680ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:50 [sm120_page.py:893] step census draft n=1656 sum_s=25.551 avg_ms=15.4 engram n=1654 sum_s=5.453 avg_ms=3.3 pre_draft n=1652 sum_s=10.788 avg_ms=6.5 target n=1658 sum_s=138.044 avg_ms=83.3
+(Worker_TP1 pid=466) INFO 09-25 00:24:50 [sm120_page.py:893] step census draft n=1664 sum_s=25.593 avg_ms=15.4 engram n=1662 sum_s=5.469 avg_ms=3.3 pre_draft n=1660 sum_s=10.816 avg_ms=6.5 target n=1666 sum_s=138.463 avg_ms=83.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.635ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:51 [sm120_page.py:893] step census draft n=1672 sum_s=25.635 avg_ms=15.3 engram n=1670 sum_s=5.485 avg_ms=3.3 pre_draft n=1668 sum_s=10.843 avg_ms=6.5 target n=1674 sum_s=138.886 avg_ms=83.0
+(Worker_TP1 pid=466) INFO 09-25 00:24:52 [sm120_page.py:893] step census draft n=1680 sum_s=25.676 avg_ms=15.3 engram n=1678 sum_s=5.504 avg_ms=3.3 pre_draft n=1676 sum_s=10.874 avg_ms=6.5 target n=1682 sum_s=139.304 avg_ms=82.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.650ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:52 [sm120_page.py:893] step census draft n=1688 sum_s=25.718 avg_ms=15.2 engram n=1686 sum_s=5.527 avg_ms=3.3 pre_draft n=1684 sum_s=10.904 avg_ms=6.5 target n=1690 sum_s=139.722 avg_ms=82.7
+(Worker_TP1 pid=466) INFO 09-25 00:24:53 [sm120_page.py:893] step census draft n=1696 sum_s=25.759 avg_ms=15.2 engram n=1694 sum_s=5.555 avg_ms=3.3 pre_draft n=1692 sum_s=10.929 avg_ms=6.5 target n=1698 sum_s=140.285 avg_ms=82.6
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=73 runs/call=147.0 preads/call=147.0 read=1.770ms fadv/call=0.0 pf_hit=90%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:53 [sm120_page.py:893] step census draft n=1704 sum_s=25.801 avg_ms=15.1 engram n=1702 sum_s=5.582 avg_ms=3.3 pre_draft n=1700 sum_s=10.952 avg_ms=6.4 target n=1706 sum_s=140.703 avg_ms=82.5
+(Worker_TP1 pid=466) INFO 09-25 00:24:54 [sm120_page.py:893] step census draft n=1712 sum_s=25.844 avg_ms=15.1 engram n=1710 sum_s=5.604 avg_ms=3.3 pre_draft n=1708 sum_s=10.975 avg_ms=6.4 target n=1714 sum_s=141.119 avg_ms=82.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.938ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:54 [sm120_page.py:893] step census draft n=1720 sum_s=25.886 avg_ms=15.1 engram n=1718 sum_s=5.626 avg_ms=3.3 pre_draft n=1716 sum_s=10.998 avg_ms=6.4 target n=1722 sum_s=141.533 avg_ms=82.2
+(Worker_TP1 pid=466) INFO 09-25 00:24:55 [sm120_page.py:893] step census draft n=1728 sum_s=25.930 avg_ms=15.0 engram n=1726 sum_s=5.647 avg_ms=3.3 pre_draft n=1724 sum_s=11.021 avg_ms=6.4 target n=1730 sum_s=141.958 avg_ms=82.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.596ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:55 [sm120_page.py:893] step census draft n=1736 sum_s=25.973 avg_ms=15.0 engram n=1734 sum_s=5.668 avg_ms=3.3 pre_draft n=1732 sum_s=11.046 avg_ms=6.4 target n=1738 sum_s=142.370 avg_ms=81.9
+(Worker_TP1 pid=466) INFO 09-25 00:24:56 [sm120_page.py:893] step census draft n=1744 sum_s=26.014 avg_ms=14.9 engram n=1742 sum_s=5.709 avg_ms=3.3 pre_draft n=1740 sum_s=11.070 avg_ms=6.4 target n=1746 sum_s=142.785 avg_ms=81.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=2.582ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:57 [sm120_page.py:893] step census draft n=1752 sum_s=26.056 avg_ms=14.9 engram n=1750 sum_s=5.724 avg_ms=3.3 pre_draft n=1748 sum_s=11.092 avg_ms=6.3 target n=1754 sum_s=143.198 avg_ms=81.6
+(Worker_TP1 pid=466) INFO 09-25 00:24:57 [sm120_page.py:893] step census draft n=1760 sum_s=26.098 avg_ms=14.8 engram n=1758 sum_s=5.752 avg_ms=3.3 pre_draft n=1756 sum_s=11.117 avg_ms=6.3 target n=1762 sum_s=143.608 avg_ms=81.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.559ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:58 [sm120_page.py:893] step census draft n=1768 sum_s=26.140 avg_ms=14.8 engram n=1766 sum_s=5.771 avg_ms=3.3 pre_draft n=1764 sum_s=11.140 avg_ms=6.3 target n=1770 sum_s=144.024 avg_ms=81.4
+(Worker_TP1 pid=466) INFO 09-25 00:24:58 [sm120_page.py:893] step census draft n=1776 sum_s=26.181 avg_ms=14.7 engram n=1774 sum_s=5.803 avg_ms=3.3 pre_draft n=1772 sum_s=11.163 avg_ms=6.3 target n=1778 sum_s=144.437 avg_ms=81.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.373ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:24:59 [sm120_page.py:893] step census draft n=1784 sum_s=26.225 avg_ms=14.7 engram n=1782 sum_s=5.828 avg_ms=3.3 pre_draft n=1780 sum_s=11.186 avg_ms=6.3 target n=1786 sum_s=144.862 avg_ms=81.1
+(Worker_TP1 pid=466) INFO 09-25 00:24:59 [sm120_page.py:893] step census draft n=1792 sum_s=26.265 avg_ms=14.7 engram n=1790 sum_s=5.853 avg_ms=3.3 pre_draft n=1788 sum_s=11.211 avg_ms=6.3 target n=1794 sum_s=145.281 avg_ms=81.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.017ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:00 [sm120_page.py:893] step census draft n=1800 sum_s=26.307 avg_ms=14.6 engram n=1798 sum_s=5.879 avg_ms=3.3 pre_draft n=1796 sum_s=11.236 avg_ms=6.3 target n=1802 sum_s=145.696 avg_ms=80.9
+(Worker_TP1 pid=466) INFO 09-25 00:25:00 [sm120_page.py:893] step census draft n=1808 sum_s=26.348 avg_ms=14.6 engram n=1806 sum_s=5.907 avg_ms=3.3 pre_draft n=1804 sum_s=11.260 avg_ms=6.2 target n=1810 sum_s=146.113 avg_ms=80.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.807ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:01 [sm120_page.py:893] step census draft n=1816 sum_s=26.389 avg_ms=14.5 engram n=1814 sum_s=5.941 avg_ms=3.3 pre_draft n=1812 sum_s=11.284 avg_ms=6.2 target n=1818 sum_s=146.526 avg_ms=80.6
+(Worker_TP1 pid=466) INFO 09-25 00:25:01 [sm120_page.py:893] step census draft n=1824 sum_s=26.431 avg_ms=14.5 engram n=1822 sum_s=5.968 avg_ms=3.3 pre_draft n=1820 sum_s=11.308 avg_ms=6.2 target n=1826 sum_s=146.934 avg_ms=80.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.486ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:02 [sm120_page.py:893] step census draft n=1832 sum_s=26.475 avg_ms=14.5 engram n=1830 sum_s=5.988 avg_ms=3.3 pre_draft n=1828 sum_s=11.332 avg_ms=6.2 target n=1834 sum_s=147.356 avg_ms=80.3
+(Worker_TP1 pid=466) INFO 09-25 00:25:02 [sm120_page.py:893] step census draft n=1840 sum_s=26.517 avg_ms=14.4 engram n=1838 sum_s=6.010 avg_ms=3.3 pre_draft n=1836 sum_s=11.355 avg_ms=6.2 target n=1842 sum_s=147.767 avg_ms=80.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.782ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:03 [sm120_page.py:893] step census draft n=1848 sum_s=26.559 avg_ms=14.4 engram n=1846 sum_s=6.039 avg_ms=3.3 pre_draft n=1844 sum_s=11.379 avg_ms=6.2 target n=1850 sum_s=148.179 avg_ms=80.1
+(Worker_TP1 pid=466) INFO 09-25 00:25:04 [sm120_page.py:893] step census draft n=1856 sum_s=26.601 avg_ms=14.3 engram n=1854 sum_s=6.342 avg_ms=3.4 pre_draft n=1852 sum_s=11.403 avg_ms=6.2 target n=1858 sum_s=148.740 avg_ms=80.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=72 runs/call=144.0 preads/call=144.0 read=16.069ms fadv/call=0.0 pf_hit=90%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:04 [sm120_page.py:893] step census draft n=1864 sum_s=26.641 avg_ms=14.3 engram n=1862 sum_s=6.362 avg_ms=3.4 pre_draft n=1860 sum_s=11.425 avg_ms=6.1 target n=1866 sum_s=149.152 avg_ms=79.9
+(Worker_TP1 pid=466) INFO 09-25 00:25:05 [sm120_page.py:893] step census draft n=1872 sum_s=26.686 avg_ms=14.3 engram n=1870 sum_s=6.386 avg_ms=3.4 pre_draft n=1868 sum_s=11.448 avg_ms=6.1 target n=1874 sum_s=149.559 avg_ms=79.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.769ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:05 [sm120_page.py:893] step census draft n=1880 sum_s=26.729 avg_ms=14.2 engram n=1878 sum_s=6.405 avg_ms=3.4 pre_draft n=1876 sum_s=11.470 avg_ms=6.1 target n=1882 sum_s=149.970 avg_ms=79.7
+(Worker_TP1 pid=466) INFO 09-25 00:25:06 [sm120_page.py:893] step census draft n=1888 sum_s=26.772 avg_ms=14.2 engram n=1886 sum_s=6.423 avg_ms=3.4 pre_draft n=1884 sum_s=11.493 avg_ms=6.1 target n=1890 sum_s=150.380 avg_ms=79.6
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.814ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:06 [sm120_page.py:893] step census draft n=1896 sum_s=26.814 avg_ms=14.1 engram n=1894 sum_s=6.443 avg_ms=3.4 pre_draft n=1892 sum_s=11.515 avg_ms=6.1 target n=1898 sum_s=150.791 avg_ms=79.4
+(Worker_TP1 pid=466) INFO 09-25 00:25:07 [sm120_page.py:893] step census draft n=1904 sum_s=26.854 avg_ms=14.1 engram n=1902 sum_s=6.470 avg_ms=3.4 pre_draft n=1900 sum_s=11.538 avg_ms=6.1 target n=1906 sum_s=151.197 avg_ms=79.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.135ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:08 [sm120_page.py:893] step census draft n=1912 sum_s=26.896 avg_ms=14.1 engram n=1910 sum_s=6.488 avg_ms=3.4 pre_draft n=1908 sum_s=11.561 avg_ms=6.1 target n=1914 sum_s=151.611 avg_ms=79.2
+(Worker_TP1 pid=466) INFO 09-25 00:25:08 [sm120_page.py:893] step census draft n=1920 sum_s=26.938 avg_ms=14.0 engram n=1918 sum_s=6.507 avg_ms=3.4 pre_draft n=1916 sum_s=11.584 avg_ms=6.0 target n=1922 sum_s=152.025 avg_ms=79.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.782ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:09 [sm120_page.py:893] step census draft n=1928 sum_s=26.979 avg_ms=14.0 engram n=1926 sum_s=6.537 avg_ms=3.4 pre_draft n=1924 sum_s=11.606 avg_ms=6.0 target n=1930 sum_s=152.439 avg_ms=79.0
+(Worker_TP1 pid=466) INFO 09-25 00:25:09 [sm120_page.py:893] step census draft n=1936 sum_s=27.019 avg_ms=14.0 engram n=1934 sum_s=6.560 avg_ms=3.4 pre_draft n=1932 sum_s=11.628 avg_ms=6.0 target n=1938 sum_s=152.848 avg_ms=78.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.163ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:10 [sm120_page.py:893] step census draft n=1944 sum_s=27.061 avg_ms=13.9 engram n=1942 sum_s=6.590 avg_ms=3.4 pre_draft n=1940 sum_s=11.651 avg_ms=6.0 target n=1946 sum_s=153.269 avg_ms=78.8
+(Worker_TP1 pid=466) INFO 09-25 00:25:10 [sm120_page.py:893] step census draft n=1952 sum_s=27.102 avg_ms=13.9 engram n=1950 sum_s=6.614 avg_ms=3.4 pre_draft n=1948 sum_s=11.677 avg_ms=6.0 target n=1954 sum_s=153.692 avg_ms=78.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.252ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:11 [sm120_page.py:893] step census draft n=1960 sum_s=27.144 avg_ms=13.8 engram n=1958 sum_s=6.635 avg_ms=3.4 pre_draft n=1956 sum_s=11.703 avg_ms=6.0 target n=1962 sum_s=154.105 avg_ms=78.5
+(Worker_TP1 pid=466) INFO 09-25 00:25:11 [sm120_page.py:893] step census draft n=1968 sum_s=27.185 avg_ms=13.8 engram n=1966 sum_s=6.654 avg_ms=3.4 pre_draft n=1964 sum_s=11.727 avg_ms=6.0 target n=1970 sum_s=154.523 avg_ms=78.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.764ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:12 [sm120_page.py:893] step census draft n=1976 sum_s=27.228 avg_ms=13.8 engram n=1974 sum_s=6.675 avg_ms=3.4 pre_draft n=1972 sum_s=11.752 avg_ms=6.0 target n=1978 sum_s=154.934 avg_ms=78.3
+(Worker_TP1 pid=466) INFO 09-25 00:25:12 [sm120_page.py:893] step census draft n=1984 sum_s=27.272 avg_ms=13.7 engram n=1982 sum_s=6.691 avg_ms=3.4 pre_draft n=1980 sum_s=11.776 avg_ms=5.9 target n=1986 sum_s=155.354 avg_ms=78.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.750ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:13 [sm120_page.py:893] step census draft n=1992 sum_s=27.311 avg_ms=13.7 engram n=1990 sum_s=6.714 avg_ms=3.4 pre_draft n=1988 sum_s=11.801 avg_ms=5.9 target n=1994 sum_s=155.909 avg_ms=78.2
+(Worker_TP1 pid=466) INFO 09-25 00:25:13 [sm120_page.py:893] step census draft n=2000 sum_s=27.350 avg_ms=13.7 engram n=1998 sum_s=6.730 avg_ms=3.4 pre_draft n=1996 sum_s=11.824 avg_ms=5.9 target n=2002 sum_s=156.318 avg_ms=78.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=72 runs/call=144.0 preads/call=144.0 read=1.129ms fadv/call=0.0 pf_hit=90%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:14 [sm120_page.py:893] step census draft n=2008 sum_s=27.391 avg_ms=13.6 engram n=2006 sum_s=6.753 avg_ms=3.4 pre_draft n=2004 sum_s=11.849 avg_ms=5.9 target n=2010 sum_s=156.731 avg_ms=78.0
+(Worker_TP1 pid=466) INFO 09-25 00:25:15 [sm120_page.py:893] step census draft n=2016 sum_s=27.432 avg_ms=13.6 engram n=2014 sum_s=6.770 avg_ms=3.4 pre_draft n=2012 sum_s=11.875 avg_ms=5.9 target n=2018 sum_s=157.140 avg_ms=77.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.174ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:15 [sm120_page.py:893] step census draft n=2024 sum_s=27.473 avg_ms=13.6 engram n=2022 sum_s=6.794 avg_ms=3.4 pre_draft n=2020 sum_s=11.902 avg_ms=5.9 target n=2026 sum_s=157.552 avg_ms=77.8
+(Worker_TP1 pid=466) INFO 09-25 00:25:16 [sm120_page.py:893] step census draft n=2032 sum_s=27.514 avg_ms=13.5 engram n=2030 sum_s=6.810 avg_ms=3.4 pre_draft n=2028 sum_s=11.926 avg_ms=5.9 target n=2034 sum_s=157.962 avg_ms=77.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.237ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:16 [sm120_page.py:893] step census draft n=2040 sum_s=27.555 avg_ms=13.5 engram n=2038 sum_s=6.835 avg_ms=3.4 pre_draft n=2036 sum_s=11.951 avg_ms=5.9 target n=2042 sum_s=158.378 avg_ms=77.6
+(Worker_TP1 pid=466) INFO 09-25 00:25:17 [sm120_page.py:893] step census draft n=2048 sum_s=27.596 avg_ms=13.5 engram n=2046 sum_s=6.857 avg_ms=3.4 pre_draft n=2044 sum_s=11.975 avg_ms=5.9 target n=2050 sum_s=158.796 avg_ms=77.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.714ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:17 [sm120_page.py:893] step census draft n=2056 sum_s=27.637 avg_ms=13.4 engram n=2054 sum_s=6.885 avg_ms=3.4 pre_draft n=2052 sum_s=12.000 avg_ms=5.8 target n=2058 sum_s=159.213 avg_ms=77.4
+(Worker_TP1 pid=466) INFO 09-25 00:25:18 [sm120_page.py:893] step census draft n=2064 sum_s=27.676 avg_ms=13.4 engram n=2062 sum_s=6.916 avg_ms=3.4 pre_draft n=2060 sum_s=12.025 avg_ms=5.8 target n=2066 sum_s=159.628 avg_ms=77.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.579ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:18 [sm120_page.py:893] step census draft n=2072 sum_s=27.717 avg_ms=13.4 engram n=2070 sum_s=6.945 avg_ms=3.4 pre_draft n=2068 sum_s=12.050 avg_ms=5.8 target n=2074 sum_s=160.049 avg_ms=77.2
+(Worker_TP1 pid=466) INFO 09-25 00:25:19 [sm120_page.py:893] step census draft n=2080 sum_s=27.759 avg_ms=13.3 engram n=2078 sum_s=6.969 avg_ms=3.4 pre_draft n=2076 sum_s=12.073 avg_ms=5.8 target n=2082 sum_s=160.467 avg_ms=77.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.207ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:19 [sm120_page.py:893] step census draft n=2088 sum_s=27.801 avg_ms=13.3 engram n=2086 sum_s=6.990 avg_ms=3.4 pre_draft n=2084 sum_s=12.097 avg_ms=5.8 target n=2090 sum_s=160.879 avg_ms=77.0
+(Worker_TP1 pid=466) INFO 09-25 00:25:20 [sm120_page.py:893] step census draft n=2096 sum_s=27.844 avg_ms=13.3 engram n=2094 sum_s=7.016 avg_ms=3.4 pre_draft n=2092 sum_s=12.122 avg_ms=5.8 target n=2098 sum_s=161.291 avg_ms=76.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.235ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:20 [sm120_page.py:893] step census draft n=2104 sum_s=27.885 avg_ms=13.3 engram n=2102 sum_s=7.034 avg_ms=3.3 pre_draft n=2100 sum_s=12.146 avg_ms=5.8 target n=2106 sum_s=161.704 avg_ms=76.8
+(Worker_TP1 pid=466) INFO 09-25 00:25:21 [sm120_page.py:893] step census draft n=2112 sum_s=27.929 avg_ms=13.2 engram n=2110 sum_s=7.056 avg_ms=3.3 pre_draft n=2108 sum_s=12.172 avg_ms=5.8 target n=2114 sum_s=162.120 avg_ms=76.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.783ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:25:22 [sm120_page.py:893] step census draft n=2120 sum_s=27.968 avg_ms=13.2 engram n=2118 sum_s=7.084 avg_ms=3.3 pre_draft n=2116 sum_s=12.206 avg_ms=5.8 target n=2122 sum_s=162.539 avg_ms=76.6
+(Worker_TP1 pid=466) INFO 09-25 00:25:22 [sm120_page.py:893] step census draft n=2128 sum_s=28.009 avg_ms=13.2 engram n=2126 sum_s=7.100 avg_ms=3.3 pre_draft n=2124 sum_s=12.238 avg_ms=5.8 target n=2130 sum_s=162.953 avg_ms=76.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.782ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:10 [sm120_page.py:893] step census draft n=2136 sum_s=28.052 avg_ms=13.1 engram n=2134 sum_s=7.146 avg_ms=3.3 pre_draft n=2132 sum_s=12.270 avg_ms=5.8 target n=2138 sum_s=163.597 avg_ms=76.5
+(Worker_TP1 pid=466) INFO 09-25 00:26:11 [sm120_page.py:893] step census draft n=2144 sum_s=28.094 avg_ms=13.1 engram n=2142 sum_s=7.179 avg_ms=3.4 pre_draft n=2140 sum_s=12.300 avg_ms=5.7 target n=2146 sum_s=164.009 avg_ms=76.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=2.652ms fadv/call=91.3 pf_hit=90%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:11 [sm120_page.py:893] step census draft n=2152 sum_s=28.136 avg_ms=13.1 engram n=2150 sum_s=7.197 avg_ms=3.3 pre_draft n=2148 sum_s=12.330 avg_ms=5.7 target n=2154 sum_s=164.421 avg_ms=76.3
+(Worker_TP1 pid=466) INFO 09-25 00:26:12 [sm120_page.py:893] step census draft n=2160 sum_s=28.178 avg_ms=13.0 engram n=2158 sum_s=7.218 avg_ms=3.3 pre_draft n=2156 sum_s=12.359 avg_ms=5.7 target n=2162 sum_s=164.839 avg_ms=76.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.684ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:13 [sm120_page.py:893] step census draft n=2168 sum_s=28.220 avg_ms=13.0 engram n=2166 sum_s=7.244 avg_ms=3.3 pre_draft n=2164 sum_s=12.387 avg_ms=5.7 target n=2170 sum_s=165.254 avg_ms=76.2
+(Worker_TP1 pid=466) INFO 09-25 00:26:13 [sm120_page.py:893] step census draft n=2176 sum_s=28.262 avg_ms=13.0 engram n=2174 sum_s=7.262 avg_ms=3.3 pre_draft n=2172 sum_s=12.410 avg_ms=5.7 target n=2178 sum_s=165.665 avg_ms=76.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.213ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:14 [sm120_page.py:893] step census draft n=2184 sum_s=28.302 avg_ms=13.0 engram n=2182 sum_s=7.280 avg_ms=3.3 pre_draft n=2180 sum_s=12.433 avg_ms=5.7 target n=2186 sum_s=166.077 avg_ms=76.0
+(Worker_TP1 pid=466) INFO 09-25 00:26:14 [sm120_page.py:893] step census draft n=2192 sum_s=28.345 avg_ms=12.9 engram n=2190 sum_s=7.299 avg_ms=3.3 pre_draft n=2188 sum_s=12.455 avg_ms=5.7 target n=2194 sum_s=166.486 avg_ms=75.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.773ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:15 [sm120_page.py:893] step census draft n=2200 sum_s=28.388 avg_ms=12.9 engram n=2198 sum_s=7.319 avg_ms=3.3 pre_draft n=2196 sum_s=12.479 avg_ms=5.7 target n=2202 sum_s=166.900 avg_ms=75.8
+(Worker_TP1 pid=466) INFO 09-25 00:26:15 [sm120_page.py:893] step census draft n=2208 sum_s=28.429 avg_ms=12.9 engram n=2206 sum_s=7.351 avg_ms=3.3 pre_draft n=2204 sum_s=12.502 avg_ms=5.7 target n=2210 sum_s=167.308 avg_ms=75.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.195ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:16 [sm120_page.py:893] step census draft n=2216 sum_s=28.473 avg_ms=12.8 engram n=2214 sum_s=7.375 avg_ms=3.3 pre_draft n=2212 sum_s=12.526 avg_ms=5.7 target n=2218 sum_s=167.727 avg_ms=75.6
+(Worker_TP1 pid=466) INFO 09-25 00:26:16 [sm120_page.py:893] step census draft n=2224 sum_s=28.516 avg_ms=12.8 engram n=2222 sum_s=7.397 avg_ms=3.3 pre_draft n=2220 sum_s=12.551 avg_ms=5.7 target n=2226 sum_s=168.139 avg_ms=75.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.747ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:17 [sm120_page.py:893] step census draft n=2232 sum_s=28.557 avg_ms=12.8 engram n=2230 sum_s=7.417 avg_ms=3.3 pre_draft n=2228 sum_s=12.577 avg_ms=5.6 target n=2234 sum_s=168.553 avg_ms=75.4
+(Worker_TP1 pid=466) INFO 09-25 00:26:17 [sm120_page.py:893] step census draft n=2240 sum_s=28.599 avg_ms=12.8 engram n=2238 sum_s=7.441 avg_ms=3.3 pre_draft n=2236 sum_s=12.600 avg_ms=5.6 target n=2242 sum_s=168.962 avg_ms=75.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.672ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:18 [sm120_page.py:893] step census draft n=2248 sum_s=28.641 avg_ms=12.7 engram n=2246 sum_s=7.465 avg_ms=3.3 pre_draft n=2244 sum_s=12.624 avg_ms=5.6 target n=2250 sum_s=169.372 avg_ms=75.3
+(Worker_TP1 pid=466) INFO 09-25 00:26:18 [sm120_page.py:893] step census draft n=2256 sum_s=28.684 avg_ms=12.7 engram n=2254 sum_s=7.490 avg_ms=3.3 pre_draft n=2252 sum_s=12.648 avg_ms=5.6 target n=2258 sum_s=169.791 avg_ms=75.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.736ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:19 [sm120_page.py:893] step census draft n=2264 sum_s=28.726 avg_ms=12.7 engram n=2262 sum_s=7.513 avg_ms=3.3 pre_draft n=2260 sum_s=12.673 avg_ms=5.6 target n=2266 sum_s=170.203 avg_ms=75.1
+(Worker_TP1 pid=466) INFO 09-25 00:26:19 [sm120_page.py:893] step census draft n=2272 sum_s=28.766 avg_ms=12.7 engram n=2270 sum_s=7.532 avg_ms=3.3 pre_draft n=2268 sum_s=12.697 avg_ms=5.6 target n=2274 sum_s=170.615 avg_ms=75.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.708ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:20 [sm120_page.py:893] step census draft n=2280 sum_s=28.807 avg_ms=12.6 engram n=2278 sum_s=7.548 avg_ms=3.3 pre_draft n=2276 sum_s=12.720 avg_ms=5.6 target n=2282 sum_s=171.021 avg_ms=74.9
+(Worker_TP1 pid=466) INFO 09-25 00:26:20 [sm120_page.py:893] step census draft n=2288 sum_s=28.849 avg_ms=12.6 engram n=2286 sum_s=7.565 avg_ms=3.3 pre_draft n=2284 sum_s=12.743 avg_ms=5.6 target n=2290 sum_s=171.434 avg_ms=74.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.823ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:21 [sm120_page.py:893] step census draft n=2296 sum_s=28.890 avg_ms=12.6 engram n=2294 sum_s=7.583 avg_ms=3.3 pre_draft n=2292 sum_s=12.765 avg_ms=5.6 target n=2298 sum_s=171.847 avg_ms=74.8
+(Worker_TP1 pid=466) INFO 09-25 00:26:21 [sm120_page.py:893] step census draft n=2304 sum_s=28.931 avg_ms=12.6 engram n=2302 sum_s=7.600 avg_ms=3.3 pre_draft n=2300 sum_s=12.788 avg_ms=5.6 target n=2306 sum_s=172.258 avg_ms=74.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.747ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:22 [sm120_page.py:893] step census draft n=2312 sum_s=28.974 avg_ms=12.5 engram n=2310 sum_s=7.617 avg_ms=3.3 pre_draft n=2308 sum_s=12.811 avg_ms=5.6 target n=2314 sum_s=172.671 avg_ms=74.6
+(Worker_TP1 pid=466) INFO 09-25 00:26:22 [sm120_page.py:893] step census draft n=2320 sum_s=29.016 avg_ms=12.5 engram n=2318 sum_s=7.635 avg_ms=3.3 pre_draft n=2316 sum_s=12.834 avg_ms=5.5 target n=2322 sum_s=173.075 avg_ms=74.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.751ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:23 [sm120_page.py:893] step census draft n=2328 sum_s=29.056 avg_ms=12.5 engram n=2326 sum_s=7.655 avg_ms=3.3 pre_draft n=2324 sum_s=12.857 avg_ms=5.5 target n=2330 sum_s=173.485 avg_ms=74.5
+(Worker_TP1 pid=466) INFO 09-25 00:26:24 [sm120_page.py:893] step census draft n=2336 sum_s=29.097 avg_ms=12.5 engram n=2334 sum_s=7.674 avg_ms=3.3 pre_draft n=2332 sum_s=12.880 avg_ms=5.5 target n=2338 sum_s=173.893 avg_ms=74.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.797ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:24 [sm120_page.py:893] step census draft n=2344 sum_s=29.138 avg_ms=12.4 engram n=2342 sum_s=7.691 avg_ms=3.3 pre_draft n=2340 sum_s=12.903 avg_ms=5.5 target n=2346 sum_s=174.304 avg_ms=74.3
+(Worker_TP1 pid=466) INFO 09-25 00:26:25 [sm120_page.py:893] step census draft n=2352 sum_s=29.181 avg_ms=12.4 engram n=2350 sum_s=7.709 avg_ms=3.3 pre_draft n=2348 sum_s=12.926 avg_ms=5.5 target n=2354 sum_s=174.715 avg_ms=74.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.727ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:25 [sm120_page.py:893] step census draft n=2360 sum_s=29.222 avg_ms=12.4 engram n=2358 sum_s=7.733 avg_ms=3.3 pre_draft n=2356 sum_s=12.951 avg_ms=5.5 target n=2362 sum_s=175.136 avg_ms=74.1
+(Worker_TP1 pid=466) INFO 09-25 00:26:26 [sm120_page.py:893] step census draft n=2368 sum_s=29.263 avg_ms=12.4 engram n=2366 sum_s=7.751 avg_ms=3.3 pre_draft n=2364 sum_s=12.974 avg_ms=5.5 target n=2370 sum_s=175.547 avg_ms=74.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.582ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:26 [sm120_page.py:893] step census draft n=2376 sum_s=29.304 avg_ms=12.3 engram n=2374 sum_s=7.789 avg_ms=3.3 pre_draft n=2372 sum_s=13.000 avg_ms=5.5 target n=2378 sum_s=176.189 avg_ms=74.1
+(Worker_TP1 pid=466) INFO 09-25 00:26:27 [sm120_page.py:893] step census draft n=2384 sum_s=29.346 avg_ms=12.3 engram n=2382 sum_s=7.809 avg_ms=3.3 pre_draft n=2380 sum_s=13.027 avg_ms=5.5 target n=2386 sum_s=176.603 avg_ms=74.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=1.600ms fadv/call=91.3 pf_hit=90%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:27 [sm120_page.py:893] step census draft n=2392 sum_s=29.385 avg_ms=12.3 engram n=2390 sum_s=7.828 avg_ms=3.3 pre_draft n=2388 sum_s=13.056 avg_ms=5.5 target n=2394 sum_s=177.020 avg_ms=73.9
+(Worker_TP1 pid=466) INFO 09-25 00:26:28 [sm120_page.py:893] step census draft n=2400 sum_s=29.428 avg_ms=12.3 engram n=2398 sum_s=7.855 avg_ms=3.3 pre_draft n=2396 sum_s=13.083 avg_ms=5.5 target n=2402 sum_s=177.434 avg_ms=73.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.453ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:29 [sm120_page.py:893] step census draft n=2408 sum_s=29.472 avg_ms=12.2 engram n=2406 sum_s=7.886 avg_ms=3.3 pre_draft n=2404 sum_s=13.107 avg_ms=5.5 target n=2410 sum_s=177.849 avg_ms=73.8
+(Worker_TP1 pid=466) INFO 09-25 00:26:29 [sm120_page.py:893] step census draft n=2416 sum_s=29.514 avg_ms=12.2 engram n=2414 sum_s=7.908 avg_ms=3.3 pre_draft n=2412 sum_s=13.130 avg_ms=5.4 target n=2418 sum_s=178.265 avg_ms=73.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.723ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:30 [sm120_page.py:893] step census draft n=2424 sum_s=29.556 avg_ms=12.2 engram n=2422 sum_s=7.931 avg_ms=3.3 pre_draft n=2420 sum_s=13.153 avg_ms=5.4 target n=2426 sum_s=178.677 avg_ms=73.7
+(Worker_TP1 pid=466) INFO 09-25 00:26:30 [sm120_page.py:893] step census draft n=2432 sum_s=29.599 avg_ms=12.2 engram n=2430 sum_s=7.953 avg_ms=3.3 pre_draft n=2428 sum_s=13.177 avg_ms=5.4 target n=2434 sum_s=179.090 avg_ms=73.6
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.770ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:31 [sm120_page.py:893] step census draft n=2440 sum_s=29.639 avg_ms=12.1 engram n=2438 sum_s=7.972 avg_ms=3.3 pre_draft n=2436 sum_s=13.207 avg_ms=5.4 target n=2442 sum_s=179.505 avg_ms=73.5
+(Worker_TP1 pid=466) INFO 09-25 00:26:31 [sm120_page.py:893] step census draft n=2448 sum_s=29.681 avg_ms=12.1 engram n=2446 sum_s=7.994 avg_ms=3.3 pre_draft n=2444 sum_s=13.230 avg_ms=5.4 target n=2450 sum_s=179.913 avg_ms=73.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.698ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:32 [sm120_page.py:893] step census draft n=2456 sum_s=29.723 avg_ms=12.1 engram n=2454 sum_s=8.016 avg_ms=3.3 pre_draft n=2452 sum_s=13.253 avg_ms=5.4 target n=2458 sum_s=180.322 avg_ms=73.4
+(Worker_TP1 pid=466) INFO 09-25 00:26:32 [sm120_page.py:893] step census draft n=2464 sum_s=29.767 avg_ms=12.1 engram n=2462 sum_s=8.039 avg_ms=3.3 pre_draft n=2460 sum_s=13.276 avg_ms=5.4 target n=2466 sum_s=180.742 avg_ms=73.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.794ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:33 [sm120_page.py:893] step census draft n=2472 sum_s=29.810 avg_ms=12.1 engram n=2470 sum_s=8.061 avg_ms=3.3 pre_draft n=2468 sum_s=13.300 avg_ms=5.4 target n=2474 sum_s=181.165 avg_ms=73.2
+(Worker_TP1 pid=466) INFO 09-25 00:26:33 [sm120_page.py:893] step census draft n=2480 sum_s=29.851 avg_ms=12.0 engram n=2478 sum_s=8.082 avg_ms=3.3 pre_draft n=2476 sum_s=13.322 avg_ms=5.4 target n=2482 sum_s=181.575 avg_ms=73.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.823ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:34 [sm120_page.py:893] step census draft n=2488 sum_s=29.893 avg_ms=12.0 engram n=2486 sum_s=8.106 avg_ms=3.3 pre_draft n=2484 sum_s=13.345 avg_ms=5.4 target n=2490 sum_s=181.985 avg_ms=73.1
+(Worker_TP1 pid=466) INFO 09-25 00:26:34 [sm120_page.py:893] step census draft n=2496 sum_s=29.934 avg_ms=12.0 engram n=2494 sum_s=8.131 avg_ms=3.3 pre_draft n=2492 sum_s=13.368 avg_ms=5.4 target n=2498 sum_s=182.396 avg_ms=73.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.838ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:35 [sm120_page.py:893] step census draft n=2504 sum_s=29.977 avg_ms=12.0 engram n=2502 sum_s=8.157 avg_ms=3.3 pre_draft n=2500 sum_s=13.391 avg_ms=5.4 target n=2506 sum_s=182.810 avg_ms=72.9
+(Worker_TP1 pid=466) INFO 09-25 00:26:35 [sm120_page.py:893] step census draft n=2512 sum_s=30.017 avg_ms=11.9 engram n=2510 sum_s=8.180 avg_ms=3.3 pre_draft n=2508 sum_s=13.413 avg_ms=5.3 target n=2514 sum_s=183.231 avg_ms=72.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.897ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:36 [sm120_page.py:893] step census draft n=2520 sum_s=30.058 avg_ms=11.9 engram n=2518 sum_s=8.204 avg_ms=3.3 pre_draft n=2516 sum_s=13.435 avg_ms=5.3 target n=2522 sum_s=183.639 avg_ms=72.8
+(Worker_TP1 pid=466) INFO 09-25 00:26:36 [sm120_page.py:893] step census draft n=2528 sum_s=30.100 avg_ms=11.9 engram n=2526 sum_s=8.229 avg_ms=3.3 pre_draft n=2524 sum_s=13.458 avg_ms=5.3 target n=2530 sum_s=184.056 avg_ms=72.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.888ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:37 [sm120_page.py:893] step census draft n=2536 sum_s=30.141 avg_ms=11.9 engram n=2534 sum_s=8.252 avg_ms=3.3 pre_draft n=2532 sum_s=13.481 avg_ms=5.3 target n=2538 sum_s=184.469 avg_ms=72.7
+(Worker_TP1 pid=466) INFO 09-25 00:26:38 [sm120_page.py:893] step census draft n=2544 sum_s=30.182 avg_ms=11.9 engram n=2542 sum_s=8.277 avg_ms=3.3 pre_draft n=2540 sum_s=13.505 avg_ms=5.3 target n=2546 sum_s=184.881 avg_ms=72.6
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.870ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:38 [sm120_page.py:893] step census draft n=2552 sum_s=30.227 avg_ms=11.8 engram n=2550 sum_s=8.301 avg_ms=3.3 pre_draft n=2548 sum_s=13.530 avg_ms=5.3 target n=2554 sum_s=185.294 avg_ms=72.6
+(Worker_TP1 pid=466) INFO 09-25 00:26:39 [sm120_page.py:893] step census draft n=2560 sum_s=30.269 avg_ms=11.8 engram n=2558 sum_s=8.320 avg_ms=3.3 pre_draft n=2556 sum_s=13.557 avg_ms=5.3 target n=2562 sum_s=185.711 avg_ms=72.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.891ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:39 [sm120_page.py:893] step census draft n=2568 sum_s=30.310 avg_ms=11.8 engram n=2566 sum_s=8.343 avg_ms=3.3 pre_draft n=2564 sum_s=13.580 avg_ms=5.3 target n=2570 sum_s=186.124 avg_ms=72.4
+(Worker_TP1 pid=466) INFO 09-25 00:26:40 [sm120_page.py:893] step census draft n=2576 sum_s=30.351 avg_ms=11.8 engram n=2574 sum_s=8.364 avg_ms=3.2 pre_draft n=2572 sum_s=13.603 avg_ms=5.3 target n=2578 sum_s=186.535 avg_ms=72.4
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.778ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:40 [sm120_page.py:893] step census draft n=2584 sum_s=30.393 avg_ms=11.8 engram n=2582 sum_s=8.387 avg_ms=3.2 pre_draft n=2580 sum_s=13.625 avg_ms=5.3 target n=2586 sum_s=186.945 avg_ms=72.3
+(Worker_TP1 pid=466) INFO 09-25 00:26:41 [sm120_page.py:893] step census draft n=2592 sum_s=30.435 avg_ms=11.7 engram n=2590 sum_s=8.415 avg_ms=3.2 pre_draft n=2588 sum_s=13.648 avg_ms=5.3 target n=2594 sum_s=187.362 avg_ms=72.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.064ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:41 [sm120_page.py:893] step census draft n=2600 sum_s=30.476 avg_ms=11.7 engram n=2598 sum_s=8.441 avg_ms=3.2 pre_draft n=2596 sum_s=13.670 avg_ms=5.3 target n=2602 sum_s=187.775 avg_ms=72.2
+(Worker_TP1 pid=466) INFO 09-25 00:26:42 [sm120_page.py:893] step census draft n=2608 sum_s=30.518 avg_ms=11.7 engram n=2606 sum_s=8.463 avg_ms=3.2 pre_draft n=2604 sum_s=13.692 avg_ms=5.3 target n=2610 sum_s=188.183 avg_ms=72.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.781ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:42 [sm120_page.py:893] step census draft n=2616 sum_s=30.559 avg_ms=11.7 engram n=2614 sum_s=8.490 avg_ms=3.2 pre_draft n=2612 sum_s=13.714 avg_ms=5.3 target n=2618 sum_s=188.603 avg_ms=72.0
+(Worker_TP1 pid=466) INFO 09-25 00:26:43 [sm120_page.py:893] step census draft n=2624 sum_s=30.603 avg_ms=11.7 engram n=2622 sum_s=8.530 avg_ms=3.3 pre_draft n=2620 sum_s=13.739 avg_ms=5.2 target n=2626 sum_s=189.239 avg_ms=72.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=90 runs/call=181.5 preads/call=181.5 read=2.073ms fadv/call=91.3 pf_hit=90%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:44 [sm120_page.py:893] step census draft n=2632 sum_s=30.644 avg_ms=11.6 engram n=2630 sum_s=8.557 avg_ms=3.3 pre_draft n=2628 sum_s=13.762 avg_ms=5.2 target n=2634 sum_s=189.668 avg_ms=72.0
+(Worker_TP1 pid=466) INFO 09-25 00:26:44 [sm120_page.py:893] step census draft n=2640 sum_s=30.686 avg_ms=11.6 engram n=2638 sum_s=8.581 avg_ms=3.3 pre_draft n=2636 sum_s=13.785 avg_ms=5.2 target n=2642 sum_s=190.083 avg_ms=71.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.850ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:45 [sm120_page.py:893] step census draft n=2648 sum_s=30.730 avg_ms=11.6 engram n=2646 sum_s=8.606 avg_ms=3.3 pre_draft n=2644 sum_s=13.810 avg_ms=5.2 target n=2650 sum_s=190.499 avg_ms=71.9
+(Worker_TP1 pid=466) INFO 09-25 00:26:45 [sm120_page.py:893] step census draft n=2656 sum_s=30.774 avg_ms=11.6 engram n=2654 sum_s=8.631 avg_ms=3.3 pre_draft n=2652 sum_s=13.834 avg_ms=5.2 target n=2658 sum_s=190.917 avg_ms=71.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.834ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:46 [sm120_page.py:893] step census draft n=2664 sum_s=30.816 avg_ms=11.6 engram n=2662 sum_s=8.651 avg_ms=3.2 pre_draft n=2660 sum_s=13.856 avg_ms=5.2 target n=2666 sum_s=191.319 avg_ms=71.8
+(Worker_TP1 pid=466) INFO 09-25 00:26:46 [sm120_page.py:893] step census draft n=2672 sum_s=30.857 avg_ms=11.5 engram n=2670 sum_s=8.672 avg_ms=3.2 pre_draft n=2668 sum_s=13.877 avg_ms=5.2 target n=2674 sum_s=191.729 avg_ms=71.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.871ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:47 [sm120_page.py:893] step census draft n=2680 sum_s=30.898 avg_ms=11.5 engram n=2678 sum_s=8.695 avg_ms=3.2 pre_draft n=2676 sum_s=13.899 avg_ms=5.2 target n=2682 sum_s=192.149 avg_ms=71.6
+(Worker_TP1 pid=466) INFO 09-25 00:26:47 [sm120_page.py:893] step census draft n=2688 sum_s=30.939 avg_ms=11.5 engram n=2686 sum_s=8.712 avg_ms=3.2 pre_draft n=2684 sum_s=13.921 avg_ms=5.2 target n=2690 sum_s=192.562 avg_ms=71.6
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.867ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:48 [sm120_page.py:893] step census draft n=2696 sum_s=30.980 avg_ms=11.5 engram n=2694 sum_s=8.730 avg_ms=3.2 pre_draft n=2692 sum_s=13.943 avg_ms=5.2 target n=2698 sum_s=192.982 avg_ms=71.5
+(Worker_TP1 pid=466) INFO 09-25 00:26:48 [sm120_page.py:893] step census draft n=2704 sum_s=31.022 avg_ms=11.5 engram n=2702 sum_s=8.747 avg_ms=3.2 pre_draft n=2700 sum_s=13.965 avg_ms=5.2 target n=2706 sum_s=193.393 avg_ms=71.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.836ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:49 [sm120_page.py:893] step census draft n=2712 sum_s=31.063 avg_ms=11.5 engram n=2710 sum_s=8.764 avg_ms=3.2 pre_draft n=2708 sum_s=13.988 avg_ms=5.2 target n=2714 sum_s=193.810 avg_ms=71.4
+(Worker_TP1 pid=466) INFO 09-25 00:26:49 [sm120_page.py:893] step census draft n=2720 sum_s=31.103 avg_ms=11.4 engram n=2718 sum_s=8.787 avg_ms=3.2 pre_draft n=2716 sum_s=14.010 avg_ms=5.2 target n=2722 sum_s=194.214 avg_ms=71.3
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=1.221ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:50 [sm120_page.py:893] step census draft n=2728 sum_s=31.146 avg_ms=11.4 engram n=2726 sum_s=8.803 avg_ms=3.2 pre_draft n=2724 sum_s=14.034 avg_ms=5.2 target n=2730 sum_s=194.634 avg_ms=71.3
+(Worker_TP1 pid=466) INFO 09-25 00:26:50 [sm120_page.py:893] step census draft n=2736 sum_s=31.188 avg_ms=11.4 engram n=2734 sum_s=8.818 avg_ms=3.2 pre_draft n=2732 sum_s=14.055 avg_ms=5.1 target n=2738 sum_s=195.045 avg_ms=71.2
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.765ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:51 [sm120_page.py:893] step census draft n=2744 sum_s=31.229 avg_ms=11.4 engram n=2742 sum_s=8.835 avg_ms=3.2 pre_draft n=2740 sum_s=14.077 avg_ms=5.1 target n=2746 sum_s=195.451 avg_ms=71.2
+(Worker_TP1 pid=466) INFO 09-25 00:26:51 [sm120_page.py:893] step census draft n=2752 sum_s=31.270 avg_ms=11.4 engram n=2750 sum_s=8.854 avg_ms=3.2 pre_draft n=2748 sum_s=14.099 avg_ms=5.1 target n=2754 sum_s=195.863 avg_ms=71.1
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.742ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:52 [sm120_page.py:893] step census draft n=2760 sum_s=31.312 avg_ms=11.3 engram n=2758 sum_s=8.876 avg_ms=3.2 pre_draft n=2756 sum_s=14.121 avg_ms=5.1 target n=2762 sum_s=196.272 avg_ms=71.1
+(Worker_TP1 pid=466) INFO 09-25 00:26:53 [sm120_page.py:893] step census draft n=2768 sum_s=31.353 avg_ms=11.3 engram n=2766 sum_s=8.896 avg_ms=3.2 pre_draft n=2764 sum_s=14.142 avg_ms=5.1 target n=2770 sum_s=196.676 avg_ms=71.0
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.712ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:53 [sm120_page.py:893] step census draft n=2776 sum_s=31.395 avg_ms=11.3 engram n=2774 sum_s=8.917 avg_ms=3.2 pre_draft n=2772 sum_s=14.164 avg_ms=5.1 target n=2778 sum_s=197.090 avg_ms=70.9
+(Worker_TP1 pid=466) INFO 09-25 00:26:54 [sm120_page.py:893] step census draft n=2784 sum_s=31.435 avg_ms=11.3 engram n=2782 sum_s=8.937 avg_ms=3.2 pre_draft n=2780 sum_s=14.186 avg_ms=5.1 target n=2786 sum_s=197.497 avg_ms=70.9
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.730ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:54 [sm120_page.py:893] step census draft n=2792 sum_s=31.477 avg_ms=11.3 engram n=2790 sum_s=8.957 avg_ms=3.2 pre_draft n=2788 sum_s=14.208 avg_ms=5.1 target n=2794 sum_s=197.908 avg_ms=70.8
+(Worker_TP1 pid=466) INFO 09-25 00:26:55 [sm120_page.py:893] step census draft n=2800 sum_s=31.517 avg_ms=11.3 engram n=2798 sum_s=8.977 avg_ms=3.2 pre_draft n=2796 sum_s=14.229 avg_ms=5.1 target n=2802 sum_s=198.317 avg_ms=70.8
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.660ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:55 [sm120_page.py:893] step census draft n=2808 sum_s=31.560 avg_ms=11.2 engram n=2806 sum_s=8.996 avg_ms=3.2 pre_draft n=2804 sum_s=14.251 avg_ms=5.1 target n=2810 sum_s=198.726 avg_ms=70.7
+(Worker_TP1 pid=466) INFO 09-25 00:26:56 [sm120_page.py:893] step census draft n=2816 sum_s=31.601 avg_ms=11.2 engram n=2814 sum_s=9.015 avg_ms=3.2 pre_draft n=2812 sum_s=14.276 avg_ms=5.1 target n=2818 sum_s=199.135 avg_ms=70.7
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.655ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:56 [sm120_page.py:893] step census draft n=2824 sum_s=31.642 avg_ms=11.2 engram n=2822 sum_s=9.034 avg_ms=3.2 pre_draft n=2820 sum_s=14.298 avg_ms=5.1 target n=2826 sum_s=199.547 avg_ms=70.6
+(Worker_TP1 pid=466) INFO 09-25 00:26:57 [sm120_page.py:893] step census draft n=2832 sum_s=31.685 avg_ms=11.2 engram n=2830 sum_s=9.054 avg_ms=3.2 pre_draft n=2828 sum_s=14.319 avg_ms=5.1 target n=2834 sum_s=199.963 avg_ms=70.6
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.694ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:57 [sm120_page.py:893] step census draft n=2840 sum_s=31.726 avg_ms=11.2 engram n=2838 sum_s=9.074 avg_ms=3.2 pre_draft n=2836 sum_s=14.341 avg_ms=5.1 target n=2842 sum_s=200.381 avg_ms=70.5
+(Worker_TP1 pid=466) INFO 09-25 00:26:58 [sm120_page.py:893] step census draft n=2848 sum_s=31.767 avg_ms=11.2 engram n=2846 sum_s=9.098 avg_ms=3.2 pre_draft n=2844 sum_s=14.363 avg_ms=5.1 target n=2850 sum_s=200.794 avg_ms=70.5
+(Worker_TP1 pid=466) [gv2-census] calls=32 rows/call=48 runs/call=96.0 preads/call=96.0 read=0.739ms fadv/call=0.0 pf_hit=100%(32)
+(Worker_TP1 pid=466) INFO 09-25 00:26:58 [sm120_page.py:893] step census draft n=2856 sum_s=31.809 avg_ms=11.1 engram n=2854 sum_s=9.121 avg_ms=3.2 pre_draft n=2852 sum_s=14.384 avg_ms=5.0 target n=2858 sum_s=201.208 avg_ms=70.4
+(Worker_TP1 pid=466) INFO 09-25 00:26:59 [sm120_page.py:893] step census draft n=2864 sum_s=31.852 avg_ms=11.1 engram n=2862 sum_s=9.142 avg_ms=3.2 pre_draft n=2860 sum_s=14.406 avg_ms=5.0 target n=2866 sum_s=201.621 avg_ms=70.3

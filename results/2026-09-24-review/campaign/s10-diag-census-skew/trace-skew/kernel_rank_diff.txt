@@ -1,0 +1,31 @@
+total kernel ms/step r0 64.367 r1 64.183; nccl r0 3.143 r1 4.281; non-nccl r0 61.225 r1 59.902 diff 1.323
+r0-r1 ms/step | r0 | r1 | calls r0 r1 | kernel
+-1.126 2.968 4.094 20504 20504 ncclDevKernel_AllReduce_Sum_bf16_RING_LL(ncclDevKernelArgsStorage<4096ul>) 
++0.360 21.881 21.520 9280 9280 void p2b_moe_batched_kernel<2, 1, 0>(__half const*, long const*, long const*, long const*, 
++0.355 20.744 20.389 53815 53815 kernel_cutlass_kernel_flashinfergemmkernelsdense_blockscaled_gemm_sm120_b12xDenseGemmKerne 
++0.096 0.763 0.667 41434 41434 void at::native::vectorized_elementwise_kernel<4, at::native::compare_scalar_kernel<long>( 
++0.094 3.346 3.252 9280 9280 void deep_gemm::sm120_fp8_fp4_gemm_1d1d_impl<0u, 4u, 4096u, 32u, 32u, 4u, 128u, 16u, 128u, 
++0.093 0.923 0.831 699 699 void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_32x32_128x1_tn_align8 
++0.090 1.416 1.326 19805 19805 void deep_gemm::sm120_tf32_hc_prenorm_gemm_impl<24u, 20480u, 128u, 32u, 64u, 40u, 4u, 256u 
++0.050 0.599 0.548 10208 10208 void cublasLt::splitKreduce_kernel<32, 16, int, float, float, float, float, false, float,  
+-0.030 0.181 0.210 9320 9320 void at::native::vectorized_elementwise_kernel<4, at::native::float16_copy_kernel_cuda(at: 
++0.029 0.267 0.238 932 932 _fused_save_compress_norm_kernel 
++0.025 1.179 1.154 10208 10208 void cutlass::Kernel2<cutlass_80_wmma_tensorop_s161616gemm_bf16_16x16_128x2_tn_align8>(cut 
++0.025 0.910 0.885 9320 9320 _dsv4_topk_kernel 
++0.019 0.544 0.525 20038 20038 mhc_pre_big_fuse_with_norm_tilelang_kernel 
++0.018 0.989 0.971 9320 9320 void flashinfer::sparse_mla_sm120::sparse_mla_decode_dsv4_kernel<(ModelType)1, 32, 128, 64 
++0.018 0.398 0.380 20737 20737 mhc_post_tilelang_kernel 
++0.016 0.569 0.554 699 699 void deep_gemm::sm120_fp8_fp4_gemm_1d1d_impl<0u, 2304u, 5120u, 128u, 32u, 128u, 64u, 128u, 
+-0.016 0.375 0.391 19532 19532 void at::native::vectorized_elementwise_kernel<4, at::native::BinaryFunctor<bool, bool, bo 
++0.014 0.469 0.455 41940 41940 kernel_cutlass_kernel_flashinferquantizationkernelsmxfp8_quantizeMXFP8QuantizeSwizzledKern 
+--- top by r0 time
++0.360 21.881 21.520 (+1.7%) void p2b_moe_batched_kernel<2, 1, 0>(__half const*, long const*, long const*, long const*, 
++0.355 20.744 20.389 (+1.7%) kernel_cutlass_kernel_flashinfergemmkernelsdense_blockscaled_gemm_sm120_b12xDenseGemmKerne 
++0.094 3.346 3.252 (+2.9%) void deep_gemm::sm120_fp8_fp4_gemm_1d1d_impl<0u, 4u, 4096u, 32u, 32u, 4u, 128u, 16u, 128u, 
+-1.126 2.968 4.094 (-27.5%) ncclDevKernel_AllReduce_Sum_bf16_RING_LL(ncclDevKernelArgsStorage<4096ul>) 
++0.090 1.416 1.326 (+6.8%) void deep_gemm::sm120_tf32_hc_prenorm_gemm_impl<24u, 20480u, 128u, 32u, 64u, 40u, 4u, 256u 
++0.025 1.179 1.154 (+2.2%) void cutlass::Kernel2<cutlass_80_wmma_tensorop_s161616gemm_bf16_16x16_128x2_tn_align8>(cut 
++0.018 0.989 0.971 (+1.9%) void flashinfer::sparse_mla_sm120::sparse_mla_decode_dsv4_kernel<(ModelType)1, 32, 128, 64 
+-0.013 0.960 0.973 (-1.3%) void exl3_moe_kernel<2, 128, 1>(__half const*, __half*, __half*, __half*, __half*, float*, 
++0.093 0.923 0.831 (+11.2%) void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_32x32_128x1_tn_align8 
++0.025 0.910 0.885 (+2.8%) _dsv4_topk_kernel 

@@ -1,0 +1,21 @@
+url=http://127.0.0.1:8000/v1/chat/completions model=deepseek-ai/DeepSeek-V4.1-Flash max_tokens=512 temperature=0.2 runs=3 phase=lail_prose c=1
+run=1 {"ttft_s": 1.410566916980315, "decode_s": 15.542125349980779, "prompt_tokens": 61, "completion_tokens": 512, "finish_reason": "length", "chunks": 240, "lail_tok_s": 32.94272748872362, "recipe_tok_s": 32.878386224097206, "tokens_per_chunk": 2.1333333333333333, "repeat_ratio": 0.002380952380952381, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. That inversion matters because it changes what you are optimizing. In a conventional serving stack, you treat the cache as an artifact of attention \u2014 something the model accumulates as", "acceptance_len": 2.1380753138075317, "draft_acceptance_rate": 0.3793584379358438}
+run=2 {"ttft_s": 0.3188647460192442, "decode_s": 17.24998650600901, "prompt_tokens": 61, "completion_tokens": 512, "finish_reason": "length", "chunks": 266, "lail_tok_s": 29.681182638702094, "recipe_tok_s": 29.62321157886088, "tokens_per_chunk": 1.9248120300751879, "repeat_ratio": 0.002386634844868735, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On a DGX Spark with unified memory, the boundary between \"what the model knows\" and \"what the model has already computed\" dissolves into a single physical pool. There is no host-to-dev", "acceptance_len": 1.9283018867924528, "draft_acceptance_rate": 0.30943396226415093}
+run=3 {"ttft_s": 0.3232333750347607, "decode_s": 15.677999251987785, "prompt_tokens": 61, "completion_tokens": 512, "finish_reason": "length", "chunks": 240, "lail_tok_s": 32.6572282451847, "recipe_tok_s": 32.59344459626832, "tokens_per_chunk": 2.1333333333333333, "repeat_ratio": 0.0024509803921568627, "collapsed": false, "preview": "The KV cache is the product, not a leftover after util. On a DGX Spark with unified memory, the boundary between what the model \"remembers\" and what the scheduler \"reuses\" collapses into a single pool. There is no host-to-device staging lan", "acceptance_len": 2.1380753138075317, "draft_acceptance_rate": 0.3793584379358438}
+natural phase=lail_prose completion_tokens=512 finish_reason=length
+SUMMARY {
+  "phase": "lail_prose",
+  "concurrency": 1,
+  "max_tokens": 512,
+  "temperature": 0.2,
+  "n": 3,
+  "median_lail_tok_s": 32.6572282451847,
+  "median_recipe_tok_s": 32.59344459626832,
+  "median_ttft_s": 0.3232333750347607,
+  "median_completion_tokens": 512,
+  "natural_completion_tokens": 512,
+  "natural_finish_reason": "length",
+  "post_eos_fraction": 0.0,
+  "median_acceptance_len": 2.1380753138075317,
+  "median_draft_acceptance_rate": 0.3793584379358438
+}

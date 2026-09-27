@@ -1,0 +1,484 @@
+{
+ "stage": "s7-C2-decode-bundle",
+ "what": "Decode-lever bundle arm C, boot 2 of 2 (ABAB: B1=s3, C1=s5, B2=s6, C2=this). Boot from perf-review-0924 (HEAD in git_head.txt) with IMAGE=review-e13 + DSV41_WOA_PREPACK=1 DSV41_MHC_DECODE_SPLITS=40 + s4-promoted prefill levers DSV41_ENGRAM_WILLNEED=1 DSV41_STREAM_FEED=1, AUDIT=strict. DECODE protocol in s2/s3/s5/s6 order (L.A.I.L before any c=2 traffic), then C2-STRESS + post-stress L.A.I.L. Serve stopped at the end. No profiler boot (s5 trace used).",
+ "boot": {
+  "cmd": "nohup env AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e13 DSV41_WOA_PREPACK=1 DSV41_MHC_DECODE_SPLITS=40 DSV41_ENGRAM_WILLNEED=1 DSV41_STREAM_FEED=1 ./run.sh > boot.log",
+  "image": "sha256:c81762335a12ddc809e84794be0fac0dd8cb263ebd3fef09c4aa00be052cbde2 on both ranks (serve_cmd_spark1/2.txt)",
+  "pack": "2.0bpw-mcg-lmhead-mxfp8",
+  "start": "2026-09-24T22:57:31Z",
+  "api_ready": "2026-09-24T23:07:16Z (last timestamped APIServer line before 'Application startup complete')",
+  "run_sh_exit0": "2026-09-24T23:07:41Z (boot.log mtime)",
+  "start_to_api_ready_s": 585,
+  "start_to_run_sh_exit_s": 610,
+  "ref": {
+   "s5_C1": {
+    "api_ready_s": 580,
+    "exit_s": 606
+   },
+   "s6_B2": {
+    "api_ready_s": 541,
+    "exit_s": 568
+   }
+  },
+  "loading_weights_s": {
+   "TP0_spark1": [
+    312.22,
+    27.34
+   ],
+   "TP1_spark2": [
+    145.43,
+    24.29
+   ]
+  },
+  "loading_weights_s_ref": {
+   "s5_C1": {
+    "TP0": [
+     309.6,
+     22.47
+    ],
+    "TP1": [
+     149.68,
+     23.56
+    ]
+   },
+   "s6_B2": {
+    "TP0": [
+     311.74,
+     21.98
+    ],
+    "TP1": [
+     147.06,
+     26.34
+    ]
+   }
+  },
+  "audit_strict": "==> audit ok: every expected patch engaged on head, worker",
+  "warmup": {
+   "greedy": "2.0s '323'",
+   "t07": "1.5s",
+   "prefill_3k_nonce_s": 6.6
+  },
+  "min_memavail_during_load_MB": {
+   "spark1": 26289,
+   "spark2": 27109,
+   "log": "mem-during-load.log (10 s samples until run.sh exit)"
+  },
+  "env": "DSV41_/NCCL_/VLLM_ env identical to s5-C1 (diff empty); vs s6-B2 only DSV41_MHC_DECODE_SPLITS 0->40 and DSV41_WOA_PREPACK unset->1. Head/worker env identical except VLLM_HOST_IP/HOSTNAME. No HF token in either container env. Engine argv identical to s6-B2 (captures [1,3,4,6,8] FULL_AND_PIECEWISE, dspark k=3, MNBT 8192)."
+ },
+ "lever_engagement": {
+  "DSV41_WOA_PREPACK": {
+   "head": "43x '[woa-prepack] packed ue8m0 scale engaged: (4, 1024, 32) stride=(32768, 1, 1024) dtype=torch.int32' (per-layer bitwise self-test passed), 0 REJECTED, 43 [woa-requant]",
+   "worker": "43 engaged, 0 REJECTED, 43 [woa-requant]",
+   "verdict": "ENGAGED both ranks"
+  },
+  "DSV41_MHC_DECODE_SPLITS": {
+   "head": "'dsv41: MHC prenorm split-K forced to 40 for num_tokens <= 64' x4 procs",
+   "worker": "same x3 procs",
+   "verdict": "ENGAGED both ranks"
+  },
+  "DSV41_P2B_SRC_SORT": "not part of this arm (s1: off). srcsort-marker.txt: vllm_exl3_c .so 14632824 bytes, 1 DSV41_P2B_SRC_SORT marker on spark1 and spark2; env unset -> SORT=0 path",
+  "lever_is_OFF_or_FAILED_or_REJECTED_lines": {
+   "head": 0,
+   "worker": 0
+  },
+  "dsv41_patch_FAIL": {
+   "head": 0,
+   "worker": 0
+  },
+  "other": "prefetch v3 armed once per rank; g8 stream feed installed both ranks"
+ },
+ "smoke": {
+  "chat": "323 (1.37 s)",
+  "vision": "Red (14.29 s: post-ready TileLang JIT of mhc_pre_big_fuse_with_norm_tilelang at 23:08:53 on both ranks, same as C1; attributed to review-e13 by s6)"
+ },
+ "lail_fresh_10": {
+  "cmd": "python3 tools/measure_lail_prose.py --runs 10",
+  "log": "03-lail-prose-fresh.log",
+  "median_tok_s": 34.03,
+  "runs": [
+   32.78,
+   35.06,
+   34.37,
+   32.57,
+   33.7,
+   32.89,
+   35.07,
+   33.46,
+   36.12,
+   35.28
+  ],
+  "median_acceptance_len": 2.136,
+  "run_acceptance_len": [
+   2.048,
+   2.184,
+   2.147,
+   2.036,
+   2.124,
+   2.069,
+   2.211,
+   2.107,
+   2.271,
+   2.226
+  ],
+  "median_ttft_s": 0.315,
+  "post_eos_fraction": 0.0,
+  "ms_per_step_decode_s_over_chunks": {
+   "median": 62.5,
+   "runs": [
+    62.5,
+    62.1,
+    62.3,
+    62.4,
+    62.5,
+    62.5,
+    62.6,
+    62.5,
+    63.0,
+    62.8
+   ]
+  }
+ },
+ "bench_decode_9": {
+  "cmd": "python3 bench_decode.py --runs 9",
+  "log": "04-bench-decode.log",
+  "rows": "04-bench-decode.summary.json",
+  "prose_c1": {
+   "tok_s": 39.38,
+   "ms_step": 63.77,
+   "acceptance_len_pooled": 2.487,
+   "median_run_acceptance_len": 2.519,
+   "post_eos_fraction": 0.625,
+   "per_run_tok_s": [
+    40.58,
+    36.9,
+    41.72,
+    39.38,
+    40.92,
+    38.64,
+    36.93,
+    36.52,
+    40.33
+   ],
+   "per_run_ms_step": [
+    63.5,
+    62.7,
+    63.6,
+    64.0,
+    63.8,
+    63.6,
+    64.1,
+    64.4,
+    63.9
+   ]
+  },
+  "prose_c2": {
+   "per_stream_tok_s": 29.26,
+   "agg_tok_s": 58.27,
+   "ms_step": 88.73,
+   "acceptance_len_pooled": 2.591
+  },
+  "structured_c1": {
+   "tok_s": 61.49,
+   "ms_step": 64.41,
+   "acceptance_len": 3.961,
+   "post_eos_fraction": 0.0
+  },
+  "structured_c2": {
+   "per_stream_tok_s": 44.62,
+   "agg_tok_s": 88.75,
+   "ms_step": 88.77,
+   "acceptance_len": 3.961
+  }
+ },
+ "micro_novel_8k_1run": {
+  "cmd": "python3 benches/micro.py --contexts 8192 --runs 1",
+  "log": "05-micro-8k-1run.log",
+  "pp_novel_8k": 808.1,
+  "pp_warm_8k": 773.1,
+  "tg_8k": 33.1,
+  "ref": "s6-B2 novel 826.3 / warm 727.7 / tg 32.9; s5-C1 823.4 / 707.0 / 35.4 (1 run each)"
+ },
+ "quality_quick": {
+  "cmd": "python3 tests/quality_eval.py --quick --baseline results/2026-09-24-review/quality-baseline/quick.json --out <stage>/quality.json",
+  "log": "07-quality.log",
+  "pass": true,
+  "nll": 0.243646,
+  "decode_median_dlp": 0.01343,
+  "decode_gen_nll_prefill": 0.32993,
+  "tools_exact": 0.9545,
+  "tools_json": 1.0,
+  "tools_nocall": 1.0,
+  "needle": "6/6",
+  "selfcons_aa_hazard": 0.02204,
+  "selfcons_golden_hazard": 0.02539,
+  "selfcons_identical": 4,
+  "selfcons_aa_diverged": "8/12",
+  "c2": true,
+  "vision": true,
+  "limit_hazard": 0.03206,
+  "ref_aa_hazard": {
+   "quality_baseline": 0.01603,
+   "s2": 0.01636,
+   "s3_B1": 0.01743,
+   "s5_C1": "0.03409 FAIL (9/12 diverged), reruns 0.0194 / 0.02162",
+   "s6_B2": 0.01458
+  },
+  "ref_golden_hazard": {
+   "s2": 0.01543,
+   "s3_B1": 0.0159,
+   "s5_C1": "0.01946, reruns 0.01599 / 0.02066",
+   "s6_B2": 0.01616
+  }
+ },
+ "memory": {
+  "ready": {
+   "spark1": "used 98Gi avail 23Gi swap 6.7Gi",
+   "spark2": "used 96Gi avail 24Gi swap 4.5Gi"
+  },
+  "after_micro_8k": {
+   "spark1": "avail 21Gi",
+   "spark2": "avail 22Gi"
+  },
+  "after_decode": {
+   "spark1": "used 100Gi avail 20Gi swap 6.6Gi",
+   "spark2": "used 98Gi avail 22Gi swap 4.5Gi"
+  },
+  "end": {
+   "spark1": "used 100Gi avail 21Gi swap 6.6Gi",
+   "spark2": "used 98Gi avail 23Gi swap 4.5Gi"
+  },
+  "after_stop": "MemAvailable 116Gi / 117Gi"
+ },
+ "engagement": {
+  "audit_after_decode": "env <serve DSV41_/VLLM_ env> python3 tools/engagement_audit.py --mode strict 0=head-docker-after-full.log 1=worker-docker-after-full.log: audit ok (rc 0)",
+  "audit_final": "audit ok (rc 0)",
+  "disarm_scan_after_decode_rc": 0,
+  "disarm_scan_final_rc": 0,
+  "grep": "no bad snapshot / IndexError / _prefetch_worker / 'disabled after' on either rank after DECODE and at the end; prefetch v3 armed once per rank; only Traceback is the harmless usage_lib cpuinfo one on TP0",
+  "tilelang": "1 'TileLang JIT compilation during inference' warning per rank (23:08:53, first vision request). Head log has 10 TileLang compiles: 6 during warmup/startup, 2 at 23:08:53/23:09:00 (vision smoke), 2 at 23:17:46/23:17:52 (during quality_eval, no extra warning). s5-C1 and s6-B2 had 8."
+ },
+ "c2_stress": {
+  "script": "c2_stress.py (copy of s6)",
+  "log": "10-c2-stress.log",
+  "rounds": 6,
+  "requests_ok": 12,
+  "requests_failed": 0
+ },
+ "lail_after_c2_10": {
+  "log": "11-lail-prose-after-c2.log",
+  "median_tok_s": 33.76,
+  "runs": [
+   34.56,
+   32.04,
+   33.92,
+   35.49,
+   36.0,
+   35.11,
+   33.36,
+   32.58,
+   32.42,
+   33.61
+  ],
+  "median_acceptance_len": 2.131,
+  "median_ttft_s": 0.361,
+  "post_eos_fraction": 0.0,
+  "ms_per_step_decode_s_over_chunks": {
+   "median": 62.91,
+   "runs": [
+    62.5,
+    62.7,
+    62.9,
+    62.7,
+    62.9,
+    63.1,
+    63.2,
+    63.1,
+    63.2,
+    62.7
+   ]
+  },
+  "delta_vs_fresh": "-0.27 tok/s (-0.8%); ms/step 62.5 -> 62.91. B1 -1.9%, C1 -1.7%, B2 -4.2%",
+  "logs_after": "no prefetch disable / IndexError / bad snapshot on either rank; disarm_scan rc 0; strict audit ok"
+ },
+ "abab": {
+  "method": "Per-boot medians from each stage's 03/11 L.A.I.L logs (ms/step = median of decode_s/chunks) and 04-bench-decode SUMMARY. noise = max(B1-B2 spread, C1-C2 spread) (ARMS.md step 6). Promote-side test: C-vs-B median improvement > noise AND every C boot beats the B median. Caveat: B1 ran canonical-e12 without WILLNEED/STREAM_FEED; B2/C1/C2 are e13 with them.",
+  "table": {
+   "prose_c1_ms_step (PRIMARY)": {
+    "B1": 64.26,
+    "B2": 64.53,
+    "C1": 63.82,
+    "C2": 63.77,
+    "B_median": 64.395,
+    "C_median": 63.795,
+    "C_minus_B": -0.6,
+    "pct": -0.93,
+    "noise_max_spread": 0.27,
+    "improvement_exceeds_noise": true,
+    "every_C_beats_B_median": true,
+    "verdict": "C better beyond noise"
+   },
+   "prose_c1_median_run_acceptance": {
+    "B1": 2.513,
+    "B2": 2.597,
+    "C1": 2.551,
+    "C2": 2.519,
+    "B_median": 2.555,
+    "C_median": 2.535,
+    "C_minus_B": -0.02,
+    "pct": -0.78,
+    "noise_max_spread": 0.084,
+    "improvement_exceeds_noise": false,
+    "every_C_beats_B_median": false,
+    "verdict": "within noise"
+   },
+   "prose_c1_tok_s": {
+    "B1": 39.1,
+    "B2": 40.12,
+    "C1": 39.59,
+    "C2": 39.38,
+    "B_median": 39.61,
+    "C_median": 39.485,
+    "C_minus_B": -0.125,
+    "pct": -0.32,
+    "noise_max_spread": 1.02,
+    "improvement_exceeds_noise": false,
+    "every_C_beats_B_median": false,
+    "verdict": "within noise"
+   },
+   "lail_fresh_ms_step": {
+    "B1": 62.94,
+    "B2": 63.01,
+    "C1": 63.36,
+    "C2": 62.5,
+    "B_median": 62.975,
+    "C_median": 62.93,
+    "C_minus_B": -0.045,
+    "pct": -0.07,
+    "noise_max_spread": 0.86,
+    "improvement_exceeds_noise": false,
+    "every_C_beats_B_median": false,
+    "verdict": "within noise"
+   },
+   "lail_fresh_acceptance": {
+    "B1": 2.16,
+    "B2": 2.183,
+    "C1": 2.147,
+    "C2": 2.136,
+    "B_median": 2.171,
+    "C_median": 2.141,
+    "C_minus_B": -0.03,
+    "pct": -1.38,
+    "noise_max_spread": 0.023,
+    "improvement_exceeds_noise": false,
+    "every_C_beats_B_median": false,
+    "verdict": "C worse beyond noise"
+   },
+   "lail_fresh_tok_s": {
+    "B1": 34.11,
+    "B2": 34.48,
+    "C1": 34.01,
+    "C2": 34.03,
+    "B_median": 34.295,
+    "C_median": 34.02,
+    "C_minus_B": -0.275,
+    "pct": -0.8,
+    "noise_max_spread": 0.37,
+    "improvement_exceeds_noise": false,
+    "every_C_beats_B_median": false,
+    "verdict": "within noise"
+   },
+   "lail_post_stress_ms_step": {
+    "B1": 63.87,
+    "B2": 64.17,
+    "C1": 63.44,
+    "C2": 62.91,
+    "B_median": 64.02,
+    "C_median": 63.175,
+    "C_minus_B": -0.845,
+    "pct": -1.32,
+    "noise_max_spread": 0.53,
+    "improvement_exceeds_noise": true,
+    "every_C_beats_B_median": true,
+    "verdict": "C better beyond noise"
+   },
+   "lail_post_stress_tok_s": {
+    "B1": 33.47,
+    "B2": 33.03,
+    "C1": 33.44,
+    "C2": 33.76,
+    "B_median": 33.25,
+    "C_median": 33.6,
+    "C_minus_B": 0.35,
+    "pct": 1.05,
+    "noise_max_spread": 0.44,
+    "improvement_exceeds_noise": false,
+    "every_C_beats_B_median": true,
+    "verdict": "within noise"
+   },
+   "structured_c1_ms_step": {
+    "B1": 63.8,
+    "B2": 63.84,
+    "C1": 63.49,
+    "C2": 64.41,
+    "B_median": 63.82,
+    "C_median": 63.95,
+    "C_minus_B": 0.13,
+    "pct": 0.2,
+    "noise_max_spread": 0.92,
+    "improvement_exceeds_noise": false,
+    "every_C_beats_B_median": false,
+    "verdict": "within noise"
+   },
+   "structured_c1_tok_s": {
+    "B1": 62.08,
+    "B2": 62.04,
+    "C1": 62.39,
+    "C2": 61.49,
+    "B_median": 62.06,
+    "C_median": 61.94,
+    "C_minus_B": -0.12,
+    "pct": -0.19,
+    "noise_max_spread": 0.9,
+    "improvement_exceeds_noise": false,
+    "every_C_beats_B_median": false,
+    "verdict": "within noise"
+   },
+   "prose_c2_agg_tok_s": {
+    "B1": 56.99,
+    "B2": 57.43,
+    "C1": 55.31,
+    "C2": 58.27,
+    "B_median": 57.21,
+    "C_median": 56.79,
+    "C_minus_B": -0.42,
+    "pct": -0.73,
+    "noise_max_spread": 2.96,
+    "improvement_exceeds_noise": false,
+    "every_C_beats_B_median": false,
+    "verdict": "within noise"
+   },
+   "structured_c2_agg_tok_s": {
+    "B1": 87.66,
+    "B2": 87.88,
+    "C1": 89.34,
+    "C2": 88.75,
+    "B_median": 87.77,
+    "C_median": 89.045,
+    "C_minus_B": 1.275,
+    "pct": 1.45,
+    "noise_max_spread": 0.59,
+    "improvement_exceeds_noise": true,
+    "every_C_beats_B_median": true,
+    "verdict": "C better beyond noise"
+   }
+  },
+  "file": "abab.json"
+ },
+ "commands_note": "All tools run from /home/sfxnz/projects/ai-lab/recipes/.worktrees/perf-review-0924. Stop: ./stop.sh (14-stop.log, rc 0).",
+ "decisions": {
+  "DSV41_WOA_PREPACK": "promote: bit-exact (s1 BITWISE PASS; 43/43 per-layer bitwise self-test on both ranks in C1 and C2, 0 REJECTED); kernel faster (s1 31.75->25.0 us/call at M=3; s5 trace -0.71/-0.81 ms/step on r0/r1); ABAB bundle not worse beyond B1-B2 spread on any perf metric (prose c1 ms/step -0.60 vs noise 0.27). Cannot cause the MHC-side selfcons signal because it is bitwise.",
+  "DSV41_MHC_DECODE_SPLITS": "reject (stay 0): not bit-exact (fp32 reorder, maxabs 6e-6); quality quick did not pass in both C boots (C1 FAIL aa_hazard 0.03409 > 0.03206; C2 PASS 0.02204). All four C-boot selfcons samples (0.03409/0.0194/0.02162/0.02204) sit above both B boots (0.01743/0.01458); L.A.I.L acceptance C 2.147/2.136 vs B 2.160/2.183. Kernel gain was real (s1 18.08->11.17 us/call at T=4; s5 trace prenorm+fused -0.47/-0.58 ms/step). Re-open only with an MHC-only ABAB and a larger selfcons sample.",
+  "DSV41_P2B_SRC_SORT": "reject (s1: cold time -0.37/+1.41/+0.83 %, below 3 % gate); not booted in this arm; marker present in e13 .so",
+  "image_for_promoted": "dsv41-flash-exl3-sm121:review-e13 (sha256:c81762335a12, docker/Dockerfile.e13 on canonical-e12; carries the o_proj.py woa-prepack stage). Caveat: e13 shows a post-ready TileLang JIT of mhc_pre_big_fuse_with_norm_tilelang (~13 s on the first vision request in C1 and C2) that warmup does not cover."
+ }
+}

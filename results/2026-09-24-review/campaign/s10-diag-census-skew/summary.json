@@ -1,0 +1,277 @@
+{
+ "stage": "s10-diag-census-skew",
+ "what": "Diagnostic boot (promoted state + routed-expert capture + step census): MoE expert-overlap census over L.A.I.L and code prompts, per-rank pre-draft all-reduce skew from the step census, plus an offline two-rank AR-skew and per-kernel diff of the s5-C1 profiler traces. Smoke only otherwise; no perf numbers from this boot are comparable to other stages (census adds device syncs).",
+ "code_fix": {
+  "commit": "bffbae8",
+  "subject": "pr1: step census: time FULL-graph target/draft replays",
+  "why": "Model runner v2 replays FULL cudagraphs via ModelCudaGraphManager.run_fullgraph / DFlashCudaGraphManager.run_fullgraph, so the original census (forward/_generate_draft wraps) never saw steady-state decode and could not log pre_draft. Unit tests 475 OK (skipped 10), render --check rc 0. Fixed before the boot (found by reading the image's model_runner.py)."
+ },
+ "boot": {
+  "cmd": "cd perf-review-0924 && ./stop.sh && nohup env AUDIT=strict IMAGE=dsv41-flash-exl3-sm121:review-e13 DSV41_WOA_PREPACK=1 DSV41_ENGRAM_WILLNEED=1 DSV41_STREAM_FEED=1 DSV41_DSPARK_SPARSE_MARKOV=1 DSV41_STEP_CENSUS=1 EXTRA_ARGS=--enable-return-routed-experts ./run.sh > boot.log 2>&1 &",
+  "git_head": "bffbae889cd8063b70faab583604b640ef6953ee",
+  "image": "sha256:c81762335a12ddc809e84794be0fac0dd8cb263ebd3fef09c4aa00be052cbde2 (both ranks)",
+  "start": "2026-09-25T00:12:07Z",
+  "runsh_exit_ready": "2026-09-25T00:22:13Z (606 s incl. strict audit + warmup; audit ok head+worker; warmup greedy '323')",
+  "loading_weights_s": {
+   "TP0": [
+    312.22,
+    28.01
+   ],
+   "TP1": [
+    146.75,
+    27.5
+   ]
+  },
+  "routed_capture": "bound, no raise: 'RoutedExpertsCapturer: allocating buffer with max_tokens=8192, num_layers=40, num_experts_per_tok=6' on both ranks; 'RoutedExpertsManager CPU buffer: 3.82 GB (slots=7953536, layers=40, top_k=6, dtype=uint16)' on EngineCore",
+  "levers_engaged": "woa-prepack 43/43 per rank; 'DSpark sparse Markov (gathered top-k) k=256' on all processes; 'dsv41-patch ok step_census' 4 head / 3 worker processes; prefetch v3 armed both ranks",
+  "memavail_GiB": {
+   "ready": [
+    24,
+    25
+   ],
+   "end": [
+    24,
+    25
+   ],
+   "min_during_load_MB": [
+    24292,
+    25333
+   ]
+  },
+  "swap_GiB_ready": [
+   6.6,
+   4.4
+  ]
+ },
+ "smoke": {
+  "chat": "323",
+  "vision": "Red (1.77 s)"
+ },
+ "moe_census": {
+  "cmd": "python3 tools/moe_census.py --runs 2 --out moe_census.json --save-npy census_npy (m=4 = k3+1, 6 requests x 511 decode tokens, 40 routed layers)",
+  "dup_mean_over_layers": 0.2987,
+  "lail_dup": 0.28,
+  "code_dup": 0.3081,
+  "random_baseline_dup": 0.0232,
+  "per_layer_dup_min_median_max": [
+   0.0985,
+   0.3136,
+   0.4502
+  ],
+  "per_layer_min_layer": "0 (0.0985)",
+  "per_layer_max_layer": "25 (0.4502)",
+  "upper_ms_per_step(dup x 22.4)": 6.692,
+  "realistic_ms_per_step(x0.78)": 5.219,
+  "realistic_pct_of_66ms_step": 7.91,
+  "with_s5_measured_p2b": "p2b_moe_batched_kernel is 21.88 (r0) / 21.52 (r1) ms/step in the s5-C1 trace; 0.2987 x 21.7 = 6.48 upper, x0.78 = 5.06 ms/step",
+  "sanity": "identical adjacent routing rows 0.2-0.4% (no capture artifact); shuffled-within-request window dup 0.17-0.23 vs adjacent 0.28-0.33, so ~2/3 of the overlap is expert popularity (top-24 experts take 56-64% of slots) and ~1/3 is adjacent-token locality",
+  "verdict_tool": "PROCEED: dup 0.299 >= 0.1; microbench then serve arm",
+  "caveat": "Windows of m=4 consecutive ACCEPTED tokens approximate the verify rows (last accepted + 3 drafts); rejected drafts are not in the response. Temperature 0.2 (L.A.I.L setting)."
+ },
+ "step_census": {
+  "method": "cumulative per-rank census snapshots (/tmp/dsv41-step-census.txt) before/after L.A.I.L n=3 and after moe_census; diffs in census_step_diff.json. Each wrap device-syncs, so absolute times are perturbed (L.A.I.L 64.8-66.0 ms/step with census vs 62.73 in s8).",
+  "lail_n3_1000_steps_ms": {
+   "r0": {
+    "draft": 5.208,
+    "engram": 2.237,
+    "pre_draft": 3.061,
+    "target": 54.372
+   },
+   "r1": {
+    "draft": 5.161,
+    "engram": 2.286,
+    "pre_draft": 3.128,
+    "target": 54.54
+   },
+   "r1_minus_r0": {
+    "draft": -0.047,
+    "engram": 0.049,
+    "pre_draft": 0.067,
+    "target": 0.168
+   }
+  },
+  "moecensus_6req_1104_steps_ms": {
+   "r0": {
+    "draft": 5.212,
+    "engram": 2.888,
+    "pre_draft": 2.978,
+    "target": 52.562
+   },
+   "r1": {
+    "draft": 5.161,
+    "engram": 2.988,
+    "pre_draft": 3.048,
+    "target": 52.628
+   },
+   "r1_minus_r0": {
+    "draft": -0.051,
+    "engram": 0.1,
+    "pre_draft": 0.07,
+    "target": 0.066
+   }
+  },
+  "lail_tok_s_census_on": {
+   "n3": [
+    32.94,
+    29.68,
+    32.66
+   ],
+   "n2_clockmon": [
+    33.02,
+    31.55
+   ]
+  }
+ },
+ "trace_skew_s5_C1": {
+  "source": "/home/sfxnz/projects/data/dsv41-traces/s5-C1-20260924-231421/rank{0,1} (C1 config: WOA+MHC40, profiler on). 21436 NCCL kernels per rank, names match 1:1 at offset 0; AR end-time offset jump p50 1.34 us / p90 4.7 us (collectives complete together, so dur_r0 - dur_r1 = arrival_r1 - arrival_r0).",
+  "steps": 233.0,
+  "classes": {
+   "AG_draft_logits": {
+    "n": 233,
+    "per_step": 1.0,
+    "skew_mean_us(r0dur-r1dur;+=r1 late)": -7.6,
+    "skew_median_us": -1.9,
+    "abs_skew_mean_us": 30.0,
+    "frac_r1_late": 0.481,
+    "r0_dur_mean_us": 59.3,
+    "r1_dur_mean_us": 66.9,
+    "r0_wait_ms_per_step": 0.039,
+    "r1_wait_ms_per_step": 0.047,
+    "r0_idle_before_mean_us": 6.6,
+    "r1_idle_before_mean_us": 6.3
+   },
+   "AG_other": {
+    "n": 466,
+    "per_step": 2.0,
+    "skew_mean_us(r0dur-r1dur;+=r1 late)": -2.5,
+    "skew_median_us": -2.5,
+    "abs_skew_mean_us": 4.5,
+    "frac_r1_late": 0.285,
+    "r0_dur_mean_us": 18.4,
+    "r1_dur_mean_us": 20.9,
+    "r0_wait_ms_per_step": 0.002,
+    "r1_wait_ms_per_step": 0.004,
+    "r0_idle_before_mean_us": 5.7,
+    "r1_idle_before_mean_us": 5.2
+   },
+   "AG_target_logits": {
+    "n": 233,
+    "per_step": 1.0,
+    "skew_mean_us(r0dur-r1dur;+=r1 late)": -0.2,
+    "skew_median_us": 9.3,
+    "abs_skew_mean_us": 32.6,
+    "frac_r1_late": 0.652,
+    "r0_dur_mean_us": 77.9,
+    "r1_dur_mean_us": 78.1,
+    "r0_wait_ms_per_step": 0.058,
+    "r1_wait_ms_per_step": 0.058,
+    "r0_idle_before_mean_us": 2.9,
+    "r1_idle_before_mean_us": 2.6
+   },
+   "AR_after_elementwise(moe_out)": {
+    "n": 10019,
+    "per_step": 43.0,
+    "skew_mean_us(r0dur-r1dur;+=r1 late)": -13.1,
+    "skew_median_us": -6.9,
+    "abs_skew_mean_us": 26.0,
+    "frac_r1_late": 0.198,
+    "r0_dur_mean_us": 29.0,
+    "r1_dur_mean_us": 42.1,
+    "r0_wait_ms_per_step": 0.392,
+    "r1_wait_ms_per_step": 0.953,
+    "r0_idle_before_mean_us": 4.7,
+    "r1_idle_before_mean_us": 4.2
+   },
+   "AR_after_gemm(o_proj)": {
+    "n": 10019,
+    "per_step": 43.0,
+    "skew_mean_us(r0dur-r1dur;+=r1 late)": -12.1,
+    "skew_median_us": -8.0,
+    "abs_skew_mean_us": 31.9,
+    "frac_r1_late": 0.15,
+    "r0_dur_mean_us": 33.6,
+    "r1_dur_mean_us": 45.7,
+    "r0_wait_ms_per_step": 0.588,
+    "r1_wait_ms_per_step": 1.107,
+    "r0_idle_before_mean_us": 5.1,
+    "r1_idle_before_mean_us": 6.2
+   },
+   "AR_draft_start": {
+    "n": 233,
+    "per_step": 1.0,
+    "skew_mean_us(r0dur-r1dur;+=r1 late)": 47.2,
+    "skew_median_us": 46.5,
+    "abs_skew_mean_us": 151.0,
+    "frac_r1_late": 0.562,
+    "r0_dur_mean_us": 231.1,
+    "r1_dur_mean_us": 183.8,
+    "r0_wait_ms_per_step": 0.211,
+    "r1_wait_ms_per_step": 0.164,
+    "r0_idle_before_mean_us": 262.3,
+    "r1_idle_before_mean_us": 398.3
+   },
+   "AR_target_start": {
+    "n": 233,
+    "per_step": 1.0,
+    "skew_mean_us(r0dur-r1dur;+=r1 late)": -89.9,
+    "skew_median_us": -93.9,
+    "abs_skew_mean_us": 132.3,
+    "frac_r1_late": 0.026,
+    "r0_dur_mean_us": 43.8,
+    "r1_dur_mean_us": 133.7,
+    "r0_wait_ms_per_step": 0.024,
+    "r1_wait_ms_per_step": 0.114,
+    "r0_idle_before_mean_us": 3.8,
+    "r1_idle_before_mean_us": 4.6
+   }
+  },
+  "ar_wait_ms_per_step_total": {
+   "r0": 1.314,
+   "r1": 2.446
+  },
+  "kernel_time_ms_per_step": {
+   "r0_total": 64.367,
+   "r1_total": 64.183,
+   "r0_nccl": 3.143,
+   "r1_nccl": 4.281,
+   "r0_non_nccl": 61.225,
+   "r1_non_nccl": 59.902,
+   "r0_minus_r1_non_nccl": 1.323
+  },
+  "top_kernel_diffs_r0_minus_r1_ms_per_step": {
+   "p2b_moe_batched_kernel": "+0.360 (21.881 vs 21.520, +1.7%)",
+   "b12x dense blockscaled gemm": "+0.355 (20.744 vs 20.389, +1.7%)",
+   "deep_gemm fp8_fp4 wo_a": "+0.094 (+2.9%)",
+   "markov/cutlass bf16 gemm": "+0.093",
+   "mhc prenorm gemm": "+0.090",
+   "AllReduce": "-1.126 (2.968 vs 4.094)"
+  }
+ },
+ "clocks_during_lail_census_on": {
+  "spark1": "SM 2177 MHz median (2177-2184), 33.1 W, util 88%, 57 C, throttle 0x0",
+  "spark2": "SM 2190 MHz (flat), 30.8 W, util 88%, 57 C, throttle 0x0",
+  "top_spark1": "Worker_TP0 175% CPU, EngineCore 92%, API server 8%, ai-lab uvicorn (pid 2318) 25% in the snapshot",
+  "top_spark2": "Worker_TP1 182% CPU"
+ },
+ "log_checks": {
+  "engagement_audit_strict_final": "audit ok rc 0",
+  "disarm_scan_final_rc": 0,
+  "bad_snapshot_or_IndexError": [
+   0,
+   0
+  ],
+  "prefetch_disabled": "none",
+  "traceback": "only the usage_lib cpuinfo JSONDecodeError on TP0 (harmless, same as prior stages)",
+  "post_ready_tilelang_jit_warnings": [
+   0,
+   0
+  ]
+ },
+ "stop": "./stop.sh rc 0; docker ps: only conduit on spark1, nothing on spark2; MemAvailable 117/117 GiB",
+ "not_run": "No FULL/DECODE protocol (stage is diagnostic, smoke only by design). No new profiler trace of the promoted config (reused the s5-C1 two-rank traces for the AR analysis).",
+ "decisions": {
+  "moe_dup_fraction": "0.2987 per-layer mean (L.A.I.L 0.2800, code 0.3081; layers 0.0985-0.4502, median 0.3102; random 0.0232). Ceiling 6.69 ms/step upper / 5.22 realistic (7.9% of 66 ms) with the tool's 22.4 ms p2b; 6.48 / 5.06 with the s5-measured p2b of 21.7 ms/step.",
+  "ar_skew": "pre-draft: rank1 reaches the draft-start AR 0.067 ms (L.A.I.L) / 0.070 ms (code) later than rank0 (census pre_draft r0 3.061 / r1 3.128 ms), mirrored by r0 waiting 0.047 / 0.051 ms longer in the draft. Trace: draft-start skew mean +47 us but |skew| 151 us, so it is mostly symmetric host jitter in sample->propose (idle before draft embedding 262 us r0 vs 398 us r1). About 0.1% of a step, not worth a fix. Larger asymmetry: rank0 (spark1) is the straggler inside the target. It arrives late at 80-85% of in-layer ARs by 12-13 us each and at the target-start AR by ~90 us on 97% of steps. Rank1 waits 2.45 ms/step in collectives vs 1.31 on rank0. Rank0's non-NCCL kernel time is +1.32 ms/step (+2.2%), spread evenly over the bandwidth-bound kernels (p2b +0.36, b12x dense +0.355, each +1.7%). Spark1 SM clock is 2177 vs 2190 MHz (-0.6%) at the same 88% util, and host load is head-only (EngineCore 92% CPU, API server).",
+  "coop_kernel_next": "worth"
+ }
+}

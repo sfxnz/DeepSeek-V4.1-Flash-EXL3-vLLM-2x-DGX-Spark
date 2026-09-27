@@ -1,0 +1,19 @@
+[nll] 37.3s {"passages": 40, "tokens_scored": 19828, "bos_id": 0, "mean_nll": 0.243646, "ppl": 1.2759, "run_means": [0.243646], "prefix_cache_hits_delta": 0.0}
+[decode] 39.0s {"prompts": 8, "tokens": 985, "median_abs_dlogprob": 0.01343, "p99_abs_dlogprob": 0.71145, "mean_abs_dlogprob": 0.07797, "gen_nll_prefill": 0.32993, "gen_nll_decode": 0.30079}
+[tools] 57.5s {"json_valid": {"k": 22, "n": 22, "rate": 1.0, "ci95": [0.8513, 1.0]}, "exact_args": {"k": 21, "n": 22, "rate": 0.9545, "ci95": [0.782, 0.9919]}, "no_call": {"k": 8, "n": 8, "rate": 1.0, "ci95": [0.6756, 1.0]}}
+[needle] 152.6s {"found": 6, "total": 6}
+[selfcons] 63.5s {"prompts": 12, "max_tokens": 128, "identical": 4}
+[c2] 1.3s {"pass": true, "answers": ["323", "252"]}
+[vision] 0.4s {"pass": true, "content": "Red"}
+PASS vision value=Red limit=red
+PASS c2 value=['323', '252'] limit=None
+PASS nll.mean_nll value=0.243646 limit=0.25316
+PASS decode.median_abs_dlogprob value=0.01343 limit=0.06794
+PASS decode.gen_nll_prefill value=0.32993 limit=0.50932
+PASS selfcons.golden_hazard value=0.02539 limit=0.03206
+PASS selfcons.aa_hazard value=0.02204 limit=0.03206
+PASS tools.json_valid value=1.0 limit=1.0
+PASS tools.exact_args value=0.9545 limit=0.9545
+PASS tools.no_call value=1.0 limit=1.0
+PASS needle.found value=6 limit=6
+QUALITY {"mode": "quick", "pass": true, "elapsed_s": 351.6, "nll": 0.243646, "decode_median_dlp": 0.01343, "decode_gen_nll": 0.32993, "tools_exact": 0.9545, "tools_json": 1.0, "tools_nocall": 1.0, "needle": 6, "selfcons_identical": 4, "selfcons_aa_hazard": 0.02204, "selfcons_golden_hazard": 0.02539, "c2": true, "vision": true}
