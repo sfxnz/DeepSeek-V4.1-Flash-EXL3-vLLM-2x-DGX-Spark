@@ -37,7 +37,7 @@ low} except gsm8k_think. Concurrency never exceeds 2 (MAX_NUM_SEQS=2); nll,
 decode, selfcons and needle run at c=1. Never run this next to a bench.
 
   python3 tests/quality_eval.py --quick --out q.json
-  python3 tests/quality_eval.py --quick --baseline results/2026-09-24-review/quality-baseline/quick.json
+  python3 tests/quality_eval.py --quick --baseline results/2026-09-27-viterbi-adopt/quality-baseline/quick.json
   python3 tests/quality_eval.py --result armB.json --baseline armA.json   # offline re-gate
 """
 

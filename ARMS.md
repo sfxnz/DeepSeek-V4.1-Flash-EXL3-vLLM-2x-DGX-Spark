@@ -78,12 +78,16 @@ One boot = one lever. Every arm produces the four numbers via
 
    **Quality gate (required before any KEEP)**: after the four numbers,
    serialized and never interleaved with perf capture, the quick eval must
-   pass against the stored baseline:
+   pass against the stored baseline of the pack under test:
    ```bash
    python3 tests/quality_eval.py --quick \
-     --baseline results/2026-09-24-review/quality-baseline/quick.json \
+     --baseline results/2026-09-27-viterbi-adopt/quality-baseline/quick.json \
      --out results/<arm-dir>/quality_quick.json      # exit 0 = pass
    ```
+   Baselines by pack: `results/2026-09-27-viterbi-adopt/quality-baseline/`
+   for `2.0bpw-mcg-viterbi-lmhead-mxfp8` (the default since round 36,
+   recorded on V-1), and `results/2026-09-24-review/quality-baseline/` for
+   `2.0bpw-mcg-lmhead-mxfp8` (rounds 33-35).
    It gates prefill numerics (NLL), decode numerics (decode-vs-prefill
    probe and the golden flip hazard against the A/A control), tool calls,
    needle 8k/32k, c=2 and vision. A lever that changes numerics by design

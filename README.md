@@ -125,7 +125,7 @@ When you are done:
 
 ```bash
 python3 tests/quality_eval.py --quick --out /tmp/q.json \
-  --baseline results/2026-09-24-review/quality-baseline/quick.json
+  --baseline results/2026-09-27-viterbi-adopt/quality-baseline/quick.json
 ```
 
 With `--baseline`, it gates on the following:
@@ -138,7 +138,7 @@ With `--baseline`, it gates on the following:
 | Needle | found ≥ baseline |
 | Golden flip hazard | ≤ 2× max(baseline A/A hazard, 0.005); the run's own A/A hazard has the same limit |
 
-The golden flip hazard compares greedy text with the baseline's own greedy run, so it applies only when the baseline ran the same pack (weights). It gates kernel and numerics levers. A pack change is judged on paired NLL over the fixed passages, paired task scores and A/A self-consistency, and then the baseline is re-recorded on the new pack (ARMS.md step 6). Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-gates two saved runs offline with no traffic, which is how an A/B compares two boots. Run it serialized: never next to a bench, and never with a third stream. The vendored data and licenses are in `tests/quality/README.md`. The baseline numbers are in `results/2026-09-24-review/quality-baseline/README.md`.
+The golden flip hazard compares greedy text with the baseline's own greedy run, so it applies only when the baseline ran the same pack (weights). It gates kernel and numerics levers. A pack change is judged on paired NLL over the fixed passages, paired task scores and A/A self-consistency, and then the baseline is re-recorded on the new pack (ARMS.md step 6). Vision and c=2 must always pass. `--result saved.json --baseline other.json` re-gates two saved runs offline with no traffic, which is how an A/B compares two boots. Run it serialized: never next to a bench, and never with a third stream. The vendored data and licenses are in `tests/quality/README.md`. The baseline for the default pack `2.0bpw-mcg-viterbi-lmhead-mxfp8` was recorded on boot V-1 of round 36; its numbers are in `results/2026-09-27-viterbi-adopt/quality-baseline/README.txt`. The baseline for `2.0bpw-mcg-lmhead-mxfp8` (rounds 33-35) is `results/2026-09-24-review/quality-baseline/`.
 
 ## Defaults
 

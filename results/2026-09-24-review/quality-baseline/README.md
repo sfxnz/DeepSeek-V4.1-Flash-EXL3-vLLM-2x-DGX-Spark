@@ -1,5 +1,7 @@
 # Quality baseline: live serve, 2026-09-24
 
+This baseline belongs to pack `2.0bpw-mcg-lmhead-mxfp8`, the serve pin in rounds 33-35. Since round 36 the default pack is `2.0bpw-mcg-viterbi-lmhead-mxfp8`, and its baseline and goldens are `results/2026-09-27-viterbi-adopt/quality-baseline/` (ARMS.md step 6, pack changes). Gate a boot of the old pack against this directory.
+
 These are the first runs of `tests/quality_eval.py` against the serve that was live that day. The traffic was HTTP only; nothing was restarted, and nothing else ran against the serve at the same time.
 
 Provenance, from both JSONs:
