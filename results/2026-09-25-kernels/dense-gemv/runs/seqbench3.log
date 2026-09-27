@@ -1,0 +1,22 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T18:29:41Z
+lock acquired 2026-09-25T18:32:56Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/mxfp8/flashinfer.py
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+dsv41-indexer-workspace: already applied
+M=3 per-layer dense chain us (median p10 p90): b12x 348.2 345.9 355.2 (+0.0%, eq=True) | gemv_pdl 323.5 321.3 329.1 (+7.6%, eq=True) | gemv_nopdl 322.9 320.6 330.9 (+7.8%, eq=True)
+M=4 per-layer dense chain us (median p10 p90): b12x 351.0 348.4 357.1 (+0.0%, eq=True) | gemv_pdl 326.1 323.5 331.3 (+7.6%, eq=True) | gemv_nopdl 325.5 323.0 331.8 (+7.8%, eq=True)
+M=6 per-layer dense chain us (median p10 p90): b12x 352.4 350.2 355.0 (+0.0%, eq=True) | gemv_pdl 326.9 324.7 328.4 (+7.8%, eq=True) | gemv_nopdl 326.7 324.8 328.4 (+7.9%, eq=True)
+M=8 per-layer dense chain us (median p10 p90): b12x 354.2 352.3 356.2 (+0.0%, eq=True) | gemv_pdl 327.4 325.7 329.5 (+8.2%, eq=True) | gemv_nopdl 328.0 326.2 330.0 (+8.0%, eq=True)
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 78 busy 32 sm_median 2190 sm_min_busy 2190 mem ['[N/A]'] power_median 9.1 W
+rc=0

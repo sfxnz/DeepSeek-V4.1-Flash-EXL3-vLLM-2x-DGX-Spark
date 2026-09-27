@@ -1,0 +1,293 @@
+coop-moe round 3: routed-MoE (p2b) decode kernel iterations
+============================================================
+Machine: spark2 GB10 (48 SMs, L2 24 MiB, SM 2184-2190 MHz during every run), image
+dsv41-flash-exl3-sm121:canonical-e13, kernels JIT-built from the committed pin + patch chain
+(kernel_study/p2b_coop/make_bench_r3.py; the same patch files the serve image applies).
+Harness: kernel_study/p2b_coop/bench_r3.py. Real layer-20 weights (TP rank 0: 384 experts,
+hidden 5120, local inter 1152, K=2 MCG) from the pack snapshot, census routing of the same layer
+(s10 captures; m <= 4 consecutive tokens, m > 4 two independent 4-token windows), activations =
+RMS-normalized Gaussian x the layer's real ffn_norm weight. Cold = 128 MiB read-flush before every
+timed call + fresh routing per iteration; 200 timed iterations after 20 warmup, all arms
+alternating in rotating order on identical routings; CUDA events per call. Every GPU run was
+preceded by nvidia-smi pmon (only Xorg/gnome-shell with SM "-") and ran under spark2's GPU lock;
+clocks sampled every 250 ms (runs/<tag>.clocks.csv). Raw JSON per run in this directory.
+
+Variant ids = DSV41_P2B_COOP values. Numbers: median cold us per call (census routing unless
+noted), p10/p90 in the JSON. "floor" = unique expert bytes / 250 GB/s (task definition);
+"ceiling" = unique bytes / 232 GB/s, the measured spark2 read ceiling (it 5 below).
+
+it 0' round-2 driver as shipped (kernel_study/p2b_coop/driver.py via run_prebuilt.py; random trellis,
+  its own routings; v0-driver-m4.json, v0-driver-m8.json). All its gates pass at m=4 and m=8: one-hot
+  bit-exact, full max rel <= 3.8e-4 (<= 1e-3), coop repeat bit-exact, finite, 16 graph replays equal;
+  occupancy 4 and 4 blocks/SM. Cold coop vs p2b: m=4 census -22.1%, dup0.3 -21.7%, dup0.5 -40.1%,
+  dup0 +2.0%; m=8 (8 consecutive census tokens) -37.3%, dup0 +2.6% (its own "dup0 >= -2%" gate
+  fails at m=8: nothing to share costs coop 27 us). Round 3 (below) fixes that: -7.6% at m=8 dup0.
+
+it 0  baseline (v0-base-r3.json)
+  v0 p2b (served SORT=0) m=4 520.8, m=8 1014.8, m=1 181.2
+  v1 round-2 coop (SORT=2) m=4 378.9 (-27%), m=8 670.3 (-34%); dup0 m=4 536.7 (+2.0%)
+  Phase stamps (%globaltimer around every grid.sync): v1 m=4 = prologue 5.7 + gate/up 209.6 (20.3 of
+  it waiting for the slowest block) + 3 elementwise phases 5.0 + down 108.1 (12.0 waiting) + output
+  2.5 + 1.6, 7 barriers x 0.7. The phase tails (32 us) and the elementwise/barrier phases (20 us)
+  are the overhead; within a phase the stream runs near the ceiling.
+  ncu (v01-m4, /home/sfxnz/projects/data/dsv41-coop-moe/ncu): p2b issue slots 47%, long-scoreboard +
+  barrier stalls 57% of samples; grid.sync spinning threads execute CCTL.IVALL (L1 invalidate) in a
+  loop; A-operand loads (had_gate etc.) stall the HMMA (long scoreboard on the A registers).
+  -> KEEP v1 as the reference, go after the tails and phases.
+
+it 1  dataflow task list (widen_p2b_dataflow.py) v2 (4 blocks/SM) / v3 (3 blocks/SM)
+  One grid.sync after the input Hadamard, then one atomic task counter over gate/up tiles
+  (unit, 128-block, half, gate|up) followed by down tiles (unit, group); the 4th finished gate/up
+  tile of (unit, 128-block) runs that block's epilogue (output Hadamard gate/up + SwiGLU + down
+  input Hadamard, p2b's math op for op); down tiles wait on the unit's readiness count (acquire);
+  one more grid.sync, fused down output Hadamard + fixed-order slot sum. Bit-identical to v1.
+  v2 m=4 348.2, m=8 628.7: the task loop state pushed the MMA loop into spills (12 LDL/iter).
+  v3 (__launch_bounds__(256,3), 80 regs, no spills) m=4 329.8, m=8 600.1, m=1 149.5 (p2b 182.3),
+  dup0 m=4 483.4 (p2b 526.3: -8% with nothing to share). -> KEEP v3 (drop v2: spills).
+
+it 2  inner-loop knobs on v3 (v3-knobs.json)
+  v4 L2 prefetch of k-slice i+2+4 (lanes 0,1 prefetch.global.L2): m=4 335.3 (-0.8%), m=8 601.5
+  v5 L2 prefetch distance 8: 343.1 / 608.3 (worse than 4)
+  v6 L2 prefetch 4 + A fragment loaded one k-slice ahead: 333.7 / 600.1 (best; m=1 167.9 vs v3 155.6)
+  v7 v6 + per-task prefetch of the next task's first k-slices (+ 2 static first tasks): 363.5 /
+     627.2: the next task's pointer chase (ids -> table) sits at every task start. DROP.
+  Why only ~1%: see it 4/5, the stream is at the memory ceiling. KEEP v6 knobs.
+
+it 3  per-warp tile accounting (v3-acct.json; stamped build, lane 0 of every warp)
+  v3 m=4 per warp: span 326 us = pipeline fill 15.0 + MMA loop 262.1 + cross-warp reduction
+  (incl. waiting for the block's slowest warp) 23.5 + between tiles (fence, counters, epilogue,
+  task fetch) 25.9; 12.9 tiles/warp. 20% of every warp's time is per-tile overhead.
+
+it 4  warp-stream kernel v8/v9 (p2b_ws_kernel): no block barrier per tile
+  Each warp walks the block's task sequence on its own K-range, hands its partial to one of 2
+  shared buffers, the last warp in reduces (same j order, same bits) and does the follow-up work.
+  v8 (3 blocks/SM, 4-row chunks) m=4 337.9 = v3; accounting: reduction wait 23.5 -> 7.1 us/warp
+  but the MMA loop grew 262 -> 285 us/warp: removing the waits only moved time into the loop.
+  v9 (2 blocks/SM, PF 4, 8 rows) 362.4. DROP both: the loop is memory-bound, not barrier-bound.
+
+it 5  memory ceiling probes (v4-stream.json, v4-bw.json, v4-ld.json, v4-gemm.json)
+  - The same experts' trellis read with the coop tile pattern and NO decode (bench-only kernel):
+    m=4 323.6 us = 214.7 GB/s, m=8 576.5 = 230.3 GB/s; a contiguous read of the same bytes is not
+    faster (209.7 / 227.7). v6 on the same routings: 333.8 / 606.2 -> the full MoE kernel is
+    within 3-5% of a pure read of its weights.
+  - Plain contiguous read of 512 MiB: 227-232 GB/s median (max 235) for every blocks/SM (2-8),
+    prefetch depth (1-8), load width (4/16 B/lane), L2 prefetch, and for ld.global.cs, ld.global,
+    ld.global.nc, ld.L1::no_allocate, cp.async.cg 16 B and TMA cp.async.bulk 2 KB.
+  - cuBLAS bf16 GEMV-class GEMM (N 64640 / 16384 x K 5120, m 4/8): 226-230 GB/s.
+  => spark2's practical DRAM read ceiling is ~232 GB/s (85% of 273), not 250. The 249-250 GB/s
+     quoted for the serve's lm_head/Markov GEMMs (spark1 trace3) is not reproducible here.
+     Reported: % of the 250 GB/s floor (task definition) AND % of the 232 GB/s ceiling.
+
+it 6  prologue prefetch / dataflow output (v5-pro-dfout.json, v5b-dfout-fix.json)
+  v10 = v6 + each block's first task static and its first 6 k-slices of all K-ranges prefetched
+  into L2 before the input Hadamard: m=4 331.8 (-0.6% vs v6), m=8 600.7, m=1 159.8 (v6 168.9).
+  v11 = v6 + output (row, 128-block) written by the last of its 12 down tiles (per-tile fence +
+  barrier + counter), no final grid.sync: 343.0 / 621.1 (+3%): the per-down-tile sync costs more
+  than the output phase it removes.
+  v12 = v10 + v11: FAILED the gates (one-hot bit-exact false at m=8, graph replay != eager at m=4/6).
+  Root cause: after the counter barrier, warps re-read the task index from shared memory while
+  thread 0 could already have overwritten it with the next task (no barrier in between). v11 had
+  the same race and passed by luck. Fixed (index read before the barrier); v11/v12 re-checked
+  (12 routings x m 1..8 x 3 sources, 32 replays): pass. Kept as a lesson: the gates caught it.
+  -> KEEP v10.
+
+it 7  df2 = v10 + warp-specialized prologue (warp 0 sort + unit pointer table + first-tile
+  prefetch while warps 1..7 run the Hadamard), per-unit B pointers in shared memory, svh
+  prefetch by idle blocks, unrolled top-6 output (v6-df2.json)
+  v13 m=4 337.9 (+2% vs v10), m=8 606.7 (+1.5%); v14 (no L2/A prefetch) 339.5 / 610.4.
+  Stamps: prologue 8.1 vs 10.4 us and output tail 3.2 vs 6.1 us, yet the paired cold timing is
+  worse; the grid barrier after the late prefetch burst takes 2.7 us (0.7 in v10). DROP df2 as a
+  whole; its pieces are re-tested individually below.
+
+it 8  cheaper tile publication (v7-cheap.json)
+  v15 = v10 + CHEAP: a gate/up tile is published by thread 0's atom.acq_rel.gpu after the tile's
+  closing __syncthreads (release is cumulative over the barrier; the CUTLASS GenericBarrier
+  pattern) instead of __threadfence in all 256 threads + an extra barrier; epilogue readiness via
+  red.release.gpu. m=4 313.6 vs v10 317.3 (-1.2%), m=8 = v10, m=6 -0.4%. KEEP.
+  v16 = v15 + output (row, 128-block) by the last of its 12 down tiles, with the same cheap
+  acq_rel counting (no fence, no extra barrier): m=4 +0.9%, m=8 +2% vs v10; its inlined output
+  code spills 184 B and every down tile pays the RMW. DROP the dataflow output for good.
+
+it 9  svh prefetch + unrolled top-6 output (v8-out6.json)
+  v17 = v15 + blocks that run out of tasks prefetch the svh lines of their output rows before the
+  final barrier, output pass unrolled for top-6 (loads first, 6 independent Hadamards). Output
+  tail 6.0 -> 3.5 us in the stamps; paired timing m=4 329.8 vs v15 330.7, m=8 = . KEEP (small).
+
+it 10 next-task prefetch via a shared unit table, prefetch distance sweep (v9-next.json, v10-pfl2.json)
+  v18 = v17 + unit B pointers in shared memory + second task static + the next task's first
+  k-slices prefetched at every task start: fill 26.7 -> 16.8 us/warp but between-tiles
+  26.8 -> 42.6 us/warp; m=4 343.0 vs 329.7 (+4%), m=8 +2%; only m=1 gains (150.5 vs 157.7). DROP.
+  Prefetch distance, 400 iterations per arm (v10-pfl2.json), m=4 census / m=4 dup0 / m=8 census /
+  m=8 dup0 (us): PFL2 4 (v17) 332.8 / 481.3 / 597.9 / 941.1; 3 (v20) 331.8 / 480.3 / 597.0 / 940.0;
+  2 (v19) 330.8 / 479.2 / 596.0 / 939.0; 1 (v21) 331.7 / 479.3 / 597.5 / 940.0; 0 (v22) 334.9 /
+  485.4 / 604.2 / 952.3; PFL2 2 without the A-fragment prefetch (v23) 331.9 / 482.3 / 599.1 /
+  943.1. -> FINAL: v19 = 3 blocks/SM, L2 prefetch distance 2, A prefetch, static first task +
+  prologue prefetch, cheap publication, svh prefetch + top-6 output.
+
+it 11 final kernel = v19, cleaned into docker/patch/widen_p2b_dataflow.py as DSV41_P2B_COOP=2
+  (the exploratory variants 3-23 live in commit 64c9c7b). The kernel got its own shared sort /
+  chunk / reduction arrays: sharing widen_p2b_coop's moved the SORT=2 kernel's shared-memory
+  offsets. sass_identity_r3.sh: SORT=0/1 (12 kernels) and SORT=2 byte-identical e14 vs e15 TU,
+  one new kernel. ptxas: 80 regs, 17.7 KB smem, MMA loops spill-free (609/613 instr per 2 k-slices).
+  final-validate.json (12 routings x m 1,3,4,6,8 x census/dup0/census_seq, --ref): one-hot bitwise =
+  p2b, full weights bitwise = v1, max rel vs p2b <= 5.2e-4 (1 ulp), repeat bitwise, fp64-reference
+  error = p2b's (max rel 1.0e-3 .. 1.2e-3, rms rel 8.8e-4); 32 graph replays per m bitwise; stress:
+  1000 fresh routings per m, eager and graph replay, 0 mismatches vs v1.
+  final-time.json (300 iterations per arm, cold, census): p2b / v1 / v2 median us
+    m=1 182.3 / 186.4 / 157.7   m=3 409.6 / 317.4 / 282.6   m=4 520.2 / 378.7 / 335.9
+    m=6 757.8 / 557.7 / 505.9   m=8 1009.7 / 667.7 / 604.2
+    dup0 m=4 526.1 / 536.6 / 487.4, m=8 1023.0 / 1050.5 / 945.0
+  v2 = 91% (m=4), 95% (m=8), 98% (m=8 dup0) of the 232 GB/s ceiling; the same routings' trellis
+  read with no decode takes 312.8 (m=4) / 578.6 (m=8) us.
+  ncu (final-m4, 2 routings each): v2 vs v1 duration -12%, issue active 52-54% vs 42-45%, local
+  (spill) load sectors 46 K vs 1.35-1.64 M (p2b 5.2 M), barrier stall share 15-16% vs 22-24% (p2b
+  22-30%).
+
+What is left at m=4 (stamps, v2): prologue ~10 us (DRAM busy with the first-tile prefetch for
+~7.6 us of it), final down-tile imbalance ~8.5 us (one 9-k-slice tile latency; bit-exactness pins
+the down tile's K-split), output pass ~3 us. Beyond that the stream is at the memory ceiling.
+Not attempted: fusing the input Hadamard into the gate/up tiles (removes the prologue Hadamard and
+its barrier, ~3%; A fragments then come from per-warp Hadamards, +2.5-20% loop instructions by
+chunk length), split-K of the last down tiles (breaks the bit-exact K-range order).
+
+it 12 (after the final commit) down tiles L2-prefetch their whole 9-k-slice K-range at tile start, to
+  shorten the latency chain of the last tiles (exp-dpfall.json, 400 iterations per arm): m=4
+  336.8 vs 338.0 us (-0.35%), m=8 602.7 vs 604.1 (-0.2%), dup0 -0.1..-0.2%, m=1 161.8 vs 157.7
+  (+2.6%); the stamps show the final imbalance 8.8 -> 7.0 us but a longer fill. Inside the noise
+  at m=4/8 and worse at m=1: DROP. The kernel stays as committed.
+
+it 13 the real extension: vllm-exl3 d3cfd394 cloned on the host (its csrc/p2b_moe.cu == the pin
+  fixture), built offline (--network none) with docker/Dockerfile.e15's exact steps in canonical-e13
+  (/home/sfxnz/projects/data/dsv41-coop-moe/e15-build; its patched csrc/p2b_moe.cu is byte-identical
+  to build_r3/chain_r3.cu; the image's assert line passes). real_ext_check.py on spark2
+  (real-ext-check.json): that vllm_exl3_c with DSV41_P2B_COOP unset / 0 gives p2b's bits (one-hot),
+  1 = bench v1 and 2 = bench v2 = real 1 bitwise over 24 cases (m 1/4/8 x 8 census routings), the
+  engaged line only for 2, no disarm line; cold time real 2 = bench v2 (m=4 226.3 = 226.3 us).
+
+it 14 per-step projection re-derived from all 40 routed layers (r3 review, blocking finding)
+  The r3 figure (-7.37 ms/step at m=4, -16.22 at m=8) was layer 20's median per-call saving x 40.
+  Layer 20 shares more experts than the average routed layer: s10 census duplicate fraction at m=4
+  0.344 (11th of 40) vs the 40-layer mean 0.2987. bench_r3.py gained census_all (the same census
+  windows from every routed layer, drawn layer-stratified: draw i uses layer i mod 40, applied to the
+  layer-20 weights; the kernel's cost depends on the routing, not the weight values) and paired
+  per-call statistics (per-iteration savings between arms, mean +- 95% CI, mean x 40 = ms/step).
+  fix-tlayers.json: 800 iterations per arm (20 per layer), arms alternated, cold and warm, pmon clean,
+  SM 2171-2190 MHz. Cold, per-step (mean paired saving x 40):
+    m=1 v0-v2 0.97 +- 0.05   m=3 4.66 +- 0.12   m=4 6.77 +- 0.15   m=6 9.55 +- 0.22   m=8 15.27 +- 0.28
+    v1-v2 (vs round-2 coop): m=4 1.88 +- 0.04, m=8 3.03 +- 0.08
+    per call, layer-stratified mean us p2b / =1 / =2: m=4 521.6 / 399.4 / 352.4, m=8 1018.0 / 712.0 / 636.3
+  Same run, layer-20 census only: m=4 7.49, m=8 16.76 ms/step (paired means). Per layer the saving is
+  linear in the layer's duplicate fraction (m=4: 424 us per unit dup, r = 0.992; m=8: r = 0.995;
+  per-layer savings 79..249 us at m=4). The reviewer's independent harness read 6.74 / 15.21.
+  Corrected expectation: c=1 (m=4) -6.8 ms of a ~63 ms step, ~+12% tok/s at matched acceptance;
+  c=2 (m=8) -15.3 ms/step. summary.json: time -> time_layer20 (the per-call table, layer 20),
+  projected_ms_per_step_40_layers (this iteration); README.txt serve-arm "Expected" and flags.md
+  DSV41_P2B_COOP row updated.
+
+it 15 round-4 fix pass: the reviewer's missed opportunities (plan and gates written before any run)
+  MO3 per-call fixed cost (stamps at m=4: prologue ~9.5 us, final down-tile imbalance ~8.6 us,
+  output ~2.9 us). Bench-only exploration (make_bench_r3.explore): ONE kernel p2b_df_x_kernel<2,1>
+  derived textually from the production text, every knob compiled in, the knob passed as an extra
+  kernel argument, so all exploration arms run the same machine code:
+    arm 3  knob = production behaviour (control: arm 3 vs v2 = the exploration binary's own cost)
+    arm 4/5/6  the last 1 / 2 / all grids of 64-column down tiles run as two 32-column tiles
+           (each column keeps its K-split, fold and cross-warp sum order: bitwise by construction)
+    arm 7  the last grid of down tasks L2-prefetches its warp's whole K-range at tile start
+    arm 8/9  prologue prefetch of the static first task: 8 / 12 k-slices (production 4)
+  plus prologue sub-stamps (build done, prefetch issued) in the stamped build.
+  MO2 ceiling: a flat 16-B grid-stride read of the same experts' trellis bytes (dense-gemv calib2's
+  best pattern, 48/96/144 blocks) next to the tile-pattern probes, same process and flush.
+  Gates (fixed now): correctness = one-hot bitwise vs p2b, full weights bitwise vs =1, repeat,
+  graph replay and stress bitwise (no tolerance anywhere). A knob is promoted into the served
+  kernel only if, on census_all cold (800 iterations, paired vs v2 and vs the control arm), its
+  saving at m=4 AND m=8 is >= 0.5% of the v2 call with the 95% CI above 0, no other m (1, 3, 6)
+  and no dup0 case is slower beyond its CI, and the promoted kernel's MMA loops stay spill-free.
+  Results (spark2, pmon clean before and after every run, SM 2164-2190 MHz in every timed section).
+  Correctness: x1-check (arms 1-9, m 1..8, census/dup0/census_seq, 4 routings each: 108 entries) and
+  x5/x6 (arms 10-12, 60 entries each): every arm one-hot bitwise = p2b, full weights bitwise = =1,
+  repeat bitwise; graph replay = eager for every arm and m. The 32-column tiles are bitwise equal
+  as predicted. Exploration binary: 80 registers, 3 blocks/SM; its gate/up MMA loop carries 2 LDL
+  (production: 0), hence arm 3 vs v2 below.
+  Timing: census_all cold, 800 iterations per arm, paired mean saving (us, +- 95% CI); arm 3 vs v2,
+  every other arm vs arm 3 (the same machine code):
+    x2-time (seed 41)          m=1        m=3        m=4        m=6        m=8
+    arm 3 (control) vs v2   -6.4+-1.0  -1.8+-0.7  -0.7+-1.4  -0.3+-1.5  -1.0+-1.2
+    arm 4 32-col tail x1    +2.1+-0.8  -0.4+-0.7  -1.3+-1.1  -2.1+-1.4  -1.9+-1.2
+    arm 5 32-col tail x2    -0.7+-1.1  -3.3+-1.0  -4.0+-1.5  -3.3+-1.5  -2.9+-1.3
+    arm 6 32-col all down   -0.4+-1.0 -17.3+-1.4 -22.4+-1.7 -37.4+-2.4 -44.1+-1.9
+    arm 7 tail whole-K pf   -2.2+-0.8  -0.4+-1.0  -1.1+-1.3  -2.4+-2.0  -0.4+-1.2
+    arm 8 prologue pf 8     -0.1+-0.9  +0.8+-1.0  +0.7+-1.2  +0.1+-1.4  -0.4+-1.5
+    arm 9 prologue pf 12    -1.0+-0.8  +0.7+-1.1  -0.4+-1.6  +0.8+-1.3  -0.8+-1.9
+  Narrow tiles: a 32-column down tile keeps the per-tile fixed work (fill ~1.9, cross-warp
+  reduction ~2, task hand-off ~2 us per tile per warp at m=4) and halves only the stream, so a block's
+  last grid becomes two latency chains instead of one: the reviewer's tail idea is bitwise but slower.
+  Prologue sub-stamps (x3-phases, v2, per block median): m=4 sort/chunk build 2.7 us, first-task
+  prefetch issue 0.8, input Hadamard to barrier arrival 5.4 (its dependent ids -> pointer table ->
+  suh loads queue behind the 1.2 MB prefetch burst), first release 10.4-11.8; m=8 4.2 / 0.8 / 7.1 /
+  13.9 (the Hadamard needs 2 rounds: 1920 tasks on 1152 warps).
+    x5-early (seed 53)         m=1        m=3        m=4        m=6        m=8
+    arm 10 early Hadamard   -2.5+-1.0  +2.4+-0.9  +3.3+-1.0  -0.3+-1.0  -0.1+-2.0
+    arm 11 early + pf 8     -4.5+-0.9  +0.8+-1.2  +1.9+-1.2  -0.4+-1.4  +0.1+-2.3
+    x6-early2 (seed 59, arm 12 designed from the x5 stamps: both Hadamard rounds early, m >= 3 only)
+    arm 10 early Hadamard   -3.1+-0.8  +2.2+-0.3  +2.3+-1.0  +0.4+-1.0  +0.4+-1.5
+    arm 12 early x2, m>=3   +0.4+-0.7  +2.5+-0.4  +2.6+-0.8  +1.2+-1.4  +2.3+-2.1
+  arm 12 = +0.74% at m=4 (CI 0.5..0.96%) but +0.36% at m=8: below the 0.5% bar at m=8, so NOT
+  promoted (it is ~0.1 ms/step at c=1 for ~40 lines of prologue). Every other knob fails outright.
+  MO3 verdict: none of the fixed-cost knobs clears the gate; the served kernel stays as committed.
+  MO2 ceiling (x3-phases, x4-stream; census routing of layer 20, cold, trellis bytes, 300 iterations,
+  arms rotating): flat 16-B grid-stride read of the same experts' trellis at 144 blocks
+  227.4 / 232.5-233.5 / 233.8-236.8 GB/s median at m=1 / 4 / 8 (48 blocks: 212-225, the dense-gemv
+  calib's 48-block optimum does not carry over); the coop tile pattern without decode 217.8 /
+  222.5-224.0 / 229.9-231.4; per-warp contiguous runs 216.1 / 222.1 / 227.7; the N-split pattern
+  (a block's 8 warps on 8 adjacent 64-column strips of one K-range: 2 KB contiguous per k-slice)
+  209.0 / 219.2-222.2 / 225.6-228.6, i.e. no better (flags.md Round 10 rejected the N-split
+  decomposition on the old p2b for the same reason). So the ~4% (m=4) / ~2% (m=8) between the tile
+  pattern and the flat sweep is the DRAM's preference for a globally sequential sweep, which a K-split
+  tile with a fixed per-column sum order cannot produce; the only lever is a layout change (flags.md
+  Round 9: group-major trellis, bit-exact, +6% on the old kernel, needs a loader permute and every
+  prefill reader re-indexed). The reviewer's 237 GB/s reference agrees with the flat read at m=8.
+  MO1 (fold the wrapper glue, bound ~10 us/layer ~0.4 ms/step at c=1): not built in this pass. The
+  gain lives in the serve's two-stream graph, not in the kernel: the 16 routing-stream glue kernels
+  overlap the side-stream shared expert and end ~7 us after it. Removing them lets the cooperative
+  144-block launch reach the GPU while the b12x shared expert still holds SMs; at 61,440 registers
+  per SM the dataflow blocks cannot co-reside with b12x CTAs, so the shared down GEMM could queue
+  behind the whole p2b call. A microbench cannot reproduce that SM scheduling faithfully, and ARMS.md
+  says "one boot = one lever": first the DSV41_P2B_COOP=2 serve ABAB, then this as its own lever (plan
+  in kernel_study/p2b_coop/README.txt).
+  The exploration kernel and its variant ids 3-12 live in commit 59a1c95 (make_bench_r3.explore);
+  the harness keeps the prologue sub-stamps, the flat / N-split read probes and --pair-base.
+
+it 16 final suite on the served kernel (unchanged: chain_r3.cu md5 ab128959 = the e15 TU), gates as
+  in it 11 (all bitwise except the full-weight tolerance vs p2b, rel <= 1e-3), more coverage:
+  final4-validate      layer 20 rank 0: check 16 routings x m 1,3,4,6,8 x census/dup0/census_seq with
+                       the fp64 reference, 48 graph replays per m, stress 2000 calls per m
+  final4-validate-l33  layer 33 rank 1 (other weights, other routing): the same without --ref
+  final4-time          time (census layer 20 = per call, census_all = per step, dup0), 800 iterations
+                       per arm, cold and warm, paired; phases (40 calls); stream ceilings (800)
+  final4-real-ext      the real vllm_exl3_c from the e15 recipe vs the bench, bitwise
+  sass_identity_r3.sh  SORT=0/1/2 machine code e14 TU vs e15 TU
+  Results (spark2, pmon clean before and after every run, SM 2171-2190 MHz in every timed section):
+  final4-validate (layer 20 rank 0): 24 check cases pass; =2 one-hot bitwise = p2b, full weights
+    bitwise = =1, repeat bitwise, max rel vs p2b 4.9e-4 (1 ulp), fp64-reference error equal to p2b's
+    in every case (max rel 0.96e-3 .. 1.15e-3, rms rel 8.8e-4); 48 graph replays per m bitwise; stress
+    2000 fresh routings per m, eager and graph replay, 0 mismatches vs =1.
+  final4-validate-l33 (layer 33 rank 1): 24 cases pass, max rel 4.0e-4 (1 ulp), 48 replays per m, stress
+    2000 per m, 0 mismatches.
+  final4-real-ext: the e15-recipe vllm_exl3_c: unset / 0 one-hot = p2b, 1 = bench =1, 2 = bench =2 =
+    real 1, all bitwise; engaged line only for 2, no disarm line; cold m=4 real 227.4 vs bench 230.4 us.
+  final4-sass-identity: SORT=0/1/2 13/13 byte-identical, one new kernel p2b_coop_df_kernel<2, 1>.
+  final4-time (seed 71, 800 iterations per arm), cold median per call, layer-20 census, p2b / =1 / =2:
+    m=1 182.3 / 186.4 / 157.6   m=3 405.5 / 315.5 / 279.6   m=4 521.3 / 378.8 / 336.3 [p10 263.1,
+    p90 392.2]   m=6 759.8 / 559.5 / 508.9   m=8 1013.7 / 669.6 / 606.8 [508.9, 710.6]
+    dup0: m=4 526.3 / 537.5 / 488.4, m=8 1026.0 / 1051.6 / 948.2 (=2 faster than p2b at every m)
+  per step, census_all, paired mean x 40: m=4 6.81 +- 0.16 (vs =1 1.89 +- 0.05), m=8 15.34 +- 0.28
+    (2.92 +- 0.06), m=1 0.97, m=3 4.63, m=6 9.50. Three independent runs now agree: m=4 6.77 / 6.76 /
+    6.81, m=8 15.27 / 15.17 / 15.34 (fix-tlayers, review r4, final4). Per-layer saving linear in the
+    layer's duplicate fraction (m=4 427 us per unit dup, r = 0.994; m=8 871, r = 0.996).
+  read ceiling (same run, same routings' bytes): flat 16-B sweep 231.4 / 234.8 / 235.4 / 236.2 / 236.3
+    GB/s at m = 1 / 3 / 4 / 6 / 8; =2 = 73.4 / 88.0 / 89.5 / 92.6 / 93.2% of it (the review's 89% /
+    93% against 237 GB/s). Tile pattern at the dataflow grid 212.5 / 224.3 / 226.7 / 230.2 / 231.1.
+  phases (=2, stamped): m=4 prologue first release 10.3 us (sort/build 2.6, prefetch issue 0.8,
+    input Hadamard 5.4), final down-tile imbalance 8.7, output 2.9; m=8 13.8 (4.2 / 1.0 / 6.9), 8.6, 2.9.
+  summary.json regenerated from these files. The kernel, the patch and the e15 recipe are unchanged in
+  round 4; DSV41_P2B_COOP=2 goes to the serve ABAB as committed in 421c945.

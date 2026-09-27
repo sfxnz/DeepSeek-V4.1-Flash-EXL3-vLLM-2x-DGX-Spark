@@ -1,0 +1,686 @@
+{
+ "stage": "k3 profile: fresh ground truth for kernel work",
+ "git_head": "c8ad1b0bf883bd3183722d4ebd48b9c9c2006f03",
+ "serve": {
+  "worktree": "/home/sfxnz/projects/ai-lab/recipes/.worktrees/kernels-r3",
+  "cmd": "AUDIT=strict EXTRA_ARGS='--profiler-config {\"profiler\":\"torch\",\"torch_profiler_dir\":\"/tmp/dsv41-traces\"}' ./run.sh",
+  "image": "dsv41-flash-exl3-sm121:canonical-e13 sha256:c81762335a12 (both ranks)",
+  "pack": "2.0bpw-mcg-lmhead-mxfp8",
+  "coop": "off (DSV41_P2B_COOP unset)",
+  "audit": "strict: audit ok on head and worker, both boots",
+  "boot1": "run.sh start 08:14:57Z, exit 08:25:47Z (rc 0)",
+  "boot2": "start 08:38:46Z, exit 08:49:04Z (rc 0), for the c=2 window after boot1's profiler kept ~20 GB of host memory"
+ },
+ "reference_profiler_idle_boot1": {
+  "lail_prose_n10": {
+   "median_lail_tok_s": 34.1,
+   "median_acceptance_len": 2.142,
+   "ms_per_step": 62.82,
+   "runs_tok_s": [
+    33.46,
+    34.46,
+    33.36,
+    31.89,
+    35.47,
+    34.69,
+    35.28,
+    33.75,
+    32.32,
+    37.36
+   ],
+   "n": 10,
+   "median_ttft_s": 0.35
+  },
+  "bench_decode_c1_n9": [
+   {
+    "phase": "prose",
+    "concurrency": 1,
+    "median_decode_tok_s": 39.786,
+    "median_agg_tok_s": 39.78,
+    "n": 9,
+    "acceptance_len": 2.542,
+    "median_ms_per_step": 63.524,
+    "inter_chunk_ms_p50": 62.194,
+    "inter_chunk_ms_p90": 70.317
+   },
+   {
+    "phase": "structured",
+    "concurrency": 1,
+    "median_decode_tok_s": 62.777,
+    "median_agg_tok_s": 62.767,
+    "n": 9,
+    "acceptance_len": 3.961,
+    "median_ms_per_step": 63.093,
+    "inter_chunk_ms_p50": 62.074,
+    "inter_chunk_ms_p90": 63.477
+   }
+  ],
+  "clocks_during_lail": {
+   "spark1": {
+    "samples": 342,
+    "busy_samples": 337,
+    "sm_mhz_median": 2171,
+    "sm_mhz_min": 2171,
+    "power_w_median": 35.81,
+    "temp_c_max": 68,
+    "mem_clock": "[N/A]"
+   },
+   "spark2": {
+    "samples": 341,
+    "busy_samples": 335,
+    "sm_mhz_median": 2190,
+    "sm_mhz_min": 2190,
+    "power_w_median": 32.55,
+    "temp_c_max": 65,
+    "mem_clock": "[N/A]"
+   }
+  },
+  "clocks_during_bench": {
+   "spark1": {
+    "samples": 176,
+    "busy_samples": 169,
+    "sm_mhz_median": 2171,
+    "sm_mhz_min": 2171,
+    "power_w_median": 35.48,
+    "temp_c_max": 66,
+    "mem_clock": "[N/A]"
+   },
+   "spark2": {
+    "samples": 176,
+    "busy_samples": 168,
+    "sm_mhz_median": 2190.0,
+    "sm_mhz_min": 2190,
+    "power_w_median": 32.81,
+    "temp_c_max": 66,
+    "mem_clock": "[N/A]"
+   }
+  }
+ },
+ "jit_after_ready": {
+  "file": "03-jit-check.txt",
+  "tilelang_after_ready": 0,
+  "triton_after_ready_per_rank": 3,
+  "kernels": [
+   "BuildPrefillChunkMetadataKernel.kernel (first smoke request)",
+   "_ring_slot_mapping_kernel (first smoke request)",
+   "_compute_global_topk_indices_and_lens_kernel (2 concurrent requests)"
+  ],
+  "note": "the monitor logs warning_once per kernel name, so counts are distinct kernels; the round-2 mHC n_splits fix holds (TileLang compiled only inside run.sh's warmup)"
+ },
+ "c1_lail_window": {
+  "trace_dir": "/home/sfxnz/projects/data/dsv41-traces/r3-c1-20260925-083142",
+  "per_rank": {
+   "rank0": {
+    "steps": 248,
+    "verify_rows_m": 4,
+    "step_wall_ms": {
+     "median": 64.45,
+     "p10": 62.22,
+     "p90": 72.99,
+     "mean": 66.2
+    },
+    "device_busy_ms": 60.752,
+    "device_idle_ms": 5.445,
+    "kernel_sum_ms": 66.423,
+    "phases_ms": {
+     "target_graph_ms": {
+      "median": 52.12,
+      "p10": 50.43,
+      "p90": 60.24,
+      "mean": 53.79
+     },
+     "draft_graph_ms": {
+      "median": 5.13,
+      "p10": 4.88,
+      "p90": 5.86,
+      "mean": 5.27
+     },
+     "eager_after_target_ms": {
+      "median": 2.52,
+      "p10": 2.49,
+      "p90": 2.89,
+      "mean": 2.61
+     },
+     "eager_before_next_target_ms": {
+      "median": 4.33,
+      "p10": 3.5,
+      "p90": 5.15,
+      "mean": 4.52
+     }
+    },
+    "graph_launch_host_us": {
+     "target": {
+      "median": 3411.64,
+      "p10": 2220.59,
+      "p90": 4417.75,
+      "mean": 3463.88
+     },
+     "draft": {
+      "median": 447.1,
+      "p10": 327.84,
+      "p90": 654.07,
+      "mean": 506.07
+     }
+    }
+   },
+   "rank1": {
+    "steps": 248,
+    "verify_rows_m": 4,
+    "step_wall_ms": {
+     "median": 64.27,
+     "p10": 62.24,
+     "p90": 73.03,
+     "mean": 66.18
+    },
+    "device_busy_ms": 60.378,
+    "device_idle_ms": 5.801,
+    "kernel_sum_ms": 65.577,
+    "phases_ms": {
+     "target_graph_ms": {
+      "median": 51.95,
+      "p10": 50.24,
+      "p90": 59.94,
+      "mean": 53.56
+     },
+     "draft_graph_ms": {
+      "median": 5.15,
+      "p10": 4.88,
+      "p90": 5.95,
+      "mean": 5.3
+     },
+     "eager_after_target_ms": {
+      "median": 2.51,
+      "p10": 2.46,
+      "p90": 2.79,
+      "mean": 2.57
+     },
+     "eager_before_next_target_ms": {
+      "median": 4.5,
+      "p10": 3.6,
+      "p90": 5.43,
+      "mean": 4.75
+     }
+    },
+    "graph_launch_host_us": {
+     "target": {
+      "median": 3463.68,
+      "p10": 2423.41,
+      "p90": 4220.49,
+      "mean": 3496.62
+     },
+     "draft": {
+      "median": 434.58,
+      "p10": 313.25,
+      "p90": 519.65,
+      "mean": 447.45
+     }
+    }
+   }
+  },
+  "full_analysis": [
+   "c1/c1-rank0.json",
+   "c1/c1-rank1.json"
+  ],
+  "profiled_vs_unprofiled_ms_per_step": [
+   64.45,
+   62.82
+  ],
+  "collective_skew_per_step": {
+   "AllReduce_graph_grid5": {
+    "per_step": 80.65,
+    "rank0_wait_ms_per_step": 1.335,
+    "rank1_wait_ms_per_step": 3.915,
+    "skew_median_us_pos_rank1_late": -6.4,
+    "frac_rank1_late": 0.275
+   },
+   "AllReduce_graph_grid3": {
+    "per_step": 7.08,
+    "rank0_wait_ms_per_step": 0.319,
+    "rank1_wait_ms_per_step": 0.352,
+    "skew_median_us_pos_rank1_late": -6.7,
+    "frac_rank1_late": 0.238
+   },
+   "AllGather_graph_grid6": {
+    "per_step": 2.02,
+    "rank0_wait_ms_per_step": 0.002,
+    "rank1_wait_ms_per_step": 0.005,
+    "skew_median_us_pos_rank1_late": -1.6,
+    "frac_rank1_late": 0.328
+   },
+   "AllGather_eager_grid8": {
+    "per_step": 1.02,
+    "rank0_wait_ms_per_step": 0.063,
+    "rank1_wait_ms_per_step": 0.105,
+    "skew_median_us_pos_rank1_late": 31.7,
+    "frac_rank1_late": 0.569
+   },
+   "AllGather_graph_grid8": {
+    "per_step": 1.01,
+    "rank0_wait_ms_per_step": 0.052,
+    "rank1_wait_ms_per_step": 0.074,
+    "skew_median_us_pos_rank1_late": 40.2,
+    "frac_rank1_late": 0.618
+   },
+   "AllReduce_eager_grid5": {
+    "per_step": 1.01,
+    "rank0_wait_ms_per_step": 0.013,
+    "rank1_wait_ms_per_step": 0.082,
+    "skew_median_us_pos_rank1_late": -25.2,
+    "frac_rank1_late": 0.228
+   },
+   "AllReduce_eager_grid8": {
+    "per_step": 0.33,
+    "rank0_wait_ms_per_step": 0.035,
+    "rank1_wait_ms_per_step": 0.024,
+    "skew_median_us_pos_rank1_late": -6.2,
+    "frac_rank1_late": 0.42
+   }
+  },
+  "serve_vs_isolated_microbench": {
+   "rank0": {
+    "qkv_a": {
+     "serve_us_median": 47.58,
+     "serve_us_mean": 52.32,
+     "isolated_us": 43.7,
+     "pct_median": 8.9,
+     "pct_mean": 19.7,
+     "excess_ms_per_step_mean": 0.371
+    },
+    "wq_b": {
+     "serve_us_median": 113.41,
+     "serve_us_mean": 115.68,
+     "isolated_us": 95.6,
+     "pct_median": 18.6,
+     "pct_mean": 21.0,
+     "excess_ms_per_step_mean": 0.863
+    },
+    "wo_b": {
+     "serve_us_median": 105.34,
+     "serve_us_mean": 109.61,
+     "isolated_us": 96.1,
+     "pct_median": 9.6,
+     "pct_mean": 14.1,
+     "excess_ms_per_step_mean": 0.581
+    },
+    "shared_gate_up": {
+     "serve_us_median": 58.5,
+     "serve_us_mean": 60.66,
+     "isolated_us": 53.5,
+     "pct_median": 9.3,
+     "pct_mean": 13.4,
+     "excess_ms_per_step_mean": 0.308
+    },
+    "shared_down": {
+     "serve_us_median": 30.08,
+     "serve_us_mean": 31.68,
+     "isolated_us": 27.7,
+     "pct_median": 8.6,
+     "pct_mean": 14.4,
+     "excess_ms_per_step_mean": 0.171
+    },
+    "main_proj": {
+     "serve_us_median": 389.76,
+     "serve_us_mean": 401.88,
+     "isolated_us": 360.6,
+     "pct_median": 8.1,
+     "pct_mean": 11.4,
+     "excess_ms_per_step_mean": 0.041
+    },
+    "routed_moe_p2b": {
+     "serve_us_median": 546.43,
+     "serve_us_mean": 579.2,
+     "isolated_us": 512.3,
+     "pct_median": 6.7,
+     "pct_mean": 13.1,
+     "excess_ms_per_step_mean": 2.676
+    },
+    "total_excess_ms_per_step": 5.01
+   },
+   "rank1": {
+    "qkv_a": {
+     "serve_us_median": 46.78,
+     "serve_us_mean": 49.47,
+     "isolated_us": 43.7,
+     "pct_median": 7.0,
+     "pct_mean": 13.2,
+     "excess_ms_per_step_mean": 0.248
+    },
+    "wq_b": {
+     "serve_us_median": 112.45,
+     "serve_us_mean": 111.89,
+     "isolated_us": 95.6,
+     "pct_median": 17.6,
+     "pct_mean": 17.0,
+     "excess_ms_per_step_mean": 0.7
+    },
+    "wo_b": {
+     "serve_us_median": 103.23,
+     "serve_us_mean": 104.26,
+     "isolated_us": 96.1,
+     "pct_median": 7.4,
+     "pct_mean": 8.5,
+     "excess_ms_per_step_mean": 0.351
+    },
+    "shared_gate_up": {
+     "serve_us_median": 57.5,
+     "serve_us_mean": 58.44,
+     "isolated_us": 53.5,
+     "pct_median": 7.5,
+     "pct_mean": 9.2,
+     "excess_ms_per_step_mean": 0.212
+    },
+    "shared_down": {
+     "serve_us_median": 29.57,
+     "serve_us_mean": 30.05,
+     "isolated_us": 27.7,
+     "pct_median": 6.8,
+     "pct_mean": 8.5,
+     "excess_ms_per_step_mean": 0.101
+    },
+    "main_proj": {
+     "serve_us_median": 395.94,
+     "serve_us_mean": 397.18,
+     "isolated_us": 360.6,
+     "pct_median": 9.8,
+     "pct_mean": 10.1,
+     "excess_ms_per_step_mean": 0.037
+    },
+    "routed_moe_p2b": {
+     "serve_us_median": 538.85,
+     "serve_us_mean": 546.6,
+     "isolated_us": 512.3,
+     "pct_median": 5.2,
+     "pct_mean": 6.7,
+     "excess_ms_per_step_mean": 1.372
+    },
+    "total_excess_ms_per_step": 3.02
+   }
+  },
+  "layer_budget": [
+   "c1/c1_layer_budget_r0.txt",
+   "c1/c1_layer_budget_r1.txt"
+  ],
+  "phase_budget": [
+   "c1/c1_phase_budget_r0.txt",
+   "c1/c1_phase_budget_r1.txt"
+  ],
+  "graph_startup": "c1/c1_graph_startup.txt",
+  "p2b_distribution": "c1/c1_p2b_dist.txt"
+ },
+ "c2_pair_window": {
+  "trace_dir": "/home/sfxnz/projects/data/dsv41-traces/r3-c2-20260925-093538",
+  "contamination": "spark1's GB10 was shared with another session's Playwright chromium GPU processes (11-hostload-during-c2.log); rank0 p2b median 1524 us (p90 2810) vs rank1 1032 us (p90 1090): rank1 (spark2) kernel times are clean, step-level numbers are not",
+  "max_tokens": 200,
+  "rank1_clean_kernels_m8": {
+   "routed_moe_p2b": {
+    "us_median": 1032.51,
+    "ms_per_step": 41.901,
+    "GBps": 205.7
+   },
+   "wq_b": {
+    "us_median": 116.29,
+    "ms_per_step": 4.967,
+    "GBps": 186.0
+   },
+   "wo_b": {
+    "us_median": 104.74,
+    "ms_per_step": 4.565,
+    "GBps": 206.5
+   },
+   "wo_a": {
+    "us_median": 79.14,
+    "ms_per_step": 3.582,
+    "GBps": 218.6
+   },
+   "lm_head": {
+    "us_median": 1527.47,
+    "ms_per_step": 3.076,
+    "GBps": 223.4
+   },
+   "shared_gate_up": {
+    "us_median": 57.38,
+    "ms_per_step": 2.526,
+    "GBps": 212.0
+   },
+   "qkv_a": {
+    "us_median": 47.26,
+    "ms_per_step": 2.189,
+    "GBps": 200.2
+   },
+   "hc_prenorm": {
+    "us_median": 21.25,
+    "ms_per_step": 1.904,
+    "GBps": 92.5
+   },
+   "engram_wkv": {
+    "us_median": 749.44,
+    "ms_per_step": 1.497,
+    "GBps": 216.4
+   },
+   "shared_down": {
+    "us_median": 30.62,
+    "ms_per_step": 1.472,
+    "GBps": 198.6
+   },
+   "draft_moe_gate_up": {
+    "us_median": 276.91,
+    "ms_per_step": 0.9,
+    "GBps": null
+   },
+   "router_gate": {
+    "us_median": 19.87,
+    "ms_per_step": 0.848,
+    "GBps": 197.9
+   },
+   "bf16_gemm_grid2x1x1": {
+    "us_median": 84.1,
+    "ms_per_step": 0.719,
+    "GBps": null
+   },
+   "router_gate_splitk_reduce": {
+    "us_median": 16.34,
+    "ms_per_step": 0.693,
+    "GBps": null
+   },
+   "draft_moe_down": {
+    "us_median": 130.9,
+    "ms_per_step": 0.431,
+    "GBps": null
+   },
+   "main_proj": {
+    "us_median": 400.02,
+    "ms_per_step": 0.402,
+    "GBps": 202.7
+   },
+   "bf16_gemm_grid8x8x16": {
+    "us_median": 93.57,
+    "ms_per_step": 0.287,
+    "GBps": null
+   },
+   "indexer_wq_b": {
+    "us_median": 27.42,
+    "ms_per_step": 0.222,
+    "GBps": 197.2
+   },
+   "draft_ctx_kv": {
+    "us_median": 46.59,
+    "ms_per_step": 0.143,
+    "GBps": 203.1
+   },
+   "bf16_gemm_grid8x4x16": {
+    "us_median": 73.66,
+    "ms_per_step": 0.074,
+    "GBps": null
+   },
+   "bf16_gemm_grid8x1x9": {
+    "us_median": 15.02,
+    "ms_per_step": 0.057,
+    "GBps": null
+   },
+   "bf16_gemm_grid8x1x1": {
+    "us_median": 5.02,
+    "ms_per_step": 0.022,
+    "GBps": null
+   },
+   "bf16_gemm_grid8x2x2": {
+    "us_median": 2.56,
+    "ms_per_step": 0.008,
+    "GBps": null
+   }
+  },
+  "full_analysis": [
+   "c2/c2-rank0.json",
+   "c2/c2-rank1.json"
+  ]
+ },
+ "boot2_contaminated_benches": {
+  "lail_n3": "10-boot2-lail-n3.log (17.15 tok/s)",
+  "bench_c1_n3": "10-boot2-bench-c1-n3.log (106.9 ms/step)",
+  "bench_c2_n9": "10-bench-decode-c2-n9.log (prose 20.1 tok/s/stream, 128.3 ms/step; structured 31.0, 127.9 ms/step)",
+  "why_invalid": "same GPU sharing as above; boot-1 numbers match the recipe band, boot-2 numbers are 1.7x slower"
+ },
+ "nccl": {
+  "file": "nccl-sweep.json",
+  "best_vs_keep": {
+   "keep_c1": 6.189,
+   "mix0_c1": 3.104,
+   "keep_c2": 6.431,
+   "mix0_c2": 3.368
+  },
+  "per_call_clean": {
+   "ar_m4_gapped_steady_us": [
+    57.56,
+    22.53
+   ],
+   "ar_m8_gapped_steady_us": [
+    63.2,
+    29.12
+   ],
+   "ar_m3_gapped_steady_us": [
+    58.76,
+    21.47
+   ],
+   "ag_m4_gapped_steady_us": [
+    100.94,
+    61.41
+   ],
+   "ar_m4_eager_us": [
+    27.66,
+    25.7
+   ],
+   "order": "[keep, graph_mixing0]"
+  }
+ },
+ "opportunities_ranked": [
+  {
+   "rank": 1,
+   "item": "Routed MoE (p2b) streaming and expert dedup",
+   "now_ms_per_step": 23.168,
+   "facts": "40 x 546.43 us median (579.2 mean), 24 (row, expert) pairs x 4.42 MB = 106.17 MB/call, 194.3 GB/s = 77.7% of 250; c=2: 1032.51 us/call at m=8 (48 pairs, 205.7 GB/s), 41.901 ms/step = ~49% of a clean c=2 step",
+   "recoverable_ms_per_step": {
+    "roofline_all_pairs": 6.18,
+    "dedup_at_today_GBps": 6.92,
+    "dedup_at_roofline": 11.26,
+    "round2_coop_estimate": 4.9
+   },
+   "formula": "roofline_all_pairs = ms - 40*pairs*MB/250; dedup = ms*dup (dup 0.2987, s10 census); dedup_at_roofline = ms - 40*pairs*(1-dup)*MB/250",
+   "note": "rank0 tail (mean - median) is 1.3 ms/step of this; the coop kernel (DSV41_P2B_COOP, round 2) exists but was never measured on GPU"
+  },
+  {
+   "rank": 2,
+   "item": "In-graph NCCL: graph-mixing machinery + graph startup",
+   "now_ms_per_step": 6.189,
+   "facts": "target in-layer AR kernels 2.932 ms/step on rank0 (22.78 us median, 36.65 mean); sweep (clean): keep AR m=4 gapped steady 57.56 us vs mixing-off 22.53 us; first AR per replay: target +619 us, draft +510 us",
+   "recoverable_ms_per_step": {
+    "mixing_off_modeled_c1": 3.08,
+    "mixing_off_modeled_c2": 3.06,
+    "graph_startup_c1": 1.13
+   },
+   "note": "NCCL_GRAPH_MIXING_SUPPORT=0 is unsafe alone (eager AG/AR launched during the outstanding target graph in 100% of steps); needs eager collectives on a second communicator; serve untested"
+  },
+  {
+   "rank": 3,
+   "item": "Dense MXFP8 GEMMs (b12x): streaming efficiency + serving tax",
+   "now_ms_per_step": 21.38,
+   "facts": "wq_b 113.41 us 190.7 GB/s, wo_b 105.34 us 205.3 GB/s, qkv_a 47.58 us 198.8 GB/s, shared_gate_up 58.5 us 208.0 GB/s, shared_down 30.08 us 202.2 GB/s, engram_wkv 758.05 us 214.0 GB/s; in-serve vs isolated cold microbench +8.9..18.6% (median)",
+   "recoverable_ms_per_step": {
+    "roofline": 4.53,
+    "serving_tax_rank0_mean_basis": 2.33,
+    "engram_wkv_tp_shard": 0.78
+   },
+   "note": "engram_wkv is a ReplicatedLinear [25600, 6144] fp8 = 162 MB per rank per engram layer; half of it per rank + a 205 KB all_gather"
+  },
+  {
+   "rank": 4,
+   "item": "Host Engram stage on the critical path (CPU gather + dequant)",
+   "now_ms_per_step": 3.201,
+   "facts": "GPU idle 3200.8 us/step between the draft's DtoH and the next step's HtoD; main thread in engram.py(1747) stage waiting on 16 _fast_stage_one futures (_gather_dequant_v2 ~20% of the gap per thread); census read 0.6-1.3 ms/call, pf_hit 100%",
+   "recoverable_ms_per_step": {
+    "upper": 3.201
+   },
+   "note": "not a GPU kernel, but the largest single idle block; GPU-side dequant of raw fp8 rows, fewer preadv calls, or starting the accepted-prefix rows before the draft finishes"
+  },
+  {
+   "rank": 5,
+   "item": "mHC hyper-connection kernels (prenorm GEMM + pre fuse + post)",
+   "now_ms_per_step": 2.92,
+   "facts": "hc_prenorm 20.74 us x 86 = 1.92 ms at 37.9% of peak; exposed glue AR->prenorm 0.386 + prenorm->qkv_a 0.371 + prenorm->router 0.264 ms/step",
+   "recoverable_ms_per_step": {
+    "prenorm_roofline": 1.241,
+    "fuse_post_prenorm_pre_exposed": 1.02
+   },
+   "note": "DSV41_MHC_DECODE_SPLITS=40 was rejected in R34; a fused post+prenorm+pre kernel is the untried path"
+  },
+  {
+   "rank": 6,
+   "item": "Eager next-step prep chain (host-launch bound)",
+   "now_ms_per_step": 1.099,
+   "facts": "~258 tiny eager kernels per step at ~4 us host cadence after the draft graph (sparse-Markov gather/argmax, attention metadata, SWA indices, cub scans) before the target embed AR",
+   "recoverable_ms_per_step": {
+    "upper": 1.0
+   },
+   "note": "capture into the draft graph or fuse"
+  },
+  {
+   "rank": 7,
+   "item": "wo_a fp8 einsum",
+   "now_ms_per_step": 3.726,
+   "facts": "82.08 us x 43 at 84.3%",
+   "recoverable_ms_per_step": {
+    "roofline": 0.751
+   }
+  },
+  {
+   "rank": 8,
+   "item": "In-graph glue to fold into neighbours",
+   "now_ms_per_step": 1.22,
+   "facts": "p2b -> MoE AR combine (copy, bf16 copy, add; 3 launches/layer) 0.501 ms exposed; indexer chain 0.723 ms exposed",
+   "recoverable_ms_per_step": {
+    "upper": 1.22
+   }
+  },
+  {
+   "rank": 9,
+   "item": "Draft path GEMV/GEMMs",
+   "now_ms_per_step": 1.23,
+   "facts": "draft router gate cutlass 106.08 us at 12.4 GB/s (1.3 MB bf16), on the draft critical path; draft MoE deepgemm 197.75+92.61 us",
+   "recoverable_ms_per_step": {
+    "router_gate_gemv": 0.331
+   }
+  },
+  {
+   "rank": 10,
+   "item": "Rank straggler (spark1 = head, rank 0)",
+   "now_ms_per_step": 3.915,
+   "facts": "rank1 waits 3.915 ms/step in target ARs vs rank0 1.335; rank0 non-NCCL kernel time 63.01 vs rank1 59.74 ms/step; p2b p99 1170 vs 724 us; SM 2171 vs 2190 MHz",
+   "recoverable_ms_per_step": {
+    "upper": 1.99
+   },
+   "note": "environmental (head-node host load, and from 07:27 UTC another session's GPU use); keep spark1 free of other GPU/CPU work during serving"
+  }
+ ],
+ "weight_stream_roofline_c1_rank0": {
+  "gemm_moe_ms": 51.43,
+  "roofline_ms": 38.13
+ }
+}

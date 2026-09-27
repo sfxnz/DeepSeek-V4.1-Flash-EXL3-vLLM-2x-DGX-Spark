@@ -13,7 +13,9 @@ RUN python3 /opt/dsv41-patch/apply_engram_disk.py \
 # Plugin source is cloned at build so the pin is in the RUN line, not a floating latest.
 # Native p2b CUDA is parameterized by hidden/inter in 128-wide tiles. The
 # host gate used to allow only 4096 x {1024,2048}; widen_p2b_shapes.py also
-# allows V4.1 TP=2 5120x1152.
+# allows V4.1 TP=2 5120x1152. coop + dataflow (DSV41_P2B_COOP=1|2, default off,
+# SORT=0/1 kernels byte-identical when off) are the k3 round-3 stages that
+# docker/Dockerfile.e14 layers on canonical-e13 as review-e14.
 ARG VLLM_EXL3_REF=d3cfd394920360d69f820d2dc96f8292a9e10283
 ARG EXLLAMAV3_REF=5be886578ec80324c2c715269387be2058724b6e
 RUN apt-get update \
@@ -33,8 +35,10 @@ RUN apt-get update \
  && python3 /opt/dsv41-patch/widen_p2b_codebook.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_fshift.py /opt/vllm-exl3 \
  && python3 /opt/dsv41-patch/widen_p2b_srcsort.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_coop.py /opt/vllm-exl3 \
+ && python3 /opt/dsv41-patch/widen_p2b_dataflow.py /opt/vllm-exl3 \
  && TORCH_CUDA_ARCH_LIST=12.1a python3 -m pip install --no-build-isolation --no-deps /opt/vllm-exl3 \
- && python3 -c "import torch, vllm_exl3, vllm_exl3_c; assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); print('vllm_exl3 cuda ok')" \
+ && python3 -c "import torch, vllm_exl3, vllm_exl3_c; so = open(vllm_exl3_c.__file__, 'rb').read(); assert hasattr(vllm_exl3_c, 'p2b_fused_moe'); assert b'DSV41_P2B_SRC_SORT' in so and b'DSV41_P2B_COOP' in so and b'p2b coop dataflow kernel engaged' in so; print('vllm_exl3 cuda ok')" \
  && rm -rf /opt/exllamav3 /opt/vllm-exl3 /var/lib/apt/lists/*
 
 ENV VLLM_PLUGINS=vllm_exl3
@@ -54,5 +58,5 @@ RUN python3 /opt/dsv41-patch/widen_b12x_smalls.py /usr/local/lib/python3.12/dist
 # flashinfer cute-dsl path at equal acceptance (2026-09-19 A/B, two 5-run
 # batches per image). Revisit only with a proper kernel-level A/B.
 # run.sh warns when IMAGE lacks this label (e.g. a stale local :latest).
-LABEL dsv41.recipe.patches="shapes,mrow,cfg1,codebook,fshift,srcsort,b12x_smalls,fix_o_proj_woa_fp8,woa_prepack"
+LABEL dsv41.recipe.patches="shapes,mrow,cfg1,codebook,fshift,srcsort,coop,dataflow,b12x_smalls,fix_o_proj_woa_fp8,woa_prepack"
 ENTRYPOINT ["vllm", "serve"]

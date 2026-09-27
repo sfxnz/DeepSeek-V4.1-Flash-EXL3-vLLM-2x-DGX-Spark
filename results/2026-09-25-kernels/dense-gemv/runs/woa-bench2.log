@@ -1,0 +1,35 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T18:11:37Z
+lock acquired 2026-09-25T18:19:38Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/mxfp8/flashinfer.py
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+dsv41-indexer-workspace: already applied
+INFO 09-25 18:19:46 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 18:19:46 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+INFO 09-25 18:19:46 [deep_gemm.py:136] DeepGEMM E8M0 enabled on current platform.
+wo_a M=1 W4 S2 KC512 MR4 grid48: eager bad 0/24, graph bad 0/16
+wo_a M=2 W4 S2 KC512 MR4 grid48: eager bad 0/24, graph bad 0/16
+wo_a M=3 W4 S2 KC512 MR4 grid48: eager bad 0/24, graph bad 0/16
+wo_a M=4 W4 S2 KC512 MR4 grid48: eager bad 0/24, graph bad 0/16
+wo_a M=5 W4 S2 KC512 MR8 grid48: eager bad 0/24, graph bad 0/16
+wo_a M=6 W4 S2 KC512 MR8 grid48: eager bad 0/24, graph bad 0/16
+wo_a M=7 W4 S2 KC512 MR8 grid48: eager bad 0/24, graph bad 0/16
+wo_a M=8 W4 S2 KC512 MR8 grid48: eager bad 0/24, graph bad 0/16
+wo_a M=1 cold us: dg_einsum 80.96 | gemv_grouped 76.64 (+5.6%) | read 73.73
+wo_a M=3 cold us: dg_einsum 81.01 | gemv_grouped 76.61 (+5.7%) | read 73.73
+wo_a M=4 cold us: dg_einsum 81.78 | gemv_grouped 76.67 (+6.7%) | read 73.73
+wo_a M=6 cold us: dg_einsum 81.76 | gemv_grouped 75.84 (+7.8%) | read 73.73
+wo_a M=8 cold us: dg_einsum 81.79 | gemv_grouped 76.61 (+6.8%) | read 73.73
+ALL_OK
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 98 busy 28 sm_median 2190 sm_min_busy 2190 mem ['[N/A]'] power_median 8.1 W
+rc=0

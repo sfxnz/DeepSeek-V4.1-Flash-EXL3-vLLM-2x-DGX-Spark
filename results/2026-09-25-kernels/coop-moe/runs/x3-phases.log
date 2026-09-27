@@ -1,0 +1,46 @@
+# 2026-09-25T17:43:59Z host spark2 tag x3-phases
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.9Gi        85Gi       276Ki        31Gi       115Gi
+Swap:           15Gi       1.1Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode phases,stream --variants 0,2,3,4,7 --ms 1,4,8 --iters 300 --phase-calls 40 --seed 43 --out results/2026-09-25-kernels/coop-moe/x3-phases.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[17:44:12Z] loaded layer 20 rank 0 in 6.1 s
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[17:44:12Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v2": {"grid": 144, "blocks_per_sm": 3.0}, "v3": {"grid": 144, "blocks_per_sm": 3.0}, "v4": {"grid": 144, "blocks_per_sm": 3.0}, "v7": {"grid": 144, "blocks_per_sm": 3.0}}
+[17:44:14Z] [stream] m=1: tile_barrier 121.9us 217.8GB/s [214.2,219.7]  tile_nobarrier 121.9us 217.8GB/s [212.5,219.8]  contiguous 122.7us 216.3GB/s [212.2,219.8]  flat16_g48 124.7us 212.8GB/s [209.0,216.1]  flat16_g96 116.7us 227.4GB/s [223.3,231.4]  flat16_g144 115.7us 229.4GB/s [223.4,233.3]
+[17:44:15Z] [stream] m=4: tile_barrier 307.2us 222.5GB/s [218.3,226.5]  tile_nobarrier 305.2us 221.9GB/s [217.6,225.1]  contiguous 307.2us 221.9GB/s [217.3,225.5]  flat16_g48 308.2us 221.1GB/s [217.5,223.8]  flat16_g96 299.0us 231.9GB/s [226.7,234.8]  flat16_g144 289.8us 233.5GB/s [229.5,237.0]
+[17:44:17Z] [stream] m=8: tile_barrier 574.5us 227.0GB/s [224.1,229.4]  tile_nobarrier 577.1us 226.2GB/s [223.1,228.5]  contiguous 584.2us 224.5GB/s [220.3,227.4]  flat16_g48 588.8us 223.4GB/s [221.3,225.5]  flat16_g96 565.2us 232.9GB/s [229.1,235.5]  flat16_g144 560.6us 233.8GB/s [230.5,236.9]
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[17:44:17Z] [phases] v0 m=1 grid 192: total 171.2 us, skew 0.1, s1 work 2.9 imb 2.7 bar 0.7 | s2 work 106.0 imb 29.5 bar 0.7 | s3 work 2.4 imb 2.1 bar 0.8 | s4 work 0.6 imb 0.3 bar 0.7 | s5 work 1.8 imb 1.5 bar 0.8 | s6 work 47.7 imb 2.9 bar 0.7 | s7 work 1.9 imb 1.6 bar 0.7 | s8 work 0.8 imb 0.1 bar 0.9 | tail 0.5 | uniq 6.0
+[17:44:17Z] [phases] v0 m=4 grid 192: total 516.0 us, skew 0.1, s1 work 3.5 imb 0.8 bar 0.7 | s2 work 325.6 imb 13.3 bar 0.7 | s3 work 2.4 imb 2.1 bar 0.8 | s4 work 0.6 imb 0.3 bar 0.8 | s5 work 1.8 imb 1.5 bar 0.7 | s6 work 169.8 imb 25.1 bar 0.7 | s7 work 2.4 imb 0.6 bar 0.7 | s8 work 1.8 imb 0.4 bar 0.7 | tail 0.5 | uniq 15.8
+[17:44:17Z] [phases] v0 m=8 grid 192: total 1002.3 us, skew 0.1, s1 work 5.6 imb 1.6 bar 0.7 | s2 work 649.4 imb 41.1 bar 0.7 | s3 work 2.6 imb 2.3 bar 0.8 | s4 work 0.8 imb 0.3 bar 0.8 | s5 work 2.0 imb 1.7 bar 0.8 | s6 work 330.2 imb 45.7 bar 0.7 | s7 work 3.5 imb 1.0 bar 0.7 | s8 work 3.0 imb 0.7 bar 0.7 | tail 0.6 | uniq 30.6
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[17:44:18Z] [phases] v2 m=1 grid 144: total 171.2 us, skew 0.1, s1 work 12.6 imb 5.7 bar 0.7 | s2 work 152.0 imb 11.7 bar 0.7 | tail 3.0 | uniq 6.0 | df tiles_per_warp 4.8 fill_us 13.5 loop_us 84.3 reduce_us 8.8 span_us 135.6 between_tiles_us 30.3 | pro build_us 1.57 prefetch_issue_us 4.12 hadamard_us 0.13 first_release_us 13.30
+[17:44:18Z] [phases] v2 m=4 grid 144: total 328.0 us, skew 0.1, s1 work 11.1 imb 1.1 bar 0.7 | s2 work 310.9 imb 8.6 bar 0.7 | tail 2.9 | uniq 15.2 | df tiles_per_warp 12.1 fill_us 25.3 loop_us 220.6 reduce_us 26.2 span_us 300.3 between_tiles_us 26.6 | pro build_us 2.66 prefetch_issue_us 0.83 hadamard_us 5.41 first_release_us 11.78
+[17:44:18Z] [phases] v2 m=8 grid 144: total 626.4 us, skew 0.1, s1 work 13.7 imb 1.3 bar 0.6 | s2 work 608.4 imb 8.6 bar 0.7 | tail 2.7 | uniq 30.2 | df tiles_per_warp 25.0 fill_us 50.4 loop_us 437.9 reduce_us 51.7 span_us 598.7 between_tiles_us 53.6 | pro build_us 4.26 prefetch_issue_us 0.93 hadamard_us 7.11 first_release_us 14.34
+[17:44:18Z] [phases] v3 m=1 grid 144: total 156.8 us, skew 0.1, s1 work 7.9 imb 5.4 bar 0.7 | s2 work 143.9 imb 12.6 bar 0.7 | tail 3.7 | uniq 6.0 | df tiles_per_warp 4.8 fill_us 8.3 loop_us 84.4 reduce_us 7.6 span_us 128.4 between_tiles_us 28.9 | pro build_us 1.63 prefetch_issue_us 0.70 hadamard_us 0.13 first_release_us 8.54
+[17:44:18Z] [phases] v3 m=4 grid 144: total 342.9 us, skew 0.1, s1 work 9.9 imb 0.7 bar 0.7 | s2 work 328.2 imb 8.1 bar 0.7 | tail 3.6 | uniq 16.3 | df tiles_per_warp 12.9 fill_us 24.4 loop_us 236.0 reduce_us 26.6 span_us 318.5 between_tiles_us 28.6 | pro build_us 2.78 prefetch_issue_us 0.67 hadamard_us 5.64 first_release_us 10.54
+[17:44:18Z] [phases] v3 m=8 grid 144: total 612.0 us, skew 0.1, s1 work 13.5 imb 1.3 bar 0.6 | s2 work 593.6 imb 8.4 bar 0.7 | tail 3.5 | uniq 29.6 | df tiles_per_warp 24.6 fill_us 46.1 loop_us 430.8 reduce_us 50.5 span_us 584.5 between_tiles_us 53.6 | pro build_us 4.32 prefetch_issue_us 0.80 hadamard_us 7.06 first_release_us 14.14
+[17:44:18Z] [phases] v4 m=1 grid 144: total 152.8 us, skew 0.1, s1 work 7.9 imb 5.4 bar 0.7 | s2 work 139.5 imb 5.5 bar 0.7 | tail 4.0 | uniq 6.0 | df tiles_per_warp 5.8 fill_us 9.0 loop_us 86.4 reduce_us 8.1 span_us 132.7 between_tiles_us 29.5 | pro build_us 1.66 prefetch_issue_us 0.70 hadamard_us 0.13 first_release_us 8.51
+[17:44:18Z] [phases] v4 m=4 grid 144: total 327.0 us, skew 0.1, s1 work 9.8 imb 0.7 bar 0.7 | s2 work 312.1 imb 6.5 bar 0.7 | tail 3.8 | uniq 15.4 | df tiles_per_warp 13.9 fill_us 24.0 loop_us 227.1 reduce_us 25.2 span_us 304.0 between_tiles_us 28.3 | pro build_us 2.72 prefetch_issue_us 0.67 hadamard_us 5.57 first_release_us 10.46
+[17:44:18Z] [phases] v4 m=8 grid 144: total 586.4 us, skew 0.1, s1 work 13.6 imb 1.2 bar 0.6 | s2 work 566.8 imb 7.0 bar 0.7 | tail 3.8 | uniq 29.1 | df tiles_per_warp 24.8 fill_us 44.8 loop_us 414.0 reduce_us 48.7 span_us 558.7 between_tiles_us 52.2 | pro build_us 4.30 prefetch_issue_us 0.80 hadamard_us 7.16 first_release_us 14.19
+[17:44:18Z] [phases] v7 m=1 grid 144: total 161.0 us, skew 0.1, s1 work 7.9 imb 5.4 bar 0.7 | s2 work 147.8 imb 14.9 bar 0.7 | tail 3.7 | uniq 6.0 | df tiles_per_warp 4.8 fill_us 8.8 loop_us 83.7 reduce_us 8.1 span_us 130.3 between_tiles_us 29.4 | pro build_us 1.66 prefetch_issue_us 0.70 hadamard_us 0.13 first_release_us 8.61
+[17:44:18Z] [phases] v7 m=4 grid 144: total 326.5 us, skew 0.1, s1 work 10.0 imb 0.9 bar 0.7 | s2 work 311.5 imb 8.3 bar 0.7 | tail 3.6 | uniq 16.1 | df tiles_per_warp 12.9 fill_us 24.2 loop_us 225.5 reduce_us 24.7 span_us 301.1 between_tiles_us 28.0 | pro build_us 2.78 prefetch_issue_us 0.67 hadamard_us 5.66 first_release_us 10.62
+[17:44:18Z] [phases] v7 m=8 grid 144: total 613.1 us, skew 0.1, s1 work 13.4 imb 1.1 bar 0.6 | s2 work 595.2 imb 8.6 bar 0.7 | tail 3.5 | uniq 29.8 | df tiles_per_warp 24.6 fill_us 45.7 loop_us 425.1 reduce_us 46.9 span_us 585.0 between_tiles_us 54.2 | pro build_us 4.29 prefetch_issue_us 0.80 hadamard_us 7.14 first_release_us 14.06
+[17:44:18Z] pass=True
+# 2026-09-25T17:44:20Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

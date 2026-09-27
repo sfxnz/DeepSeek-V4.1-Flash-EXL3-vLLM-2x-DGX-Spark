@@ -1,0 +1,92 @@
+# 2026-09-25T13:38:31Z host spark2 tag v5b-dfout-fix
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.1Gi        96Gi       272Ki        22Gi       116Gi
+Swap:           15Gi       1.2Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode check,capture --variants 0,6,10,11,12 --ms 1,3,4,6,8 --check-routings 12 --replays 32 --out results/2026-09-25-kernels/coop-moe/v5b-dfout-fix.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[13:38:44Z] loaded layer 20 rank 0 in 5.8 s
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[13:38:44Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v6": {"grid": 144, "blocks_per_sm": 3.0}, "v10": {"grid": 144, "blocks_per_sm": 3.0}, "v11": {"grid": 144, "blocks_per_sm": 3.0}, "v12": {"grid": 144, "blocks_per_sm": 3.0}}
+[13:38:44Z] [check] v6 m=1 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.510417006211355e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:44Z] [check] v10 m=1 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.510417006211355e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:44Z] [check] v11 m=1 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.510417006211355e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:44Z] [check] v12 m=1 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.510417006211355e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v6 m=1 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0002796420594677329, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v10 m=1 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0002796420594677329, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v11 m=1 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0002796420594677329, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v12 m=1 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0002796420594677329, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v6 m=3 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00014637001731898636, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v10 m=3 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00014637001731898636, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v11 m=3 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00014637001731898636, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v12 m=3 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00014637001731898636, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v6 m=3 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00011322463979013264, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v10 m=3 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00011322463979013264, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v11 m=3 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00011322463979013264, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v12 m=3 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00011322463979013264, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v6 m=4 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.000500751135405153, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v10 m=4 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.000500751135405153, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v11 m=4 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.000500751135405153, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v12 m=4 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.000500751135405153, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v6 m=4 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00013095862232148647, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v10 m=4 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00013095862232148647, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v11 m=4 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00013095862232148647, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:45Z] [check] v12 m=4 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00013095862232148647, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:46Z] [check] v6 m=6 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00023452157620340586, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:46Z] [check] v10 m=6 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00023452157620340586, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:46Z] [check] v11 m=6 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00023452157620340586, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:46Z] [check] v12 m=6 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00023452157620340586, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:46Z] [check] v6 m=6 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0001101321613532491, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:46Z] [check] v10 m=6 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0001101321613532491, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:46Z] [check] v11 m=6 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0001101321613532491, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:46Z] [check] v12 m=6 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0001101321613532491, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:46Z] [check] v6 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024473812663927674, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:46Z] [check] v10 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024473812663927674, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:46Z] [check] v11 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024473812663927674, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:46Z] [check] v12 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024473812663927674, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:47Z] [check] v6 m=8 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024485797621309757, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:47Z] [check] v10 m=8 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024485797621309757, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:47Z] [check] v11 m=8 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024485797621309757, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:47Z] [check] v12 m=8 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024485797621309757, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:47Z] [check] v6 m=8 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00012278978829272091, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:47Z] [check] v10 m=8 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00012278978829272091, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:47Z] [check] v11 m=8 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00012278978829272091, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:47Z] [check] v12 m=8 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00012278978829272091, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:48Z] [check] v6 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024497794220224023, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:48Z] [check] v10 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024497794220224023, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:48Z] [check] v11 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024497794220224023, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:48Z] [check] v12 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024497794220224023, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:38:48Z] [capture] v6 m=1: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v6 m=3: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v6 m=4: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v6 m=6: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v6 m=8: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v10 m=1: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v10 m=3: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v10 m=4: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v10 m=6: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v10 m=8: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v11 m=1: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v11 m=3: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v11 m=4: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v11 m=6: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v11 m=8: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v12 m=1: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v12 m=3: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v12 m=4: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v12 m=6: replay_equals_eager=True (32 replays)
+[13:38:48Z] [capture] v12 m=8: replay_equals_eager=True (32 replays)
+[13:38:48Z] pass=True
+# 2026-09-25T13:38:50Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

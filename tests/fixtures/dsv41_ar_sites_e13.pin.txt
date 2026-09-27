@@ -1,0 +1,106 @@
+# Read-only excerpts (inspect.getsource) from image dsv41-flash-exl3-sm121:canonical-e13
+# (sha256:c81762335a12...), vllm/ paths. The TP all-reduce path that precedes every mHC post:
+# attention wo_b (RowParallelLinear.forward) and the MoE final reduce
+# (MoERunner._maybe_reduce_final_output) both call tensor_model_parallel_all_reduce ->
+# get_tp_group().all_reduce(input_) = GroupCoordinator.all_reduce, which mhc_det_overlap wraps.
+# Pinned for tests/test_mhc_det.py (the same needles as mhc_det_overlap.ANCHORS).
+# ---- vllm.distributed.communication_op.tensor_model_parallel_all_reduce
+# file vllm/distributed/communication_op.py sha256 3c3f8ac60db38ece891d39dc1e2f6f1947ad438685893d2e5777d072320bd1b8
+def tensor_model_parallel_all_reduce(input_: torch.Tensor) -> torch.Tensor:
+    """All-reduce the input tensor across model parallel group."""
+    return get_tp_group().all_reduce(input_)
+
+# ---- vllm.distributed.parallel_state:GroupCoordinator.all_reduce
+# file vllm/distributed/parallel_state.py sha256 33be0ba9795544029ade187c56331c1b21c32bbda5d5cd86761edd14fa8a8259
+    def all_reduce(self, input_: torch.Tensor) -> torch.Tensor:
+        """
+        User-facing all-reduce function before we actually call the
+        all-reduce operation.
+
+        We need this because Dynamo does not support passing an arbitrary
+        object (`self` in this case) to a custom op. We need to pass the
+         group name as a string, and then look up the group coordinator from
+         the group name, dispatch the all-reduce operation to the group
+         coordinator.
+
+        In addition, PyTorch custom ops do not support mutation or returning
+        a new tensor in the same op. So we always make the all-reduce operation
+        out-of-place.
+        """
+        # Bypass the function if we are using only 1 GPU.
+        if self.world_size == 1:
+            return input_
+
+        if self.use_custom_op_call:
+            return torch.ops.vllm.all_reduce(input_, group_name=self.unique_name)
+        else:
+            return self._all_reduce_out_place(input_)
+
+# ---- vllm.model_executor.layers.linear:RowParallelLinear.forward
+# file vllm/model_executor/layers/linear.py sha256 ae4c4d83993a9b36f788f22f7ee46adaac3e5e0d2942d3173e73f75e912eb29b
+    def forward(
+        self,
+        input_,
+    ) -> torch.Tensor | tuple[torch.Tensor, Parameter | None]:
+        if self.input_is_parallel:
+            input_parallel = input_
+        else:
+            split_input = split_tensor_along_last_dim(
+                input_, num_partitions=self.tp_size
+            )
+            input_parallel = split_input[self.tp_rank].contiguous()
+
+        # Matrix multiply.
+        # Only fuse bias add into GEMM for rank 0 (this ensures that
+        # bias will not get added more than once in TP>1 case)
+        bias_ = None if (self.tp_rank > 0 or self.skip_bias_add) else self.bias
+        output_parallel = self.quant_method.apply(self, input_parallel, bias_)
+
+        if self.reduce_results and self.tp_size > 1:
+            output = tensor_model_parallel_all_reduce(output_parallel)
+        else:
+            output = output_parallel
+
+        if not self.return_bias:
+            return output
+        output_bias = self.bias if self.skip_bias_add else None
+        return output, output_bias
+
+# ---- vllm.model_executor.layers.fused_moe.runner.moe_runner:MoERunner._maybe_reduce_final_output
+# file vllm/model_executor/layers/fused_moe/runner/moe_runner.py sha256 635282a1a5dfdf3fa70a7d8f9b0f120abe9142ca921bac24f3037832158c2091
+    def _maybe_reduce_final_output(
+        self,
+        states: torch.Tensor,
+        trunc_size: int | None,
+        output_is_reduced: bool | None = None,
+    ) -> torch.Tensor:
+        """All-reduce the combined output if needed.
+
+        This is the "late" all-reduce path. When neither fused nor shared
+        output was individually reduced, the combined sum is all-reduced
+        here. Skipped when sequence-parallel is active (SP handles its
+        own reduction) or when the early path already reduced both outputs.
+        """
+        # skip_final_all_reduce must not coexist with a pre-reduced fused
+        # output. This should be enforced by MoE config initialization.
+        if self.moe_config.skip_final_all_reduce:
+            assert not self._fused_output_is_reduced, (
+                "skip_final_all_reduce requires an un-reduced fused output"
+            )
+
+        # We don't need to reduce the final output if:
+        # - We are not running with TP or DP
+        # - The MK already reduced the fused output itself.
+        if output_is_reduced is None:
+            output_is_reduced = self._fused_output_is_reduced
+
+        if (
+            not self.moe_config.is_sequence_parallel
+            and not self.moe_config.skip_final_all_reduce
+            and (self.moe_config.tp_size > 1 or self.moe_config.ep_size > 1)
+            and not output_is_reduced
+        ):
+            states = tensor_model_parallel_all_reduce(states)
+
+        return states[..., :trunc_size] if trunc_size is not None else states
+

@@ -1,0 +1,1321 @@
+{
+ "workstream": "mhc-det",
+ "env": {
+  "DSV41_MHC_DET_SPLITS": "16 enables (only value; 0/unset = off, stock). Conflicts refused: DSV41_MHC_DECODE_SPLITS!=0, DSV41_MHC_NO_DEEPGEMM=1",
+  "DSV41_MHC_DET_OVERLAP": "1 enables (needs DSV41_MHC_DET_SPLITS=16; 0/unset = off): the prenorm GEMM + sinkhorn of each decode pre run on a side stream forked at the next TP all-reduce (docker/patch/mhc_det_overlap.py)"
+ },
+ "scope": "decode mHC per sublayer for T<=16 tokens: mhc_post + prenorm GEMM + fused norm; T>16 (prefill) stays stock",
+ "numerics": "bitwise equal to the stock 16-split path (DeepGEMM TF32 prenorm GEMM + TileLang mhc_post + TileLang mhc_pre_big_fuse_with_norm): 4656 GEMM cases (87 real fn, T 1..16), whole 43-layer recurrence 430/430 outputs at T 1/3/4/6/8/16",
+ "determinism": "det path 1000 runs (T=4) and 200 (T=8) of the whole recurrence: 0 differing elements; CUDA graph 100 replays x T {1,3,4,6,8}: 0 mismatches",
+ "stock_determinism": "stock split-K is deterministic: 1000 runs, 0 differing elements, at 16 and 40 splits, GEMM and whole stock pre (gemm_check.json)",
+ "gemm_serve_like_us": {
+  "stock_dg16_T1": {
+   "median": 15.547,
+   "p10": 15.505,
+   "p90": 15.642,
+   "GBps": 129.2,
+   "pct_of_250": 51.7
+  },
+  "det_pk_T1": {
+   "median": 7.924,
+   "p10": 7.884,
+   "p90": 8.0,
+   "GBps": 160.4,
+   "pct_of_250": 64.2
+  },
+  "stock_dg16_T3": {
+   "median": 15.616,
+   "p10": 15.579,
+   "p90": 15.674,
+   "GBps": 134.1,
+   "pct_of_250": 53.6
+  },
+  "det_pk_T3": {
+   "median": 8.748,
+   "p10": 8.702,
+   "p90": 8.822,
+   "GBps": 155.1,
+   "pct_of_250": 62.0
+  },
+  "stock_dg16_T4": {
+   "median": 15.909,
+   "p10": 15.867,
+   "p90": 15.97,
+   "GBps": 134.3,
+   "pct_of_250": 53.7
+  },
+  "det_pk_T4": {
+   "median": 8.673,
+   "p10": 8.631,
+   "p90": 8.734,
+   "GBps": 161.3,
+   "pct_of_250": 64.5
+  },
+  "stock_dg16_T6": {
+   "median": 15.697,
+   "p10": 15.655,
+   "p90": 15.772,
+   "GBps": 141.5,
+   "pct_of_250": 56.6
+  },
+  "det_pk_T6": {
+   "median": 8.651,
+   "p10": 8.615,
+   "p90": 8.708,
+   "GBps": 171.6,
+   "pct_of_250": 68.6
+  },
+  "stock_dg16_T8": {
+   "median": 15.5,
+   "p10": 15.453,
+   "p90": 15.576,
+   "GBps": 148.8,
+   "pct_of_250": 59.5
+  },
+  "det_pk_T8": {
+   "median": 8.616,
+   "p10": 8.568,
+   "p90": 8.668,
+   "GBps": 182.1,
+   "pct_of_250": 72.9
+  },
+  "stock_dg16_T16": {
+   "median": 14.975,
+   "p10": 14.916,
+   "p90": 15.049,
+   "GBps": 176.8,
+   "pct_of_250": 70.7
+  },
+  "det_pk_T16": {
+   "median": 8.68,
+   "p10": 8.64,
+   "p90": 8.749,
+   "GBps": 220.0,
+   "pct_of_250": 88.0
+  }
+ },
+ "gemm_single_call_us": {
+  "stock_dg16_T1_K20480_cold": {
+   "median": 18.432,
+   "p10": 18.432,
+   "p90": 18.464,
+   "GBps": 109.0,
+   "pct_of_250": 43.6
+  },
+  "det_pk_T1_K20480_cold": {
+   "median": 11.264,
+   "p10": 9.312,
+   "p90": 11.296,
+   "GBps": 112.9,
+   "pct_of_250": 45.1
+  },
+  "stock_dg40_T1_K20480_cold": {
+   "median": 14.336,
+   "p10": 13.312,
+   "p90": 14.368,
+   "GBps": 140.3,
+   "pct_of_250": 56.1
+  },
+  "stock_dg16_T1_K20480_warm": {
+   "median": 17.504,
+   "p10": 17.376,
+   "p90": 17.632,
+   "GBps": 114.8,
+   "pct_of_250": 45.9
+  },
+  "det_pk_T1_K20480_warm": {
+   "median": 7.328,
+   "p10": 7.136,
+   "p90": 7.392,
+   "GBps": 173.5,
+   "pct_of_250": 69.4
+  },
+  "stock_dg40_T1_K20480_warm": {
+   "median": 11.36,
+   "p10": 11.232,
+   "p90": 11.488,
+   "GBps": 177.0,
+   "pct_of_250": 70.8
+  },
+  "stock_dg16_T3_K20480_cold": {
+   "median": 18.464,
+   "p10": 18.432,
+   "p90": 18.464,
+   "GBps": 113.4,
+   "pct_of_250": 45.4
+  },
+  "det_pk_T3_K20480_cold": {
+   "median": 11.264,
+   "p10": 9.376,
+   "p90": 11.296,
+   "GBps": 120.4,
+   "pct_of_250": 48.2
+  },
+  "stock_dg40_T3_K20480_cold": {
+   "median": 14.336,
+   "p10": 13.312,
+   "p90": 14.368,
+   "GBps": 146.6,
+   "pct_of_250": 58.6
+  },
+  "stock_dg16_T3_K20480_warm": {
+   "median": 17.488,
+   "p10": 17.376,
+   "p90": 17.632,
+   "GBps": 119.7,
+   "pct_of_250": 47.9
+  },
+  "det_pk_T3_K20480_warm": {
+   "median": 7.392,
+   "p10": 7.36,
+   "p90": 9.216,
+   "GBps": 183.5,
+   "pct_of_250": 73.4
+  },
+  "stock_dg40_T3_K20480_warm": {
+   "median": 11.328,
+   "p10": 11.232,
+   "p90": 11.488,
+   "GBps": 185.5,
+   "pct_of_250": 74.2
+  },
+  "stock_dg16_T4_K20480_cold": {
+   "median": 18.464,
+   "p10": 18.4,
+   "p90": 18.464,
+   "GBps": 115.7,
+   "pct_of_250": 46.3
+  },
+  "det_pk_T4_K20480_cold": {
+   "median": 11.264,
+   "p10": 11.008,
+   "p90": 11.296,
+   "GBps": 124.2,
+   "pct_of_250": 49.7
+  },
+  "stock_dg40_T4_K20480_cold": {
+   "median": 14.336,
+   "p10": 13.312,
+   "p90": 14.368,
+   "GBps": 149.7,
+   "pct_of_250": 59.9
+  },
+  "stock_dg16_T4_K20480_warm": {
+   "median": 17.472,
+   "p10": 17.312,
+   "p90": 17.632,
+   "GBps": 122.3,
+   "pct_of_250": 48.9
+  },
+  "det_pk_T4_K20480_warm": {
+   "median": 9.216,
+   "p10": 7.584,
+   "p90": 9.44,
+   "GBps": 151.8,
+   "pct_of_250": 60.7
+  },
+  "stock_dg40_T4_K20480_warm": {
+   "median": 9.376,
+   "p10": 9.28,
+   "p90": 11.072,
+   "GBps": 228.9,
+   "pct_of_250": 91.5
+  },
+  "stock_dg16_T6_K20480_cold": {
+   "median": 18.432,
+   "p10": 18.4,
+   "p90": 18.496,
+   "GBps": 120.5,
+   "pct_of_250": 48.2
+  },
+  "det_pk_T6_K20480_cold": {
+   "median": 10.272,
+   "p10": 10.208,
+   "p90": 11.296,
+   "GBps": 144.5,
+   "pct_of_250": 57.8
+  },
+  "stock_dg40_T6_K20480_cold": {
+   "median": 14.336,
+   "p10": 13.344,
+   "p90": 14.368,
+   "GBps": 156.0,
+   "pct_of_250": 62.4
+  },
+  "stock_dg16_T6_K20480_warm": {
+   "median": 17.536,
+   "p10": 17.344,
+   "p90": 17.632,
+   "GBps": 126.7,
+   "pct_of_250": 50.7
+  },
+  "det_pk_T6_K20480_warm": {
+   "median": 9.344,
+   "p10": 9.184,
+   "p90": 9.472,
+   "GBps": 158.8,
+   "pct_of_250": 63.5
+  },
+  "stock_dg40_T6_K20480_warm": {
+   "median": 9.44,
+   "p10": 9.344,
+   "p90": 11.264,
+   "GBps": 236.8,
+   "pct_of_250": 94.7
+  },
+  "stock_dg16_T8_K20480_cold": {
+   "median": 18.464,
+   "p10": 18.432,
+   "p90": 18.56,
+   "GBps": 124.9,
+   "pct_of_250": 50.0
+  },
+  "det_pk_T8_K20480_cold": {
+   "median": 11.296,
+   "p10": 10.304,
+   "p90": 11.392,
+   "GBps": 138.9,
+   "pct_of_250": 55.6
+  },
+  "stock_dg40_T8_K20480_cold": {
+   "median": 14.336,
+   "p10": 13.344,
+   "p90": 14.464,
+   "GBps": 162.2,
+   "pct_of_250": 64.9
+  },
+  "stock_dg16_T8_K20480_warm": {
+   "median": 17.536,
+   "p10": 17.312,
+   "p90": 17.664,
+   "GBps": 131.5,
+   "pct_of_250": 52.6
+  },
+  "det_pk_T8_K20480_warm": {
+   "median": 9.344,
+   "p10": 9.152,
+   "p90": 9.44,
+   "GBps": 167.9,
+   "pct_of_250": 67.2
+  },
+  "stock_dg40_T8_K20480_warm": {
+   "median": 9.472,
+   "p10": 9.376,
+   "p90": 11.264,
+   "GBps": 245.5,
+   "pct_of_250": 98.2
+  },
+  "stock_dg16_T16_K20480_cold": {
+   "median": 18.464,
+   "p10": 18.432,
+   "p90": 18.56,
+   "GBps": 143.4,
+   "pct_of_250": 57.3
+  },
+  "det_pk_T16_K20480_cold": {
+   "median": 10.272,
+   "p10": 10.24,
+   "p90": 10.368,
+   "GBps": 185.9,
+   "pct_of_250": 74.4
+  },
+  "stock_dg40_T16_K20480_cold": {
+   "median": 14.368,
+   "p10": 13.344,
+   "p90": 14.464,
+   "GBps": 186.9,
+   "pct_of_250": 74.8
+  },
+  "stock_dg16_T16_K20480_warm": {
+   "median": 17.504,
+   "p10": 17.28,
+   "p90": 17.6,
+   "GBps": 151.2,
+   "pct_of_250": 60.5
+  },
+  "det_pk_T16_K20480_warm": {
+   "median": 9.568,
+   "p10": 9.44,
+   "p90": 11.328,
+   "GBps": 199.6,
+   "pct_of_250": 79.8
+  },
+  "stock_dg40_T16_K20480_warm": {
+   "median": 9.44,
+   "p10": 9.344,
+   "p90": 11.232,
+   "GBps": 284.5,
+   "pct_of_250": 113.8
+  },
+  "stock_dg16_T4_K5120_cold": {
+   "median": 8.192,
+   "p10": 8.16,
+   "p90": 8.288,
+   "GBps": 65.8,
+   "pct_of_250": 26.3
+  },
+  "det_pk_T4_K5120_cold": {
+   "median": 6.144,
+   "p10": 6.112,
+   "p90": 6.176,
+   "GBps": 57.7,
+   "pct_of_250": 23.1
+  },
+  "stock_dg16_T4_K5120_warm": {
+   "median": 7.36,
+   "p10": 7.136,
+   "p90": 7.488,
+   "GBps": 73.2,
+   "pct_of_250": 29.3
+  },
+  "det_pk_T4_K5120_warm": {
+   "median": 5.312,
+   "p10": 5.088,
+   "p90": 5.344,
+   "GBps": 66.7,
+   "pct_of_250": 26.7
+  }
+ },
+ "path_per_86_sublayers_us_non_pdl_proxy": {
+  "stock_T1": {
+   "median": 2004.128,
+   "p10": 2001.152,
+   "p90": 2009.216,
+   "per_sublayer": 23.304
+  },
+  "det_stock_norm_T1": {
+   "median": 1130.256,
+   "p10": 1126.816,
+   "p90": 1134.56,
+   "per_sublayer": 13.143
+  },
+  "det_T1": {
+   "median": 1012.688,
+   "p10": 1008.864,
+   "p90": 1017.728,
+   "per_sublayer": 11.775
+  },
+  "stock_T3": {
+   "median": 2139.136,
+   "p10": 2136.288,
+   "p90": 2143.328,
+   "per_sublayer": 24.874
+  },
+  "det_stock_norm_T3": {
+   "median": 1186.976,
+   "p10": 1182.656,
+   "p90": 1192.16,
+   "per_sublayer": 13.802
+  },
+  "det_T3": {
+   "median": 1097.632,
+   "p10": 1093.44,
+   "p90": 1104.992,
+   "per_sublayer": 12.763
+  },
+  "stock_T4": {
+   "median": 2141.072,
+   "p10": 2137.856,
+   "p90": 2144.864,
+   "per_sublayer": 24.896
+  },
+  "det_stock_norm_T4": {
+   "median": 1201.376,
+   "p10": 1197.152,
+   "p90": 1206.688,
+   "per_sublayer": 13.969
+  },
+  "det_T4": {
+   "median": 1110.464,
+   "p10": 1106.624,
+   "p90": 1116.064,
+   "per_sublayer": 12.912
+  },
+  "stock_T6": {
+   "median": 2142.576,
+   "p10": 2139.104,
+   "p90": 2149.664,
+   "per_sublayer": 24.914
+  },
+  "det_stock_norm_T6": {
+   "median": 1225.856,
+   "p10": 1220.032,
+   "p90": 1232.672,
+   "per_sublayer": 14.254
+  },
+  "det_T6": {
+   "median": 1119.808,
+   "p10": 1116.608,
+   "p90": 1123.84,
+   "per_sublayer": 13.021
+  },
+  "stock_T8": {
+   "median": 2010.736,
+   "p10": 2006.88,
+   "p90": 2150.112,
+   "per_sublayer": 23.381
+  },
+  "det_stock_norm_T8": {
+   "median": 1141.744,
+   "p10": 1136.8,
+   "p90": 1269.12,
+   "per_sublayer": 13.276
+  },
+  "det_T8": {
+   "median": 1034.416,
+   "p10": 1029.568,
+   "p90": 1136.992,
+   "per_sublayer": 12.028
+  }
+ },
+ "path_per_86_sublayers_us_pdl_proxy": {
+  "stock_T4": {
+   "bitwise_vs_stock": true,
+   "median_us": 1954.992,
+   "p10_us": 1951.744,
+   "p90_us": 1961.696
+  },
+  "det_T4": {
+   "bitwise_vs_stock": true,
+   "median_us": 997.12,
+   "p10_us": 990.432,
+   "p90_us": 1003.648
+  },
+  "stock_T8": {
+   "bitwise_vs_stock": true,
+   "median_us": 1956.096,
+   "p10_us": 1952.096,
+   "p90_us": 1963.296
+  },
+  "det_T8": {
+   "bitwise_vs_stock": true,
+   "median_us": 1017.52,
+   "p10_us": 1012.864,
+   "p90_us": 1022.368
+  }
+ },
+ "projection_ms_per_step_c1": "det: -1.03 (isolated chain, T=4: 2141.1 -> 1110.5 us per 86-sublayer pass) to about -1.4 (if the stock path's 1.36x in-serve inflation carries over); overlap: about -0.6 to -0.75 more (overlap.projection_ms_per_step_c1)",
+ "sinkhorn_independent_shuffles_ab": {
+  "what": "rowsum4/colsum4: the TileLang butterfly additions with three independent SHFL.BFLY per sum (iterations.txt item 15)",
+  "paired_delta_per_86_sublayer_pass": {
+   "shfl3_vs_4f661a5": {
+    "T1": {
+     "4f661a5_minus_shipped_median_us": 30.288,
+     "p10": 22.592,
+     "p90": 38.368,
+     "both_bitwise_vs_stock": true
+    },
+    "T3": {
+     "4f661a5_minus_shipped_median_us": 27.744,
+     "p10": 22.336,
+     "p90": 33.184,
+     "both_bitwise_vs_stock": true
+    },
+    "T4": {
+     "4f661a5_minus_shipped_median_us": 29.52,
+     "p10": 24.448,
+     "p90": 35.52,
+     "both_bitwise_vs_stock": true
+    },
+    "T6": {
+     "4f661a5_minus_shipped_median_us": 33.68,
+     "p10": 27.424,
+     "p90": 41.184,
+     "both_bitwise_vs_stock": true
+    },
+    "T8": {
+     "4f661a5_minus_shipped_median_us": 32.192,
+     "p10": 20.192,
+     "p90": 43.584,
+     "both_bitwise_vs_stock": true
+    }
+   },
+   "shfl3_vs_4f661a5_pdl": {
+    "T1": {
+     "4f661a5_minus_shipped_median_us": 30.048,
+     "p10": 21.984,
+     "p90": 39.104,
+     "both_bitwise_vs_stock": true
+    },
+    "T3": {
+     "4f661a5_minus_shipped_median_us": 31.2,
+     "p10": 25.76,
+     "p90": 37.024,
+     "both_bitwise_vs_stock": true
+    },
+    "T4": {
+     "4f661a5_minus_shipped_median_us": 27.712,
+     "p10": 20.736,
+     "p90": 35.392,
+     "both_bitwise_vs_stock": true
+    },
+    "T6": {
+     "4f661a5_minus_shipped_median_us": 33.28,
+     "p10": 25.792,
+     "p90": 38.56,
+     "both_bitwise_vs_stock": true
+    },
+    "T8": {
+     "4f661a5_minus_shipped_median_us": 30.0,
+     "p10": 19.744,
+     "p90": 39.808,
+     "both_bitwise_vs_stock": true
+    }
+   },
+   "final_vs_4f661a5 (the reviewed commit)": {
+    "T1": {
+     "alt_minus_shipped_median_us": 30.896,
+     "p10": 24.256,
+     "p90": 38.336,
+     "both_bitwise_vs_stock": true
+    },
+    "T3": {
+     "alt_minus_shipped_median_us": 33.584,
+     "p10": 27.776,
+     "p90": 39.232,
+     "both_bitwise_vs_stock": true
+    },
+    "T4": {
+     "alt_minus_shipped_median_us": 31.888,
+     "p10": 25.696,
+     "p90": 37.376,
+     "both_bitwise_vs_stock": true
+    },
+    "T6": {
+     "alt_minus_shipped_median_us": 30.336,
+     "p10": 19.84,
+     "p90": 40.416,
+     "both_bitwise_vs_stock": true
+    },
+    "T8": {
+     "alt_minus_shipped_median_us": 38.592,
+     "p10": 22.976,
+     "p90": 51.36,
+     "both_bitwise_vs_stock": true
+    }
+   },
+   "final_vs_850ee65 (before the norm refactor: must be neutral)": {
+    "T1": {
+     "alt_minus_shipped_median_us": 1.056,
+     "p10": -6.304,
+     "p90": 6.976,
+     "both_bitwise_vs_stock": true
+    },
+    "T3": {
+     "alt_minus_shipped_median_us": 2.192,
+     "p10": -4.704,
+     "p90": 8.128,
+     "both_bitwise_vs_stock": true
+    },
+    "T4": {
+     "alt_minus_shipped_median_us": -0.928,
+     "p10": -6.368,
+     "p90": 5.184,
+     "both_bitwise_vs_stock": true
+    },
+    "T6": {
+     "alt_minus_shipped_median_us": -8.784,
+     "p10": -18.336,
+     "p90": 1.728,
+     "both_bitwise_vs_stock": true
+    },
+    "T8": {
+     "alt_minus_shipped_median_us": 3.296,
+     "p10": -6.72,
+     "p90": 13.44,
+     "both_bitwise_vs_stock": true
+    }
+   }
+  }
+ },
+ "packed_fn_gpu_memory_per_rank": "86 x 1,228,800 B + 307,200 B (broadcast) = 105,984,000 B = 101.1 MiB",
+ "final_suite": {
+  "code": "8d1afbd (kernel_study/mhc_det, runs fin-*; spark2, pmon clean before and after every run, SM 2190 MHz)",
+  "sass": "sass/mhc_det.sass re-disassembled from the fin-cubin build: identical"
+ },
+ "overlap": {
+  "what": "DSV41_MHC_DET_OVERLAP: layer_input right after the post; prenorm GEMM + coefficient half on a side stream under the next TP all-reduce (iterations.txt 16-19)",
+  "probe": "kernel_study/mhc_det/overlap_probe.py: 86 sublayers, real weights; AR stand-in = 5 CTAs spinning on globaltimer without memory traffic; work stand-in = 4 MB streamed per sublayer; one graph per arm, 200 round-robin reps; us per 86-sublayer pass = arm - stand-ins only",
+  "runs": {
+   "fin": {
+    "ar_us": 22.7,
+    "rows": {
+     "T1": {
+      "mismatching_outputs": 0,
+      "stock": 2011.152,
+      "det": 1007.872,
+      "pf": 827.776,
+      "ovl": 299.984,
+      "ovl_minus_det": [
+       -707.92,
+       -720.736,
+       -695.424
+      ],
+      "pf_minus_det": [
+       -178.736,
+       -192.448,
+       -157.568
+      ]
+     },
+     "T3": {
+      "mismatching_outputs": 0,
+      "stock": 2036.48,
+      "det": 1039.184,
+      "pf": 917.456,
+      "ovl": 429.776,
+      "ovl_minus_det": [
+       -602.464,
+       -724.864,
+       -584.736
+      ],
+      "pf_minus_det": [
+       -129.376,
+       -146.176,
+       -113.184
+      ]
+     },
+     "T4": {
+      "mismatching_outputs": 0,
+      "stock": 2171.552,
+      "det": 1113.248,
+      "pf": 978.032,
+      "ovl": 402.4,
+      "ovl_minus_det": [
+       -717.024,
+       -732.512,
+       -590.656
+      ],
+      "pf_minus_det": [
+       -130.592,
+       -148.256,
+       -87.168
+      ]
+     },
+     "T6": {
+      "mismatching_outputs": 0,
+      "stock": 2176.224,
+      "det": 1132.784,
+      "pf": 1027.296,
+      "ovl": 399.184,
+      "ovl_minus_det": [
+       -734.048,
+       -746.72,
+       -674.752
+      ],
+      "pf_minus_det": [
+       -103.504,
+       -119.136,
+       -89.12
+      ]
+     },
+     "T8": {
+      "mismatching_outputs": 0,
+      "stock": 2181.76,
+      "det": 1143.872,
+      "pf": 1040.784,
+      "ovl": 399.968,
+      "ovl_minus_det": [
+       -743.536,
+       -755.968,
+       -730.88
+      ],
+      "pf_minus_det": [
+       -102.832,
+       -116.128,
+       -90.592
+      ]
+     }
+    }
+   },
+   "fin_ar12": {
+    "ar_us": 12.0,
+    "rows": {
+     "T4": {
+      "mismatching_outputs": 0,
+      "stock": 2179.52,
+      "det": 1126.336,
+      "pf": 985.504,
+      "ovl": 389.456,
+      "ovl_minus_det": [
+       -737.616,
+       -751.68,
+       -610.624
+      ],
+      "pf_minus_det": [
+       -138.4,
+       -152.352,
+       -102.368
+      ]
+     },
+     "T8": {
+      "mismatching_outputs": 0,
+      "stock": 2180.432,
+      "det": 1137.776,
+      "pf": 1036.368,
+      "ovl": 385.488,
+      "ovl_minus_det": [
+       -751.6,
+       -769.664,
+       -738.624
+      ],
+      "pf_minus_det": [
+       -100.8,
+       -117.664,
+       -86.944
+      ]
+     }
+    }
+   },
+   "final": {
+    "ar_us": 22.7,
+    "rows": {
+     "T1": {
+      "mismatching_outputs": 0,
+      "stock": 2157.136,
+      "det": 1087.728,
+      "pf": 924.688,
+      "ovl": 363.664,
+      "ovl_minus_det": [
+       -724.72,
+       -733.984,
+       -716.096
+      ],
+      "pf_minus_det": [
+       -164.048,
+       -173.76,
+       -155.392
+      ]
+     },
+     "T3": {
+      "mismatching_outputs": 0,
+      "stock": 2178.112,
+      "det": 1113.136,
+      "pf": 971.68,
+      "ovl": 392.832,
+      "ovl_minus_det": [
+       -720.864,
+       -731.904,
+       -709.888
+      ],
+      "pf_minus_det": [
+       -142.288,
+       -153.344,
+       -131.552
+      ]
+     },
+     "T4": {
+      "mismatching_outputs": 0,
+      "stock": 2039.424,
+      "det": 1042.272,
+      "pf": 947.504,
+      "ovl": 441.376,
+      "ovl_minus_det": [
+       -601.056,
+       -616.576,
+       -588.288
+      ],
+      "pf_minus_det": [
+       -95.152,
+       -110.528,
+       -82.656
+      ]
+     },
+     "T6": {
+      "mismatching_outputs": 0,
+      "stock": 2050.464,
+      "det": 1059.344,
+      "pf": 961.552,
+      "ovl": 463.552,
+      "ovl_minus_det": [
+       -592.048,
+       -744.288,
+       -577.984
+      ],
+      "pf_minus_det": [
+       -100.72,
+       -118.752,
+       -86.592
+      ]
+     },
+     "T8": {
+      "mismatching_outputs": 0,
+      "stock": 2159.6,
+      "det": 1118.704,
+      "pf": 1010.896,
+      "ovl": 450.192,
+      "ovl_minus_det": [
+       -725.104,
+       -750.528,
+       -575.104
+      ],
+      "pf_minus_det": [
+       -84.112,
+       -108.928,
+       -53.44
+      ]
+     }
+    }
+   },
+   "final_ar6": {
+    "ar_us": 6.0,
+    "rows": {
+     "T4": {
+      "mismatching_outputs": 0,
+      "stock": 2028.224,
+      "det": 1031.488,
+      "pf": 924.176,
+      "ovl": 598.56,
+      "ovl_minus_det": [
+       -431.584,
+       -559.296,
+       -416.736
+      ],
+      "pf_minus_det": [
+       -108.656,
+       -154.112,
+       -94.848
+      ]
+     },
+     "T8": {
+      "mismatching_outputs": 0,
+      "stock": 2174.304,
+      "det": 1140.56,
+      "pf": 1027.024,
+      "ovl": 403.472,
+      "ovl_minus_det": [
+       -738.336,
+       -751.584,
+       -715.168
+      ],
+      "pf_minus_det": [
+       -112.352,
+       -124.736,
+       -91.2
+      ]
+     }
+    }
+   },
+   "ar22": {
+    "ar_us": 22.7,
+    "rows": {
+     "T1": {
+      "mismatching_outputs": 0,
+      "stock": 2014.512,
+      "det": 1009.248,
+      "pf": 828.32,
+      "ovl": 300.56,
+      "ovl_minus_det": [
+       -708.624,
+       -723.264,
+       -695.328
+      ],
+      "pf_minus_det": [
+       -180.304,
+       -195.328,
+       -161.952
+      ]
+     },
+     "T3": {
+      "mismatching_outputs": 0,
+      "stock": 2030.784,
+      "det": 1028.688,
+      "pf": 919.536,
+      "ovl": 428.736,
+      "ovl_minus_det": [
+       -592.448,
+       -721.344,
+       -575.296
+      ],
+      "pf_minus_det": [
+       -117.648,
+       -145.216,
+       -100.0
+      ]
+     },
+     "T4": {
+      "mismatching_outputs": 0,
+      "stock": 2167.552,
+      "det": 1118.864,
+      "pf": 982.4,
+      "ovl": 399.872,
+      "ovl_minus_det": [
+       -723.776,
+       -737.824,
+       -582.048
+      ],
+      "pf_minus_det": [
+       -130.56,
+       -145.728,
+       -88.096
+      ]
+     },
+     "T6": {
+      "mismatching_outputs": 0,
+      "stock": 2180.416,
+      "det": 1132.72,
+      "pf": 1025.632,
+      "ovl": 403.52,
+      "ovl_minus_det": [
+       -731.552,
+       -746.08,
+       -585.216
+      ],
+      "pf_minus_det": [
+       -105.28,
+       -120.032,
+       -86.208
+      ]
+     },
+     "T8": {
+      "mismatching_outputs": 0,
+      "stock": 2172.304,
+      "det": 1134.08,
+      "pf": 1035.44,
+      "ovl": 389.328,
+      "ovl_minus_det": [
+       -743.52,
+       -756.832,
+       -730.976
+      ],
+      "pf_minus_det": [
+       -98.896,
+       -112.736,
+       -88.256
+      ]
+     }
+    }
+   },
+   "ar12": {
+    "ar_us": 12.0,
+    "rows": {
+     "T4": {
+      "mismatching_outputs": 0,
+      "stock": 2161.232,
+      "det": 1116.464,
+      "pf": 972.656,
+      "ovl": 387.584,
+      "ovl_minus_det": [
+       -736.544,
+       -753.856,
+       -618.464
+      ],
+      "pf_minus_det": [
+       -134.32,
+       -154.304,
+       -93.952
+      ]
+     },
+     "T8": {
+      "mismatching_outputs": 0,
+      "stock": 2178.608,
+      "det": 1144.912,
+      "pf": 1041.328,
+      "ovl": 390.784,
+      "ovl_minus_det": [
+       -755.856,
+       -772.128,
+       -741.984
+      ],
+      "pf_minus_det": [
+       -102.752,
+       -119.04,
+       -89.92
+      ]
+     }
+    }
+   },
+   "ar6": {
+    "ar_us": 6.0,
+    "rows": {
+     "T4": {
+      "mismatching_outputs": 0,
+      "stock": 2188.656,
+      "det": 1131.568,
+      "pf": 974.176,
+      "ovl": 570.384,
+      "ovl_minus_det": [
+       -561.792,
+       -571.936,
+       -549.44
+      ],
+      "pf_minus_det": [
+       -157.456,
+       -168.096,
+       -146.144
+      ]
+     },
+     "T8": {
+      "mismatching_outputs": 0,
+      "stock": 2046.784,
+      "det": 1060.544,
+      "pf": 990.624,
+      "ovl": 471.632,
+      "ovl_minus_det": [
+       -586.704,
+       -743.072,
+       -571.744
+      ],
+      "pf_minus_det": [
+       -71.728,
+       -113.44,
+       -59.136
+      ]
+     }
+    }
+   }
+  },
+  "summary": "ovl - det: -592..-756 us per pass at T 1..8 with a 12-22.7 us window (final suite: -707.9/-602.5/-717.0/-734.0/-743.5 at T 1/3/4/6/8), -432..-738 with a 6 us window; pf (L2 prefetch of the next fn only) -84..-180, subsumed and not built; every output bitwise equal to stock",
+  "projection_ms_per_step_c1": "about -0.6 to -0.75 on top of DSV41_MHC_DET_SPLITS=16, if NCCL RING_LL keeps its time with the side stream reading 1.23 MB beside it (not measurable on one GPU)"
+ },
+ "checks_final_suite": {
+  "gemm_bitwise": "4656/4656 (87 real fn, T 1..16, 6 input families); determinism 1000 runs 0 (det, stock 16/40 splits, stock pre 16/40); graph 100 replays x 5 T: 0",
+  "path_bitwise": "post 96/96; whole 43-layer recurrence 430/430 at T 1/3/4/6/8/16 (det and det with the TileLang norm); 1000-run (T=4) / 200-run (T=8) determinism 0; graph 0/100 x 5 T",
+  "lever_smoke": "PASS (fused lever through the patched vLLM names, eager and graph, T>16 stock, unpacked fn in capture falls back)",
+  "lever_smoke_overlap": {
+   "pass": true,
+   "chain": [
+    {
+     "T": 1,
+     "bitwise_with_all_reduce": true,
+     "bitwise_without": true,
+     "forks": 4,
+     "in_place": 4,
+     "pending_after": false
+    },
+    {
+     "T": 3,
+     "bitwise_with_all_reduce": true,
+     "bitwise_without": true,
+     "forks": 4,
+     "in_place": 4,
+     "pending_after": false
+    },
+    {
+     "T": 4,
+     "bitwise_with_all_reduce": true,
+     "bitwise_without": true,
+     "forks": 4,
+     "in_place": 4,
+     "pending_after": false
+    },
+    {
+     "T": 6,
+     "bitwise_with_all_reduce": true,
+     "bitwise_without": true,
+     "forks": 4,
+     "in_place": 4,
+     "pending_after": false
+    },
+    {
+     "T": 8,
+     "bitwise_with_all_reduce": true,
+     "bitwise_without": true,
+     "forks": 4,
+     "in_place": 4,
+     "pending_after": false
+    },
+    {
+     "T": 16,
+     "bitwise_with_all_reduce": true,
+     "bitwise_without": true,
+     "forks": 4,
+     "in_place": 4,
+     "pending_after": false
+    },
+    {
+     "T": 17,
+     "bitwise_with_all_reduce": true,
+     "bitwise_without": true,
+     "forks": 0,
+     "in_place": 0,
+     "pending_after": false
+    },
+    {
+     "T": 64,
+     "bitwise_with_all_reduce": true,
+     "bitwise_without": true,
+     "forks": 0,
+     "in_place": 0,
+     "pending_after": false
+    }
+   ],
+   "capture": {
+    "forks_captured": 4,
+    "pending_after": false,
+    "mismatching_replays_of_50": 0
+   }
+  },
+  "race_check": {
+   "reps": 50,
+   "T": [
+    1,
+    3,
+    4,
+    6,
+    8,
+    16
+   ],
+   "outputs_per_rep": 430,
+   "mismatching_outputs": {
+    "T1": {
+     "det_graph": 0,
+     "stock_graph": 0,
+     "det_eager": 0,
+     "ovl_graph": 0,
+     "ovl_eager": 0
+    },
+    "T3": {
+     "det_graph": 0,
+     "stock_graph": 0,
+     "det_eager": 0,
+     "ovl_graph": 0,
+     "ovl_eager": 0
+    },
+    "T4": {
+     "det_graph": 0,
+     "stock_graph": 0,
+     "det_eager": 0,
+     "ovl_graph": 0,
+     "ovl_eager": 0
+    },
+    "T6": {
+     "det_graph": 0,
+     "stock_graph": 0,
+     "det_eager": 0,
+     "ovl_graph": 0,
+     "ovl_eager": 0
+    },
+    "T8": {
+     "det_graph": 0,
+     "stock_graph": 0,
+     "det_eager": 0,
+     "ovl_graph": 0,
+     "ovl_eager": 0
+    },
+    "T16": {
+     "det_graph": 0,
+     "stock_graph": 0,
+     "det_eager": 0,
+     "ovl_graph": 0,
+     "ovl_eager": 0
+    }
+   },
+   "negative_controls_T4_T8": {
+    "gemm_nowait": {
+     "detected": true,
+     "mismatching_outputs": {
+      "T4": {
+       "det_graph": 2090,
+       "stock_graph": 0,
+       "det_eager": 0,
+       "ovl_graph": 0,
+       "ovl_eager": 0
+      },
+      "T8": {
+       "det_graph": 2089,
+       "stock_graph": 0,
+       "det_eager": 0,
+       "ovl_graph": 0,
+       "ovl_eager": 0
+      }
+     }
+    },
+    "coef_nowait": {
+     "detected": true,
+     "mismatching_outputs": {
+      "T4": {
+       "det_graph": 2130,
+       "stock_graph": 0,
+       "det_eager": 388,
+       "ovl_graph": 2130,
+       "ovl_eager": 43
+      },
+      "T8": {
+       "det_graph": 2130,
+       "stock_graph": 0,
+       "det_eager": 0,
+       "ovl_graph": 2130,
+       "ovl_eager": 238
+      }
+     }
+    },
+    "li_nowait": {
+     "detected": true,
+     "mismatching_outputs": {
+      "T4": {
+       "det_graph": 0,
+       "stock_graph": 0,
+       "det_eager": 0,
+       "ovl_graph": 2040,
+       "ovl_eager": 0
+      },
+      "T8": {
+       "det_graph": 0,
+       "stock_graph": 0,
+       "det_eager": 0,
+       "ovl_graph": 789,
+       "ovl_eager": 0
+      }
+     }
+    },
+    "ovl_nojoin": {
+     "detected": true,
+     "mismatching_outputs": {
+      "T4": {
+       "det_graph": 0,
+       "stock_graph": 0,
+       "det_eager": 0,
+       "ovl_graph": 2100,
+       "ovl_eager": 0
+      },
+      "T8": {
+       "det_graph": 0,
+       "stock_graph": 0,
+       "det_eager": 0,
+       "ovl_graph": 2111,
+       "ovl_eager": 0
+      }
+     }
+    }
+   }
+  },
+  "edge_check": {
+   "gemm": {
+    "cases": 448,
+    "bitwise_fail": 0,
+    "nan_only_diff": 0,
+    "first": []
+   },
+   "pre": {
+    "cases": 1680,
+    "fail": 0,
+    "nan_only_diff": 0,
+    "first": []
+   },
+   "pre_split_overlap": {
+    "cases": 3360,
+    "fail": 0,
+    "nan_only_diff": 0,
+    "first": [],
+    "forks": 1680,
+    "in_place": 1680
+   },
+   "post": {
+    "cases": 64,
+    "fail": 0,
+    "first": []
+   }
+  },
+  "compute_sanitizer": "memcheck 0 errors, racecheck 0 hazards, synccheck 0 errors (128 det pre calls fused / split forked / split in place + 16 posts, T 1..16, K 20480 and 5120); initcheck (no filter, caching allocator off): 0 reports on the 40 real calls, the canaries' 71,680 expected loads after them"
+ },
+ "review_resolution": {
+  "blocking_uncommitted_edit": "validated (path/GEMM checks, lever smoke, SASS, A/B) and committed as 850ee65",
+  "sinkhorn_independent_shuffles": "850ee65: -27.7..-38.6 us per pass vs 4f661a5, bitwise",
+  "fn_stream_under_the_all_reduce": "measured (pf -84..-180 us per pass) and subsumed by DSV41_MHC_DET_OVERLAP",
+  "side_stream_coefficient_path": "rebuilt under the all-reduce instead of beside the sublayer's work: DSV41_MHC_DET_OVERLAP (8d1afbd), -592..-756 us per pass in the probe; the old prototype's T=8 fault (record_stream path) is designed out and not reproducible (script removed by the builder)",
+  "fold_post_into_gemm_prologue": "not done: with the overlap the GEMM is off the critical path; the analogous post+layer_input fusion needs a lazy post across the engram layers' residual update for <= ~1 us per sublayer (~0.09 ms/step)",
+  "race_test_committed": "kernel_study/mhc_det/race_check.py (+ overlap arms, 4 negative controls)",
+  "doc_and_harness_nits": "4656 GEMM cases, us per 86-sublayer pass, 101 MiB, item-11 figure a saving; spark2.sh --init / timeout -k / named container, and rsync-back -u",
+  "packed_fn_copy_hazard": "an in-place fn change after capture is refused (no re-pack, the captured copy stays alive, loud OFF marker)"
+ }
+}

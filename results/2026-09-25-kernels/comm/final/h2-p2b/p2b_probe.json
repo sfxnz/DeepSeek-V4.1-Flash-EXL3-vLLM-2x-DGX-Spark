@@ -1,0 +1,1954 @@
+{
+ "what": "next-layer qkv_a (+ wq_b) L2 prefetch around the served p2b (SORT=0): a separate kernel right before it ('pre', its time inside the span) or issued by p2b itself ('in', bench build p2b_pf_bench.py), single GPU",
+ "device": "NVIDIA GB10",
+ "l2_bytes": 25165824,
+ "weights": "pack /hub/snapshots/2.0bpw-mcg-lmhead-mxfp8 layer 10 rank 0",
+ "qkv_a_bytes": 9461760,
+ "wq_b_bytes": 21626880,
+ "expert_bytes": 4423680,
+ "replays": 300,
+ "warmup": 20,
+ "arms": [
+  "none",
+  "warm/full",
+  "in0",
+  "in/full",
+  "pre/tri/full",
+  "pre/burst:c48/full"
+ ],
+ "results": {
+  "1": {
+   "arms": {
+    "none": {
+     "pf": {
+      "median": 0.83,
+      "p10": 0.83,
+      "p90": 1.02,
+      "mean": 0.96,
+      "n": 300
+     },
+     "p2b": {
+      "median": 178.91,
+      "p10": 177.89,
+      "p90": 182.72,
+      "mean": 180.51,
+      "n": 300
+     },
+     "window": {
+      "median": 51.68,
+      "p10": 51.39,
+      "p90": 53.25,
+      "mean": 52.83,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 45.6,
+      "p10": 44.99,
+      "p90": 46.05,
+      "mean": 45.84,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 113.66,
+      "p10": 112.64,
+      "p90": 114.69,
+      "mean": 113.87,
+      "n": 300
+     },
+     "total": {
+      "median": 391.68,
+      "p10": 389.6,
+      "p90": 395.62,
+      "mean": 393.99,
+      "n": 300
+     },
+     "qkv_a_gbps": 207.5,
+     "wq_b_gbps": 190.3,
+     "p2b_gbps_nodedup": 148.4,
+     "d_pf": 0.0,
+     "d_p2b": 0.0,
+     "d_window": 0.0,
+     "d_qkv_a": 0.0,
+     "d_wq_b": 0.0,
+     "d_total": 0.0
+    },
+    "warm/full": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.83,
+      "p90": 1.02,
+      "mean": 0.91,
+      "n": 300
+     },
+     "p2b": {
+      "median": 179.06,
+      "p10": 177.5,
+      "p90": 180.16,
+      "mean": 179.35,
+      "n": 300
+     },
+     "window": {
+      "median": 51.58,
+      "p10": 51.36,
+      "p90": 53.25,
+      "mean": 52.17,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 18.21,
+      "p10": 17.98,
+      "p90": 18.43,
+      "mean": 18.31,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 114.66,
+      "p10": 113.63,
+      "p90": 115.68,
+      "mean": 114.79,
+      "n": 300
+     },
+     "total": {
+      "median": 364.74,
+      "p10": 362.85,
+      "p90": 367.3,
+      "mean": 365.54,
+      "n": 300
+     },
+     "qkv_a_gbps": 519.6,
+     "wq_b_gbps": 188.6,
+     "p2b_gbps_nodedup": 148.2,
+     "d_pf": 0.03,
+     "d_p2b": 0.15,
+     "d_window": -0.1,
+     "d_qkv_a": -27.39,
+     "d_wq_b": 1.0,
+     "d_total": -26.94
+    },
+    "in0": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.8,
+      "p90": 1.02,
+      "mean": 0.91,
+      "n": 300
+     },
+     "p2b": {
+      "median": 179.07,
+      "p10": 177.57,
+      "p90": 181.09,
+      "mean": 179.67,
+      "n": 300
+     },
+     "window": {
+      "median": 53.02,
+      "p10": 51.58,
+      "p90": 53.22,
+      "mean": 52.87,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 45.54,
+      "p10": 45.06,
+      "p90": 46.5,
+      "mean": 45.79,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 113.65,
+      "p10": 112.51,
+      "p90": 114.69,
+      "mean": 113.57,
+      "n": 300
+     },
+     "total": {
+      "median": 391.33,
+      "p10": 389.6,
+      "p90": 394.11,
+      "mean": 392.82,
+      "n": 300
+     },
+     "qkv_a_gbps": 207.8,
+     "wq_b_gbps": 190.3,
+     "p2b_gbps_nodedup": 148.2,
+     "d_pf": 0.03,
+     "d_p2b": 0.16,
+     "d_window": 1.34,
+     "d_qkv_a": -0.06,
+     "d_wq_b": -0.01,
+     "d_total": -0.35
+    },
+    "in/full": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.8,
+      "p90": 1.02,
+      "mean": 0.93,
+      "n": 300
+     },
+     "p2b": {
+      "median": 187.36,
+      "p10": 186.08,
+      "p90": 189.34,
+      "mean": 189.93,
+      "n": 300
+     },
+     "window": {
+      "median": 51.65,
+      "p10": 51.39,
+      "p90": 53.25,
+      "mean": 52.62,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 36.75,
+      "p10": 35.68,
+      "p90": 37.57,
+      "mean": 36.85,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 113.63,
+      "p10": 112.74,
+      "p90": 114.66,
+      "mean": 114.3,
+      "n": 300
+     },
+     "total": {
+      "median": 390.94,
+      "p10": 388.99,
+      "p90": 393.92,
+      "mean": 394.63,
+      "n": 300
+     },
+     "qkv_a_gbps": 257.5,
+     "wq_b_gbps": 190.3,
+     "p2b_gbps_nodedup": 141.7,
+     "prefetch_bytes": 9461760,
+     "d_pf": 0.03,
+     "d_p2b": 8.45,
+     "d_window": -0.03,
+     "d_qkv_a": -8.85,
+     "d_wq_b": -0.03,
+     "d_total": -0.74
+    },
+    "pre/tri/full": {
+     "pf": {
+      "median": 40.8,
+      "p10": 40.06,
+      "p90": 41.82,
+      "mean": 41.03,
+      "n": 300
+     },
+     "p2b": {
+      "median": 178.35,
+      "p10": 177.92,
+      "p90": 180.26,
+      "mean": 179.7,
+      "n": 300
+     },
+     "window": {
+      "median": 51.68,
+      "p10": 51.39,
+      "p90": 53.25,
+      "mean": 52.74,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 18.34,
+      "p10": 17.98,
+      "p90": 18.43,
+      "mean": 18.94,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 113.66,
+      "p10": 112.64,
+      "p90": 114.69,
+      "mean": 114.82,
+      "n": 300
+     },
+     "total": {
+      "median": 403.76,
+      "p10": 402.08,
+      "p90": 406.5,
+      "mean": 407.23,
+      "n": 300
+     },
+     "qkv_a_gbps": 515.9,
+     "wq_b_gbps": 190.3,
+     "p2b_gbps_nodedup": 148.8,
+     "prefetch_bytes": 9461760,
+     "d_pf": 39.97,
+     "d_p2b": -0.56,
+     "d_window": 0.0,
+     "d_qkv_a": -27.26,
+     "d_wq_b": 0.0,
+     "d_total": 12.08
+    },
+    "pre/burst:c48/full": {
+     "pf": {
+      "median": 25.44,
+      "p10": 24.83,
+      "p90": 26.46,
+      "mean": 25.65,
+      "n": 300
+     },
+     "p2b": {
+      "median": 178.24,
+      "p10": 178.02,
+      "p90": 180.22,
+      "mean": 179.58,
+      "n": 300
+     },
+     "window": {
+      "median": 53.01,
+      "p10": 51.55,
+      "p90": 53.22,
+      "mean": 53.09,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 24.58,
+      "p10": 24.1,
+      "p90": 24.8,
+      "mean": 24.87,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 114.45,
+      "p10": 113.47,
+      "p90": 115.2,
+      "mean": 114.54,
+      "n": 300
+     },
+     "total": {
+      "median": 395.94,
+      "p10": 393.6,
+      "p90": 398.14,
+      "mean": 397.72,
+      "n": 300
+     },
+     "qkv_a_gbps": 384.9,
+     "wq_b_gbps": 189.0,
+     "p2b_gbps_nodedup": 148.9,
+     "prefetch_bytes": 9461760,
+     "d_pf": 24.61,
+     "d_p2b": -0.67,
+     "d_window": 1.33,
+     "d_qkv_a": -21.02,
+     "d_wq_b": 0.79,
+     "d_total": 4.26
+    }
+   },
+   "check": {
+    "onehot": {
+     "none_vs_none_p2b_max_abs": 0.0,
+     "graph_vs_eager_bitwise": true,
+     "warm/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "in0": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "in/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "pre/tri/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "pre/burst:c48/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     }
+    },
+    "full": {
+     "none_vs_none_p2b_max_abs": 0.0,
+     "graph_vs_eager_bitwise": true,
+     "warm/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "in0": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "in/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "pre/tri/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "pre/burst:c48/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     }
+    }
+   },
+   "check_ok": true
+  },
+  "3": {
+   "arms": {
+    "none": {
+     "pf": {
+      "median": 0.83,
+      "p10": 0.83,
+      "p90": 1.02,
+      "mean": 0.93,
+      "n": 300
+     },
+     "p2b": {
+      "median": 405.98,
+      "p10": 398.14,
+      "p90": 410.05,
+      "mean": 405.95,
+      "n": 300
+     },
+     "window": {
+      "median": 51.49,
+      "p10": 51.23,
+      "p90": 53.25,
+      "mean": 52.5,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 45.76,
+      "p10": 44.99,
+      "p90": 46.66,
+      "mean": 46.02,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 114.7,
+      "p10": 113.98,
+      "p90": 115.74,
+      "mean": 115.17,
+      "n": 300
+     },
+     "total": {
+      "median": 619.1,
+      "p10": 611.94,
+      "p90": 624.06,
+      "mean": 620.56,
+      "n": 300
+     },
+     "qkv_a_gbps": 206.8,
+     "wq_b_gbps": 188.6,
+     "p2b_gbps_nodedup": 196.1,
+     "d_pf": 0.0,
+     "d_p2b": 0.0,
+     "d_window": 0.0,
+     "d_qkv_a": 0.0,
+     "d_wq_b": 0.0,
+     "d_total": 0.0
+    },
+    "warm/full": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.83,
+      "p90": 1.02,
+      "mean": 0.92,
+      "n": 300
+     },
+     "p2b": {
+      "median": 404.78,
+      "p10": 398.18,
+      "p90": 408.48,
+      "mean": 406.43,
+      "n": 300
+     },
+     "window": {
+      "median": 51.52,
+      "p10": 51.23,
+      "p90": 53.25,
+      "mean": 52.3,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 16.7,
+      "p10": 16.58,
+      "p90": 18.14,
+      "mean": 17.41,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 115.26,
+      "p10": 114.34,
+      "p90": 116.29,
+      "mean": 115.42,
+      "n": 300
+     },
+     "total": {
+      "median": 590.53,
+      "p10": 583.26,
+      "p90": 594.02,
+      "mean": 592.48,
+      "n": 300
+     },
+     "qkv_a_gbps": 566.6,
+     "wq_b_gbps": 187.6,
+     "p2b_gbps_nodedup": 196.7,
+     "d_pf": 0.03,
+     "d_p2b": -1.2,
+     "d_window": 0.03,
+     "d_qkv_a": -29.06,
+     "d_wq_b": 0.56,
+     "d_total": -28.57
+    },
+    "in0": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.8,
+      "p90": 1.02,
+      "mean": 0.91,
+      "n": 300
+     },
+     "p2b": {
+      "median": 405.34,
+      "p10": 398.18,
+      "p90": 408.58,
+      "mean": 405.68,
+      "n": 300
+     },
+     "window": {
+      "median": 51.68,
+      "p10": 51.36,
+      "p90": 53.22,
+      "mean": 52.31,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 45.7,
+      "p10": 45.06,
+      "p90": 46.5,
+      "mean": 46.13,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 114.69,
+      "p10": 113.86,
+      "p90": 115.71,
+      "mean": 114.97,
+      "n": 300
+     },
+     "total": {
+      "median": 619.3,
+      "p10": 611.2,
+      "p90": 622.37,
+      "mean": 620.0,
+      "n": 300
+     },
+     "qkv_a_gbps": 207.0,
+     "wq_b_gbps": 188.6,
+     "p2b_gbps_nodedup": 196.4,
+     "d_pf": 0.03,
+     "d_p2b": -0.64,
+     "d_window": 0.19,
+     "d_qkv_a": -0.06,
+     "d_wq_b": -0.01,
+     "d_total": 0.2
+    },
+    "in/full": {
+     "pf": {
+      "median": 0.9,
+      "p10": 0.83,
+      "p90": 1.02,
+      "mean": 0.97,
+      "n": 300
+     },
+     "p2b": {
+      "median": 418.66,
+      "p10": 411.52,
+      "p90": 421.89,
+      "mean": 419.15,
+      "n": 300
+     },
+     "window": {
+      "median": 51.58,
+      "p10": 51.33,
+      "p90": 53.25,
+      "mean": 52.27,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 32.48,
+      "p10": 30.75,
+      "p90": 32.77,
+      "mean": 32.21,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 115.23,
+      "p10": 114.37,
+      "p90": 116.67,
+      "mean": 115.29,
+      "n": 300
+     },
+     "total": {
+      "median": 619.1,
+      "p10": 611.87,
+      "p90": 623.3,
+      "mean": 619.9,
+      "n": 300
+     },
+     "qkv_a_gbps": 291.3,
+     "wq_b_gbps": 187.7,
+     "p2b_gbps_nodedup": 190.2,
+     "prefetch_bytes": 9461760,
+     "d_pf": 0.07,
+     "d_p2b": 12.68,
+     "d_window": 0.09,
+     "d_qkv_a": -13.28,
+     "d_wq_b": 0.53,
+     "d_total": 0.0
+    },
+    "pre/tri/full": {
+     "pf": {
+      "median": 41.65,
+      "p10": 40.64,
+      "p90": 41.82,
+      "mean": 41.33,
+      "n": 300
+     },
+     "p2b": {
+      "median": 405.5,
+      "p10": 398.43,
+      "p90": 409.57,
+      "mean": 406.32,
+      "n": 300
+     },
+     "window": {
+      "median": 51.71,
+      "p10": 51.39,
+      "p90": 53.22,
+      "mean": 52.4,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 16.54,
+      "p10": 16.45,
+      "p90": 17.92,
+      "mean": 17.02,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 114.59,
+      "p10": 113.7,
+      "p90": 115.71,
+      "mean": 114.85,
+      "n": 300
+     },
+     "total": {
+      "median": 630.56,
+      "p10": 622.46,
+      "p90": 634.66,
+      "mean": 631.91,
+      "n": 300
+     },
+     "qkv_a_gbps": 572.1,
+     "wq_b_gbps": 188.7,
+     "p2b_gbps_nodedup": 196.4,
+     "prefetch_bytes": 9461760,
+     "d_pf": 40.82,
+     "d_p2b": -0.48,
+     "d_window": 0.22,
+     "d_qkv_a": -29.22,
+     "d_wq_b": -0.11,
+     "d_total": 11.46
+    },
+    "pre/burst:c48/full": {
+     "pf": {
+      "median": 25.44,
+      "p10": 24.83,
+      "p90": 26.46,
+      "mean": 25.56,
+      "n": 300
+     },
+     "p2b": {
+      "median": 405.5,
+      "p10": 397.6,
+      "p90": 408.96,
+      "mean": 404.7,
+      "n": 300
+     },
+     "window": {
+      "median": 51.65,
+      "p10": 51.36,
+      "p90": 53.22,
+      "mean": 52.12,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 24.45,
+      "p10": 24.13,
+      "p90": 24.61,
+      "mean": 24.45,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 114.74,
+      "p10": 114.02,
+      "p90": 115.71,
+      "mean": 115.02,
+      "n": 300
+     },
+     "total": {
+      "median": 622.32,
+      "p10": 615.23,
+      "p90": 626.46,
+      "mean": 621.86,
+      "n": 300
+     },
+     "qkv_a_gbps": 387.0,
+     "wq_b_gbps": 188.5,
+     "p2b_gbps_nodedup": 196.4,
+     "prefetch_bytes": 9461760,
+     "d_pf": 24.61,
+     "d_p2b": -0.48,
+     "d_window": 0.16,
+     "d_qkv_a": -21.31,
+     "d_wq_b": 0.04,
+     "d_total": 3.22
+    }
+   },
+   "check": {
+    "onehot": {
+     "none_vs_none_p2b_max_abs": 0.0,
+     "graph_vs_eager_bitwise": true,
+     "warm/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "in0": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "in/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "pre/tri/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "pre/burst:c48/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     }
+    },
+    "full": {
+     "none_vs_none_p2b_max_abs": 0.125,
+     "graph_vs_eager_bitwise": true,
+     "warm/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 0.125
+     },
+     "in0": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 0.125
+     },
+     "in/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 0.125
+     },
+     "pre/tri/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 0.125
+     },
+     "pre/burst:c48/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 0.125
+     }
+    }
+   },
+   "check_ok": true
+  },
+  "4": {
+   "arms": {
+    "none": {
+     "pf": {
+      "median": 0.83,
+      "p10": 0.8,
+      "p90": 1.02,
+      "mean": 0.89,
+      "n": 300
+     },
+     "p2b": {
+      "median": 520.0,
+      "p10": 512.67,
+      "p90": 524.96,
+      "mean": 520.11,
+      "n": 300
+     },
+     "window": {
+      "median": 51.58,
+      "p10": 51.23,
+      "p90": 53.25,
+      "mean": 52.14,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 45.78,
+      "p10": 45.02,
+      "p90": 46.66,
+      "mean": 45.75,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 115.79,
+      "p10": 115.1,
+      "p90": 117.34,
+      "mean": 116.2,
+      "n": 300
+     },
+     "total": {
+      "median": 734.69,
+      "p10": 727.55,
+      "p90": 740.67,
+      "mean": 735.08,
+      "n": 300
+     },
+     "qkv_a_gbps": 206.7,
+     "wq_b_gbps": 186.8,
+     "p2b_gbps_nodedup": 204.2,
+     "d_pf": 0.0,
+     "d_p2b": 0.0,
+     "d_window": 0.0,
+     "d_qkv_a": 0.0,
+     "d_wq_b": 0.0,
+     "d_total": 0.0
+    },
+    "warm/full": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.83,
+      "p90": 1.02,
+      "mean": 0.92,
+      "n": 300
+     },
+     "p2b": {
+      "median": 519.2,
+      "p10": 512.8,
+      "p90": 523.55,
+      "mean": 520.04,
+      "n": 300
+     },
+     "window": {
+      "median": 51.47,
+      "p10": 51.2,
+      "p90": 53.25,
+      "mean": 51.84,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 16.22,
+      "p10": 15.97,
+      "p90": 16.38,
+      "mean": 16.26,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 116.74,
+      "p10": 115.68,
+      "p90": 117.76,
+      "mean": 116.37,
+      "n": 300
+     },
+     "total": {
+      "median": 704.35,
+      "p10": 697.18,
+      "p90": 709.47,
+      "mean": 705.42,
+      "n": 300
+     },
+     "qkv_a_gbps": 583.3,
+     "wq_b_gbps": 185.3,
+     "p2b_gbps_nodedup": 204.5,
+     "d_pf": 0.03,
+     "d_p2b": -0.8,
+     "d_window": -0.11,
+     "d_qkv_a": -29.56,
+     "d_wq_b": 0.95,
+     "d_total": -30.34
+    },
+    "in0": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.8,
+      "p90": 1.02,
+      "mean": 0.92,
+      "n": 300
+     },
+     "p2b": {
+      "median": 519.34,
+      "p10": 512.8,
+      "p90": 524.35,
+      "mean": 519.7,
+      "n": 300
+     },
+     "window": {
+      "median": 51.71,
+      "p10": 51.42,
+      "p90": 53.22,
+      "mean": 52.76,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 45.65,
+      "p10": 45.09,
+      "p90": 46.66,
+      "mean": 45.98,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 115.78,
+      "p10": 115.04,
+      "p90": 116.74,
+      "mean": 116.35,
+      "n": 300
+     },
+     "total": {
+      "median": 735.01,
+      "p10": 726.85,
+      "p90": 740.16,
+      "mean": 735.71,
+      "n": 300
+     },
+     "qkv_a_gbps": 207.3,
+     "wq_b_gbps": 186.8,
+     "p2b_gbps_nodedup": 204.4,
+     "d_pf": 0.03,
+     "d_p2b": -0.66,
+     "d_window": 0.13,
+     "d_qkv_a": -0.13,
+     "d_wq_b": -0.01,
+     "d_total": 0.32
+    },
+    "in/full": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.8,
+      "p90": 1.02,
+      "mean": 0.91,
+      "n": 300
+     },
+     "p2b": {
+      "median": 534.32,
+      "p10": 526.4,
+      "p90": 538.66,
+      "mean": 535.37,
+      "n": 300
+     },
+     "window": {
+      "median": 51.49,
+      "p10": 51.23,
+      "p90": 53.25,
+      "mean": 52.13,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 30.69,
+      "p10": 30.3,
+      "p90": 32.35,
+      "mean": 30.83,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 115.74,
+      "p10": 114.98,
+      "p90": 116.77,
+      "mean": 116.1,
+      "n": 300
+     },
+     "total": {
+      "median": 733.68,
+      "p10": 725.89,
+      "p90": 739.17,
+      "mean": 735.35,
+      "n": 300
+     },
+     "qkv_a_gbps": 308.3,
+     "wq_b_gbps": 186.9,
+     "p2b_gbps_nodedup": 198.7,
+     "prefetch_bytes": 9461760,
+     "d_pf": 0.03,
+     "d_p2b": 14.32,
+     "d_window": -0.09,
+     "d_qkv_a": -15.09,
+     "d_wq_b": -0.05,
+     "d_total": -1.01
+    },
+    "pre/tri/full": {
+     "pf": {
+      "median": 41.66,
+      "p10": 40.54,
+      "p90": 41.82,
+      "mean": 41.36,
+      "n": 300
+     },
+     "p2b": {
+      "median": 519.7,
+      "p10": 512.0,
+      "p90": 524.29,
+      "mean": 519.7,
+      "n": 300
+     },
+     "window": {
+      "median": 51.78,
+      "p10": 51.42,
+      "p90": 53.22,
+      "mean": 52.3,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 16.32,
+      "p10": 15.84,
+      "p90": 16.38,
+      "mean": 16.28,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 115.71,
+      "p10": 114.85,
+      "p90": 116.74,
+      "mean": 115.91,
+      "n": 300
+     },
+     "total": {
+      "median": 745.25,
+      "p10": 737.82,
+      "p90": 749.92,
+      "mean": 745.55,
+      "n": 300
+     },
+     "qkv_a_gbps": 579.8,
+     "wq_b_gbps": 186.9,
+     "p2b_gbps_nodedup": 204.3,
+     "prefetch_bytes": 9461760,
+     "d_pf": 40.83,
+     "d_p2b": -0.3,
+     "d_window": 0.2,
+     "d_qkv_a": -29.46,
+     "d_wq_b": -0.08,
+     "d_total": 10.56
+    },
+    "pre/burst:c48/full": {
+     "pf": {
+      "median": 25.31,
+      "p10": 24.8,
+      "p90": 26.34,
+      "mean": 25.56,
+      "n": 300
+     },
+     "p2b": {
+      "median": 520.19,
+      "p10": 512.0,
+      "p90": 524.03,
+      "mean": 520.27,
+      "n": 300
+     },
+     "window": {
+      "median": 52.8,
+      "p10": 51.42,
+      "p90": 53.22,
+      "mean": 52.43,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 24.58,
+      "p10": 24.13,
+      "p90": 24.74,
+      "mean": 24.68,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 116.51,
+      "p10": 115.23,
+      "p90": 117.76,
+      "mean": 116.47,
+      "n": 300
+     },
+     "total": {
+      "median": 738.38,
+      "p10": 730.78,
+      "p90": 743.07,
+      "mean": 739.41,
+      "n": 300
+     },
+     "qkv_a_gbps": 384.9,
+     "wq_b_gbps": 185.6,
+     "p2b_gbps_nodedup": 204.1,
+     "prefetch_bytes": 9461760,
+     "d_pf": 24.48,
+     "d_p2b": 0.19,
+     "d_window": 1.22,
+     "d_qkv_a": -21.2,
+     "d_wq_b": 0.72,
+     "d_total": 3.69
+    }
+   },
+   "check": {
+    "onehot": {
+     "none_vs_none_p2b_max_abs": 0.0,
+     "graph_vs_eager_bitwise": true,
+     "warm/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "in0": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "in/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "pre/tri/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "pre/burst:c48/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     }
+    },
+    "full": {
+     "none_vs_none_p2b_max_abs": 0.000244140625,
+     "graph_vs_eager_bitwise": true,
+     "warm/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "in0": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 1.0
+     },
+     "in/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 0.015625
+     },
+     "pre/tri/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "pre/burst:c48/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     }
+    }
+   },
+   "check_ok": true
+  },
+  "6": {
+   "arms": {
+    "none": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.83,
+      "p90": 1.02,
+      "mean": 0.91,
+      "n": 300
+     },
+     "p2b": {
+      "median": 758.93,
+      "p10": 750.11,
+      "p90": 768.54,
+      "mean": 760.65,
+      "n": 300
+     },
+     "window": {
+      "median": 51.58,
+      "p10": 51.26,
+      "p90": 53.25,
+      "mean": 52.99,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 45.94,
+      "p10": 45.22,
+      "p90": 47.1,
+      "mean": 46.2,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 118.78,
+      "p10": 117.79,
+      "p90": 120.54,
+      "mean": 119.42,
+      "n": 300
+     },
+     "total": {
+      "median": 976.72,
+      "p10": 968.19,
+      "p90": 987.65,
+      "mean": 980.17,
+      "n": 300
+     },
+     "qkv_a_gbps": 206.0,
+     "wq_b_gbps": 182.1,
+     "p2b_gbps_nodedup": 209.8,
+     "d_pf": 0.0,
+     "d_p2b": 0.0,
+     "d_window": 0.0,
+     "d_qkv_a": 0.0,
+     "d_wq_b": 0.0,
+     "d_total": 0.0
+    },
+    "warm/full": {
+     "pf": {
+      "median": 0.9,
+      "p10": 0.83,
+      "p90": 1.02,
+      "mean": 0.93,
+      "n": 300
+     },
+     "p2b": {
+      "median": 758.82,
+      "p10": 750.59,
+      "p90": 768.86,
+      "mean": 763.7,
+      "n": 300
+     },
+     "window": {
+      "median": 53.18,
+      "p10": 51.55,
+      "p90": 53.22,
+      "mean": 53.74,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 16.38,
+      "p10": 16.32,
+      "p90": 16.42,
+      "mean": 17.09,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 118.75,
+      "p10": 117.76,
+      "p90": 119.81,
+      "mean": 119.01,
+      "n": 300
+     },
+     "total": {
+      "median": 948.02,
+      "p10": 939.33,
+      "p90": 957.25,
+      "mean": 954.48,
+      "n": 300
+     },
+     "qkv_a_gbps": 577.6,
+     "wq_b_gbps": 182.1,
+     "p2b_gbps_nodedup": 209.9,
+     "d_pf": 0.04,
+     "d_p2b": -0.11,
+     "d_window": 1.6,
+     "d_qkv_a": -29.56,
+     "d_wq_b": -0.03,
+     "d_total": -28.7
+    },
+    "in0": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.8,
+      "p90": 1.02,
+      "mean": 0.93,
+      "n": 300
+     },
+     "p2b": {
+      "median": 758.74,
+      "p10": 750.3,
+      "p90": 768.06,
+      "mean": 762.39,
+      "n": 300
+     },
+     "window": {
+      "median": 52.9,
+      "p10": 51.42,
+      "p90": 53.25,
+      "mean": 52.6,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 45.79,
+      "p10": 45.06,
+      "p90": 46.82,
+      "mean": 46.25,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 118.78,
+      "p10": 117.82,
+      "p90": 119.84,
+      "mean": 119.03,
+      "n": 300
+     },
+     "total": {
+      "median": 976.45,
+      "p10": 967.9,
+      "p90": 986.94,
+      "mean": 981.19,
+      "n": 300
+     },
+     "qkv_a_gbps": 206.6,
+     "wq_b_gbps": 182.1,
+     "p2b_gbps_nodedup": 209.9,
+     "d_pf": 0.0,
+     "d_p2b": -0.19,
+     "d_window": 1.32,
+     "d_qkv_a": -0.15,
+     "d_wq_b": 0.0,
+     "d_total": -0.27
+    },
+    "in/full": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.8,
+      "p90": 1.02,
+      "mean": 0.94,
+      "n": 300
+     },
+     "p2b": {
+      "median": 776.21,
+      "p10": 766.98,
+      "p90": 784.42,
+      "mean": 779.51,
+      "n": 300
+     },
+     "window": {
+      "median": 52.78,
+      "p10": 51.46,
+      "p90": 53.22,
+      "mean": 52.54,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 28.67,
+      "p10": 28.16,
+      "p90": 30.37,
+      "mean": 28.95,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 118.77,
+      "p10": 117.73,
+      "p90": 119.81,
+      "mean": 118.63,
+      "n": 300
+     },
+     "total": {
+      "median": 976.67,
+      "p10": 967.49,
+      "p90": 985.6,
+      "mean": 980.58,
+      "n": 300
+     },
+     "qkv_a_gbps": 330.0,
+     "wq_b_gbps": 182.1,
+     "p2b_gbps_nodedup": 205.2,
+     "prefetch_bytes": 9461760,
+     "d_pf": 0.0,
+     "d_p2b": 17.28,
+     "d_window": 1.2,
+     "d_qkv_a": -17.27,
+     "d_wq_b": -0.01,
+     "d_total": -0.05
+    },
+    "pre/tri/full": {
+     "pf": {
+      "median": 41.01,
+      "p10": 40.61,
+      "p90": 41.86,
+      "mean": 41.24,
+      "n": 300
+     },
+     "p2b": {
+      "median": 758.8,
+      "p10": 750.62,
+      "p90": 768.99,
+      "mean": 761.21,
+      "n": 300
+     },
+     "window": {
+      "median": 53.18,
+      "p10": 51.58,
+      "p90": 53.22,
+      "mean": 52.97,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 16.38,
+      "p10": 16.19,
+      "p90": 16.38,
+      "mean": 16.4,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 118.5,
+      "p10": 117.44,
+      "p90": 119.65,
+      "mean": 118.47,
+      "n": 300
+     },
+     "total": {
+      "median": 987.94,
+      "p10": 979.07,
+      "p90": 997.66,
+      "mean": 990.29,
+      "n": 300
+     },
+     "qkv_a_gbps": 577.6,
+     "wq_b_gbps": 182.5,
+     "p2b_gbps_nodedup": 209.9,
+     "prefetch_bytes": 9461760,
+     "d_pf": 40.15,
+     "d_p2b": -0.13,
+     "d_window": 1.6,
+     "d_qkv_a": -29.56,
+     "d_wq_b": -0.28,
+     "d_total": 11.22
+    },
+    "pre/burst:c48/full": {
+     "pf": {
+      "median": 25.34,
+      "p10": 24.7,
+      "p90": 26.37,
+      "mean": 25.72,
+      "n": 300
+     },
+     "p2b": {
+      "median": 759.38,
+      "p10": 749.95,
+      "p90": 769.02,
+      "mean": 761.26,
+      "n": 300
+     },
+     "window": {
+      "median": 52.99,
+      "p10": 51.42,
+      "p90": 53.25,
+      "mean": 52.62,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 24.54,
+      "p10": 24.22,
+      "p90": 25.06,
+      "mean": 24.73,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 118.83,
+      "p10": 118.02,
+      "p90": 120.67,
+      "mean": 119.22,
+      "n": 300
+     },
+     "total": {
+      "median": 980.77,
+      "p10": 972.45,
+      "p90": 991.49,
+      "mean": 983.55,
+      "n": 300
+     },
+     "qkv_a_gbps": 385.6,
+     "wq_b_gbps": 182.0,
+     "p2b_gbps_nodedup": 209.7,
+     "prefetch_bytes": 9461760,
+     "d_pf": 24.48,
+     "d_p2b": 0.45,
+     "d_window": 1.41,
+     "d_qkv_a": -21.4,
+     "d_wq_b": 0.05,
+     "d_total": 4.05
+    }
+   },
+   "check": {
+    "onehot": {
+     "none_vs_none_p2b_max_abs": 0.0,
+     "graph_vs_eager_bitwise": true,
+     "warm/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "in0": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "in/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "pre/tri/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "pre/burst:c48/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     }
+    },
+    "full": {
+     "none_vs_none_p2b_max_abs": 1.0,
+     "graph_vs_eager_bitwise": true,
+     "warm/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 1.0
+     },
+     "in0": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 1.0
+     },
+     "in/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 2.0
+     },
+     "pre/tri/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 2.0
+     },
+     "pre/burst:c48/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 2.0
+     }
+    }
+   },
+   "check_ok": true
+  },
+  "8": {
+   "arms": {
+    "none": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.83,
+      "p90": 1.02,
+      "mean": 0.93,
+      "n": 300
+     },
+     "p2b": {
+      "median": 1010.4,
+      "p10": 1002.18,
+      "p90": 1018.14,
+      "mean": 1012.15,
+      "n": 300
+     },
+     "window": {
+      "median": 53.18,
+      "p10": 52.99,
+      "p90": 53.34,
+      "mean": 53.31,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 46.08,
+      "p10": 45.31,
+      "p90": 46.98,
+      "mean": 46.2,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 121.54,
+      "p10": 120.54,
+      "p90": 122.62,
+      "mean": 121.51,
+      "n": 300
+     },
+     "total": {
+      "median": 1232.35,
+      "p10": 1223.14,
+      "p90": 1239.52,
+      "mean": 1234.1,
+      "n": 300
+     },
+     "qkv_a_gbps": 205.3,
+     "wq_b_gbps": 177.9,
+     "p2b_gbps_nodedup": 210.2,
+     "d_pf": 0.0,
+     "d_p2b": 0.0,
+     "d_window": 0.0,
+     "d_qkv_a": 0.0,
+     "d_wq_b": 0.0,
+     "d_total": 0.0
+    },
+    "warm/full": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.8,
+      "p90": 1.02,
+      "mean": 0.96,
+      "n": 300
+     },
+     "p2b": {
+      "median": 1011.39,
+      "p10": 1003.74,
+      "p90": 1018.72,
+      "mean": 1012.3,
+      "n": 300
+     },
+     "window": {
+      "median": 53.22,
+      "p10": 53.02,
+      "p90": 53.31,
+      "mean": 53.59,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 14.3,
+      "p10": 14.24,
+      "p90": 14.34,
+      "mean": 14.83,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 121.79,
+      "p10": 120.83,
+      "p90": 122.91,
+      "mean": 122.47,
+      "n": 300
+     },
+     "total": {
+      "median": 1200.96,
+      "p10": 1193.86,
+      "p90": 1209.12,
+      "mean": 1204.15,
+      "n": 300
+     },
+     "qkv_a_gbps": 661.7,
+     "wq_b_gbps": 177.6,
+     "p2b_gbps_nodedup": 209.9,
+     "d_pf": 0.0,
+     "d_p2b": 0.99,
+     "d_window": 0.04,
+     "d_qkv_a": -31.78,
+     "d_wq_b": 0.25,
+     "d_total": -31.39
+    },
+    "in0": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.8,
+      "p90": 1.02,
+      "mean": 0.91,
+      "n": 300
+     },
+     "p2b": {
+      "median": 1011.6,
+      "p10": 1003.42,
+      "p90": 1018.78,
+      "mean": 1012.08,
+      "n": 300
+     },
+     "window": {
+      "median": 53.25,
+      "p10": 53.06,
+      "p90": 53.25,
+      "mean": 53.25,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 46.03,
+      "p10": 45.06,
+      "p90": 46.08,
+      "mean": 45.77,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 120.8,
+      "p10": 119.78,
+      "p90": 121.82,
+      "mean": 120.89,
+      "n": 300
+     },
+     "total": {
+      "median": 1232.54,
+      "p10": 1224.26,
+      "p90": 1239.78,
+      "mean": 1232.9,
+      "n": 300
+     },
+     "qkv_a_gbps": 205.6,
+     "wq_b_gbps": 179.0,
+     "p2b_gbps_nodedup": 209.9,
+     "d_pf": 0.0,
+     "d_p2b": 1.2,
+     "d_window": 0.07,
+     "d_qkv_a": -0.05,
+     "d_wq_b": -0.74,
+     "d_total": 0.19
+    },
+    "in/full": {
+     "pf": {
+      "median": 0.86,
+      "p10": 0.8,
+      "p90": 1.02,
+      "mean": 0.9,
+      "n": 300
+     },
+     "p2b": {
+      "median": 1027.94,
+      "p10": 1019.71,
+      "p90": 1035.1,
+      "mean": 1028.52,
+      "n": 300
+     },
+     "window": {
+      "median": 53.18,
+      "p10": 52.96,
+      "p90": 53.28,
+      "mean": 53.58,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 28.8,
+      "p10": 28.64,
+      "p90": 30.72,
+      "mean": 29.49,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 121.25,
+      "p10": 120.22,
+      "p90": 122.5,
+      "mean": 121.53,
+      "n": 300
+     },
+     "total": {
+      "median": 1231.78,
+      "p10": 1224.26,
+      "p90": 1240.86,
+      "mean": 1234.03,
+      "n": 300
+     },
+     "qkv_a_gbps": 328.5,
+     "wq_b_gbps": 178.4,
+     "p2b_gbps_nodedup": 206.6,
+     "prefetch_bytes": 9461760,
+     "d_pf": 0.0,
+     "d_p2b": 17.54,
+     "d_window": 0.0,
+     "d_qkv_a": -17.28,
+     "d_wq_b": -0.29,
+     "d_total": -0.57
+    },
+    "pre/tri/full": {
+     "pf": {
+      "median": 40.82,
+      "p10": 40.48,
+      "p90": 41.73,
+      "mean": 41.21,
+      "n": 300
+     },
+     "p2b": {
+      "median": 1011.68,
+      "p10": 1002.53,
+      "p90": 1018.11,
+      "mean": 1015.39,
+      "n": 300
+     },
+     "window": {
+      "median": 53.22,
+      "p10": 53.02,
+      "p90": 53.38,
+      "mean": 53.68,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 14.34,
+      "p10": 14.08,
+      "p90": 14.34,
+      "mean": 14.37,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 121.34,
+      "p10": 120.83,
+      "p90": 122.88,
+      "mean": 121.61,
+      "n": 300
+     },
+     "total": {
+      "median": 1241.23,
+      "p10": 1232.54,
+      "p90": 1248.77,
+      "mean": 1246.26,
+      "n": 300
+     },
+     "qkv_a_gbps": 659.8,
+     "wq_b_gbps": 178.2,
+     "p2b_gbps_nodedup": 209.9,
+     "prefetch_bytes": 9461760,
+     "d_pf": 39.96,
+     "d_p2b": 1.28,
+     "d_window": 0.04,
+     "d_qkv_a": -31.74,
+     "d_wq_b": -0.2,
+     "d_total": 8.88
+    },
+    "pre/burst:c48/full": {
+     "pf": {
+      "median": 25.44,
+      "p10": 24.77,
+      "p90": 26.46,
+      "mean": 25.74,
+      "n": 300
+     },
+     "p2b": {
+      "median": 1011.71,
+      "p10": 1003.36,
+      "p90": 1017.86,
+      "mean": 1014.76,
+      "n": 300
+     },
+     "window": {
+      "median": 53.25,
+      "p10": 53.02,
+      "p90": 53.25,
+      "mean": 53.69,
+      "n": 300
+     },
+     "qkv_a": {
+      "median": 24.58,
+      "p10": 24.54,
+      "p90": 26.62,
+      "mean": 25.46,
+      "n": 300
+     },
+     "wq_b": {
+      "median": 121.82,
+      "p10": 120.83,
+      "p90": 122.85,
+      "mean": 122.04,
+      "n": 300
+     },
+     "total": {
+      "median": 1237.73,
+      "p10": 1228.58,
+      "p90": 1244.83,
+      "mean": 1241.69,
+      "n": 300
+     },
+     "qkv_a_gbps": 384.9,
+     "wq_b_gbps": 177.5,
+     "p2b_gbps_nodedup": 209.9,
+     "prefetch_bytes": 9461760,
+     "d_pf": 24.58,
+     "d_p2b": 1.31,
+     "d_window": 0.07,
+     "d_qkv_a": -21.5,
+     "d_wq_b": 0.28,
+     "d_total": 5.38
+    }
+   },
+   "check": {
+    "onehot": {
+     "none_vs_none_p2b_max_abs": 0.0,
+     "graph_vs_eager_bitwise": true,
+     "warm/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "in0": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "in/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "pre/tri/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     },
+     "pre/burst:c48/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": true,
+      "p2b_max_abs": 0.0
+     }
+    },
+    "full": {
+     "none_vs_none_p2b_max_abs": 0.25,
+     "graph_vs_eager_bitwise": true,
+     "warm/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 0.25
+     },
+     "in0": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 0.25
+     },
+     "in/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 0.25
+     },
+     "pre/tri/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 0.25
+     },
+     "pre/burst:c48/full": {
+      "gemm_bitwise": true,
+      "p2b_bitwise": false,
+      "p2b_max_abs": 0.25
+     }
+    }
+   },
+   "check_ok": true
+  }
+ },
+ "p2b_occupancy_blocks_per_sm": 4,
+ "all_checks_ok": true,
+ "time": "2026-09-25T18:28:16Z"
+}

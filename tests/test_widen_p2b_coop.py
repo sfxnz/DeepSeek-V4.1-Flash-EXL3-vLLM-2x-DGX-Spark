@@ -195,7 +195,6 @@ class CoopWiringTests(unittest.TestCase):
         self.assertIn('LABEL dsv41.recipe.patches="', df)
         label = re.search(r'LABEL dsv41.recipe.patches="([^"]+)"', df).group(1).split(",")
         self.assertIn("coop", label)
-        self.assertNotIn("widen_p2b_coop", (ROOT / "docker/Dockerfile").read_text())
 
     def test_env_reaches_both_ranks_only_when_set(self) -> None:
         import run_sh_harness as h

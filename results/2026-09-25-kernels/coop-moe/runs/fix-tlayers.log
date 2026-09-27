@@ -1,0 +1,44 @@
+# 2026-09-25T15:53:33Z host spark2 tag fix-tlayers
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.2Gi        88Gi       244Ki        29Gi       116Gi
+Swap:           15Gi       1.2Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode time --variants 0,1,2 --ms 1,3,4,6,8 --sources census_all,census --iters 800 --warmup 20 --out results/2026-09-25-kernels/coop-moe/fix-tlayers.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[15:53:46Z] loaded layer 20 rank 0 in 5.8 s
+[15:53:46Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v1": {"grid": 192, "blocks_per_sm": 4.0}, "v2": {"grid": 144, "blocks_per_sm": 3.0}}
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[15:53:48Z] [time] m=1 census_all cold: v0 182.3us [180.2,185.4] mean 184.5 147GB/s 59%floor  v1 186.4us [184.3,190.3] mean 189.4 144GB/s 57%floor  v2 157.7us [154.6,164.8] mean 160.2 170GB/s 68%floor | paired mean saving v0-v1 -5.0+-1.2us = -0.20 ms/step  v0-v2 24.2+-1.2us = 0.97 ms/step  v1-v2 29.2+-1.2us = 1.17 ms/step
+[15:53:49Z] [time] m=1 census_all warm: v0 178.1us [176.1,178.3] mean 178.4 150GB/s 60%floor  v1 182.2us [180.2,183.3] mean 182.8 147GB/s 59%floor  v2 150.5us [147.5,154.7] mean 151.4 178GB/s 71%floor | paired mean saving v0-v1 -4.4+-0.7us = -0.18 ms/step  v0-v2 27.0+-0.7us = 1.08 ms/step  v1-v2 31.4+-0.6us = 1.26 ms/step
+[15:53:51Z] [time] m=1 census cold: v0 182.3us [180.2,186.4] mean 184.3 147GB/s 59%floor  v1 186.4us [184.3,190.5] mean 189.0 144GB/s 57%floor  v2 157.7us [154.6,164.9] mean 160.5 170GB/s 68%floor | paired mean saving v0-v1 -4.7+-1.2us = -0.19 ms/step  v0-v2 23.8+-1.2us = 0.95 ms/step  v1-v2 28.5+-1.3us = 1.14 ms/step
+[15:53:51Z] [time] m=1 census warm: v0 176.1us [174.1,178.2] mean 177.6 152GB/s 61%floor  v1 180.2us [178.3,182.3] mean 181.9 149GB/s 59%floor  v2 149.5us [146.4,152.6] mean 149.9 179GB/s 72%floor | paired mean saving v0-v1 -4.3+-1.3us = -0.17 ms/step  v0-v2 27.6+-1.0us = 1.11 ms/step  v1-v2 31.9+-1.0us = 1.28 ms/step
+[15:53:54Z] [time] m=3 census_all cold: v0 406.5us [399.4,409.6] mean 407.4 152GB/s 61%floor  v1 342.0us [284.7,395.2] mean 334.3 182GB/s 73%floor  v2 297.0us [240.6,343.1] mean 290.8 208GB/s 83%floor | paired mean saving v0-v1 73.0+-3.2us = 2.92 ms/step  v0-v2 116.6+-3.0us = 4.66 ms/step  v1-v2 43.6+-1.0us = 1.74 ms/step
+[15:53:55Z] [time] m=3 census_all warm: v0 399.4us [391.2,404.5] mean 400.1 155GB/s 62%floor  v1 337.9us [280.4,390.1] mean 329.9 184GB/s 73%floor  v2 292.3us [235.6,340.7] mean 286.4 212GB/s 85%floor | paired mean saving v0-v1 70.2+-3.3us = 2.81 ms/step  v0-v2 113.7+-3.1us = 4.55 ms/step  v1-v2 43.5+-0.9us = 1.74 ms/step
+[15:53:58Z] [time] m=3 census cold: v0 405.6us [399.3,409.6] mean 406.1 143GB/s 57%floor  v1 315.4us [262.1,375.8] mean 320.5 181GB/s 72%floor  v2 279.6us [223.3,325.6] mean 278.2 207GB/s 83%floor | paired mean saving v0-v1 85.5+-2.9us = 3.42 ms/step  v0-v2 127.9+-2.6us = 5.11 ms/step  v1-v2 42.3+-1.1us = 1.69 ms/step
+[15:53:59Z] [time] m=3 census warm: v0 398.3us [389.3,405.5] mean 400.8 145GB/s 58%floor  v1 311.4us [258.9,372.7] mean 317.7 183GB/s 73%floor  v2 276.3us [220.1,329.7] mean 275.5 210GB/s 84%floor | paired mean saving v0-v1 83.1+-3.2us = 3.33 ms/step  v0-v2 125.4+-2.9us = 5.01 ms/step  v1-v2 42.2+-1.2us = 1.69 ms/step
+[15:54:02Z] [time] m=4 census_all cold: v0 521.2us [513.9,526.2] mean 521.6 145GB/s 58%floor  v1 397.4us [317.4,485.4] mean 399.4 189GB/s 76%floor  v2 354.4us [280.5,430.1] mean 352.4 213GB/s 85%floor | paired mean saving v0-v1 122.2+-4.1us = 4.89 ms/step  v0-v2 169.3+-3.8us = 6.77 ms/step  v1-v2 47.1+-1.1us = 1.88 ms/step
+[15:54:04Z] [time] m=4 census_all warm: v0 511.0us [503.8,518.2] mean 513.3 148GB/s 59%floor  v1 394.2us [313.3,480.3] mean 395.5 191GB/s 76%floor  v2 350.2us [275.5,424.9] mean 347.3 216GB/s 86%floor | paired mean saving v0-v1 117.8+-4.3us = 4.71 ms/step  v0-v2 166.0+-4.0us = 6.64 ms/step  v1-v2 48.2+-1.1us = 1.93 ms/step
+[15:54:06Z] [time] m=4 census cold: v0 520.2us [513.0,524.4] mean 521.4 137GB/s 55%floor  v1 377.0us [301.1,448.5] mean 380.0 188GB/s 75%floor  v2 335.9us [263.2,393.3] mean 334.1 211GB/s 85%floor | paired mean saving v0-v1 141.5+-3.7us = 5.66 ms/step  v0-v2 187.4+-3.4us = 7.49 ms/step  v1-v2 45.9+-1.6us = 1.84 ms/step
+[15:54:08Z] [time] m=4 census warm: v0 509.0us [501.8,516.1] mean 511.2 139GB/s 56%floor  v1 374.8us [297.0,443.7] mean 376.7 190GB/s 76%floor  v2 330.8us [260.1,388.1] mean 329.1 215GB/s 86%floor | paired mean saving v0-v1 134.6+-3.6us = 5.38 ms/step  v0-v2 182.1+-3.4us = 7.28 ms/step  v1-v2 47.6+-1.5us = 1.90 ms/step
+[15:54:11Z] [time] m=6 census_all cold: v0 759.8us [750.6,770.0] mean 764.9 152GB/s 61%floor  v1 600.1us [486.4,706.6] mean 586.5 196GB/s 78%floor  v2 527.4us [432.1,621.6] mean 526.2 219GB/s 88%floor | paired mean saving v0-v1 178.4+-5.9us = 7.13 ms/step  v0-v2 238.7+-5.5us = 9.55 ms/step  v1-v2 60.3+-2.0us = 2.41 ms/step
+[15:54:14Z] [time] m=6 census_all warm: v0 745.5us [733.2,756.7] mean 748.2 155GB/s 62%floor  v1 594.4us [481.3,700.4] mean 579.3 197GB/s 79%floor  v2 520.4us [427.0,614.4] mean 516.9 222GB/s 89%floor | paired mean saving v0-v1 168.9+-5.7us = 6.75 ms/step  v0-v2 231.3+-5.1us = 9.25 ms/step  v1-v2 62.5+-1.1us = 2.50 ms/step
+[15:54:17Z] [time] m=6 census cold: v0 757.8us [749.5,763.9] mean 759.3 146GB/s 59%floor  v1 559.1us [487.3,643.2] mean 561.9 195GB/s 78%floor  v2 507.9us [432.2,582.7] mean 503.4 219GB/s 88%floor | paired mean saving v0-v1 197.4+-4.7us = 7.90 ms/step  v0-v2 255.9+-4.3us = 10.24 ms/step  v1-v2 58.5+-1.5us = 2.34 ms/step
+[15:54:20Z] [time] m=6 census warm: v0 741.4us [731.1,753.6] mean 744.3 149GB/s 60%floor  v1 555.0us [482.3,639.1] mean 557.6 197GB/s 79%floor  v2 501.7us [427.0,574.7] mean 496.6 222GB/s 89%floor | paired mean saving v0-v1 186.7+-4.3us = 7.47 ms/step  v0-v2 247.7+-3.9us = 9.91 ms/step  v1-v2 61.1+-1.3us = 2.44 ms/step
+[15:54:24Z] [time] m=8 census_all cold: v0 1012.7us [1002.5,1023.0] mean 1018.0 137GB/s 55%floor  v1 714.7us [565.2,867.3] mean 712.0 199GB/s 79%floor  v2 624.6us [507.9,775.3] mean 636.3 222GB/s 89%floor | paired mean saving v0-v1 306.0+-7.6us = 12.24 ms/step  v0-v2 381.7+-7.1us = 15.27 ms/step  v1-v2 75.7+-2.0us = 3.03 ms/step
+[15:54:28Z] [time] m=8 census_all warm: v0 995.3us [979.9,1009.7] mean 998.3 139GB/s 56%floor  v1 707.6us [559.2,864.3] mean 706.8 201GB/s 80%floor  v2 617.9us [502.8,767.9] mean 629.2 224GB/s 90%floor | paired mean saving v0-v1 291.5+-7.6us = 11.66 ms/step  v0-v2 369.1+-6.7us = 14.76 ms/step  v1-v2 77.6+-2.3us = 3.10 ms/step
+[15:54:31Z] [time] m=8 census cold: v0 1009.7us [1001.5,1018.9] mean 1016.1 129GB/s 52%floor  v1 665.6us [546.8,772.1] mean 669.3 198GB/s 79%floor  v2 602.2us [492.5,695.3] mean 597.0 221GB/s 88%floor | paired mean saving v0-v1 346.8+-6.1us = 13.87 ms/step  v0-v2 419.1+-5.8us = 16.76 ms/step  v1-v2 72.3+-2.4us = 2.89 ms/step
+[15:54:35Z] [time] m=8 census warm: v0 990.2us [977.0,1003.5] mean 992.5 133GB/s 53%floor  v1 661.5us [540.7,764.0] mean 662.8 200GB/s 80%floor  v2 597.0us [486.4,690.2] mean 591.2 223GB/s 89%floor | paired mean saving v0-v1 329.7+-5.6us = 13.19 ms/step  v0-v2 401.2+-5.1us = 16.05 ms/step  v1-v2 71.5+-1.7us = 2.86 ms/step
+[15:54:35Z] pass=True
+# 2026-09-25T15:54:36Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

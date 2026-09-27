@@ -1,0 +1,55 @@
+{
+ "what": "ar_l2_prefetch through its own hooks, single GPU, stand-in decoder stack in one CUDA graph",
+ "layers": 8,
+ "m": 8,
+ "replays": 200,
+ "budget_bytes": 10485760,
+ "capture_replay_ok": true,
+ "gemm_outputs_bitwise_equal": true,
+ "forks_on": 22,
+ "summary": {
+  "off": {
+   "forward": {
+    "median": 2553.28,
+    "p10": 2525.02,
+    "p90": 2575.36,
+    "n": 200
+   },
+   "qkv_a_first": {
+    "median": 47.2,
+    "p10": 46.72,
+    "p90": 48.22,
+    "n": 200
+   },
+   "qkv_a_rest": {
+    "median": 47.1,
+    "p10": 46.05,
+    "p90": 48.16,
+    "n": 1400
+   }
+  },
+  "on": {
+   "forward": {
+    "median": 2453.65,
+    "p10": 2426.27,
+    "p90": 2478.05,
+    "n": 200
+   },
+   "qkv_a_first": {
+    "median": 47.38,
+    "p10": 46.3,
+    "p90": 48.13,
+    "n": 200
+   },
+   "qkv_a_rest": {
+    "median": 15.01,
+    "p10": 14.53,
+    "p90": 15.2,
+    "n": 1400
+   }
+  }
+ },
+ "time": "2026-09-25T18:43:34Z",
+ "delta_forward_us": -99.63,
+ "delta_per_prefetched_layer_us": -14.23
+}

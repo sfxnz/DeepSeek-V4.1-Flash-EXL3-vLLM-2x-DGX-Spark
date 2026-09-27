@@ -1,0 +1,46 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip ar_l2_prefetch: DSV41_AR_L2_PREFETCH is not 1
+dsv41-patch skip pm_qos: DSV41_PM_QOS_US is not set
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+wrote /repo/kernel_study/p2b_coop/build/chain_srcsort.cu (619 lines)
+wrote /repo/kernel_study/p2b_coop/build/chain_coop.cu (891 lines)
+wrote /repo/kernel_study/p2b_coop/build/bench_coop.cu (913 lines)
+INFO 09-25 15:50:22 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 15:50:22 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+[15:50:31] : Warning: T.vectorized loop over `i_hci` with extent 4 is lowered as a serial loop because TileLang could not find a valid vectorization plan. Scalar accumulator updates inside the loop are a common cause; move reductions to T.unroll or T.serial if this is intended.
+2026-09-25 15:50:25  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-25 15:50:30  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-25 15:50:30  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_post_tilelang` with `out_idx=None`
+2026-09-25 15:50:31  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_post_tilelang`
+m=4 none            p2b   519.5 [511.5, 525.1] qkv_a   47.0 total   617.8 d_p2b   +0.0 d_qkv_a   +0.0 d_total   +0.0 eq True
+m=4 pre_burst       p2b   518.1 [511.8, 523.7] qkv_a   16.1 total   586.5 d_p2b   -1.4 d_qkv_a  -30.9 d_total  -31.3 eq False
+m=4 pre_burst_last  p2b   518.3 [511.8, 523.7] qkv_a   16.2 total   587.5 d_p2b   -1.2 d_qkv_a  -30.9 d_total  -30.3 eq False
+m=4 warm            p2b   518.2 [511.8, 523.8] qkv_a   16.4 total   629.1 d_p2b   -1.3 d_qkv_a  -30.7 d_total  +11.3 eq False
+m=8 none            p2b  1010.1 [1000.3, 1016.4] qkv_a   47.1 total  1110.5 d_p2b   +0.0 d_qkv_a   +0.0 d_total   +0.0 eq True
+m=8 pre_burst       p2b  1010.6 [1001.4, 1017.7] qkv_a   16.4 total  1080.1 d_p2b   +0.5 d_qkv_a  -30.7 d_total  -30.4 eq False
+m=8 pre_burst_last  p2b  1010.0 [1001.2, 1017.6] qkv_a   14.6 total  1078.1 d_p2b   -0.1 d_qkv_a  -32.5 d_total  -32.4 eq False
+m=8 warm            p2b  1009.5 [1000.3, 1015.7] qkv_a   14.3 total  1119.5 d_p2b   -0.6 d_qkv_a  -32.8 d_total   +9.0 eq False

@@ -1,0 +1,174 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip ar_l2_prefetch: DSV41_AR_L2_PREFETCH is not 1
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 219
+dsv41-patch ok pm_qos: armed
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+5c894d89ed5c:219:219 [0] NCCL INFO ncclOsDlopen(libnccl-env.so) failed: libnccl-env.so: cannot open shared object file: No such file or directory
+5c894d89ed5c:219:219 [0] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+5c894d89ed5c:219:219 [0] NCCL INFO cudaDriverVersion 13000
+5c894d89ed5c:219:219 [0] NCCL INFO NCCL_SOCKET_IFNAME set to lo
+5c894d89ed5c:219:219 [0] NCCL INFO NCCL version 2.30.7+cuda13.3
+5c894d89ed5c:219:219 [0] NCCL INFO NCCL git version HEAD a5187fa2e
+5c894d89ed5c:219:219 [0] NCCL INFO ncclOsDlopen(libnccl-net.so) failed: libnccl-net.so: cannot open shared object file: No such file or directory
+5c894d89ed5c:219:219 [0] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+5c894d89ed5c:219:219 [0] NCCL INFO dlvsym failed on mlx5dv_get_data_direct_sysfs_path - /lib/aarch64-linux-gnu/libmlx5.so: undefined symbol: mlx5dv_get_data_direct_sysfs_path, version MLX5_1.25 version MLX5_1.25
+5c894d89ed5c:219:219 [0] NCCL INFO dlvsym failed on mlx5dv_reg_dmabuf_mr - /lib/aarch64-linux-gnu/libmlx5.so: undefined symbol: mlx5dv_reg_dmabuf_mr, version MLX5_1.25 version MLX5_1.25
+5c894d89ed5c:219:219 [0] NCCL INFO NCCL_IB_HCA set to rocep1s0f1
+5c894d89ed5c:219:219 [0] NCCL INFO NET/IB: [1] rocep1s0f1:uverbs1:1/RoCE provider=Mlx5 speed=200000 context=0x52a1c060 pciPath=/sys/devices/pci0000:00/0000:00:00.0/0000:01:00.0 ar=0 oooRqSize=0
+5c894d89ed5c:219:219 [0] NCCL INFO NET/IB : Made virtual device [0] name=rocep1s0f1 speed=200000 ndevs=1 rail=-1 plane=-1
+5c894d89ed5c:219:219 [0] NCCL INFO NET/IB : Using [0]rocep1s0f1:1/RoCE [RO]; OOB lo:127.0.0.1<0>
+5c894d89ed5c:219:219 [0] NCCL INFO Initialized NET plugin IB
+5c894d89ed5c:219:219 [0] NCCL INFO Assigned NET plugin IB to comm
+5c894d89ed5c:219:219 [0] NCCL INFO ncclOsDlopen(libnccl-rma.so) failed: libnccl-rma.so: cannot open shared object file: No such file or directory
+5c894d89ed5c:219:219 [0] NCCL INFO RMA/Plugin: Could not find: libnccl-rma.so
+5c894d89ed5c:219:219 [0] NCCL INFO RMA/Plugin: Failed to load external plugin libnccl-rma.so, dlHandle: (nil), ncclRma: (nil)
+5c894d89ed5c:219:219 [0] NCCL INFO RMA/Plugin: Assigned plugin RMA_IB_PROXY to comm
+5c894d89ed5c:219:219 [0] NCCL INFO ncclOsDlopen(libnccl-gin.so) failed: libnccl-gin.so: cannot open shared object file: No such file or directory
+5c894d89ed5c:219:219 [0] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+5c894d89ed5c:219:219 [0] NCCL INFO GIN/Plugin: Failed to load external plugin libnccl-gin.so, dlHandle: (nil), ncclGin: (nil)
+5c894d89ed5c:219:219 [0] NCCL INFO GIN/Plugin: Assigned plugin GIN_IB_GDAKI type 3 to comm
+5c894d89ed5c:219:219 [0] NCCL INFO Using network IB
+5c894d89ed5c:219:219 [0] NCCL INFO Loaded NVML from libnvidia-ml.so.1
+5c894d89ed5c:219:219 [0] NCCL INFO [Rank 1] ncclCommInitRank comm 0x4ff78340 rank 1 nranks 2 cudaDev 0 nvmlDev 0 busId f01000 commId 0x2038dd6343848b8f - Init START
+5c894d89ed5c:219:219 [0] NCCL INFO RAS client listening socket at ::1<28028>
+5c894d89ed5c:219:219 [0] NCCL INFO NET/GIN_IB_GDAKI : GPU Direct RDMA Disabled for HCA 0 'rocep1s0f1'
+5c894d89ed5c:219:219 [0] NCCL INFO NET/RMA_IB_PROXY : GPU Direct RDMA Disabled for HCA 0 'rocep1s0f1'
+5c894d89ed5c:219:219 [0] NCCL INFO NET/IB : GPU Direct RDMA Disabled for HCA 0 'rocep1s0f1'
+5c894d89ed5c:219:219 [0] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 0 is empty, ignoring. (GPU affinity =  ; CPU affinity = 0-19).
+5c894d89ed5c:219:219 [0] NCCL INFO Rank 1: 1 Net devices
+5c894d89ed5c:219:219 [0] NCCL INFO Rank 1: 0 CollNet devices
+5c894d89ed5c:219:219 [0] NCCL INFO comm 0x4ff78340 rank 1 nRanks 2 nNodes 2 localRanks 1 localRank 0 MNNVL 0
+5c894d89ed5c:219:219 [0] NCCL INFO Trees [0] -1/-1/-1->1->0 [1] -1/-1/-1->1->0 [2] -1/-1/-1->1->0 [3] -1/-1/-1->1->0 [4] -1/-1/-1->1->0 [5] -1/-1/-1->1->0 [6] -1/-1/-1->1->0 [7] -1/-1/-1->1->0
+5c894d89ed5c:219:219 [0] NCCL INFO P2P Chunksize set to 131072
+5c894d89ed5c:219:219 [0] NCCL INFO Tuning P2P operations with maxP2pPeers = 2
+5c894d89ed5c:219:219 [0] NCCL INFO ncclOsDlopen(libnccl-profiler.so) failed: libnccl-profiler.so: cannot open shared object file: No such file or directory
+5c894d89ed5c:219:219 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+5c894d89ed5c:219:219 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+5c894d89ed5c:219:440 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 14
+5c894d89ed5c:219:439 [0] NCCL INFO [Proxy Service] Device 0 CPU core 12
+5c894d89ed5c:219:439 [0] NCCL INFO proxy listening socket at 127.0.0.1<39343>
+5c894d89ed5c:219:443 [0] NCCL INFO [Proxy Progress] Device 0 CPU core 19
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 00/0 : 0[0] -> 1[0] [receive] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 01/0 : 0[0] -> 1[0] [receive] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 02/0 : 0[0] -> 1[0] [receive] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 03/0 : 0[0] -> 1[0] [receive] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 04/0 : 0[0] -> 1[0] [receive] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 05/0 : 0[0] -> 1[0] [receive] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 06/0 : 0[0] -> 1[0] [receive] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 07/0 : 0[0] -> 1[0] [receive] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 00/0 : 1[0] -> 0[0] [send] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 01/0 : 1[0] -> 0[0] [send] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 02/0 : 1[0] -> 0[0] [send] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 03/0 : 1[0] -> 0[0] [send] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 04/0 : 1[0] -> 0[0] [send] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 05/0 : 1[0] -> 0[0] [send] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 06/0 : 1[0] -> 0[0] [send] via NET/IB/0
+5c894d89ed5c:219:219 [0] NCCL INFO Channel 07/0 : 1[0] -> 0[0] [send] via NET/IB/0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the send communicator (comm=0xefa75c014000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the recv communicator (comm=0xefa75c058000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbRecvCommInit: Receive work requests will be posted on-demand
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsCreate: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52063 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: NCCL Dev 0 IbDev 0 Port 1 qp_num 52063 mtu 3 GID 4 (0/208640AFFFF0000) ctsFifoRkey=0x1b2f2c ctsFifoLkey=0x1b2f2c
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: IbDev 0 Port 1 qp_num 52063 query_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52065 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: Flush QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52067 pkey=0 pd=0xefa75c013c10
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the send communicator (comm=0xefa75c12c000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsToRts: Set ECE: IbDev 0 Port 1 qp_num 52063 set_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the recv communicator (comm=0xefa75c170000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbRecvCommInit: Receive work requests will be posted on-demand
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the send communicator (comm=0xefa75c1b5000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsCreate: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52070 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: NCCL Dev 0 IbDev 0 Port 1 qp_num 52070 mtu 3 GID 4 (0/208640AFFFF0000) ctsFifoRkey=0x199696 ctsFifoLkey=0x199696
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: IbDev 0 Port 1 qp_num 52070 query_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52071 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: Flush QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52073 pkey=0 pd=0xefa75c013c10
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the recv communicator (comm=0xefa75c279000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbRecvCommInit: Receive work requests will be posted on-demand
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsToRts: Set ECE: IbDev 0 Port 1 qp_num 52070 set_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsCreate: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52076 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: NCCL Dev 0 IbDev 0 Port 1 qp_num 52076 mtu 3 GID 4 (0/208640AFFFF0000) ctsFifoRkey=0x199f9c ctsFifoLkey=0x199f9c
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: IbDev 0 Port 1 qp_num 52076 query_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52077 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: Flush QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52079 pkey=0 pd=0xefa75c013c10
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the send communicator (comm=0xefa75c33d000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsToRts: Set ECE: IbDev 0 Port 1 qp_num 52076 set_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsCreate: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52081 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: NCCL Dev 0 IbDev 0 Port 1 qp_num 52081 mtu 3 GID 4 (0/208640AFFFF0000) ctsFifoRkey=0x190703 ctsFifoLkey=0x190703
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: IbDev 0 Port 1 qp_num 52081 query_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the recv communicator (comm=0xefa75c3af000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbRecvCommInit: Receive work requests will be posted on-demand
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the send communicator (comm=0xefa75c3f7000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the recv communicator (comm=0xefa75c43b000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbRecvCommInit: Receive work requests will be posted on-demand
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the send communicator (comm=0xefa75c483000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the recv communicator (comm=0xefa75c4c7000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbRecvCommInit: Receive work requests will be posted on-demand
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the send communicator (comm=0xefa75c50f000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the recv communicator (comm=0xefa75c553000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbRecvCommInit: Receive work requests will be posted on-demand
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the send communicator (comm=0xefa75c59b000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbResiliencyInit: Resiliency is disabled on the recv communicator (comm=0xefa75c5df000)
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbRecvCommInit: Receive work requests will be posted on-demand
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsToRts: Set ECE: IbDev 0 Port 1 qp_num 52081 set_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsCreate: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52087 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: NCCL Dev 0 IbDev 0 Port 1 qp_num 52087 mtu 3 GID 4 (0/208640AFFFF0000) ctsFifoRkey=0x193734 ctsFifoLkey=0x193734
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: IbDev 0 Port 1 qp_num 52087 query_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52089 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: Flush QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52090 pkey=0 pd=0xefa75c013c10
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsCreate: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52092 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: NCCL Dev 0 IbDev 0 Port 1 qp_num 52092 mtu 3 GID 4 (0/208640AFFFF0000) ctsFifoRkey=0x1ad1cf ctsFifoLkey=0x1ad1cf
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: IbDev 0 Port 1 qp_num 52092 query_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52093 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: Flush QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52094 pkey=0 pd=0xefa75c013c10
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsCreate: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52095 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: NCCL Dev 0 IbDev 0 Port 1 qp_num 52095 mtu 3 GID 4 (0/208640AFFFF0000) ctsFifoRkey=0x1b4c49 ctsFifoLkey=0x1b4c49
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: IbDev 0 Port 1 qp_num 52095 query_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52096 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: Flush QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52099 pkey=0 pd=0xefa75c013c10
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsCreate: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52100 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: NCCL Dev 0 IbDev 0 Port 1 qp_num 52100 mtu 3 GID 4 (0/208640AFFFF0000) ctsFifoRkey=0x19c0c1 ctsFifoLkey=0x19c0c1
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbConnectImpl: IbDev 0 Port 1 qp_num 52100 query_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52101 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: Flush QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52102 pkey=0 pd=0xefa75c013c10
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: QP crearank 1 m=4 {"eager_us": {"median": 37.57, "p10": 33.7, "p90": 41.92, "n": 300}, "graph_b2b_us": {"median": 29.98, "p10": 29.26, "p90": 31.04, "n": 100}, "graph_gapped_us": {"median": 34.78, "p10": 31.17, "p90": 38.05, "n": 100}}
+rank 1 m=8 {"eager_us": {"median": 67.94, "p10": 62.24, "p90": 73.79, "n": 300}, "graph_b2b_us": {"median": 52.23, "p10": 51.17, "p90": 54.48, "n": 100}, "graph_gapped_us": {"median": 59.95, "p10": 55.3, "p90": 65.41, "n": 100}}
+ted: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52104 pkey=0 pd=0xefa75c013c10 oooRq=0
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbReceiverQpsCreateToRts: Flush QP created: port=1 dev=0 devName=rocep1s0f1 ndevs=1 nmdevs=1 qp_num=52106 pkey=0 pd=0xefa75c013c10
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsToRts: Set ECE: IbDev 0 Port 1 qp_num 52087 set_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsToRts: Set ECE: IbDev 0 Port 1 qp_num 52092 set_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsToRts: Set ECE: IbDev 0 Port 1 qp_num 52095 set_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:439 [0] NCCL INFO NET/IB: ncclIbSenderQpsToRts: Set ECE: IbDev 0 Port 1 qp_num 52100 set_ece={supported=1, vendor_id=0x15b3, options=0x30000002, comp_mask=0x0}
+5c894d89ed5c:219:219 [0] NCCL INFO Connected all rings, use ring PXN 0 GDR 0
+5c894d89ed5c:219:219 [0] NCCL INFO Connected all trees
+5c894d89ed5c:219:219 [0] NCCL INFO Connected binomial trees
+5c894d89ed5c:219:219 [0] NCCL INFO ncclOsDlopen(libnccl-tuner.so) failed: libnccl-tuner.so: cannot open shared object file: No such file or directory
+5c894d89ed5c:219:219 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+5c894d89ed5c:219:219 [0] NCCL INFO threadThresholds 8/8/64 | 16/8/64 | 512 | 512
+5c894d89ed5c:219:219 [0] NCCL INFO 8 coll channels, 8 collnet channels, 0 nvls channels, 8 p2p channels, 1 p2p channels per peer
+5c894d89ed5c:219:219 [0] NCCL INFO Symmetric memory is not supported. cuMemEnable 0, globalGinSupport 0, cuMemGdrSupport 0
+5c894d89ed5c:219:219 [0] NCCL INFO ncclCommInitRank comm 0x4ff78340 rank 1 nranks 2 cudaDev 0 nvmlDev 0 busId f01000 commId 0x2038dd6343848b8f - Init COMPLETE
+5c894d89ed5c:219:219 [0] NCCL INFO Init timings - ncclCommInitRank: rank 1 nranks 2 total 0.30 (kernels 0.19, alloc 0.01, bootstrap 0.00, allgathers 0.00, topo 0.01, graphs 0.00, connections 0.09, rest 0.00)

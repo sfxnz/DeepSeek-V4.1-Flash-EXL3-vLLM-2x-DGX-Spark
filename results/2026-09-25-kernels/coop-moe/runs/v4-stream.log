@@ -1,0 +1,30 @@
+# 2026-09-25T13:22:49Z host spark2 tag v4-stream
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.4Gi        96Gi       252Ki        21Gi       116Gi
+Swap:           15Gi       1.2Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode stream,time --variants 0,3,6,8 --ms 4,8 --sources census --out results/2026-09-25-kernels/coop-moe/v4-stream.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[13:23:02Z] loaded layer 20 rank 0 in 5.9 s
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[13:23:02Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v3": {"grid": 144, "blocks_per_sm": 3.0}, "v6": {"grid": 144, "blocks_per_sm": 3.0}, "v8": {"grid": 144, "blocks_per_sm": 3.0}}
+[13:23:03Z] [time] m=4 census cold: v0 525.3us [516.2,532.5] 135GB/s 54%floor  v3 340.0us [280.6,417.7] 210GB/s 84%floor  v6 333.8us [277.5,409.6] 213GB/s 85%floor  v8 341.0us [284.7,417.8] 209GB/s 83%floor
+[13:23:04Z] [time] m=4 census warm: v0 513.0us [505.8,522.3] 138GB/s 55%floor  v3 335.8us [276.2,411.7] 212GB/s 85%floor  v6 329.7us [272.4,405.4] 216GB/s 86%floor  v8 336.9us [280.6,413.3] 211GB/s 84%floor
+[13:23:05Z] [time] m=8 census cold: v0 1017.8us [1007.6,1027.1] 131GB/s 52%floor  v3 616.5us [516.1,712.7] 217GB/s 87%floor  v6 606.2us [505.9,702.5] 221GB/s 88%floor  v8 618.5us [530.4,710.7] 216GB/s 86%floor
+[13:23:06Z] [time] m=8 census warm: v0 997.3us [981.0,1012.7] 133GB/s 53%floor  v3 610.3us [512.0,723.0] 218GB/s 87%floor  v6 602.1us [501.8,700.4] 222GB/s 89%floor  v8 612.3us [522.2,713.6] 217GB/s 87%floor
+[13:23:07Z] [stream] m=4: tile_barrier 323.6us 214.7GB/s [207.4,221.5]  tile_nobarrier 327.2us 213.5GB/s [205.6,220.1]  contiguous 331.7us 209.7GB/s [200.1,217.4]
+[13:23:08Z] [stream] m=8: tile_barrier 576.5us 230.3GB/s [228.7,231.4]  tile_nobarrier 576.5us 229.4GB/s [227.7,230.6]  contiguous 583.6us 227.7GB/s [224.2,229.6]
+[13:23:08Z] pass=True
+# 2026-09-25T13:23:09Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

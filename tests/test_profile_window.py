@@ -94,6 +94,23 @@ class ProfileWindowTests(unittest.TestCase):
         self.assertIn("/rank1", calls[worker_cp])
         self.assertFalse([c for c in calls if "stop.sh" in c or " rm " in c or " stop " in c])
 
+    def test_concurrency_two_sends_two_streams_inside_the_window(self) -> None:
+        r, calls = self._run(LOGGER.format(name="ssh"), CONCURRENCY="2")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        start = next(i for i, c in enumerate(calls) if "start_profile" in c)
+        stop = next(i for i, c in enumerate(calls) if "stop_profile" in c)
+        streams = [i for i, c in enumerate(calls) if '"stream":true' in c]
+        self.assertEqual(len(streams), 2)
+        self.assertTrue(all(start < i < stop for i in streams))
+        self.assertEqual(r.stdout.count("profiled req usage: {'completion_tokens': 512}"), 2)
+
+    def test_max_tokens_sets_both_bounds(self) -> None:
+        r, calls = self._run(LOGGER.format(name="ssh"), MAX_TOKENS="200")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        bodies = [c for c in calls if c.startswith("curl") and "chat/completions" in c]
+        self.assertTrue(bodies)
+        self.assertTrue(all('"max_tokens":200,"min_tokens":200' in c for c in bodies))
+
 
 if __name__ == "__main__":
     unittest.main()

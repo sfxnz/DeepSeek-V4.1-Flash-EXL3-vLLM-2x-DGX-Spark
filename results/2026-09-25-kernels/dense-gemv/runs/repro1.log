@@ -1,0 +1,79 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T12:38:57Z
+lock acquired 2026-09-25T12:39:21Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch ok decode_levers
+qkv_a              9.18 MB  best cold flat_g192_u2_pf0: 33.79 us (271.5 GB/s, 108.6%)
+    flat    flat_g192_u2_pf0             cold med    33.79 p10    33.76 p90    34.82   271.5 GB/s | warm med     8.16 (1124.4 GB/s)
+    tiles   tiles_b128_all_d2_pf0        cold med    36.86 p10    36.83 p90    38.91   248.9 GB/s | warm med    12.26 (748.6 GB/s)
+    chunks  chunks_b128_w112_d4          cold med    36.94 p10    36.83 p90    38.91   248.3 GB/s | warm med    12.29 (746.7 GB/s)
+wo_b              20.97 MB  best cold chunks_b128_w320_d4: 73.73 us (284.4 GB/s, 113.8%)
+    flat    flat_g384_u4_pf0             cold med    76.77 p10    75.74 p90    77.82   273.2 GB/s | warm med    16.38 (1280.0 GB/s)
+    tiles   tiles_b128_all_d2_pf0        cold med    77.82 p10    77.79 p90    79.78   269.5 GB/s | warm med    20.51 (1022.4 GB/s)
+    chunks  chunks_b128_w320_d4          cold med    73.73 p10    73.70 p90    75.62   284.4 GB/s | warm med    22.61 (927.6 GB/s)
+dsv41-indexer-workspace: already applied
+wo_b_read64              med   98.304 mean   98.327 p10   96.288 p90  100.352  213.3 GB/s  distinct=47 vals=[95.04, 95.168, 95.2, 95.232, 96.224, 96.256]
+wo_b_write64             med  128.048 mean  129.848 p10  126.880 p90  132.064  163.8 GB/s  distinct=70 vals=[124.8, 124.928, 124.96, 125.056, 125.92, 125.952]
+wo_b_read128             med   97.248 mean   97.009 p10   95.296 p90   98.304  215.6 GB/s  distinct=43 vals=[94.208, 95.104, 95.2, 95.232, 95.264, 95.296]
+wo_b_write128            med  127.968 mean  132.397 p10  124.992 p90  149.824  163.9 GB/s  distinct=119 vals=[123.904, 123.936, 124.032, 124.768, 124.8, 124.864]
+wo_b_read256             med   97.248 mean   97.454 p10   96.096 p90   99.328  215.6 GB/s  distinct=51 vals=[94.208, 95.072, 95.104, 95.168, 95.2, 95.232]
+wo_b_write256            med  129.024 mean  128.886 p10  126.976 p90  130.976  162.5 GB/s  distinct=50 vals=[125.056, 125.76, 125.92, 125.952, 125.984, 126.048]
+wo_b_read512             med   97.280 mean   97.474 p10   95.296 p90   99.328  215.6 GB/s  distinct=50 vals=[94.208, 94.304, 95.072, 95.136, 95.2, 95.232]
+wo_b_write512            med  128.000 mean  128.081 p10  125.920 p90  130.048  163.8 GB/s  distinct=55 vals=[124.8, 124.896, 124.928, 124.96, 124.992, 125.088]
+wo_b_read1024            med   96.368 mean   96.812 p10   95.232 p90   98.304  217.6 GB/s  distinct=44 vals=[94.208, 94.24, 95.008, 95.072, 95.2, 95.232]
+wo_b_write1024           med  127.936 mean  127.825 p10  125.952 p90  130.048  163.9 GB/s  distinct=59 vals=[124.768, 124.896, 124.928, 124.96, 124.992, 125.024]
+qkv_a_read64             med   47.104 mean   48.984 p10   46.080 p90   49.184  194.8 GB/s  distinct=53 vals=[44.96, 45.024, 45.056, 45.088, 45.12, 45.216]
+qkv_a_write64            med   67.744 mean   69.341 p10   67.552 p90   69.632  135.4 GB/s  distinct=43 vals=[66.528, 66.56, 66.592, 66.624, 66.72, 67.424]
+qkv_a_read128            med   47.104 mean   47.713 p10   46.080 p90   49.152  194.8 GB/s  distinct=45 vals=[44.96, 45.024, 45.056, 45.088, 45.184, 45.216]
+qkv_a_write128           med   67.792 mean   68.534 p10   67.552 p90   69.664  135.3 GB/s  distinct=36 vals=[65.632, 65.664, 66.528, 66.56, 66.688, 67.36]
+qkv_a_read256            med   47.104 mean   48.325 p10   46.080 p90   49.152  194.8 GB/s  distinct=43 vals=[44.992, 45.024, 45.056, 45.088, 45.12, 45.152]
+qkv_a_write256           med   69.584 mean   69.040 p10   67.584 p90   70.624  131.9 GB/s  distinct=46 vals=[66.528, 66.56, 67.424, 67.456, 67.488, 67.52]
+qkv_a_read512            med   47.104 mean   47.609 p10   46.048 p90   49.152  194.8 GB/s  distinct=45 vals=[45.024, 45.056, 45.12, 45.152, 45.952, 46.048]
+qkv_a_write512           med   68.080 mean   70.718 p10   67.552 p90   71.680  134.8 GB/s  distinct=65 vals=[66.56, 66.688, 66.72, 67.328, 67.36, 67.392]
+qkv_a_read1024           med   47.104 mean   47.646 p10   46.080 p90   49.120  194.8 GB/s  distinct=38 vals=[45.024, 45.056, 45.088, 45.152, 45.856, 45.984]
+qkv_a_write1024          med   69.488 mean   69.052 p10   67.552 p90   69.696  132.0 GB/s  distinct=35 vals=[66.656, 67.392, 67.456, 67.488, 67.52, 67.552]
+shared_down_read64       med   29.696 mean   29.849 p10   28.672 p90   30.720  198.6 GB/s  distinct=31 vals=[28.64, 28.672, 28.704, 28.736, 28.768, 28.8]
+shared_down_write64      med   52.224 mean   52.181 p10   51.168 p90   53.248  112.9 GB/s  distinct=36 vals=[50.24, 50.272, 51.008, 51.072, 51.104, 51.136]
+shared_down_read128      med   29.616 mean   29.447 p10   28.640 p90   29.728  199.2 GB/s  distinct=35 vals=[28.48, 28.512, 28.544, 28.576, 28.64, 28.672]
+shared_down_write128     med   52.128 mean   51.878 p10   51.168 p90   53.152  113.1 GB/s  distinct=44 vals=[49.984, 50.144, 50.208, 50.24, 50.272, 50.336]
+shared_down_read256      med   28.784 mean   29.594 p10   28.640 p90   30.624  204.9 GB/s  distinct=34 vals=[28.192, 28.48, 28.512, 28.544, 28.576, 28.608]
+shared_down_write256     med   51.200 mean   51.212 p10   50.176 p90   52.224  115.2 GB/s  distinct=33 vals=[49.216, 50.016, 50.048, 50.08, 50.144, 50.176]
+shared_down_read512      med   29.696 mean   29.627 p10   28.640 p90   30.720  198.6 GB/s  distinct=30 vals=[28.48, 28.544, 28.608, 28.64, 28.672, 28.704]
+shared_down_write512     med   51.344 mean   52.189 p10   50.336 p90   53.248  114.9 GB/s  distinct=50 vals=[49.248, 50.048, 50.144, 50.176, 50.208, 50.272]
+shared_down_read1024     med   29.664 mean   29.516 p10   28.672 p90   30.720  198.8 GB/s  distinct=32 vals=[28.544, 28.576, 28.64, 28.672, 28.704, 28.736]
+shared_down_write1024    med   51.200 mean   51.442 p10   50.144 p90   52.256  115.2 GB/s  distinct=45 vals=[49.152, 49.28, 49.952, 50.016, 50.048, 50.08]
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 133 busy 72 sm_median 2190 sm_min_busy 1306 mem ['[N/A]'] power_median 11.0 W
+rc=0

@@ -1,0 +1,52 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip ar_l2_prefetch: DSV41_AR_L2_PREFETCH is not 1
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 66
+dsv41-patch ok pm_qos: armed
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+INFO 09-25 17:50:56 [pynccl.py:120] vLLM is using nccl==2.30.7
+INFO 09-25 17:50:56 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 17:50:56 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+NCCL version 2.30.7+cuda13.3
+[17:51:05] : Warning: T.vectorized loop over `i_hci` with extent 4 is lowered as a serial loop because TileLang could not find a valid vectorization plan. Scalar accumulator updates inside the loop are a common cause; move reductions to T.unroll or T.serial if this is intended.
+2026-09-25 17:50:59  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-25 17:51:04  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-25 17:51:05  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_post_tilelang` with `out_idx=None`
+2026-09-25 17:51:06  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_post_tilelang`
+m=4 none                         pf   1.1 p2b  500.0 ar   82.6 [72.1, 90.8] mhc  35.6 qkv_a  53.5 wq_b  109.6 total   789.7 [768.1, 807.5] | net   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq True
+m=4 startj/tri/3                 pf   1.1 p2b  498.7 ar   93.1 [82.6, 101.9] mhc  37.5 qkv_a  40.0 wq_b  109.9 total   789.4 [767.2, 812.1] | net   +1.0 = pf  +0.0 p2b  -1.3 ar +10.5 mhc  +1.9 qkv_a -13.4 wq_b  +0.3 eq True
+m=4 startj/tri/5.5               pf   1.1 p2b  498.6 ar   99.3 [88.9, 108.3] mhc  37.8 qkv_a  30.8 wq_b  108.8 total   785.4 [764.0, 808.1] | net   -2.9 = pf  +0.0 p2b  -1.5 ar +16.7 mhc  +2.2 qkv_a -22.6 wq_b  -0.8 eq True
+m=4 startj/tri/7                 pf   1.1 p2b  498.7 ar  102.3 [92.1, 111.0] mhc  37.8 qkv_a  27.0 wq_b  109.5 total   785.2 [763.3, 810.0] | net   -3.2 = pf  +0.0 p2b  -1.3 ar +19.7 mhc  +2.1 qkv_a -26.5 wq_b  -0.1 eq True
+m=4 startj/tri/full              pf   1.2 p2b  498.6 ar  105.4 [94.8, 114.6] mhc  37.7 qkv_a  20.8 wq_b  108.6 total   782.8 [759.9, 803.8] | net   -5.6 = pf  +0.0 p2b  -1.4 ar +22.9 mhc  +2.1 qkv_a -32.7 wq_b  -1.0 eq True
+m=4 startj/burst:c8/full         pf   1.1 p2b  498.6 ar  100.7 [90.2, 109.3] mhc  37.8 qkv_a  33.1 wq_b  109.8 total   788.6 [768.0, 811.1] | net   +0.3 = pf  +0.0 p2b  -1.5 ar +18.1 mhc  +2.1 qkv_a -20.3 wq_b  +0.2 eq True
+m=4 start/tri/5.5                pf   1.1 p2b  498.7 ar   99.1 [88.4, 107.3] mhc  35.7 qkv_a  31.0 wq_b  108.5 total   782.9 [761.8, 806.8] | net   -5.4 = pf  +0.0 p2b  -1.4 ar +16.6 mhc  +0.0 qkv_a -22.5 wq_b  -1.0 eq True
+m=8 none                         pf   1.3 p2b 1044.9 ar   58.7 [50.8, 64.8] mhc  36.4 qkv_a  56.2 wq_b  114.3 total  1310.8 [1267.5, 1339.8] | net   +0.0 = pf  +0.0 p2b  +0.0 ar  +0.0 mhc  +0.0 qkv_a  +0.0 wq_b  +0.0 eq True
+m=8 startj/tri/3                 pf   1.3 p2b 1036.5 ar   69.2 [62.0, 75.4] mhc  38.3 qkv_a  43.2 wq_b  114.3 total  1313.4 [1273.8, 1339.5] | net  +10.9 = pf  +0.0 p2b  -8.4 ar +10.6 mhc  +1.9 qkv_a -13.0 wq_b  +0.1 eq True
+m=8 startj/tri/5.5               pf   1.3 p2b 1036.2 ar   75.4 [68.2, 82.3] mhc  37.8 qkv_a  34.5 wq_b  114.7 total  1310.5 [1271.3, 1338.6] | net   +8.3 = pf  +0.0 p2b  -8.6 ar +16.7 mhc  +1.5 qkv_a -21.6 wq_b  +0.4 eq True
+m=8 startj/tri/7                 pf   1.3 p2b 1036.1 ar   79.1 [71.8, 85.8] mhc  38.3 qkv_a  30.7 wq_b  115.4 total  1316.1 [1273.2, 1338.7] | net  +14.0 = pf  +0.0 p2b  -8.8 ar +20.4 mhc  +1.9 qkv_a -25.4 wq_b  +1.1 eq True
+m=8 startj/tri/full              pf   1.3 p2b 1036.1 ar   83.4 [76.3, 89.8] mhc  37.9 qkv_a  26.6 wq_b  115.7 total  1312.8 [1272.9, 1337.1] | net  +10.8 = pf  +0.0 p2b  -8.8 ar +24.7 mhc  +1.5 qkv_a -29.6 wq_b  +1.4 eq True
+m=8 startj/burst:c8/full         pf   1.3 p2b 1036.1 ar   77.4 [69.4, 83.8] mhc  38.3 qkv_a  36.7 wq_b  114.7 total  1316.1 [1277.2, 1343.2] | net  +14.0 = pf  +0.0 p2b  -8.7 ar +18.7 mhc  +2.0 qkv_a -19.4 wq_b  +0.4 eq True
+m=8 start/tri/5.5                pf   1.3 p2b 1036.5 ar   75.4 [67.8, 82.0] mhc  36.2 qkv_a  34.5 wq_b  115.6 total  1309.3 [1271.7, 1335.9] | net   +6.9 = pf  +0.0 p2b  -8.4 ar +16.7 mhc  -0.1 qkv_a -21.7 wq_b  +1.3 eq True

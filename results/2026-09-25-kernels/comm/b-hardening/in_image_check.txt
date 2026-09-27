@@ -1,0 +1,10 @@
+# in-image CPU check of the DSV41_NCCL_EAGER_TWIN NCCL version gate (no GPU; 2026-09-25T17:41:39Z)
+# image dsv41-flash-exl3-sm121:canonical-e13 sha256:c81762335a12; python3 -S, PYTHONPATH=dist-packages
+nccl_version() (vLLM NCCLLibrary, VLLM_NCCL_SO_PATH unset -> libnccl.so.2): 2.30.7
+in VALIDATED_NCCL ('2.30.7',) : True
+INFO 09-25 17:41:43 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-25 17:41:43 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+install() on the real e13 classes -> armed | NCCL_GRAPH_MIXING_SUPPORT = 0 | logs []
+CudaCommunicator.__init__ wrapped: True
+install() with a reader returning 2.31.0 -> disarmed | NCCL_GRAPH_MIXING_SUPPORT = None
+  log: dsv41: nccl eager twin DISARMED: RuntimeError('NCCL 2.31.0 is not validated for NCCL_GRAPH_MIXING_SUPPORT=0 (validated: 2.30.7); re-read its graphUsageMode handling first'); NCCL graph mixing stays on

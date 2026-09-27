@@ -289,13 +289,16 @@ def _quantize_fast(
     greedy: bool = False,
     beam: int = 1,
     codebook: str = DEFAULT_CODEBOOK,
+    tile_chunk: int = 256,
 ) -> list[dict]:
     """All-tiles encode, no LDLQ strip walk and no global-scale search.
 
     Identity-Hessian LDLQ walks 320 K-tiles per matrix (~5.3 s/expert on GB10).
     Uncalibrated fallback plus skip_g_scale keeps the trellis the inference
     kernel expects, without the per-strip compensation GEMMs. greedy=True uses
-    a 2**K sliding-window search instead of tail-biting Viterbi.
+    a 2**K sliding-window search instead of tail-biting Viterbi. tile_chunk is
+    the tiles per quantize_tiles call; tiles are independent, so it changes
+    speed only (4608 is bitwise equal to 256 and ~4% faster on GB10, 1.5.1).
     """
     import torch
     from exllamav3.modules.quant.exl3_lib.quantize import (
@@ -316,7 +319,7 @@ def _quantize_fast(
     marker = codebook_mul1_mult if cb.name == "mul1" else codebook_mcg_mult
     perm = tensor_core_perm(dev)
     packed_list = []
-    chunk = 256
+    chunk = int(tile_chunk)
     for w in weights:
         wf = w.to(dev, dtype=torch.float32, non_blocking=True).contiguous()
         in_f = int(wf.shape[0])

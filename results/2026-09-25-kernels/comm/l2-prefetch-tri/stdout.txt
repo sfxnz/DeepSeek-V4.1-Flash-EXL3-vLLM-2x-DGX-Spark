@@ -1,0 +1,275 @@
+dsv41-patch skip g8_load_tracer: DSV41_LOAD_PF_G8 is not 1
+dsv41-patch ok prefer_b12x_mxfp8
+dsv41-indexer-workspace: already applied
+dsv41-patch skip mla_tile32_workspace: image kernel has no DSV4_CAND_WINDOW = 32
+dsv41-patch ok persistent_topk: already applied
+dsv41-patch ok kpool_persistent_topk: already applied
+dsv41-patch ok load_general_plugins
+dsv41-patch ok exl3_weight_block_size
+dsv41-patch ok warmup_stubs
+dsv41-patch ok cudagraph_worker_stub
+dsv41-patch ok swa_page_coerce
+dsv41-patch ok kernel_block_sizes
+dsv41-patch ok extra_page_bump
+dsv41-patch ok v41_config_vision
+dsv41-patch ok swa_image_width: already applied
+dsv41-patch ok attention_image_width: already applied
+dsv41-patch ok native_indexer_decode: already applied
+dsv41-patch ok indexer_adaptive: already applied
+dsv41-patch ok indexer_short_context: already applied
+dsv41-patch skip dspark_markov_scale: DSV41_DSPARK_MARKOV_SCALE=1
+dsv41-patch skip step_census: DSV41_STEP_CENSUS is not 1
+dsv41-patch skip mhc_decode_splits: DSV41_MHC_DECODE_SPLITS=0: this block only collapses at =1 (N >= 2 is decode_levers)
+dsv41-patch skip engram_row_cache: DSV41_ENGRAM_CACHE is not 1
+dsv41-patch skip mhc_no_deepgemm: DSV41_MHC_NO_DEEPGEMM is not 1
+dsv41-patch skip ar_l2_prefetch: DSV41_AR_L2_PREFETCH is not 1
+dsv41-patch skip pm_qos: DSV41_PM_QOS_US is not set
+dsv41-patch skip nccl_eager_twin: DSV41_NCCL_EAGER_TWIN is not 1
+dsv41-patch ok decode_levers
+INFO 09-25 13:55:29 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 13:55:30 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+[13:55:37] : Warning: T.vectorized loop over `i_hci` with extent 4 is lowered as a serial loop because TileLang could not find a valid vectorization plan. Scalar accumulator updates inside the loop are a common cause; move reductions to T.unroll or T.serial if this is intended.
+2026-09-25 13:55:32  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-25 13:55:37  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-25 13:55:37  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_post_tilelang` with `out_idx=None`
+2026-09-25 13:55:38  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_post_tilelang`
+{
+ "what": "L2 warm-up of the next GEMM's weights during the AR + mHC window (single GPU, AR emulated by a 5-CTA clock spin, 2x-L2 streaming-read flush per replay)",
+ "device": "NVIDIA GB10",
+ "l2_bytes": 25165824,
+ "m": 4,
+ "ar_us": 22.7,
+ "replays": 300,
+ "warmup": 20,
+ "chunk": 16384,
+ "qkv_a_bytes": 9461760,
+ "wq_b_bytes": 21626880,
+ "arms": {
+  "none": [],
+  "warm": "ceiling",
+  "bulk60": [
+   [
+    "bulk",
+    "a",
+    0.6,
+    1
+   ]
+  ],
+  "tri60": [
+   [
+    "tri",
+    "a",
+    0.6,
+    1
+   ]
+  ]
+ },
+ "summary": {
+  "none": {
+   "window": {
+    "median": 63.33,
+    "p10": 63.07,
+    "p90": 63.33,
+    "n": 300
+   },
+   "w_ar": {
+    "median": 26.46,
+    "p10": 26.21,
+    "p90": 26.46,
+    "n": 300
+   },
+   "w_mhc_post": {
+    "median": 8.19,
+    "p10": 8.19,
+    "p90": 8.19,
+    "n": 300
+   },
+   "w_mhc_pre": {
+    "median": 24.58,
+    "p10": 24.58,
+    "p90": 24.58,
+    "n": 300
+   },
+   "w_act_quant": {
+    "median": 4.1,
+    "p10": 4.1,
+    "p90": 4.1,
+    "n": 300
+   },
+   "qkv_a": {
+    "median": 47.04,
+    "p10": 46.08,
+    "p90": 47.1,
+    "n": 300
+   },
+   "wq_b": {
+    "median": 101.38,
+    "p10": 100.35,
+    "p90": 102.4,
+    "n": 300
+   },
+   "total": {
+    "median": 211.14,
+    "p10": 209.95,
+    "p90": 212.83,
+    "n": 300
+   },
+   "bitwise_equal_to_none": true
+  },
+  "warm": {
+   "window": {
+    "median": 63.33,
+    "p10": 63.1,
+    "p90": 63.33,
+    "n": 300
+   },
+   "w_ar": {
+    "median": 26.46,
+    "p10": 26.24,
+    "p90": 26.46,
+    "n": 300
+   },
+   "w_mhc_post": {
+    "median": 8.19,
+    "p10": 8.19,
+    "p90": 8.19,
+    "n": 300
+   },
+   "w_mhc_pre": {
+    "median": 24.58,
+    "p10": 24.58,
+    "p90": 24.58,
+    "n": 300
+   },
+   "w_act_quant": {
+    "median": 4.1,
+    "p10": 4.1,
+    "p90": 4.1,
+    "n": 300
+   },
+   "qkv_a": {
+    "median": 16.35,
+    "p10": 16.35,
+    "p90": 16.38,
+    "n": 300
+   },
+   "wq_b": {
+    "median": 102.4,
+    "p10": 101.41,
+    "p90": 103.46,
+    "n": 300
+   },
+   "total": {
+    "median": 182.11,
+    "p10": 181.09,
+    "p90": 183.14,
+    "n": 300
+   },
+   "bitwise_equal_to_none": true
+  },
+  "bulk60": {
+   "window": {
+    "median": 64.56,
+    "p10": 64.38,
+    "p90": 65.5,
+    "n": 300
+   },
+   "w_ar": {
+    "median": 28.42,
+    "p10": 28.22,
+    "p90": 28.74,
+    "n": 300
+   },
+   "w_mhc_post": {
+    "median": 7.62,
+    "p10": 7.36,
+    "p90": 8.03,
+    "n": 300
+   },
+   "w_mhc_pre": {
+    "median": 24.58,
+    "p10": 24.38,
+    "p90": 24.58,
+    "n": 300
+   },
+   "w_act_quant": {
+    "median": 4.1,
+    "p10": 4.1,
+    "p90": 4.1,
+    "n": 300
+   },
+   "qkv_a": {
+    "median": 22.53,
+    "p10": 22.53,
+    "p90": 22.75,
+    "n": 300
+   },
+   "wq_b": {
+    "median": 101.38,
+    "p10": 100.38,
+    "p90": 102.4,
+    "n": 300
+   },
+   "total": {
+    "median": 188.38,
+    "p10": 187.46,
+    "p90": 190.34,
+    "n": 300
+   },
+   "bitwise_equal_to_none": true
+  },
+  "tri60": {
+   "window": {
+    "median": 65.38,
+    "p10": 64.96,
+    "p90": 65.44,
+    "n": 300
+   },
+   "w_ar": {
+    "median": 28.7,
+    "p10": 28.22,
+    "p90": 28.8,
+    "n": 300
+   },
+   "w_mhc_post": {
+    "median": 8.0,
+    "p10": 7.94,
+    "p90": 8.03,
+    "n": 300
+   },
+   "w_mhc_pre": {
+    "median": 24.58,
+    "p10": 24.58,
+    "p90": 24.58,
+    "n": 300
+   },
+   "w_act_quant": {
+    "median": 4.1,
+    "p10": 4.1,
+    "p90": 4.1,
+    "n": 300
+   },
+   "qkv_a": {
+    "median": 22.53,
+    "p10": 22.53,
+    "p90": 22.69,
+    "n": 300
+   },
+   "wq_b": {
+    "median": 101.41,
+    "p10": 100.8,
+    "p90": 102.43,
+    "n": 300
+   },
+   "total": {
+    "median": 189.34,
+    "p10": 188.61,
+    "p90": 191.33,
+    "n": 300
+   },
+   "bitwise_equal_to_none": true
+  }
+ },
+ "time": "2026-09-25T13:55:41Z"
+}
+rc=0

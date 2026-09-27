@@ -1,0 +1,126 @@
+# 2026-09-25T14:20:55Z host spark2 tag final-validate
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.1Gi        92Gi       252Ki        25Gi       116Gi
+Swap:           15Gi       1.2Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode check,capture,stress --variants 0,1,2 --ms 1,3,4,6,8 --check-routings 12 --ref --replays 32 --stress-calls 1000 --out results/2026-09-25-kernels/coop-moe/final-validate.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[14:21:08Z] loaded layer 20 rank 0 in 5.9 s
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[14:21:08Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v1": {"grid": 192, "blocks_per_sm": 4.0}, "v2": {"grid": 144, "blocks_per_sm": 3.0}}
+[14:21:09Z] [check] v1 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 5.8630394050851464e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.001126671659991053, "p2b_ref_max_rel": 0.001126671659991053, "ref_rms_rel": 0.0008773057490163086, "p2b_ref_rms_rel": 0.0008772980476520557}
+[14:21:09Z] [check] v2 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 5.8630394050851464e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.001126671659991053, "p2b_ref_max_rel": 0.001126671659991053, "ref_rms_rel": 0.0008773057490163086, "p2b_ref_rms_rel": 0.0008772980476520557}
+[14:21:09Z] [check] v1 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0001423690264346078, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.00101324923095753, "p2b_ref_max_rel": 0.00101324923095753, "ref_rms_rel": 0.0008849182540158357, "p2b_ref_rms_rel": 0.0008849267918622239}
+[14:21:09Z] [check] v2 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0001423690264346078, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.00101324923095753, "p2b_ref_max_rel": 0.00101324923095753, "ref_rms_rel": 0.0008849182540158357, "p2b_ref_rms_rel": 0.0008849267918622239}
+[14:21:10Z] [check] v1 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.819421832915395e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.000977540605559429, "p2b_ref_max_rel": 0.000977540605559429, "ref_rms_rel": 0.0008834384891996553, "p2b_ref_rms_rel": 0.0008834382714474255}
+[14:21:10Z] [check] v2 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.819421832915395e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.000977540605559429, "p2b_ref_max_rel": 0.000977540605559429, "ref_rms_rel": 0.0008834384891996553, "p2b_ref_rms_rel": 0.0008834382714474255}
+[14:21:11Z] [check] v1 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0005083883879706264, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011108676957850483, "p2b_ref_max_rel": 0.0011108676957850483, "ref_rms_rel": 0.0008796993975364218, "p2b_ref_rms_rel": 0.0008796879169194483}
+[14:21:11Z] [check] v2 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0005083883879706264, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011108676957850483, "p2b_ref_max_rel": 0.0011108676957850483, "ref_rms_rel": 0.0008796993975364218, "p2b_ref_rms_rel": 0.0008796879169194483}
+[14:21:11Z] [check] v1 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011848341091535985, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0010006821805950926, "p2b_ref_max_rel": 0.0010006821805950926, "ref_rms_rel": 0.0008857698459372175, "p2b_ref_rms_rel": 0.0008857722346570873}
+[14:21:11Z] [check] v2 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011848341091535985, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0010006821805950926, "p2b_ref_max_rel": 0.0010006821805950926, "ref_rms_rel": 0.0008857698459372175, "p2b_ref_rms_rel": 0.0008857722346570873}
+[14:21:12Z] [check] v1 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00024248303088825196, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.00102044209083529, "p2b_ref_max_rel": 0.00102044209083529, "ref_rms_rel": 0.0008837536370394995, "p2b_ref_rms_rel": 0.0008837666426335006}
+[14:21:12Z] [check] v2 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00024248303088825196, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.00102044209083529, "p2b_ref_max_rel": 0.00102044209083529, "ref_rms_rel": 0.0008837536370394995, "p2b_ref_rms_rel": 0.0008837666426335006}
+[14:21:13Z] [check] v1 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002615062694530934, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011445454748771745, "p2b_ref_max_rel": 0.0011445454748771745, "ref_rms_rel": 0.000881998316470527, "p2b_ref_rms_rel": 0.0008819969507480449}
+[14:21:13Z] [check] v2 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002615062694530934, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011445454748771745, "p2b_ref_max_rel": 0.0011445454748771745, "ref_rms_rel": 0.000881998316470527, "p2b_ref_rms_rel": 0.0008819969507480449}
+[14:21:14Z] [check] v1 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.453278183471411e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.00098706352229839, "p2b_ref_max_rel": 0.00098706352229839, "ref_rms_rel": 0.0008792139564579801, "p2b_ref_rms_rel": 0.0008792154448607616}
+[14:21:14Z] [check] v2 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.453278183471411e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.00098706352229839, "p2b_ref_max_rel": 0.00098706352229839, "ref_rms_rel": 0.0008792139564579801, "p2b_ref_rms_rel": 0.0008792154448607616}
+[14:21:14Z] [check] v1 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0004761904710903764, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0009676908656944309, "p2b_ref_max_rel": 0.0009676908656944309, "ref_rms_rel": 0.000878359458016526, "p2b_ref_rms_rel": 0.0008783703275085713}
+[14:21:14Z] [check] v2 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0004761904710903764, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0009676908656944309, "p2b_ref_max_rel": 0.0009676908656944309, "ref_rms_rel": 0.000878359458016526, "p2b_ref_rms_rel": 0.0008783703275085713}
+[14:21:15Z] [check] v1 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00044014083687216043, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011688196337711655, "p2b_ref_max_rel": 0.0011688196337711655, "ref_rms_rel": 0.0008802490941433441, "p2b_ref_rms_rel": 0.0008802476626257156}
+[14:21:15Z] [check] v2 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00044014083687216043, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011688196337711655, "p2b_ref_max_rel": 0.0011688196337711655, "ref_rms_rel": 0.0008802490941433441, "p2b_ref_rms_rel": 0.0008802476626257156}
+[14:21:17Z] [check] v1 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002506265591364354, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0009984870287343866, "p2b_ref_max_rel": 0.0009984870287343866, "ref_rms_rel": 0.0008834047008458137, "p2b_ref_rms_rel": 0.0008834058898136337}
+[14:21:17Z] [check] v2 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002506265591364354, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0009984870287343866, "p2b_ref_max_rel": 0.0009984870287343866, "ref_rms_rel": 0.0008834047008458137, "p2b_ref_rms_rel": 0.0008834058898136337}
+[14:21:18Z] [check] v1 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00025445292703807354, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011125361830279588, "p2b_ref_max_rel": 0.0011125361830279588, "ref_rms_rel": 0.0008820907451311101, "p2b_ref_rms_rel": 0.0008820873888333454}
+[14:21:18Z] [check] v2 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00025445292703807354, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011125361830279588, "p2b_ref_max_rel": 0.0011125361830279588, "ref_rms_rel": 0.0008820907451311101, "p2b_ref_rms_rel": 0.0008820873888333454}
+[14:21:18Z] [capture] v1 m=1: replay_equals_eager=True (32 replays)
+[14:21:18Z] [capture] v1 m=3: replay_equals_eager=True (32 replays)
+[14:21:18Z] [capture] v1 m=4: replay_equals_eager=True (32 replays)
+[14:21:18Z] [capture] v1 m=6: replay_equals_eager=True (32 replays)
+[14:21:18Z] [capture] v1 m=8: replay_equals_eager=True (32 replays)
+[14:21:18Z] [capture] v2 m=1: replay_equals_eager=True (32 replays)
+[14:21:18Z] [capture] v2 m=3: replay_equals_eager=True (32 replays)
+[14:21:18Z] [capture] v2 m=4: replay_equals_eager=True (32 replays)
+[14:21:18Z] [capture] v2 m=6: replay_equals_eager=True (32 replays)
+[14:21:18Z] [capture] v2 m=8: replay_equals_eager=True (32 replays)
+[14:21:19Z] [stress] v2 m=1: 1000 calls, eager mismatches 0, graph mismatches 0
+[14:21:20Z] [stress] v2 m=3: 1000 calls, eager mismatches 0, graph mismatches 0
+[14:21:21Z] [stress] v2 m=4: 1000 calls, eager mismatches 0, graph mismatches 0
+[14:21:23Z] [stress] v2 m=6: 1000 calls, eager mismatches 0, graph mismatches 0
+[14:21:25Z] [stress] v2 m=8: 1000 calls, eager mismatches 0, graph mismatches 0
+[14:21:25Z] pass=True
+# 2026-09-25T14:21:27Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# 2026-09-25T14:30:18Z host spark2 tag final-validate
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.4Gi        92Gi       244Ki        25Gi       116Gi
+Swap:           15Gi       1.2Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode check,capture,stress --variants 0,1,2 --ms 1,3,4,6,8 --check-routings 12 --ref --replays 32 --stress-calls 1000 --out results/2026-09-25-kernels/coop-moe/final-validate.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[14:30:31Z] loaded layer 20 rank 0 in 6.0 s
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[14:30:31Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v1": {"grid": 192, "blocks_per_sm": 4.0}, "v2": {"grid": 144, "blocks_per_sm": 3.0}}
+[14:30:32Z] [check] v1 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 5.8630394050851464e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.001126671659991053, "p2b_ref_max_rel": 0.001126671659991053, "ref_rms_rel": 0.0008773057490163086, "p2b_ref_rms_rel": 0.0008773014551555304}
+[14:30:32Z] [check] v2 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 5.8630394050851464e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.001126671659991053, "p2b_ref_max_rel": 0.001126671659991053, "ref_rms_rel": 0.0008773057490163086, "p2b_ref_rms_rel": 0.0008773014551555304}
+[14:30:33Z] [check] v1 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002871912729460746, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.00101324923095753, "p2b_ref_max_rel": 0.00101324923095753, "ref_rms_rel": 0.0008849182540158357, "p2b_ref_rms_rel": 0.0008849436932509145}
+[14:30:33Z] [check] v2 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002871912729460746, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.00101324923095753, "p2b_ref_max_rel": 0.00101324923095753, "ref_rms_rel": 0.0008849182540158357, "p2b_ref_rms_rel": 0.0008849436932509145}
+[14:30:33Z] [check] v1 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002727768733166158, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.000977540605559429, "p2b_ref_max_rel": 0.000977540605559429, "ref_rms_rel": 0.0008834384891996553, "p2b_ref_rms_rel": 0.0008834305724870163}
+[14:30:33Z] [check] v2 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002727768733166158, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.000977540605559429, "p2b_ref_max_rel": 0.000977540605559429, "ref_rms_rel": 0.0008834384891996553, "p2b_ref_rms_rel": 0.0008834305724870163}
+[14:30:34Z] [check] v1 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00026709403027780354, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011108676957850483, "p2b_ref_max_rel": 0.0011108676957850483, "ref_rms_rel": 0.0008796993975364218, "p2b_ref_rms_rel": 0.0008797003878082774}
+[14:30:34Z] [check] v2 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00026709403027780354, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011108676957850483, "p2b_ref_max_rel": 0.0011108676957850483, "ref_rms_rel": 0.0008796993975364218, "p2b_ref_rms_rel": 0.0008797003878082774}
+[14:30:35Z] [check] v1 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00026191724464297295, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0010006821805950926, "p2b_ref_max_rel": 0.0010006821805950926, "ref_rms_rel": 0.0008857698459372175, "p2b_ref_rms_rel": 0.0008857721596246973}
+[14:30:35Z] [check] v2 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00026191724464297295, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0010006821805950926, "p2b_ref_max_rel": 0.0010006821805950926, "ref_rms_rel": 0.0008857698459372175, "p2b_ref_rms_rel": 0.0008857721596246973}
+[14:30:35Z] [check] v1 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002627430367283523, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.00102044209083529, "p2b_ref_max_rel": 0.00102044209083529, "ref_rms_rel": 0.0008837536370394995, "p2b_ref_rms_rel": 0.0008837754125403881}
+[14:30:35Z] [check] v2 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002627430367283523, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.00102044209083529, "p2b_ref_max_rel": 0.00102044209083529, "ref_rms_rel": 0.0008837536370394995, "p2b_ref_rms_rel": 0.0008837754125403881}
+[14:30:36Z] [check] v1 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00024108003708533943, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011445454748771745, "p2b_ref_max_rel": 0.0011445454748771745, "ref_rms_rel": 0.000881998316470527, "p2b_ref_rms_rel": 0.0008819997686633128}
+[14:30:36Z] [check] v2 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00024108003708533943, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011445454748771745, "p2b_ref_max_rel": 0.0011445454748771745, "ref_rms_rel": 0.000881998316470527, "p2b_ref_rms_rel": 0.0008819997686633128}
+[14:30:37Z] [check] v1 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011837121564894915, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.00098706352229839, "p2b_ref_max_rel": 0.00098706352229839, "ref_rms_rel": 0.0008792139564579801, "p2b_ref_rms_rel": 0.0008792161523634365}
+[14:30:37Z] [check] v2 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011837121564894915, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.00098706352229839, "p2b_ref_max_rel": 0.00098706352229839, "ref_rms_rel": 0.0008792139564579801, "p2b_ref_rms_rel": 0.0008792161523634365}
+[14:30:38Z] [check] v1 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0004761904710903764, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0009676908656944309, "p2b_ref_max_rel": 0.0009676908656944309, "ref_rms_rel": 0.000878359458016526, "p2b_ref_rms_rel": 0.0008783700161564651}
+[14:30:38Z] [check] v2 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0004761904710903764, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0009676908656944309, "p2b_ref_max_rel": 0.0009676908656944309, "ref_rms_rel": 0.000878359458016526, "p2b_ref_rms_rel": 0.0008783700161564651}
+[14:30:39Z] [check] v1 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00022441652254201472, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011688196337711655, "p2b_ref_max_rel": 0.0011688196337711655, "ref_rms_rel": 0.0008802490941433441, "p2b_ref_rms_rel": 0.0008802531852429369}
+[14:30:39Z] [check] v2 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00022441652254201472, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011688196337711655, "p2b_ref_max_rel": 0.0011688196337711655, "ref_rms_rel": 0.0008802490941433441, "p2b_ref_rms_rel": 0.0008802531852429369}
+[14:30:40Z] [check] v1 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002369668218307197, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0009984870287343866, "p2b_ref_max_rel": 0.0009984870287343866, "ref_rms_rel": 0.0008834047008458137, "p2b_ref_rms_rel": 0.0008834068371761287}
+[14:30:40Z] [check] v2 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002369668218307197, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0009984870287343866, "p2b_ref_max_rel": 0.0009984870287343866, "ref_rms_rel": 0.0008834047008458137, "p2b_ref_rms_rel": 0.0008834068371761287}
+[14:30:41Z] [check] v1 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0005146680632606149, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011125361830279588, "p2b_ref_max_rel": 0.0011125361830279588, "ref_rms_rel": 0.0008820907451311101, "p2b_ref_rms_rel": 0.0008821062018217396}
+[14:30:41Z] [check] v2 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0005146680632606149, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0011125361830279588, "p2b_ref_max_rel": 0.0011125361830279588, "ref_rms_rel": 0.0008820907451311101, "p2b_ref_rms_rel": 0.0008821062018217396}
+[14:30:41Z] [capture] v1 m=1: replay_equals_eager=True (32 replays)
+[14:30:41Z] [capture] v1 m=3: replay_equals_eager=True (32 replays)
+[14:30:41Z] [capture] v1 m=4: replay_equals_eager=True (32 replays)
+[14:30:41Z] [capture] v1 m=6: replay_equals_eager=True (32 replays)
+[14:30:41Z] [capture] v1 m=8: replay_equals_eager=True (32 replays)
+[14:30:41Z] [capture] v2 m=1: replay_equals_eager=True (32 replays)
+[14:30:41Z] [capture] v2 m=3: replay_equals_eager=True (32 replays)
+[14:30:41Z] [capture] v2 m=4: replay_equals_eager=True (32 replays)
+[14:30:41Z] [capture] v2 m=6: replay_equals_eager=True (32 replays)
+[14:30:41Z] [capture] v2 m=8: replay_equals_eager=True (32 replays)
+[14:30:42Z] [stress] v2 m=1: 1000 calls, eager mismatches 0, graph mismatches 0
+[14:30:43Z] [stress] v2 m=3: 1000 calls, eager mismatches 0, graph mismatches 0
+[14:30:45Z] [stress] v2 m=4: 1000 calls, eager mismatches 0, graph mismatches 0
+[14:30:46Z] [stress] v2 m=6: 1000 calls, eager mismatches 0, graph mismatches 0
+[14:30:48Z] [stress] v2 m=8: 1000 calls, eager mismatches 0, graph mismatches 0
+[14:30:48Z] pass=True
+# 2026-09-25T14:30:50Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

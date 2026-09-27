@@ -190,6 +190,20 @@ try:
 except (Exception, SystemExit) as _dense_dg_err:  # SystemExit = anchor drift
     print(f"dsv41: dense deep_gemm small-M patch skipped: {_dense_dg_err!r}", flush=True)
 
+# Dense MXFP8 at M<=8 on the bit-exact dsv41 GEMV (DSV41_DENSE_GEMV=1, default
+# off; shapes via DSV41_DENSE_GEMV_SHAPES). Layers self-test bitwise vs b12x
+# at load and stay on b12x on any failure; lmhead_mxfp8.py hooks the lm_head.
+try:
+    from pathlib import Path as _Pgv
+
+    from dense_gemv import apply as _apply_dense_gemv
+    from dense_gemv import enabled_from_env as _dense_gemv_enabled
+
+    if _dense_gemv_enabled():
+        _apply_dense_gemv(_Pgv("/usr/local/lib/python3.12/dist-packages/vllm"))
+except (Exception, SystemExit) as _dense_gemv_err:  # SystemExit = anchor drift
+    print(f"dsv41: dense GEMV patch skipped: {_dense_gemv_err!r}; b12x stays", flush=True)
+
 # Indexer prefill gather workspace: stock max_model_len*40 entries (~5.3 GiB
 # per rank at 1M ctx) locked for process life. DSV41_INDEXER_PREFILL_FACTOR=1
 # right-sizes it to max_model_len*1 (~130 MB). Unset = stock no-op.
@@ -1147,6 +1161,52 @@ except SystemExit as _g8sf_exit:
     _os_sfx._exit(1)
 except Exception as _g8sf_err:
     print(f"dsv41: g8 stream feed skipped: {_g8sf_err!r}", flush=True)
+
+# L2 warm-up of the next layer's qkv_a during the MoE all-reduce (docker/patch/ar_l2_prefetch.py).
+def _p_ar_l2_prefetch():
+    import ar_l2_prefetch
+
+    state = ar_l2_prefetch.install()
+    if state == "off":
+        raise _PatchSkip("DSV41_AR_L2_PREFETCH is not 1")
+    if state != "armed":
+        raise RuntimeError(f"ar_l2_prefetch {state}")
+    return state
+
+
+_patch("ar_l2_prefetch", _p_ar_l2_prefetch)
+
+
+# PM QoS CPU wake-up latency request for the serve's lifetime (docker/patch/pm_qos.py).
+def _p_pm_qos():
+    import pm_qos
+
+    state = pm_qos.install()
+    if state == "off":
+        raise _PatchSkip("DSV41_PM_QOS_US is not set")
+    if state != "armed":
+        raise RuntimeError(f"pm_qos {state}")
+    return state
+
+
+_patch("pm_qos", _p_pm_qos)
+
+
+# NCCL graph mixing off behind an eager-only twin communicator (docker/patch/nccl_eager_twin.py).
+# Runs at interpreter start, before any NCCL communicator exists in this process.
+def _p_nccl_eager_twin():
+    import nccl_eager_twin
+
+    state = nccl_eager_twin.install()
+    if state == "off":
+        raise _PatchSkip("DSV41_NCCL_EAGER_TWIN is not 1")
+    if state != "armed":
+        raise RuntimeError(f"nccl_eager_twin {state}; NCCL graph mixing stays on")
+    return state
+
+
+_patch("nccl_eager_twin", _p_nccl_eager_twin)
+
 
 # Env-gated decode levers (docker/patch/decode_levers.py; each is off by default).
 _patch("decode_levers", lambda: __import__("decode_levers").install())

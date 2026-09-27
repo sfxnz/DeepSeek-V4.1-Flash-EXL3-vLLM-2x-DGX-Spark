@@ -1,0 +1,21 @@
+dsv41-indexer-workspace: already applied
+INFO 09-25 19:32:10 [importing.py:74] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+INFO 09-25 19:32:10 [importing.py:98] Triton not installed or not compatible; certain GPU-related functions will not be available.
+WARNING 09-25 19:32:10 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-25 19:32:11 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 09-25 19:32:11 [interface.py:368] Failed to import from vllm._C: ModuleNotFoundError("No module named 'vllm._C'")
+[dsv41-drop-page-cache] armed (fadvise DONTNEED on shards after weight load)
+[dsv41-prefill-empty-cache] armed (threshold 8192 tokens, release when MemAvailable < 2.5 GiB)
+dsv41: g8 stream feed already present
+dsv41: pm qos engaged: /dev/cpu_dma_latency <= 20 us, held by pid 411
+dsv41: mhc det armed (DSV41_MHC_DET_SPLITS=16): packs and self-tests mHC weights after load
+dsv41: mhc det overlap armed (DSV41_MHC_DET_OVERLAP=1): the next all-reduce runs the det prenorm GEMM + sinkhorn of each decode pre on a side stream
+dsv41: DSpark sparse Markov (gathered top-k) k=256
+dsv41: engram native stage: EngramDiskStager wrapped (max_tokens=64, verify=8); early hash armed (verify=8)
+dsv41: attention t2r dedup: CommonAttentionMetadata.token_to_req_indices wrapped (verify=8)
+dsv41: moe prep fused: vllm_exl3 _apply_native_fused_moe glue fused, p2b output cast once (verify=16)
+dsv41: candidate mask bounded: sparse_attn_indexer._apply_candidate_mask wrapped (decode calls, verify=4)
+dsv41: indexer weights_proj: DeepseekV4Indexer.weights_proj GEMV armed (2<=m<=8, verify=8)
+dsv41: swa metadata fused: DeepseekSparseSWAMetadataBuilder.build fused decode path (verify=8)
+dsv41: engram wkv column-parallel: Engram.__init__ wrapped (wkv column-parallel, checked after loading)
+{"levers_ok": 16, "levers": 16, "module_import_failures": 0}

@@ -1,0 +1,118 @@
+k3 round-3 integration: perf/kernels-r3 history, review-e14 image, verification on both nodes
+==========================================================================================
+2026-09-25, k3 integration stage. No serve ran and no GPU was used: spark1's GPU belongs to the
+requant, and every check here is CPU-only.
+
+1. Linear history (cherry-picks onto e266092, in workstream order)
+-------------------------------------------------------------------
+  k3/coop-moe     7 commits  1b8e06a..2dbffc2   no conflict
+  k3/dense-gemv   6 commits  72b26d2..93427d8   1 conflict: tools/engagement_audit.py PATCHES
+                                                (widen_p2b_dataflow + dense_gemv entries; both kept)
+  k3/mhc-det     11 commits  726666d..5d98260   2 conflicts: decode_levers.py docstring + install
+                                                helpers, engagement_audit.py PATCHES (union; both kept)
+  k3/fusion-host 21 commits  af0be00..1ebb7ce   1 conflict: decode_levers.py docstring + install
+                                                helpers (union; install() step list auto-merged with
+                                                every lever present)
+  k3/comm        14 commits  aa40883..82662e9   no conflict
+  + 59bb3cc k3: integrate: one review-e14 image for round 3; docker/Dockerfile chain in sync
+Check after each branch: HEAD differs from that branch by exactly the earlier branches' changes
+(git diff --numstat e266092..<prev> == git diff --numstat <branch>..HEAD). The only exception is
+tests/fixtures/dsv41_model_e13.pin.py, which mhc-det and comm add with identical content.
+Gates after each step (gates.txt): unit tests 545 -> 563 -> 599 -> 640 -> 737 -> 796 -> 797 OK
+(each branch's own count added exactly: +18 +36 +41 +97 +59, +1 for the new sync test), skipped
+10 -> 14 (dense-gemv's torch-only tests); kit/render.py --check 0 and bash -n run.sh 0 every time.
+
+2. Image recipe (59bb3cc)
+-------------------------
+- docker/Dockerfile.e14 builds review-e14 FROM canonical-e13. It rebuilds vllm_exl3_c with the
+  e13 p2b chain + widen_p2b_coop.py + widen_p2b_dataflow.py (DSV41_P2B_COOP=1|2, default off) and
+  bakes the branch sitecustomize. It folds in docker/Dockerfile.e15, which built the same chain
+  under another tag and is removed; the references now point at e14.
+- docker/Dockerfile (from scratch) applies the same p2b stages in the same order, with the same
+  label, as round 34 did with srcsort. The two tests that asserted the full chain excluded
+  coop/dataflow are replaced by tests/test_widen_p2b_dataflow.py test_full_chain_in_sync_with_e14,
+  which fails on the previous full chain.
+- No other build stage is needed. dense_gemv_kernel.cu (torch cpp_extension + nvcc), mhc_det.cu
+  (NVRTC), engram_native.c (gcc) and the Triton kernels compile at first use from the mounted
+  docker/patch (section 5 shows they do, in this image, without a GPU).
+
+3. Build and transfer (image-build/)
+------------------------------------
+- Try 1: DOCKER_BUILDKIT=0 docker build --memory 12g --memory-swap 12g --cpuset-cpus 0-5.
+  A memcg OOM killed cudafe++ on p2b_batched.cu, because six nvcc TUs compile in parallel.
+  The cap contained it; the host was unaffected (build-e14-try1-oom-12g.txt,
+  build-e14-try1-oom-kernel.txt).
+- Try 2: the same with --memory 24g --memory-swap 24g, from a clean tree at 59bb3cc
+  (build-e14.txt). "vllm_exl3 coop+dataflow cuda ok". Build container peak 12.25 GiB, sampled
+  every 3 s (build-e14.mem.txt); spark1 MemAvailable stayed >= 107 GiB, with the requant running.
+  Result: dsv41-flash-exl3-sm121:review-e14 =
+  sha256:3a002b55c9bc8086d6e63e3947cd0c6aaa092d415ec7d0305461078240eee675,
+  label shapes,mrow,cfg1,codebook,fshift,srcsort,coop,dataflow,b12x_smalls,fix_o_proj_woa_fp8,woa_prepack.
+- docker save | ssh spark2 docker load: 116 s. spark2 had 116 GiB available before
+  (transfer-spark2.txt). spark2 image ID = sha256:3a002b55c9bc..., equal.
+
+4. Content vs canonical-e13 (image-compare/compare.json; image_dump.sh + compare_images.py)
+------------------------------------------------------------------------------------------
+- Python trees vllm, vllm_exl3, flashinfer, exllamav3: 10,784 files, 0 changed / added / removed.
+  Every e13-pinned patch anchor and test fixture holds on e14 unchanged.
+- dist-info (package versions): identical.
+- vllm_exl3_c machine code (.text.<kernel> of the embedded sm_121a cubins; cuobjdump -xelf,
+  because the image has no nvdisasm for -sass): all 49 canonical-e13 kernels are byte-identical in
+  e14. The only new kernels are p2b_moe_batched_kernel<2,1,2> (coop) and p2b_coop_df_kernel<2,1>
+  (dataflow). So with DSV41_P2B_COOP unset, review-e14 runs canonical-e13's kernels.
+- The same 51 kernels are byte-identical to the e15-recipe extension k3/coop-moe validated on GPU
+  (image-compare/e15build_vs_e14.json). Its GPU evidence (real extension = bench bitwise, SASS
+  identity) therefore holds for review-e14's device code.
+- Baked /opt/dsv41-patch vs docker/patch at 59bb3cc: all 76 files equal, 0 missing, 13 extra.
+  The extras are stale files that older layers baked in (rejected p2b variants, markov_ft.pt,
+  ...), inherited byte-identical from canonical-e13. COPY never deletes; nothing imports them; and
+  run.sh bind-mounts docker/patch over the whole directory, so a serve never sees them. The baked
+  sitecustomize equals the commit's.
+
+5. JIT kernels compile in the image without a GPU (jit/spark{1,2}/jit.json; scripts/jit_check.py)
+------------------------------------------------------------------------------------------------
+  review-e14, --network none, no --gpus (0 /dev/nvidia*), TORCH_CUDA_ARCH_LIST=12.1a as run.sh sets it:
+  dense_gemv._ext(): gemv, gemv_grouped, plan_grid; gemv_kernel in the .so. 42.5 s spark1, 27.8 s spark2.
+  mhc_det.cu NVRTC sm_121a: mhc_det_post, _norm, _norm_li, _norm_coef, _gemm_t8, _gemm_t16 in
+                            the cubin (0.4 s).
+  engram_native.c gcc: eng_abi_version() = 1 = ABI_VERSION.
+  Both nodes: pass. The Triton kernels compile on the GPU at first call and are not covered.
+  review-e14 has the same torch, triton and vllm trees as canonical-e13, where the workstreams
+  ran them.
+
+6. CPU strict dry-run, all new levers ON and OFF, both nodes (dryrun/; scripts/dryrun.py)
+-----------------------------------------------------------------------------------------
+Each container runs with run.sh's own -e set for that role and arm (tests/run_sh_harness.py:
+run.sh with docker/ssh/scp stubbed; DSV41_PATCH_STRICT=1 is included). The worktree's
+docker/patch is mounted at /opt/dsv41-patch and its sitecustomize.py over the baked one, as
+run.sh does. The containers run with --network none, no --gpus, and /dev/cpu_dma_latency only
+when run.sh passes it (PM QoS on). ON = the 15 envs P2B_COOP=2, DENSE_GEMV, MHC_DET_SPLITS=16,
+MHC_DET_OVERLAP, ENGRAM_NATIVE_STAGE, ENGRAM_EARLY_HASH, ATTN_T2R_DEDUP, MOE_PREP_FUSED,
+CANDIDATE_MASK_BOUNDED, INDEXER_WP_GEMV, SWA_META_FUSED, ENGRAM_WKV_TP, NCCL_EAGER_TWIN,
+PM_QOS_US=20, AR_L2_PREFETCH. OFF = run.sh defaults.
+  spark1 head   ON  pass   spark1 head   OFF  pass
+  spark2 worker ON  pass   spark2 worker OFF  pass
+  Every run: interpreter rc 0 (x2, idempotent); 0 "dsv41-patch FAIL"; 0 "decode lever ... FAILED";
+  py_compile 0 and import 0 failures over every rewritten vLLM file; all 18 round-3 patch modules
+  import; 0 hits of the 27 LOG_DISARMED markers engagement_audit lists (the disarm_scan set);
+  16/16 lever wrap flags match the arm (ON: all wrapped, OFF: none); the early hash is armed
+  only when ON. The vllm_exl3_c markers are present: DSV41_P2B_SRC_SORT, DSV41_P2B_COOP, the
+  dataflow LOG_ENGAGED string, and p2b_coop_df_kernel.
+  Precheck on canonical-e13 (not committed): the same ON run shows exactly one disarm,
+  "decode lever p2b_coop_dataflow: ... has no dataflow code; the lever is OFF. Rebuild
+  docker/Dockerfile.e14." That is the expected refusal on an image without the dataflow stage.
+
+7. Serve-arm plan
+-----------------
+results/2026-09-25-kernels/ARMS-r3.txt. scripts/gpu_guard.sh flags any GPU process that is not
+in the serve container and is not Xorg/gnome-shell. Its self-test (image-build/
+gpu_guard-selftest-*.txt): spark1 FOREIGN = the requant python3 + headless chrome --type=gpu at
+11-22% SM; spark2 clean.
+
+Reproduce (CPU only; spark1 = here, spark2 = the rsynced copy at .worktrees-spark2/kernels-r3):
+  python3 results/2026-09-25-kernels/integration/scripts/dryrun.py --image dsv41-flash-exl3-sm121:review-e14 \
+      --role head --arm on --out <dir>          (also --arm off; --role worker --node spark2 --remote-repo <copy>)
+  docker run --rm --network none --memory 12g --cpus 6 -e HOST_UID=$(id -u) -e HOST_GID=$(id -g) -v $PWD:/repo:ro \
+      -v <dump>:/out --entrypoint bash <image> /repo/results/2026-09-25-kernels/integration/scripts/image_dump.sh <tag>
+  python3 results/2026-09-25-kernels/integration/scripts/compare_images.py <dump> e13 e14 $PWD 59bb3cc
+  jit_check.py: the command is in jit/spark1/cmd.txt

@@ -1,0 +1,188 @@
+Round 3 (kernels) ground truth: decode timeline, kernel budget, NCCL sweep
+=========================================================================
+2026-09-25. Worktree .worktrees/kernels-r3, branch perf/kernels-r3 (from pr/review-06-round2).
+Machine-readable: timeline-r3.json (composed by scripts/compose_timeline.py), nccl-sweep.json,
+per-rank analyzer output c1/c1-rank{0,1}.{json,txt}, c2/c2-rank{0,1}.{json,txt}.
+
+0. What ran, and what the data can be trusted for
+------------------------------------------------
+- Serve: current defaults, AUDIT=strict, image canonical-e13 (sha256:c81762335a12 on both ranks),
+  pack 2.0bpw-mcg-lmhead-mxfp8, DSpark k=3, captures [1,3,4,6,8], coop off, plus
+  EXTRA_ARGS='--profiler-config {"profiler":"torch","torch_profiler_dir":"/tmp/dsv41-traces"}'.
+  Boot 1: run.sh 08:14:57Z -> exit 08:25:47Z rc 0, strict audit ok on head and worker.
+- CLEAN: NCCL smoke runs and phase-1 runs that started before 07:27 UTC; boot 1 (reference benches
+  08:26-08:31Z and the c=1 L.A.I.L profile window 08:31-08:33Z; the benches sit inside the recipe band).
+- CONTAMINATED: from 07:27 UTC another Claude session on spark1 ran Playwright chromium with GPU
+  processes on the GB10 (nvidia-smi type G, pmon SM 7-32% each, device util 20-92% with our serve down,
+  still running at 09:48Z). Affected: NCCL phase-1 rep 2 and most of rep 1 after 07:27Z (tagged per run
+  in nccl-sweep.json), all of boot 2 (L.A.I.L 17.2 tok/s, c=1 106.9 ms/step, c=2 128 ms/step), and rank 0
+  of the c=2 profile window. spark2 was never shared, so rank 1's c=2 kernel times are clean.
+- NOT RUN (blocked by the shared GPU): NCCL rep 3 and phase 2 (mixing-off combinations with interleaved
+  KEEP controls). Commands to finish are in section 7.
+
+1. Reference numbers, profiler idle (boot 1)
+-------------------------------------------
+L.A.I.L prose n=10: 34.10 tok/s median (runs 31.89..37.36), acceptance 2.142 -> 62.8 ms/step, TTFT 0.35 s
+bench_decode c=1 n=9: prose 39.79 tok/s (acc 2.542, 63.52 ms/step, inter-chunk p50 62.2 / p90 70.3 ms)
+                      structured 62.78 tok/s (acc 3.961, 63.09 ms/step)
+Recipe pooled s8+s13 for comparison: L.A.I.L 33.68, prose c=1 39.52, structured c=1 62.52 -> in band.
+Clocks during the benches: spark1 SM 2171 MHz flat, spark2 2190 MHz flat, no throttle, power median
+35.8 / 32.6 W, temp <= 68 C; memory clock not reported on GB10.
+
+2. Post-ready JIT (round-2 warmup fix)
+-------------------------------------
+Probe after run.sh exit: smoke_vision, smoke_chat, a 4160-token novel prompt, 2 concurrent ~1.2k-token
+requests. TileLang compiles after ready: 0 on both ranks (the mHC n_splits compiles now happen inside
+run.sh's warmup, 12 monitored compiles per rank there). Triton compiles after ready: 3 distinct kernels
+per rank, identical on both: BuildPrefillChunkMetadataKernel.kernel and _ring_slot_mapping_kernel (first
+smoke request, 08:26:09Z) and _compute_global_topk_indices_and_lens_kernel (the 2 concurrent requests,
+08:26:19Z). The monitor logs once per kernel name, so these are lower bounds on compile events.
+Warmup gap left: a first c=2 batch and the smoke-vision prefill shape. (03-jit-check.txt)
+
+3. c=1 decode step (L.A.I.L window, 248 steps, rank 0 = spark1 = head, the pacing rank)
+--------------------------------------------------------------------------------------
+Profiled step wall: median 64.45 ms (p10 62.22, p90 72.99, mean 66.20); unprofiled 62.8 ms.
+Device busy 60.75 ms, idle 5.45 ms per step (rank 1: 60.38 / 5.80).
+
+Step phases (median ms): target graph 52.12 | eager after target 2.52 | draft graph 5.13 |
+eager before next target 4.33.  Kernel sums per phase (rank 0):
+  target graph 58.27 (side streams overlap 6.2): p2b 23.17, wq_b 4.63, wo_b 4.38, wo_a 3.48, AR 2.93,
+    torch eltwise 2.59, shared gate_up 2.41, qkv_a 2.09, hc_prenorm 1.78, engram wkv 1.47, shared down 1.25,
+    sparse MLA 1.21, router topk 0.91, router gate 0.89
+  eager after target 2.43: target lm_head 1.57 (mxfp8, eager, 341 MB at 217 GB/s), main_proj 0.40,
+    draft ctx kv 0.15, logits AG 0.08, rejection/sampler ~0.1
+  draft graph 5.28: draft lm_head 1.55, draft MoE 0.88 (gate_up 0.60 + down 0.28), 7 ARs 0.45,
+    draft router gate 0.35, 3 draft layers' dense ~1.1
+  eager before next target 0.44 of kernels: ~258 tiny launches at ~4 us host cadence (1.10 ms exposed),
+    then 3.20 ms of GPU idle (Engram stage, section 5 item 4), then HtoD and the graph launch.
+
+Per-layer critical path inside the target graph (median / mean us, x40 = ms/step, rank 0):
+  A attention block (MoE AR end -> attn AR start) 431.5 / 523.0 -> 20.92
+  B attn all-reduce                                22.8 /  42.8 ->  1.71
+  C FFN prologue (attn AR end -> p2b start)       149.4 / 156.5 ->  6.26
+  D p2b routed MoE                                546.6 / 579.9 -> 23.20
+  E epilogue (p2b end -> MoE AR start)             10.6 /  17.6 ->  0.71
+  F MoE all-reduce                                 22.7 /  30.6 ->  1.22
+  (sum 54.0 vs target-graph span 52.1: A's mean carries the layer-0 graph startup)
+
+Categories (rank 0, ms/step, launches/step): p2b 23.17/40, dense b12x 21.38/231, wo_a einsum 3.73/43,
+NCCL AR 3.42/88, cutlass bf16 3.04/106, torch eltwise 2.93/972, mHC prenorm 1.92/86, sparse MLA 1.28/86,
+router topk 0.92/43, draft deepgemm 0.88/6, triton 0.71/127, act quant 0.60/226, mHC pre 0.55/86,
+mHC post 0.44/89, other 0.42/178, indexer 0.35/64, rope/kv 0.27/9, AG 0.19/4, sampler 0.10/9, memcpy 0.09/63.
+Launches per step: ~2,570 device ops (1,879 of them small glue kernels).
+
+GEMM / GEMV / MoE kernels (rank 0; bytes = streamed weights + scales per rank; peak 250 GB/s):
+  role              n/step  us med  p10    p90    ms/step  MB/call  GB/s   %peak  roof us  recov ms
+  routed_moe_p2b     40.0   546.4  532.5  658.4  23.168   106.17  194.3   77.7   424.7    6.180  (24 pairs x 4.42 MB)
+  wq_b  K1280 N16384 43.0   113.4  107.1  120.2   4.969    21.63  190.7   76.3    86.5    1.250
+  wo_b  K4096 N5120  43.0   105.3  100.7  115.5   4.702    21.63  205.3   82.1    86.5    0.983
+  wo_a  einsum 4x    43.0    82.1   77.2  110.7   3.726    17.30  210.8   84.3    69.2    0.751
+  lm_head K5120 N64640 2.1 1498.3 1482.8 1656.5   3.260   341.30  227.8   91.1  1365.2    0.386
+  shared gate_up     43.0    58.5   55.1   64.1   2.598    12.17  208.0   83.2    48.7    0.504
+  qkv_a K5120 N1792  42.9    47.6   45.1   66.3   2.244     9.46  198.8   79.5    37.8    0.621
+  hc_prenorm (fp32)  86.0    20.7   16.0   24.6   1.920     1.97   94.8   37.9     7.9    1.241
+  engram_wkv K6144 N25600 2.0 757.0 728.3 797.8   1.471   162.20  214.3   85.7   648.8    0.173
+  shared down        43.0    30.1   28.6   32.4   1.355     6.08  202.2   80.9    24.3    0.311
+  router gate bf16   40.0    19.9   18.7   24.2   0.893     3.93  197.6   79.0    15.7    0.265  (side stream)
+  main_proj (draft)   1.0   389.8  383.4  429.4   0.403    81.10  208.1   83.2   324.4    0.078
+  draft router gate   3.0   106.1  101.5  117.9   0.346     1.31   12.4    5.0     5.2    0.331
+  indexer wq_b        8.0    27.7   26.0   30.4   0.232     5.41  195.2   78.1    21.6    0.059
+  draft ctx kv        3.0    46.7   45.0   50.0   0.146     9.46  202.7   81.1    37.8    0.033
+  (+ draft MoE deepgemm gate_up 197.8 / down 92.6 us x3, compressor bf16 GEMMs grid 2x1x1 81 us x8)
+  Weight-streaming kernels: 51.4 ms/step against a 38.1 ms roofline at 250 GB/s.
+  In-serve vs the same kernel isolated (s1 cold microbench): qkv_a +8.9%, wq_b +18.6%, wo_b +9.6%,
+  gate_up +9.3%, down +8.6%, main_proj +8.1%, p2b +6.7% (median); on means 4.97 ms/step (rank 0) and
+  3.02 ms/step (rank 1) of excess.
+
+NCCL per step (rank 0): target graph 80 AR (grid 5 = 5 channels, 40 KiB) 22.8 us median / 36.6 mean ->
+2.93 ms; draft graph 7 AR (grid 3, 30 KiB) 21.4 / 64.8 -> 0.45 ms; eager logits AG 92.3 us; draft-graph
+logits AG 77.2 us; 2 engram AG 18.4 us; eager embed AR 21.6 us.
+Graph startup: the first AR of each replay waits for NCCL's proxy-op upload: target +619 us mean
+(median AR0 267 us vs 22.6 steady), draft +510 us (228 us idle before it + 312 us kernel) -> 1.13 ms/step.
+Two-rank skew (in-layer ARs): rank 1 waits 3.92 ms/step, rank 0 1.34 ms/step; rank 0 is late on 72% of
+them. Rank 0's non-NCCL kernel time is 63.0 vs rank 1 59.7 ms/step; p2b p99 1170 us vs 724 us.
+
+Idle gaps (rank 0, device idle ms/step): 3.20 host Engram stage (DtoH -> HtoD, 100% host-bound; main
+thread in engram.py:1747 stage waiting on 16 _fast_stage_one futures, each thread ~20% busy in
+engram_disk.py _gather_dequant_v2); 0.23 before the draft graph's first AR; 0.22 + 0.22 small gaps
+before the 80 in-layer ARs (5.6 us each); 0.13 HtoD -> target graph start; ~0.3 in the eager chain.
+cudaGraphLaunch host time: target 3.41 ms, draft 0.45 ms (off the critical path: the host launches ahead).
+
+Glue kernels: 1,879 launches/step, 7.42 ms of kernel time, 8.76 ms/step when no anchor kernel runs.
+Top exposed chains: host-gap tail 3.42 (section 5 item 4), eager prep chain 1.10 (258 launches),
+indexer chain 0.72 (8 layers: paged MQA logits, candidate mask, topK per row), p2b -> MoE AR combine 0.50
+(copy + bf16 copy + add, 3 launches/layer), mHC post 0.39, mHC pre + act quant 0.37, mHC pre (router
+path) 0.26, fused QNorm/topk indices 0.23, routing glue on the side stream (~370 launches) 0.15 exposed of
+1.8 ms span: it overlaps the shared expert, as found in round 1.
+
+4. c=2 pair window (2 x 200 tokens; rank 0 contaminated, rank 1 clean)
+---------------------------------------------------------------------
+Rank 1 kernels at m=8 (verify) / m=6 (draft): p2b 1032.5 us median (p10 1012.8, p90 1095.4), 48 pairs
+= 212.3 MB -> 205.7 GB/s (82.3%), 41.9 ms/step (~49% of a clean ~86 ms c=2 step); dense GEMMs within
++3.5% of rank 1 at c=1 (wq_b 116.3, wo_b 104.7, qkv_a 47.3, gate_up 57.4, down 30.6 us); target AR grid 7.
+Rank 0 p2b 1524 us median (p90 2810): time-sliced with the chromium GPU process. Step-level c=2
+numbers (137-139 ms/step, rank 1 waiting 46 ms/step in ARs) are not usable; re-capture on a clean GPU.
+
+5. TOP OPPORTUNITIES (c=1 unless noted; ms/step recoverable; items overlap, do not add them up)
+--------------------------------------------------------------------------------------------
+ #  item                               now ms/step  recoverable ms/step (basis)
+ 1  Routed MoE p2b                        23.17     dedup at today's GB/s 6.9; dedup at roofline 11.3;
+                                                    streaming to 250 GB/s without dedup 6.2 (4.9 at median);
+                                                    round-2 coop kernel estimate 4.9. c=2: 41.9 ms/step on
+                                                    the clean rank, so dedup and streaming pay ~2x there.
+ 2  In-graph NCCL (graph mixing +         6.19      mixing off: 3.08 (c=1) / 3.06 (c=2) modeled from the
+    graph startup)                                  clean sweep (AR m=4 steady 57.6 -> 22.5 us); graph
+                                                    startup 1.13. Needs the dual-communicator change
+                                                    (section 6); serve untested.
+ 3  Dense MXFP8 GEMMs (b12x, 231/step)    21.38     roofline 4.5 (wq_b 1.25, wo_b 0.98, qkv_a 0.62,
+                                                    gate_up 0.50, lm_heads 0.39, down 0.31); 2.3 of the gap
+                                                    is serving tax vs isolated (wq_b alone +18.6%); engram
+                                                    wkv TP shard 0.78.
+ 4  Host Engram stage (CPU gather+dequant) 3.20     up to 3.2 (GPU idle, 100% host-bound)
+ 5  mHC prenorm + pre + post               2.92     prenorm at roofline 1.24 (38% of peak today); fusing
+                                                    post+prenorm+pre removes 1.02 of exposed glue
+ 6  Eager next-step prep chain             1.10     ~1.0 (258 launches at host cadence; capture/fuse)
+ 7  wo_a einsum                            3.73     0.75 at roofline (84% today)
+ 8  In-graph glue to fold                  1.22     p2b->AR combine 0.50 into the p2b epilogue, indexer 0.72
+ 9  Draft router gate (12 GB/s cutlass)    0.35     0.33 with a GEMV
+10  Rank-0 straggler (head node)           3.92*    ~2.0 (rank-0 serving tax minus rank 1's);
+                                                    *rank 1's wait. Environmental: keep spark1 free of
+                                                    other GPU/CPU work while serving.
+
+6. NCCL sweep: best config vs KEEP (details: nccl-sweep.json, nccl-graph-diag.txt)
+----------------------------------------------------------------------------------
+Exact decode sizes: AR 10/30/40/60/80 KiB (m 1/3/4/6/8), logits AG 379/505/758/1010 KiB per rank.
+NCCL 2.30.7, single rail RoCE, GDR off (libmlx5 50.0 lacks mlx5dv_reg_dmabuf_mr).
+Clean runs, gapped steady cost per call (us, KEEP vs best):
+  AR m=3 58.8 -> 21.5, m=4 57.6 -> 22.5, m=8 63.2 -> 29.1, logits AG m=4 100.9 -> 61.4; eager AR m=4 27.7 -> 25.7.
+Modeled collective critical path per step: KEEP 6.19 ms (c=1) / 6.43 ms (c=2);
+NCCL_GRAPH_MIXING_SUPPORT=0: 3.10 / 3.37 ms -> -3.08 / -3.06 ms/step. Every run of graph_mixing0
+(1 clean + 2 contaminated) reads 22.5-23.8 us at AR m=4; KEEP reads 54.9-62.8.
+Mechanism (profiled diagnostics, clean): with mixing on, each captured network collective slows the
+neighbouring bandwidth-bound kernel by 13.5% median (32% in the first slot) and adds 3 us of launch
+gap; mixing off removes both. Graph startup (300-800 us per replay) is unchanged.
+All other knobs lose to or tie KEEP in the clean runs (c=1 modeled delta): PROTO=LL +0.46 (logits AG
+slower), Simple +1.03, LL128 +1.67, ALGO Ring +0.18, NCHANNELS 1 +0.58 / 2 -0.19 / 4 -0.15 / MIN 8 -0.14
+(all worse at c=2), NTHREADS 128/256 +0.19/+0.05, bare (no KEEP) +0.23; IB_USE_INLINE, PROXY_CPUSET big
+or little, IGNORE_CPU_AFFINITY, NET_GDR_C2C, NTHREADS 64/512, allreduce:tree have contaminated reps only
+and none beat KEEP there either. A global NCCL_ALGO=Tree is invalid (AllGather has no Tree).
+Safety: NCCL docs, NCCL_GRAPH_MIXING_SUPPORT=0 does not support "launching a non-captured NCCL collective
+during an outstanding graph launch that uses the same communicator, regardless of stream ordering". The
+trace shows the eager logits AG launched 45.4 ms (median; min 39.9) and the eager embed AR 32.2 ms before
+the target graph ends, in 100% of steps. So the env var alone is unsafe here. Safe design: route
+non-captured TP collectives to a second PyNcclCommunicator (or ncclConfig_t graphUsageMode per
+communicator), then A/B in the serve.
+
+7. Not done, and how to finish
+------------------------------
+Needs spark1's GPU free of other processes. At 10:12Z a chromium GPU process was still attached
+(0-80% util in bursts since 07:27Z), so the stage stopped here with the serve down.
+  NCCL rep 3 + phase 2: scripts/nccl_sweep_finish.sh (waits for an exclusive GPU before each block of
+      <= 7 arms, runs each block under the spark1 GPU lock; rep 3 of the 21 phase-1 arms, algo_tree
+      rep 1, then mix0_proxy_big / mix0_bare / mix0_so0 with keep and graph_mixing0 interleaved, 3 reps),
+      then: python3 tools/nccl_decode_sweep.py summarize ~/projects/data/dsv41-nccl-decode/phase1 \
+            --weights results/2026-09-25-kernels/profile/nccl-weights.json
+      and scripts/nccl_contamination.py on the same dir to re-tag runs.
+  c=2 window: boot as in section 0, bench_decode.py --concurrency 2 --runs 1 (warm the m=8/6 graphs),
+      then CONCURRENCY=2 MAX_TOKENS=200 tools/profile_window.sh, then ./stop.sh (with stacks on the
+      profiler keeps ~85 MB of worker host memory per profiled step; one window per boot).

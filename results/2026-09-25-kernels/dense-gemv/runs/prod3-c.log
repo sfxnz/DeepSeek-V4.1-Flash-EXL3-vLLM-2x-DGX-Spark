@@ -1,0 +1,25 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T14:47:40Z
+lock acquired 2026-09-25T14:49:06Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41-indexer-workspace: already applied
+engram_wkv      correctness: 282/282 bitwise (incl. graph replay)
+engram_wkv     M=1 cold us: b12x_e2e  718.94 b12x_gemm  717.86 read  661.55 | best fused w2s2k512m4g48  667.65 ( +7.7%) | best preq w2s2k512m8g48  667.65 ( +7.5%)
+engram_wkv     M=4 cold us: b12x_e2e  726.19 b12x_gemm  724.58 read  661.50 | best fused w2s2k512m4g48  669.74 ( +8.4%) | best preq w2s2k512m8g48  670.72 ( +8.0%)
+engram_wkv     M=8 cold us: b12x_e2e  730.06 b12x_gemm  728.13 read  662.53 | best fused w2s2k512m8g48  674.82 ( +8.2%) | best preq w2s2k512m8g48  677.06 ( +7.5%)
+lm_head         correctness: 70/70 bitwise (incl. graph replay)
+lm_head        M=1 cold us: b12x_e2e 1506.32 b12x_gemm 1504.35 read 1384.45 | best fused w3s2k512m8g48 1441.79 ( +4.5%) | best preq w3s2k512m8g48 1441.79 ( +4.3%)
+lm_head        M=4 cold us: b12x_e2e 1514.59 b12x_gemm 1513.47 read 1385.47 | best fused w3s2k512m8g48 1449.55 ( +4.5%) | best preq w3s2k512m8g48 1449.98 ( +4.4%)
+lm_head        M=8 cold us: b12x_e2e 1522.82 b12x_gemm 1520.80 read 1385.47 | best fused w3s2k512m8g48 1456.14 ( +4.6%) | best preq w3s2k512m8g48 1457.18 ( +4.4%)
+ALL_OK
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 277 busy 92 sm_median 2190 sm_min_busy 1586 mem ['[N/A]'] power_median 4.3 W
+rc=0

@@ -1,0 +1,359 @@
+k3 comm workstream: iteration log (2026-09-25)
+==============================================
+Worktree .worktrees/k3-comm, branch k3/comm (from perf/kernels-r3 e266092).
+Inputs: results/2026-09-25-kernels/profile/ (timeline-r3, c1/*, nccl-sweep.json, nccl-graph-diag.txt).
+GPU rules this session: spark1 GPU = requant + a foreign chromium (never used here); spark2 GPU =
+single-GPU microbenches under spark2:.worktrees-spark2/.gpu.lock, pmon recorded before each run.
+Two-node NCCL runs need both GPUs: they are prepared here and scheduled for the serve window.
+
+#0  Collective inventory per decode step (r3 c=1 profile, rank 0 = pacing rank)
+    Where / op / size per rank                          n/step  kernel med  p10   p90   mean   ms/step
+    target graph  AR bf16 m=4 40 KiB  Ring LL 5 ch        80     22.8 us   20.5  34.8  36.6   2.932
+    target graph  AG engram rows 24 KiB  LL 6 ch            2     18.4      15.0  22.3  19.0   0.038
+    draft graph   AR bf16 m=3 30 KiB  Ring LL 3 ch          7     21.4      19.2  181.8 64.8   0.453
+    draft graph   AG logits m=3 379 KiB Ring Simple 8 ch    1     77.2      32.8  94.7  71.8   0.072
+    eager         AG logits m=4 505 KiB Ring Simple 8 ch    1     92.3      38.9  111.9 82.9   0.083
+    eager         AR embed m=4 40 KiB                       1     21.6      19.9  52.9  33.1   0.033
+    => 88 AR + 4 AG = 92 collectives/step, 3.61 ms/step of NCCL kernel time on rank 0 (6.10 on rank 1,
+       which waits on rank 0). c=2: the same calls at m=8 target (80 KiB AR) / m=6 draft.
+    Critical-path split (rank 0): floor 88 x 20.1 us (p10 of per-call min, c1-skew.json) = 1.77 ms;
+    graph startup 1.13 ms (target AR0 +619 us mean, draft AR0 +510 us: c1_graph_startup.txt);
+    rank-skew wait: rank 0 1.34 ms, rank 1 3.92 ms (rank 0 is the straggler on 72% of calls).
+    Hidden cost not in NCCL kernels: the k3 sweep's gapped graph model (neighbour slowdown + gaps)
+    gives 6.19 ms/step KEEP vs 3.10 ms/step with NCCL_GRAPH_MIXING_SUPPORT=0 (c=1).
+    Model structure (image deepseek_v4_1/nvidia/model.py + fused_moe runner): 2 ARs per layer are
+    structural. attn: wo_b RowParallel AR; FFN: shared expert down_proj has reduce_results=False and
+    is summed into the routed output before ONE final AR (moe_runner._maybe_reduce_final_output), so
+    the MoE and shared-expert reductions are already combined. Nothing sits between an AR and its
+    consumer except the mHC post/pre (non-linear in the residual), so no AR can be deferred or fused
+    with the next one. Sequence parallel (RS+AG) would be 2 collectives per AR: worse.
+
+#1  RoCE latency floor (no GPU): roce-floor/roce_lat.json
+    perftest RC, spark1 -> spark2, rocep1s0f1, MTU 1024, 5000 iters, t_typical one-way:
+    8 B 1.47 us | 10 KiB 3.55 | 20 KiB 4.71 | 40 KiB 6.57 | 80 KiB 10.37 | 256 KiB 22.98 | 512 KiB 41.91
+    (ib_send_lat within 0.1 us). A 2-rank ring AR at m=4 is 2 sequential hops of 20 KiB payload,
+    40 KiB of LL lines each: wire floor 2 x 6.57 = 13.1 us. NCCL in-graph steady cost 22.5 us
+    (mixing off) -> ~9.4 us of NCCL overhead per AR (kernel start, two proxy hand-offs, host-memory
+    polling: GDR 0 because NCCL_CUMEM_ENABLE=0). The kernel median in the serve (22.8 us) is already
+    within 2.7 us of the p10 floor (20.1 us).
+
+#2  One-hop AR for TP=2 (AllGather + local add): DROPPED on arithmetic, no code
+    Idea: 2-rank AG is one ring step, AR is two; sum the two halves locally (bitwise equal to NCCL's
+    2-operand bf16 sum: a+b is commutative and the fp32 add of two bf16 values rounds once).
+    Measured in the serve at the same kind of size: engram AG 24 KiB/rank 18.4 us (r0) / 20.1 (r1)
+    vs AR at 24 KiB ~20.4 us (40 KiB AR 22.8 us minus 16 KiB x 0.152 us/KiB, the sweep's mix0
+    slope). The second hop costs ~2 us; the extra add kernel + in-graph gap costs 2-4 us.
+    Net <= 0. Fusing the add into mhc_post would mean editing the TileLang mhc_post kernel for
+    <= 0.16 ms/step. Not worth it.
+
+#3  vLLM custom all-reduce / symmetric memory across two nodes: NOT APPLICABLE (verified)
+    Boot log (profile .run-state/audit-*-20260925-092514.log), both ranks:
+      "Custom collectives are disabled because this multi-node group does not have MNNVL-capable
+       GPUs on every rank." (custom_all_reduce.py:201; the multi-node path is MNNVL only)
+      "FlashInfer All Reduce is disabled because it is not supported for world_size=2."
+      "SymmMemCommunicator: Device capability 12.1 not supported"
+      "Using ['PYNCCL'] all-reduce backends ... for group 'tp:0'" (and 'ep:0')
+    NCCL itself: "Symmetric memory is not supported. cuMemEnable 0, globalGinSupport 0,
+    cuMemGdrSupport 0" and "Connected all rings, use ring PXN 0 GDR 0" (sweep logs). Custom AR,
+    quick-reduce, torch symm-mem, flashinfer/trtllm AR and NCCL symmetric kernels all need
+    load/store access to the peer (NVLink/P2P/MNNVL); over RoCE the only path is the NCCL net
+    transport with a CPU proxy.
+
+#4  Lever: DSV41_NCCL_EAGER_TWIN=1 (docker/patch/nccl_eager_twin.py), default off
+    Mechanism read in nccl 2.30.7 source (github tag v2.30.7-1):
+      init.cc 2066-2076: NCCL_GRAPH_MIXING_SUPPORT=0 -> graphUsageMode 0; strongstream.cc:
+      mixing == (graphUsageMode == 2) is the only switch. With mixing on, each captured collective
+      adds an external serialEvent wait at the head of NCCL's device/host capture chains and an
+      event-record node per collective (recordEventOnStream), and an eager launch on a comm with
+      graph plans may be pushed through a host task behind the graph's host nodes
+      (enqueue.cc ncclLaunchPrepare: persistentRefs + cudaEventQuery(hostStream.serialEvent)).
+      With NCCL_CUMEM_ENABLE=0, runtimeConn is off (init.cc 1552): every ring/tree connection is
+      made in ncclCommInitRank, so a comm first used inside a capture needs no runtime connect.
+    Design: the TP CudaCommunicator gets a second PyNcclCommunicator (twin) built right after the
+      stock one; pynccl_comm becomes a router that sends a call to the stock comm only when the
+      stream it launches on is capturing, else to the twin. Other groups with a PyNccl comm (ep:0,
+      unused) get an eager-only guard that raises on a captured call. The patch writes
+      NCCL_GRAPH_MIXING_SUPPORT=0 only after the class wrap is in place; NCCL_GRAPH_MIXING_SUPPORT=0
+      without the lever is reset to 1 (REFUSED marker). Anchors: CudaCommunicator.__init__ source and
+      signature, the full public PyNcclCommunicator API (any unrouted new method disarms), the stream
+      parameter position of every routed method.
+    Tests: tests/test_nccl_eager_twin.py (21 CPU tests incl. pinned e13 fixtures), full suite 566 OK
+      (10 torch-gated skips), render --check 0. In-image CPU check: check_anchors passes on the real
+      e13 classes; install() arms, is idempotent, and resets a stray mixing=0.
+    Single-GPU smoke on spark2 (twin-smoke/twin_smoke_1gpu.json, pmon: only Xorg/gnome-shell):
+      capture predicate true for the capturing current stream, the explicit capture stream and a
+      joined side stream, false for an idle stream; eager call -> twin, captured AR + AG -> stock comm;
+      500 graph replays each followed by an eager twin AR while the graph is outstanding, NCCL mode 0,
+      outputs bitwise equal. (One-rank NCCL comms: no proxy, so this checks plumbing, not the network
+      hazard; that is tools/nccl_twin_check.py in the serve window.)
+    Expected (modeled from the clean k3 sweep, not yet a serve number): -3.08 ms/step c=1,
+      -3.06 ms/step c=2; lower bound = gap + kernel shrink only (~3 us gap + ~2.5 us kernel per call
+      x 88) = -0.5 ms/step if the neighbour slowdown does not reproduce in the serve.
+
+#5  Two-node validation harness for the serve window: tools/nccl_twin_check.{py,sh}
+    Reproduces the serve's decode step on both GPUs with the serve down: target graph 40 x
+    [work 431 us ; AR ; work 149 us ; work 547 us ; AR] + engram AG at layers 1/14, eager logits AG
+    issued while the target graph is outstanding, draft graph (embed AR + 3 x 2 AR + logits AG),
+    eager embed AR while the draft graph is outstanding; host one step ahead. Arms: keep (one comm,
+    mixing on = serve today) vs twin (the lever); twin_so0 and mix0_single (the unsupported case)
+    are diagnostics. Every output is checked bitwise each 10 steps (seed-derived small integers).
+    Selftest on spark2, one GPU, one-rank comms (twin-check-selftest/*.json, pmon clean):
+    60 steps per arm, 0 mismatches in all 4 arms, router counts graph 90 (82 target + 8 draft
+    captures) / eager 220. Timings there are one-rank local copies: harness check only, not data.
+    Tests: tests/test_nccl_twin_check.py (8 CPU tests). Full suite 574 OK, render --check 0.
+
+#6  Overlap the AR with independent work: L2 warm-up of the next GEMM's weights (single GPU)
+    kernel_study/comm/l2_prefetch_window.py, spark2, m=4, 300 replays per arm, arms alternated
+    replay by replay in one process, SM 2190 MHz, pmon clean. Window = the serve's sequence after a
+    MoE AR: AR (5-CTA clock spin, 22.7 us) -> mhc_post -> mhc_pre (DeepGEMM prenorm + TileLang) ->
+    mxfp8 act quant -> qkv_a b12x (9.46 MB) -> act quant + wq_b b12x (21.6 MB). Real kernels, random
+    MXFP8 weights of the serve's shapes; every arm's GEMM outputs bitwise equal to 'none'.
+    Methodology found on the way (l2-cold-probe/l2_cold_probe.json, qkv_a alone): cold = 2x-L2
+    streaming-read flush (45.5 us, 207 GB/s) = 8 rotating weight copies (47.0 us) = the serve (47.6 us);
+    a memset flush leaves dirty lines and doubles the GEMM (81-88 us); L2 evict_last lines survive a
+    flush and warm the next arm. Runs l2-prefetch-v1/v2/v3 are INVALID for that reason (kept, not used).
+    Valid run l2-prefetch/l2_prefetch_m4.json (median [p10, p90], us):
+      none      window 63.3  qkv_a 47.1 [46.1, 47.1]  total 211.0 [207.7, 212.8]
+      warm      (ceiling: qkv_a read into L2 first)   qkv_a 16.4  total 180.4  (-30.5)
+      bulk60    1-CTA TMA cp.async.bulk.prefetch.L2 of 60% of qkv_a (5.7 MB) forked at the AR start:
+                window 65.3 (+2.0)  qkv_a 22.5  total 189.3 [186.3, 190.9]  (-21.7)
+      bulk100   all 9.46 MB: qkv_a 16.4 but the 1-CTA issue delays the AR spin by 12 us: -18.5
+      bulk100 + 25% wq_b: window +27.6, wq_b 78.8: -24.8;  plain loads by 16 CTAs: -20.3
+      multi-CTA TMA issue (8/48 CTAs): qkv_a only 25-27 us (requests from exiting CTAs complete
+      partially): -17.5..-18.0;  fork after the AR (mHC window only): -1.2
+    Projection: ~-21.7 us per MoE-AR window x 40 = ~-0.87 ms/step at c=1, if the real NCCL LL AR
+    (5 CTAs polling host memory) behaves like the spin. [Fix pass: it does not; see #12.] The attn-AR window (shared gate_up + router
+    gate) is bounded by the routing glue chain (balanced with the shared expert today). Not built
+    yet: needs a side-stream fork inside the MoE AR call site, the next layer's qkv_a pointers and a
+    join before the next attention op (breakable-graph segments must not leave a stream forked).
+
+#7  Graph startup root cause: CPU deep idle, not NCCL. Lever DSV41_PM_QOS_US (docker/patch/pm_qos.py)
+    r3 trace (c1-rank0.pkl, kernel_study/comm/launch_vs_ar0.py -> graph-startup/): the draft graph is launched on the host
+    44.7 ms (median) before the GPU reaches it, yet the device idles 235 us (rank 0) / 427 us (rank 1)
+    right before its first AR: the AR waits for its NCCL host node (hostStreamPlanCallback), which
+    only runs when the GPU reaches the graph. Target graph: launched 68 us before the GPU starts it,
+    AR0 at 427 us into the graph, AR0 kernel 267 us (waiting for the late rank).
+    cpuidle on both hosts (read-only): LPI-1/2/3 exit latency 42/231/433 us, menu governor, LPI-3 is
+    the most used state. /dev/cpu_dma_latency is root-only. [Fix pass: LPI-2 is never entered, so
+    the 235 us wait is not an LPI-2 exit; see #15.]
+    kernel_study/comm/host_node_latency.py, spark2, graph with one root host node gating a kernel,
+    host sleep between replays (the serve replays each graph once per ~63 ms):
+      back-to-back replays: 7-16 us median;  5-20 ms gaps: 470-480 us;  60 ms gaps: 751 us.
+      CUDA device schedule flags (spin/yield/blocking) and a 0.2-1 ms host-func heartbeat thread: noisy,
+      no reliable fix (host-node-flags/*).
+      PM QoS request held in the same process (host-node-qos-sweep/hn_qos_sweep.json, 2 reps x 6 arms,
+      cycled): none 481/586 us | 0 us 3.4/14.5 | 20 us 3.4/14.7 | 40 us 3.5/11.7 | 50 us 492/384 |
+      100 us 608/525 (median, T=2 us). First of 82 chained nodes: none 3.0 (p90 347) vs 20 us 2.3
+      (p90 2.9). The limit must be < 42 us (LPI-1 excluded); 20 is the lever value.
+    NCCL's proxy thread also sleeps on a condition variable when it has no active ops
+    (proxy.cc ncclProxyGetPostedOps) and pays the same wake-up at each replay start.
+    Lever: DSV41_PM_QOS_US=N (unset = off). run.sh passes --device /dev/cpu_dma_latency to both
+    containers only when set; every Python process of the container holds one request for its
+    lifetime (host-wide while the serve runs: idle cores stay in WFI). Audit markers; gate at 20.
+    Tests: tests/test_pm_qos.py (8, incl. the run.sh dry run on both ranks). Also tools/warmup.py:
+    the 3k-token warmup prefill is now cut to its char budget like the bucket prefills (build_doc
+    overshoots by one repo segment, which moved with this change and broke test_warmup).
+    Expected in the serve: the 1.13 ms/step graph startup (both replays' first collective) mostly
+    goes; other host wake-ups on the critical path (Engram stage thread pool, 3.2 ms of GPU idle)
+    may shrink too. Needs the serve ABAB; power: idle cores in WFI.
+
+#8  Lever: DSV41_AR_L2_PREFETCH=1 (docker/patch/ar_l2_prefetch.py + l2pf_kernel.py), default off
+    Hooks: DeepseekV4Model.forward builds per-layer plans at the first eager forward (next layer's
+    attn.fused_wqa_wkv weight + weight_scale, same fraction of each, <= DSV41_AR_L2_PREFETCH_MIB, default
+    5.5 MiB; no plan when the next layer has an Engram or for the last layer: 37/40 layers) and runs
+    one eager trial launch (compiles the Triton kernel; failure disarms); DeepseekV4DecoderLayer.forward
+    joins a pending prefetch on entry and arms its plan; MoERunner._maybe_reduce_final_output forks a
+    side stream right before the MoE AR and launches the TMA L2 prefetch (m <= 64 only). Draft layers
+    never get a plan (DSparkDeepseekV4Model is a separate class).
+    Kernel: Triton, one program x 128 lanes, inline PTX cp.async.bulk.prefetch.L2.global per 16 KiB
+    chunk (no C++ build at boot). Same measurement as the CUDA kernel: l2-prefetch-tri/ none 211.1,
+    bulk60 (CUDA) 188.4 (-22.8), tri60 (the shipped kernel) 189.3 (-21.8) us.
+    Through its own hooks (kernel_study/comm/ar_l2_prefetch_gpu.py, spark2, 8-layer stand-in stack
+    in one CUDA graph: qkv_a b12x -> 2x-L2 read (p2b stand-in) -> MoE AR spin -> real mhc_post/pre ->
+    next layer; lever on/off as two graphs replayed alternately, 200 replays):
+      capture + replay OK with the fork/join inside the graph; GEMM outputs bitwise equal;
+      qkv_a on prefetched layers 47.1 [46.1, 48.2] -> 23.1 [21.7, 24.6] us;
+      forward 2540.4 [2536.3, 2547.4] -> 2398.8 [2393.7, 2406.0] us = -20.2 us per prefetched layer.
+    Projection: 37 windows x ~20 us = ~-0.75 ms/step at c=1 (same per layer at c=2, m=8), if the real
+    NCCL LL AR (5 CTAs polling host memory) leaves DRAM as idle as the spin does. [Fix pass: it does
+    not; the real-AR range is -0.27..-0.32 ms/step at c=1 with the whole qkv_a, see #12.]
+    Tests: tests/test_ar_l2_prefetch.py (13, incl. pinned e13 model.py / moe_runner.py anchors).
+
+#9  Attn-AR window (shared gate_up + router gate prefetch): NOT BUILT, measured why
+    kernel_study/comm/ffn_prologue.py on the r3 c=1 trace (ffn-prologue/): from the router gate start,
+    the routing chain ends at 117.8 us (rank 0) / 117.7 (rank 1) and the shared-expert chain at 113.1 /
+    111.5 us; routing ends last in 79% / 95% of layers, p2b starts ~1 us after it. So a faster shared
+    expert buys ~0; prefetching the 3.93 MB router gate too would buy at most the ~5-6 us slack plus
+    what the gate itself saves before the glue dominates (split-K reduce 15 us + topk + ~15 glue
+    kernels). The lever there is fusing the routing glue, not the AR window.
+
+#10 Serve-window preparation
+    tools/nccl_twin_check gains keep_qos / twin_qos arms (pm_qos.install() before any communicator;
+    the driver runs them as root with --device /dev/cpu_dma_latency). One-GPU selftest of twin_qos on
+    spark2: request held, 0 mismatches. In-image CPU checks of the three installs on the real e13
+    classes: all anchors pass, wrappers idempotent; pm_qos disarms without the device.
+    Considered and not added: cuMem/GDR arms in tools/nccl_decode_sweep.py (NCCL_CUMEM_ENABLE=1 is
+    what DMA-BUF GDR needs here, "cuMemGdrSupport 0" today) break the sweep's invariant that every arm
+    keeps the serve's base env (test_nccl_decode_sweep); it stays a follow-up, not a knob.
+    Interaction found while writing the plan: with the twin, the graph communicator's proxy thread is
+    idle between replays (the eager collectives moved to the twin) and pays its own deep-idle wake-up
+    at each replay's first collective unless PM QoS is on; B is to be judged on top of C.
+    Plan: serve_arm_plan.txt (phase A two-node check gates B; ABAB C, then B, then E per ARMS.md).
+
+#11 Per-size table, best NCCL config vs KEEP (per-size/decode_collectives.{txt,json})
+    Clean k3 sweep cells (KEEP = phase-1 rep 1; mixing off = the clean smoke rep; the two
+    contaminated phase-1 reps of mixing off agree within 1.3 us at AR m=4) against a wire floor from
+    #1 (AR 2-rank ring LL = 2 hops each carrying the full per-rank size as LL lines; AG = 1 hop).
+    "gapped" = the call after a 2x-L2 memset inside a graph (cold neighbour), "graph" = back to back
+    (warm), "eager" = one launch per call. Median [p10, p90] us, % of wire floor:
+      AR m=1 10 KiB  gapped KEEP 52.5 [32.0, 99.0] 13%  -> mix0 17.7 [16.3, 21.3] 40%
+      AR m=3 30 KiB  gapped KEEP 58.8 [29.3,107.2] 19%  -> mix0 21.5 [19.5, 24.6] 53%
+      AR m=4 40 KiB  gapped KEEP 57.6 [35.0,104.8] 23%  -> mix0 22.5 [20.9, 25.6] 58%   (graph 31.6 -> 21.6)
+      AR m=6 60 KiB  gapped KEEP 59.3 [31.1,105.4] 29%  -> mix0 24.8 [22.7, 28.7] 68%
+      AR m=8 80 KiB  gapped KEEP 63.2 [41.5,105.6] 33%  -> mix0 29.1 [26.6, 33.7] 71%   (graph 35.4 -> 28.9)
+      AG m=4 505 KiB gapped KEEP 100.9 [68.6,146.4] 41% -> mix0 61.4 [44.0, 83.3] 67%
+      eager calls are unchanged by mixing (AR m=4 27.7 vs 25.7; AG m=4 69.8 vs 65.8).
+    With mixing off the p90 tail collapses (AR m=4 104.8 -> 25.6 us); what is left above the wire
+    floor (~9 us at m=4) is NCCL's LL mechanics (two proxy hand-offs, host-memory polling, launch).
+    No other NCCL knob beats KEEP (profile sweep); the best config is KEEP + mixing off, made safe by
+    the twin (#4). Phase-2 cells (mix0 + proxy_big / bare / stream-ordering 0) run in the window (A2).
+
+--- fix pass (review of 8098d34), 2026-09-25 evening ---------------------------------------------
+
+#12 E against a real NCCL all-reduce (the blocking review item)
+    Harness: kernel_study/comm/ar_window_nccl.py via two_rank_mps.sh (the review's recipe): two ranks
+    on one GB10 under MPS, a different NCCL_HOSTID per rank, so NCCL connects them via NET/IB (RoCE
+    loopback on rocep1s0f1, GDR 0) with the serve's NCCL env; PM QoS 20 held. Rank 1 replays only the
+    AR and arrives first (rank 0 is late on 72% of the serve's ARs); rank 0 replays, per arm: 2x-L2
+    streaming read (the rest of the model) ; e0 ; [pre prefetch] ; p2b stand-in (m x 6 x 4.42 MB with
+    ld.global.cs = p2b's evict-first loads, 48 CTAs; the real p2b is cooperative and cannot share the
+    GPU with rank 1's resident AR kernel) ; [fork] ; AR ; [lever join] ; mhc_post ; mhc_pre ; quant ;
+    qkv_a b12x ; quant ; wq_b b12x. Arms alternate replay by replay; GEMM and AR outputs bitwise
+    equal to 'none' in every arm (spin arms vs spin:none). Engines (l2pf_variants.py, SASS checked:
+    UBLKPF.L2, CCTL.E.PF2, LDG.E.EF): tri (the lever), burst:cN (TMA bulk prefetch from N CTAs),
+    pf:cN (per-thread prefetch.global.L2), paced:<GB/s>, ring:<depth>x<KiB> (closed-loop TMA copies
+    into a smem ring, <= 99 KiB: GB10's opt-in limit is 101376 B), tload. Engine selftest
+    (p2b-window-v2/engine_selftest.txt, 9.46 MB after a 2x-L2 flush): tri 46.9 us kernel, read after
+    13.8 us (warm; cold 46); burst:c8 24.0 / 28.5 (half lands); pf:c48 12.2 / 40.5 (~15% lands);
+    paced:150 68.8; ring:6x16 196 (48 GB/s); tload:64 548.
+    v2 (m = 1/3/4/6/8, 300 replays, 14 arms; ar-window-nccl/v2/), net per window = pf + AR + mHC +
+    quant + qkv_a + wq_b span-median deltas vs none, us (AR delta):
+      start/tri/5.5 (shipped)   -9.9  -5.3  -1.5  -3.1  +0.7   (AR +14..+18)
+      start/tri/full            -5.4  -9.2  -8.2  -4.1  -4.3   (AR +21..+28)
+      after/tri/5.5             -4.2  -3.3  -2.6  -0.8  -4.3   (mHC +18..+20 instead)
+      start/paced:100/5.5      +18.7  -4.9 -15.1  -4.8  +2.9   (AR +7..+42, erratic)
+      start/ring:6x16/5.5      +81.3 +56.4 +17.8 +65.1 +43.2   (AR +38..+103)
+      start/burst:c48/5.5       -2.8  -1.9  -2.6  -2.9  +1.6   (warms less)
+      pre/tri/full             +12.2 +10.9  +9.5  +9.9 +12.0   (AR unchanged; the kernel is serial)
+      pre/pf:c192/full          +5.7  +6.4  +5.8  +7.4  +9.0
+      warm/full (ceiling)      -26.6 -30.9 -32.0 -32.1 -30.0
+      spin:start/tri/5.5       -19.7 -22.6 -16.3 -16.1 -19.0   (the builder's stand-in, reproduced)
+    v3-focus (m=4/8, 1000 replays, two arm orders; join at the end): start/tri/5.5 -5.6 -4.1 / -4.8
+    -4.7; start/tri/full -8.5 -6.5 / -6.3 -2.8; after/tri/5.5 -4.6 -3.4 / -3.7 -1.7; after/tri/full
+    +0.6 -2.2 / -2.0 +1.7 (mHC +32..+34); start/tri/3 -2.6 -2.4 / -2.7 +1.4.
+    v4-leverjoin (the lever joins at the next layer's entry = right after the AR, before mhc_post;
+    'startj'): m=4 startj/tri/full -8.7 / -7.2, startj/tri/7 -4.7 / -4.9, startj/tri/5.5 -4.5 /
+    -1.9, startj/tri/3 -0.7 / -0.9, startj/burst:c8/full +0.2 / -0.2; m=8 full -2.0 / -1.0,
+    5.5 -4.3 / -0.2. The join costs mhc_post +1.4..+2.2 us (prefetch kernel 22 / 31 / 36 / 44 us at
+    3 / 5.5 / 7 MiB / whole qkv_a).
+    Emulation caveats: the emulated late-rank AR is 72-83 us at m=4 (serve 22.7); the p2b stand-in's
+    own span varies with the arm's slot in the replay cycle (up to +40 us at m=8, tight within an
+    arm), so it is excluded, and the harness now reports the decision span per replay (pf + p2b end
+    -> wq_b end). The spin is the optimistic bound, this emulation the pessimistic one.
+    Decision (m=4 and m=8): fork at the AR start (after the AR moves the cost onto mHC), keep the
+    1-CTA Triton burst, prefetch the whole qkv_a (best at m=4 in both orders, a tie at m=8):
+    DSV41_AR_L2_PREFETCH_MIB default 5.5 -> 10. Range: -0.27..-0.32 ms/step at c=1 (pessimistic) to
+    -0.75 (spin), -0.04..-0.07 at c=2. The serve mechanism boot measures the late rank's MoE-AR kernel
+    and the AR-start -> qkv_a-end span per layer against A; E fails if the AR slows by at least the
+    qkv_a saving (serve_arm_plan.txt).
+
+#13 Prefetch in the p2b window instead (review missed opportunity (b)): measured, no win
+    kernel_study/comm/p2b_prefetch_probe.py, spark2, the served p2b (SORT=0 bench build), real rank-0
+    pack weights for qkv_a / wq_b (layer 10), census routing, 300 replays, m = 1/3/4/6/8. The first
+    version timed from after the prefetch launch; v2 includes the prefetch kernel in the span.
+    Lines prefetched with normal priority survive p2b's evict-first stream (warm/full: qkv_a 47 ->
+    16 us, the ceiling). But p2b is a cooperative launch that fills every SM's register file, so it
+    cannot overlap anything. d_total (us):
+      pre/tri/full          +11.3 +9.6 +8.6 +9.3 +9.6   (kernel +40: the 1-CTA TMA issue is resident
+                                                         ~as long as its transfer)
+      pre/burst:c8/full      +2.2 +3.6 +2.7 +3.7 +3.7   (kernel +23.5, half the lines land)
+      pre/pf:c48/full        +2.0 +3.3 +3.8 +3.3 +4.5   (kernel +10, ~15% of the prefetches land)
+      pre/burst:c48/full+wqb:8  +9.3..+15.5
+    In-kernel (p2b-window-in; kernel_study/comm/p2b_pf_bench.py: the same p2b plus a prologue where
+    thread 0 of each block issues TMA L2 prefetches for its share of up to 4 ranges; bench only):
+      in0 (prologue, no ranges)  +0.8 -1.3 -0.5 +0.3 +0.9   (free when off)
+      in/full                    -0.1 -2.7 -1.5 -1.7 +0.2   (p2b +8.6..+16.4, qkv_a -9.5..-18.2)
+      in/full+wqb:4..12          -1.8..+20.5
+    Zero-sum: p2b is DRAM-bound where it streams (its 78% average hides phases at the roof), the
+    prefetch displaces its traffic and about half the requests do not land. Correctness: qkv_a / wq_b
+    bitwise equal to none in every arm and m; p2b bitwise under one-hot routing weights (normalized
+    weights: fp32 atomicAdd slot order varies; reported, not gated); graph replay == eager.
+
+#14 B hardening and the phase-A1 gate
+    nccl_eager_twin: install() reads the NCCL version through vLLM's NCCLLibrary and disarms unless it
+    is in VALIDATED_NCCL = ("2.30.7",); every stock communicator is re-checked when its group is
+    built; a group with >1 rank and no working PyNccl raises REFUSED instead of returning silently
+    (it would reach torch.distributed with mixing off and no twin). In-image check (b-hardening/):
+    e13 reports 2.30.7, a 2.31.0 reader disarms. NCCL 2.30.7 logs its graphUsageMode-0 capture
+    warning once per captured collective (434 lines per rank): expected, documented.
+    nccl_twin_check --device-check: every output lives in one flat buffer; after each step's last
+    collective a stream-ordered comparison against coef * seed + offset adds bad elements to a device
+    counter; no drain, host one step ahead as before. One GPU, two ranks (twin-devcheck/): keep /
+    twin / keep_qos / twin_qos 330/330 steps checked on both ranks, 0 bad; --inject-fault 37 flagged
+    exactly [37] on both ranks (the every-10th host check missed it). Phase A1 now gates B on it.
+
+#15 C: attribution corrected, GPU cost measured
+    cpuidle usage since boot (c-scope/cpuidle_usage.txt): LPI-2 = 0 on all 20 cores of both hosts
+    (its target residency equals LPI-3's 2542 us, so the menu governor never picks it). The waits
+    are LPI-3 and LPI-1 exits; a 50 us request (LPI-1 allowed) still waits 350-379 us, so LPI-1's
+    real exit cost here is far above 42 us. 20 us stays the value.
+    qos_gpu_cost.py (spark2, 1 GiB read + bf16 4096^3 GEMM, 4 x 3 s blocks per arm, alternating):
+    off / on read 4621 / 4610 us (232.3 / 232.9 GB/s), GEMM 1531.6 / 1527.7 us (89.7 / 90.0
+    TFLOPS), SM 2190 / 2190 MHz, 28.7 / 28.9 W. No GPU cost. A per-core resume-latency constraint
+    on the proxy / callback cores needs host sysfs writes that outlive the process: documented in
+    the serve plan, not run.
+
+#16 AR overhead above the wire floor: DMA-BUF GDR is not available here
+    ar_env_probe.py (c-cost-gdr/cumem0, cumem1; two ranks on one GB10, NCCL_DEBUG=INFO): with
+    NCCL_CUMEM_ENABLE=1 NCCL logs cuMemEnable 1 but cuMemGdrSupport 0, GDR 0, and "dmabuf_mr -
+    libmlx5.so: undefined symbol: mlx5dv_reg_dmabuf_mr". cuMem alone costs time: AR m=4 eager 35.6 ->
+    50.2 us, back to back in a graph 29.7 -> 34.5, after a 2x-L2 read 30.4 -> 37.8; m=8 62.3 -> 72.7 /
+    51.9 -> 54.0 / 54.0 -> 60.6 (rank 0). Rejected (flags.md).
+
+#17 The lever's join point, the final suite, the warmup split
+    Join point. The lever used to join its side stream at the next layer's entry, right after the
+    AR. The 1-CTA prefetch kernel stays resident ~44 us for the whole qkv_a (31 us at 5.5 MiB), so a
+    short AR left mhc_post waiting. 25197da moves the join into
+    DeepseekV4Attention._split_qkv_and_norm: after the next layer's qkv_a, before the breakable
+    graph's eager break (anchors and their order checked on the pinned attention.py). Nothing
+    between the fork and that join breaks the capture: mhc_post / mhc_pre are plain kernels, and
+    layers before an Engram get no plan.
+    Through the lever's own hooks against the spin (final/h1a, h1b vs h1c), us per window at m =
+    1/3/4/6/8:
+      whole qkv_a  join after qkv_a -15.7 -15.7 -17.0 -17.3 -17.3 | entry join -10.0 -13.0 -12.6 -13.2 -14.2
+      5.5 MiB      join after qkv_a -20.6 -22.3 -21.7 -21.8 -21.5 | entry join -20.4 -19.7 -19.9 -19.8 -20.2
+    With the real AR the two are equal within noise:
+      i1b (1000 replays, two orders): startq -8.1 / -6.0 at m=4 and -4.3 / -2.1 at m=8;
+                                      startj -8.2 / -5.0 and -3.4 / -2.3.
+      i1 sweep (m = 1..8, 300 replays): startq -5.0 -8.7 -1.9 -0.1 +2.4;
+                                        startj -6.4 -8.8 -8.7 -1.6 -3.4.
+    Kept: the join after qkv_a (never worse, better when the AR is short against the prefetch).
+    Final E range, the committed lever, whole qkv_a: -0.07..-0.30 ms/step at c=1 with the real AR
+    (pessimistic) to -0.63 against the spin; c=2 +0.09..-0.16 to -0.64.
+    Final suite (results/2026-09-25-kernels/comm/final/, NOTE.txt; spark2, pmon clean, 2190 MHz):
+    - the lever's hooks: capture/replay OK and GEMM outputs bitwise equal at m = 1/3/4/6/8, both
+      budgets, both join points.
+    - p2b probe (h2) reproduces #13: pre/tri/full +8.9..+12.1 us, in/full -1.0..+0.0 (zero-sum),
+      warm ceiling -26.9..-31.4; one-hot and graph-vs-eager checks pass at every m.
+    - real-AR harness (i1, i1b): GEMM and AR outputs bitwise equal to none in every arm. The
+      in/full arm's d_net_excl_p2b left out its own cost (the stand-in slows +26..+81 us,
+      d_total +1.9..+60.5: a loss); the harness now reports null there.
+    - twin device check (i2), c=1 keep / twin / keep_qos / twin_qos and c=2 keep / twin: 330 of
+      330 steps on both ranks, 0 bad, 0 host mismatches; twin router graph 90 / eager 750.
+    - twin_smoke_1gpu OK (mixing 0, NCCL 2.30.7); host-node PM QoS: none 213.5 / 257.6 us, 20 us
+      3.8 / 4.3 us, 50 us 380 / 403 us (reproduces #7); engine selftest reproduces (tri 46.9 us).
+    Warmup scope (review). The tools/warmup.py cut has its own commit now (3c4fb7f, "k3: warmup:
+    ..."), split out of the PM QoS commit by rebuilding the unpushed branch with cherry-picks (no
+    -i). The rebuilt tip's tree is byte-identical to the old tip (empty git diff); tests pass at the
+    warmup commit (574) and at the tip. The first serve boot runs the post-ready JIT check.
+

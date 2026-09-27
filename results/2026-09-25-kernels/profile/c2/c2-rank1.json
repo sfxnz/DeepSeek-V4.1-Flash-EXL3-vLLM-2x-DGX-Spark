@@ -1,0 +1,3730 @@
+{
+ "label": "r3 c=2 pair rank1 (spark1 GPU shared with a Playwright chromium, see 11-hostload-during-c2.log)",
+ "source": "/home/sfxnz/projects/data/dsv41-traces/r3-c2-20260925-093538/dp0_pp0_tp1_dcp0_ep1_rank1.1790328972338779974.pt.trace.json.gz",
+ "steps_total": 99,
+ "steps_dropped_outliers": 1,
+ "peak_gbps": 250.0,
+ "groups": {
+  "617": {
+   "target_graph_id": 617,
+   "steps": 96,
+   "verify_rows_m": 8,
+   "step_wall_ms": {
+    "median": 137.18,
+    "p10": 130.65,
+    "p90": 161.16,
+    "mean": 141.14
+   },
+   "device_busy_ms": 127.931,
+   "device_idle_ms": 13.207,
+   "kernel_sum_ms": 133.499,
+   "phases_ms": {
+    "target_graph_ms": {
+     "median": 111.6,
+     "p10": 106.5,
+     "p90": 134.14,
+     "mean": 115.8
+    },
+    "draft_graph_ms": {
+     "median": 8.4,
+     "p10": 7.08,
+     "p90": 10.78,
+     "mean": 8.81
+    },
+    "eager_after_target_ms": {
+     "median": 3.39,
+     "p10": 2.66,
+     "p90": 4.49,
+     "mean": 3.48
+    },
+    "eager_before_next_target_ms": {
+     "median": 13.53,
+     "p10": 12.43,
+     "p90": 14.7,
+     "mean": 13.05
+    }
+   },
+   "categories": [
+    {
+     "category": "nccl_allreduce",
+     "ms_per_step": 49.503,
+     "launches_per_step": 88.0
+    },
+    {
+     "category": "p2b_moe",
+     "ms_per_step": 41.901,
+     "launches_per_step": 40.0
+    },
+    {
+     "category": "dense_b12x",
+     "ms_per_step": 21.059,
+     "launches_per_step": 231.0
+    },
+    {
+     "category": "woa_einsum",
+     "ms_per_step": 3.582,
+     "launches_per_step": 43.0
+    },
+    {
+     "category": "torch_eltwise",
+     "ms_per_step": 2.848,
+     "launches_per_step": 975.0
+    },
+    {
+     "category": "cutlass_bf16_gemm",
+     "ms_per_step": 2.708,
+     "launches_per_step": 109.0
+    },
+    {
+     "category": "nccl_allgather",
+     "ms_per_step": 2.152,
+     "launches_per_step": 4.0
+    },
+    {
+     "category": "mhc_prenorm_gemm",
+     "ms_per_step": 1.904,
+     "launches_per_step": 86.0
+    },
+    {
+     "category": "sparse_mla",
+     "ms_per_step": 1.6,
+     "launches_per_step": 86.0
+    },
+    {
+     "category": "deepgemm_fp8fp4_other",
+     "ms_per_step": 1.331,
+     "launches_per_step": 6.0
+    },
+    {
+     "category": "triton",
+     "ms_per_step": 1.095,
+     "launches_per_step": 127.12
+    },
+    {
+     "category": "router_topk",
+     "ms_per_step": 0.99,
+     "launches_per_step": 43.0
+    },
+    {
+     "category": "act_quant",
+     "ms_per_step": 0.613,
+     "launches_per_step": 226.0
+    },
+    {
+     "category": "mhc_pre_fuse",
+     "ms_per_step": 0.541,
+     "launches_per_step": 86.0
+    },
+    {
+     "category": "mhc_post",
+     "ms_per_step": 0.415,
+     "launches_per_step": 89.0
+    },
+    {
+     "category": "other",
+     "ms_per_step": 0.401,
+     "launches_per_step": 177.0
+    },
+    {
+     "category": "indexer",
+     "ms_per_step": 0.348,
+     "launches_per_step": 64.0
+    },
+    {
+     "category": "rope_kv_cache",
+     "ms_per_step": 0.281,
+     "launches_per_step": 9.0
+    },
+    {
+     "category": "sampler_argmax",
+     "ms_per_step": 0.1,
+     "launches_per_step": 9.0
+    },
+    {
+     "category": "memcpy",
+     "ms_per_step": 0.096,
+     "launches_per_step": 63.12
+    },
+    {
+     "category": "norm",
+     "ms_per_step": 0.018,
+     "launches_per_step": 6.0
+    },
+    {
+     "category": "woa_pack",
+     "ms_per_step": 0.011,
+     "launches_per_step": 3.0
+    },
+    {
+     "category": "memset",
+     "ms_per_step": 0.001,
+     "launches_per_step": 2.0
+    }
+   ],
+   "gemm_roles": [
+    {
+     "role": "routed_moe_p2b",
+     "calls_per_step": 40.0,
+     "us": {
+      "median": 1032.51,
+      "p10": 1012.8,
+      "p90": 1095.36,
+      "mean": 1047.53
+     },
+     "ms_per_step": 41.901,
+     "pairs": 48,
+     "weight_MB": 212.34,
+     "GBps_at_median": 205.7,
+     "pct_of_peak": 82.3,
+     "roofline_us": 849.3,
+     "recoverable_ms_per_step": 7.929
+    },
+    {
+     "role": "wq_b",
+     "calls_per_step": 43.0,
+     "us": {
+      "median": 116.29,
+      "p10": 106.21,
+      "p90": 119.81,
+      "mean": 115.5
+     },
+     "ms_per_step": 4.967,
+     "weight_MB": 21.63,
+     "GBps_at_median": 186.0,
+     "pct_of_peak": 74.4,
+     "roofline_us": 86.5,
+     "recoverable_ms_per_step": 1.247
+    },
+    {
+     "role": "wo_b",
+     "calls_per_step": 43.0,
+     "us": {
+      "median": 104.74,
+      "p10": 101.5,
+      "p90": 109.95,
+      "mean": 106.16
+     },
+     "ms_per_step": 4.565,
+     "weight_MB": 21.63,
+     "GBps_at_median": 206.5,
+     "pct_of_peak": 82.6,
+     "roofline_us": 86.5,
+     "recoverable_ms_per_step": 0.845
+    },
+    {
+     "role": "wo_a",
+     "calls_per_step": 43.0,
+     "us": {
+      "median": 79.14,
+      "p10": 75.36,
+      "p90": 100.9,
+      "mean": 83.3
+     },
+     "ms_per_step": 3.582,
+     "weight_MB": 17.3,
+     "GBps_at_median": 218.6,
+     "pct_of_peak": 87.4,
+     "roofline_us": 69.2,
+     "recoverable_ms_per_step": 0.606
+    },
+    {
+     "role": "lm_head",
+     "calls_per_step": 2.0,
+     "us": {
+      "median": 1527.47,
+      "p10": 1515.71,
+      "p90": 1559.43,
+      "mean": 1538.12
+     },
+     "ms_per_step": 3.076,
+     "weight_MB": 341.3,
+     "GBps_at_median": 223.4,
+     "pct_of_peak": 89.4,
+     "roofline_us": 1365.2,
+     "recoverable_ms_per_step": 0.346
+    },
+    {
+     "role": "shared_gate_up",
+     "calls_per_step": 43.0,
+     "us": {
+      "median": 57.38,
+      "p10": 55.33,
+      "p90": 60.99,
+      "mean": 58.74
+     },
+     "ms_per_step": 2.526,
+     "weight_MB": 12.17,
+     "GBps_at_median": 212.0,
+     "pct_of_peak": 84.8,
+     "roofline_us": 48.7,
+     "recoverable_ms_per_step": 0.432
+    },
+    {
+     "role": "qkv_a",
+     "calls_per_step": 43.0,
+     "us": {
+      "median": 47.26,
+      "p10": 44.74,
+      "p90": 66.43,
+      "mean": 50.91
+     },
+     "ms_per_step": 2.189,
+     "weight_MB": 9.46,
+     "GBps_at_median": 200.2,
+     "pct_of_peak": 80.1,
+     "roofline_us": 37.8,
+     "recoverable_ms_per_step": 0.564
+    },
+    {
+     "role": "hc_prenorm",
+     "calls_per_step": 86.0,
+     "us": {
+      "median": 21.25,
+      "p10": 19.33,
+      "p90": 24.29,
+      "mean": 22.14
+     },
+     "ms_per_step": 1.904,
+     "weight_MB": 1.97,
+     "GBps_at_median": 92.5,
+     "pct_of_peak": 37.0,
+     "roofline_us": 7.9,
+     "recoverable_ms_per_step": 1.224
+    },
+    {
+     "role": "engram_wkv",
+     "calls_per_step": 2.0,
+     "us": {
+      "median": 749.44,
+      "p10": 725.19,
+      "p90": 775.33,
+      "mean": 748.59
+     },
+     "ms_per_step": 1.497,
+     "weight_MB": 162.2,
+     "GBps_at_median": 216.4,
+     "pct_of_peak": 86.6,
+     "roofline_us": 648.8,
+     "recoverable_ms_per_step": 0.2
+    },
+    {
+     "role": "shared_down",
+     "calls_per_step": 43.0,
+     "us": {
+      "median": 30.62,
+      "p10": 29.38,
+      "p90": 34.08,
+      "mean": 34.24
+     },
+     "ms_per_step": 1.472,
+     "weight_MB": 6.08,
+     "GBps_at_median": 198.6,
+     "pct_of_peak": 79.4,
+     "roofline_us": 24.3,
+     "recoverable_ms_per_step": 0.427
+    },
+    {
+     "role": "draft_moe_gate_up",
+     "calls_per_step": 3.0,
+     "us": {
+      "median": 276.91,
+      "p10": 220.29,
+      "p90": 393.63,
+      "mean": 300.07
+     },
+     "ms_per_step": 0.9
+    },
+    {
+     "role": "router_gate",
+     "calls_per_step": 40.0,
+     "us": {
+      "median": 19.87,
+      "p10": 19.01,
+      "p90": 21.54,
+      "mean": 21.21
+     },
+     "ms_per_step": 0.848,
+     "weight_MB": 3.93,
+     "GBps_at_median": 197.9,
+     "pct_of_peak": 79.2,
+     "roofline_us": 15.7,
+     "recoverable_ms_per_step": 0.22
+    },
+    {
+     "role": "bf16_gemm_grid2x1x1",
+     "calls_per_step": 8.0,
+     "us": {
+      "median": 84.1,
+      "p10": 65.25,
+      "p90": 122.14,
+      "mean": 89.82
+     },
+     "ms_per_step": 0.719
+    },
+    {
+     "role": "router_gate_splitk_reduce",
+     "calls_per_step": 47.0,
+     "us": {
+      "median": 16.34,
+      "p10": 1.57,
+      "p90": 30.69,
+      "mean": 14.75
+     },
+     "ms_per_step": 0.693
+    },
+    {
+     "role": "draft_moe_down",
+     "calls_per_step": 3.0,
+     "us": {
+      "median": 130.9,
+      "p10": 91.46,
+      "p90": 200.1,
+      "mean": 143.62
+     },
+     "ms_per_step": 0.431
+    },
+    {
+     "role": "main_proj",
+     "calls_per_step": 1.0,
+     "us": {
+      "median": 400.02,
+      "p10": 397.54,
+      "p90": 405.31,
+      "mean": 402.33
+     },
+     "ms_per_step": 0.402,
+     "weight_MB": 81.1,
+     "GBps_at_median": 202.7,
+     "pct_of_peak": 81.1,
+     "roofline_us": 324.4,
+     "recoverable_ms_per_step": 0.078
+    },
+    {
+     "role": "bf16_gemm_grid8x8x16",
+     "calls_per_step": 3.0,
+     "us": {
+      "median": 93.57,
+      "p10": 78.43,
+      "p90": 104.67,
+      "mean": 95.5
+     },
+     "ms_per_step": 0.287
+    },
+    {
+     "role": "indexer_wq_b",
+     "calls_per_step": 8.0,
+     "us": {
+      "median": 27.42,
+      "p10": 25.63,
+      "p90": 29.41,
+      "mean": 27.74
+     },
+     "ms_per_step": 0.222,
+     "weight_MB": 5.41,
+     "GBps_at_median": 197.2,
+     "pct_of_peak": 78.9,
+     "roofline_us": 21.6,
+     "recoverable_ms_per_step": 0.049
+    },
+    {
+     "role": "draft_ctx_kv",
+     "calls_per_step": 3.0,
+     "us": {
+      "median": 46.59,
+      "p10": 45.76,
+      "p90": 47.84,
+      "mean": 47.72
+     },
+     "ms_per_step": 0.143,
+     "weight_MB": 9.46,
+     "GBps_at_median": 203.1,
+     "pct_of_peak": 81.2,
+     "roofline_us": 37.8,
+     "recoverable_ms_per_step": 0.03
+    },
+    {
+     "role": "bf16_gemm_grid8x4x16",
+     "calls_per_step": 1.0,
+     "us": {
+      "median": 73.66,
+      "p10": 72.42,
+      "p90": 75.55,
+      "mean": 74.32
+     },
+     "ms_per_step": 0.074
+    },
+    {
+     "role": "bf16_gemm_grid8x1x9",
+     "calls_per_step": 3.0,
+     "us": {
+      "median": 15.02,
+      "p10": 8.26,
+      "p90": 33.73,
+      "mean": 19.16
+     },
+     "ms_per_step": 0.057
+    },
+    {
+     "role": "bf16_gemm_grid8x1x1",
+     "calls_per_step": 4.0,
+     "us": {
+      "median": 5.02,
+      "p10": 4.9,
+      "p90": 5.31,
+      "mean": 5.45
+     },
+     "ms_per_step": 0.022
+    },
+    {
+     "role": "bf16_gemm_grid8x2x2",
+     "calls_per_step": 3.0,
+     "us": {
+      "median": 2.56,
+      "p10": 2.43,
+      "p90": 2.75,
+      "mean": 2.65
+     },
+     "ms_per_step": 0.008
+    }
+   ],
+   "nccl": [
+    {
+     "op": "nccl_allreduce",
+     "where": "target",
+     "grid": [
+      7,
+      1,
+      1
+     ],
+     "calls_per_step": 80.0,
+     "us": {
+      "median": 134.75,
+      "p10": 33.95,
+      "p90": 1676.1,
+      "mean": 575.62
+     },
+     "ms_per_step": 46.05
+    },
+    {
+     "op": "nccl_allreduce",
+     "where": "draft",
+     "grid": [
+      5,
+      1,
+      1
+     ],
+     "calls_per_step": 7.0,
+     "us": {
+      "median": 68.46,
+      "p10": 32.42,
+      "p90": 1313.09,
+      "mean": 367.23
+     },
+     "ms_per_step": 2.571
+    },
+    {
+     "op": "nccl_allgather",
+     "where": "draft",
+     "grid": [
+      8,
+      1,
+      1
+     ],
+     "calls_per_step": 1.0,
+     "us": {
+      "median": 850.15,
+      "p10": 186.53,
+      "p90": 2168.9,
+      "mean": 1052.99
+     },
+     "ms_per_step": 1.053
+    },
+    {
+     "op": "nccl_allgather",
+     "where": "eager",
+     "grid": [
+      8,
+      1,
+      1
+     ],
+     "calls_per_step": 1.0,
+     "us": {
+      "median": 889.2,
+      "p10": 196.87,
+      "p90": 2049.73,
+      "mean": 999.19
+     },
+     "ms_per_step": 0.999
+    },
+    {
+     "op": "nccl_allreduce",
+     "where": "eager",
+     "grid": [
+      7,
+      1,
+      1
+     ],
+     "calls_per_step": 0.99,
+     "us": {
+      "median": 744.61,
+      "p10": 153.12,
+      "p90": 1701.95,
+      "mean": 878.93
+     },
+     "ms_per_step": 0.87
+    },
+    {
+     "op": "nccl_allgather",
+     "where": "target",
+     "grid": [
+      6,
+      1,
+      1
+     ],
+     "calls_per_step": 2.0,
+     "us": {
+      "median": 24.38,
+      "p10": 19.55,
+      "p90": 37.28,
+      "mean": 49.73
+     },
+     "ms_per_step": 0.099
+    },
+    {
+     "op": "nccl_allreduce",
+     "where": "eager",
+     "grid": [
+      5,
+      1,
+      1
+     ],
+     "calls_per_step": 0.01,
+     "us": {
+      "median": 1223.52,
+      "p10": 1223.52,
+      "p90": 1223.52,
+      "mean": 1223.52
+     },
+     "ms_per_step": 0.013
+    }
+   ],
+   "idle_gaps": [
+    {
+     "before": "eager:Memcpy DtoH ",
+     "after": "eager:Memcpy HtoD ",
+     "next_launched_by": "cudaMemcpyAsync",
+     "count_per_step": 1.02,
+     "ms_per_step": 10.906,
+     "us_mean": 10683.0,
+     "host_bound_frac": 0.98,
+     "host_frames_top": [
+      [
+       "torch/utils/_contextlib.py(120): decorate_context",
+       300.0
+      ],
+      [
+       "vllm/v1/executor/multiproc_executor.py(1035): _execute_worker_rpc",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/worker_base.py(370): execute_model",
+       100.0
+      ],
+      [
+       "prefill_empty_cache.py(63): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu_worker.py(1114): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu/model_runner.py(1533): execute_model",
+       100.0
+      ],
+      [
+       "vllm/models/deepseek_v4_1/nvidia/model_state.py(85): prepare_inputs",
+       100.0
+      ],
+      [
+       "vllm/models/deepseek_v4_1/common/engram.py(1747): stage",
+       100.0
+      ],
+      [
+       "concurrent/futures/_base.py(463): exception",
+       98.5
+      ],
+      [
+       "threading.py(323): wait",
+       98.4
+      ],
+      [
+       "<built-in method acquire of _thread.lock object at 0xe03e5c11c480>",
+       98.3
+      ],
+      [
+       "<built-in method copy_ of Tensor object at 0xe03dbcff6b20>",
+       0.4
+      ],
+      [
+       "aten::copy_",
+       0.4
+      ],
+      [
+       "torch/cuda/streams.py(245): synchronize",
+       0.1
+      ],
+      [
+       "<built-in method synchronize of Event object at 0xe03dfc2ebd90>",
+       0.1
+      ],
+      [
+       "concurrent/futures/thread.py(164): submit",
+       0.1
+      ],
+      [
+       "aten::slice",
+       0.0
+      ]
+     ]
+    },
+    {
+     "before": "draft:vllm::vocab_embedding::vocab_parallel_embedding_",
+     "after": "draft:ncclDevKernel_AllReduce_Sum_bf16_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.401,
+     "us_mean": 401.2,
+     "host_bound_frac": 0.0,
+     "host_frames_top": [
+      [
+       "torch/utils/_contextlib.py(120): decorate_context",
+       300.0
+      ],
+      [
+       "vllm/v1/executor/multiproc_executor.py(1035): _execute_worker_rpc",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/worker_base.py(370): execute_model",
+       100.0
+      ],
+      [
+       "prefill_empty_cache.py(63): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu_worker.py(1114): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu/model_runner.py(1533): execute_model",
+       100.0
+      ],
+      [
+       "vllm/models/deepseek_v4_1/nvidia/model_state.py(85): prepare_inputs",
+       100.0
+      ],
+      [
+       "vllm/models/deepseek_v4_1/common/engram.py(1747): stage",
+       100.0
+      ],
+      [
+       "torch/cuda/streams.py(245): synchronize",
+       100.0
+      ],
+      [
+       "<built-in method synchronize of Event object at 0xe03dfc2ebd90>",
+       100.0
+      ]
+     ]
+    },
+    {
+     "before": "target:wo_b",
+     "after": "target:ncclDevKernel_AllReduce_Sum_bf16_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 30.71,
+     "ms_per_step": 0.177,
+     "us_mean": 5.8,
+     "host_bound_frac": 0.03,
+     "host_frames_top": [
+      [
+       "torch/utils/_contextlib.py(120): decorate_context",
+       50.9
+      ],
+      [
+       "vllm/v1/executor/multiproc_executor.py(1035): _execute_worker_rpc",
+       25.2
+      ],
+      [
+       "vllm/v1/worker/worker_base.py(370): execute_model",
+       25.2
+      ],
+      [
+       "prefill_empty_cache.py(63): execute_model",
+       25.2
+      ],
+      [
+       "vllm/v1/worker/gpu_worker.py(1114): execute_model",
+       25.2
+      ],
+      [
+       "vllm/v1/worker/gpu/model_runner.py(1533): execute_model",
+       25.2
+      ],
+      [
+       "vllm/v1/worker/gpu/cudagraph_utils.py(639): run_fullgraph",
+       24.8
+      ],
+      [
+       "vllm/v1/worker/gpu/cudagraph_utils.py(449): run_fullgraph",
+       24.8
+      ],
+      [
+       "torch/cuda/graphs.py(182): replay",
+       24.8
+      ],
+      [
+       "<built-in method replay of pybind11_builtins.pybind11_detail_function_record_v1_system_lib",
+       24.8
+      ],
+      [
+       "vllm/models/deepseek_v4_1/nvidia/model_state.py(85): prepare_inputs",
+       0.4
+      ],
+      [
+       "vllm/models/deepseek_v4_1/common/engram.py(1747): stage",
+       0.4
+      ],
+      [
+       "torch/cuda/streams.py(245): synchronize",
+       0.4
+      ],
+      [
+       "<built-in method synchronize of Event object at 0xe03dfc2ebd90>",
+       0.4
+      ]
+     ]
+    },
+    {
+     "before": "target:aten:vectorized_elementwise_kernel/CUDAFunctor_add",
+     "after": "target:ncclDevKernel_AllReduce_Sum_bf16_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 31.16,
+     "ms_per_step": 0.134,
+     "us_mean": 4.3,
+     "host_bound_frac": 0.02
+    },
+    {
+     "before": "eager:Memcpy HtoD ",
+     "after": "-:<end>",
+     "next_launched_by": "?",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.128,
+     "us_mean": 128.0,
+     "host_bound_frac": 0.0,
+     "host_frames_top": [
+      [
+       "torch/utils/_contextlib.py(120): decorate_context",
+       211.3
+      ],
+      [
+       "vllm/v1/executor/multiproc_executor.py(1035): _execute_worker_rpc",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/worker_base.py(370): execute_model",
+       100.0
+      ],
+      [
+       "prefill_empty_cache.py(63): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu_worker.py(1114): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu/model_runner.py(1533): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu/cudagraph_utils.py(639): run_fullgraph",
+       72.4
+      ],
+      [
+       "vllm/v1/worker/gpu/cudagraph_utils.py(449): run_fullgraph",
+       70.7
+      ],
+      [
+       "torch/cuda/graphs.py(182): replay",
+       62.2
+      ],
+      [
+       "<built-in method replay of pybind11_builtins.pybind11_detail_function_record_v1_system_lib",
+       60.6
+      ],
+      [
+       "vllm/models/deepseek_v4_1/nvidia/model_state.py(85): prepare_inputs",
+       12.0
+      ]
+     ]
+    },
+    {
+     "before": "eager:at_cuda_detail::cub::detail::scan::DeviceScanIni",
+     "after": "eager:at_cuda_detail::cub::detail::scan::DeviceScanKer",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 18.36,
+     "ms_per_step": 0.059,
+     "us_mean": 3.2,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:",
+     "after": "eager:aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 14.41,
+     "ms_per_step": 0.047,
+     "us_mean": 3.2,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:Memcpy DtoD ",
+     "after": "eager:aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 12.42,
+     "ms_per_step": 0.039,
+     "us_mean": 3.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+     "after": "eager:",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 10.66,
+     "ms_per_step": 0.033,
+     "us_mean": 3.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:Memcpy DtoD ",
+     "after": "eager:aten:vectorized_elementwise_kernel/FillFunctor",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 8.29,
+     "ms_per_step": 0.026,
+     "us_mean": 3.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:Memcpy HtoD ",
+     "after": "eager:Memcpy HtoD ",
+     "next_launched_by": "cudaMemcpyAsync",
+     "count_per_step": 1.02,
+     "ms_per_step": 0.021,
+     "us_mean": 20.3,
+     "host_bound_frac": 0.98,
+     "host_frames_top": [
+      [
+       "torch/utils/_contextlib.py(120): decorate_context",
+       7.9
+      ],
+      [
+       "vllm/v1/executor/multiproc_executor.py(1035): _execute_worker_rpc",
+       2.9
+      ],
+      [
+       "vllm/v1/worker/worker_base.py(370): execute_model",
+       2.9
+      ],
+      [
+       "prefill_empty_cache.py(63): execute_model",
+       2.9
+      ],
+      [
+       "vllm/v1/worker/gpu_worker.py(1114): execute_model",
+       2.9
+      ],
+      [
+       "vllm/v1/worker/gpu/model_runner.py(1533): execute_model",
+       2.9
+      ],
+      [
+       "vllm/models/deepseek_v4_1/nvidia/model_state.py(85): prepare_inputs",
+       2.3
+      ],
+      [
+       "vllm/models/deepseek_v4_1/common/engram.py(1747): stage",
+       1.0
+      ]
+     ]
+    },
+    {
+     "before": "draft:wo_b",
+     "after": "draft:ncclDevKernel_AllReduce_Sum_bf16_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 3.0,
+     "ms_per_step": 0.02,
+     "us_mean": 6.7,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "draft:aten:vectorized_elementwise_kernel/CUDAFunctor_add",
+     "after": "draft:ncclDevKernel_AllReduce_Sum_bf16_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 3.0,
+     "ms_per_step": 0.017,
+     "us_mean": 5.6,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:aten:vectorized_elementwise_kernel/FillFunctor",
+     "after": "eager:_compute_swa_indices_and_lens_kernel",
+     "next_launched_by": "cuLaunchKernelEx",
+     "count_per_step": 4.08,
+     "ms_per_step": 0.013,
+     "us_mean": 3.2,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "target:mhc_post_tilelang_kernel",
+     "after": "target:ncclDevKernel_AllGather_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 1.83,
+     "ms_per_step": 0.011,
+     "us_mean": 5.8,
+     "host_bound_frac": 0.27
+    },
+    {
+     "before": "eager:aten:vectorized_elementwise_kernel/FillFunctor",
+     "after": "eager:Kernel",
+     "next_launched_by": "cuLaunchKernelEx",
+     "count_per_step": 2.52,
+     "ms_per_step": 0.008,
+     "us_mean": 3.2,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "draft:lm_head",
+     "after": "draft:ncclDevKernel_AllGather_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.005,
+     "us_mean": 5.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "draft:Memset ",
+     "after": "draft:aten:mbtopk",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.005,
+     "us_mean": 5.0,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+     "after": "eager:Memcpy DtoD ",
+     "next_launched_by": "cudaMemcpyAsync",
+     "count_per_step": 1.55,
+     "ms_per_step": 0.005,
+     "us_mean": 3.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:vllm::rms_norm_kernel",
+     "after": "eager:aten:vectorized_elementwise_kernel/FillFunctor",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 1.69,
+     "ms_per_step": 0.005,
+     "us_mean": 3.2,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "target:Memset ",
+     "after": "target:aten:mbtopk",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.004,
+     "us_mean": 4.3,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:vllm::vocab_embedding::vocab_parallel_embedding_",
+     "after": "eager:ncclDevKernel_AllReduce_Sum_bf16_RING_LL",
+     "next_launched_by": "cuLaunchKernelEx",
+     "count_per_step": 0.97,
+     "ms_per_step": 0.004,
+     "us_mean": 3.8,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:aten:elementwise_kernel/gpu_kernel_impl_nocast",
+     "after": "eager:Memcpy DtoH ",
+     "next_launched_by": "cudaMemcpyAsync",
+     "count_per_step": 0.58,
+     "ms_per_step": 0.004,
+     "us_mean": 7.0,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "draft:aten:elementwise_kernel/gpu_kernel_impl_nocast",
+     "after": "eager:aten:index_elementwise_kernel/gpu_index_kernel",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 0.72,
+     "ms_per_step": 0.003,
+     "us_mean": 3.7,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:aten:index_elementwise_kernel/gpu_index_kernel",
+     "after": "eager:aten:vectorized_elementwise_kernel/FillFunctor",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 0.84,
+     "ms_per_step": 0.003,
+     "us_mean": 3.4,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:aten:indexSelectSmallIndex",
+     "after": "eager:Memcpy DtoD ",
+     "next_launched_by": "cudaMemcpyAsync",
+     "count_per_step": 0.83,
+     "ms_per_step": 0.003,
+     "us_mean": 3.6,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:Memcpy DtoD ",
+     "after": "eager:_ring_slot_mapping_kernel",
+     "next_launched_by": "cuLaunchKernelEx",
+     "count_per_step": 0.83,
+     "ms_per_step": 0.003,
+     "us_mean": 3.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:Memcpy DtoD ",
+     "after": "eager:aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 0.82,
+     "ms_per_step": 0.003,
+     "us_mean": 3.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+     "after": "eager:Memcpy DtoD ",
+     "next_launched_by": "cudaMemcpyAsync",
+     "count_per_step": 0.82,
+     "ms_per_step": 0.003,
+     "us_mean": 3.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "target:memcpy32_post",
+     "after": "eager:aten:vectorized_gather_kernel",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 0.55,
+     "ms_per_step": 0.002,
+     "us_mean": 3.9,
+     "host_bound_frac": 0.0
+    }
+   ],
+   "glue_chains": [
+    {
+     "after": "nccl_allreduce",
+     "before": "<end>",
+     "kernels": [
+      "Memcpy DtoD ",
+      "_gather_lookback_kernel",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "_hash_ids_kernel",
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast",
+      "Memcpy DtoH ",
+      "Memcpy HtoD ",
+      "Memcpy HtoD "
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.035,
+     "span_ms_per_step": 10.99,
+     "exposed_ms_per_step": 11.12,
+     "launches_per_step": 13.0
+    },
+    {
+     "after": "indexer_wq_b",
+     "before": "sparse_mla",
+     "kernels": [
+      "kernel_cutlass_kernel_vllmmodelsdeepseek_v4nvidi",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "deep_gemm::sm120_fp8_paged_mqa_logits",
+      "_candidate_flags_kernel",
+      "_mask_candidates_kernel",
+      "vllm::topKPerRowDecode",
+      "vllm::topKPerRowDecode",
+      "_compute_global_topk_indices_and_lens_kernel"
+     ],
+     "variants": 3,
+     "top_variant_share": 0.5,
+     "count_per_step": 8.0,
+     "kernel_ms_per_step": 1.029,
+     "span_ms_per_step": 1.071,
+     "exposed_ms_per_step": 1.079,
+     "launches_per_step": 80.0
+    },
+    {
+     "after": "bf16_gemm_grid8x2x2",
+     "before": "nccl_allreduce",
+     "kernels": [
+      "aten:_scatter_gather_elementwise_kernel/_cuda_scatter_gather_internal_kernel",
+      "aten:reduce_kernel/ReduceOp",
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast",
+      "aten:index_elementwise_kernel/gpu_index_kernel",
+      "aten:index_elementwise_kernel/gpu_index_kernel",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "Memcpy HtoD ",
+      "Memcpy HtoD ",
+      "Memcpy HtoD ",
+      "Memcpy DtoH ",
+      "Memcpy DtoH ",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "_expand_idx_mapping_kernel",
+      "_prepare_pos_seq_lens_kernel",
+      "Memcpy DtoH ",
+      "Memcpy DtoH ",
+      "_combine_sampled_and_draft_tokens_kernel",
+      "Memcpy DtoH ",
+      "_gather_block_tables_kernel",
+      "Memcpy DtoH ",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "Memcpy DtoH ",
+      "_compute_slot_mappings_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/launch_clamp_scalar",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "Kernel",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "Kernel",
+      "aten:vectorized_elementwise_kernel/BUnaryFunctor",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/CUDAFunctorOnSelf_add",
+      "aten:vectorized_elementwise_kernel/CUDAFunctorOnSelf_add",
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast",
+      "aten:vectorized_elementwise_kernel/launch_clamp_scalar",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/BUnaryFunctor",
+      "deep_gemm::sched::sm120_paged_mqa_logits_metadat",
+      "Memcpy DtoD ",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "_ring_slot_mapping_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/CUDAFunctorOnSelf_add",
+      "aten:vectorized_elementwise_kernel/CUDAFunctorOnSelf_add",
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast",
+      "aten:vectorized_elementwise_kernel/launch_clamp_scalar",
+      "Memcpy DtoD ",
+      "deep_gemm::sched::sm120_paged_mqa_logits_metadat",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/masked_fill_kernel",
+      "vllm::vocab_embedding::vocab_parallel_embedding_"
+     ],
+     "variants": 37,
+     "top_variant_share": 0.11,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.412,
+     "span_ms_per_step": 1.071,
+     "exposed_ms_per_step": 1.075,
+     "launches_per_step": 258.2
+    },
+    {
+     "after": "draft_ctx_kv",
+     "before": "nccl_allreduce",
+     "kernels": [
+      "vllm::rms_norm_kernel",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "vllm::deepseek_v4_fused_ops::fusedDeepseekV4QNor",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "Kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "Kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "Kernel",
+      "vllm::vocab_embedding::vocab_parallel_embedding_"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.07,
+     "span_ms_per_step": 0.175,
+     "exposed_ms_per_step": 0.579,
+     "launches_per_step": 40.0
+    },
+    {
+     "after": "routed_moe_p2b",
+     "before": "nccl_allreduce",
+     "kernels": [
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/bfloat16_copy_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/CUDAFunctor_add"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 40.0,
+     "kernel_ms_per_step": 0.194,
+     "span_ms_per_step": 0.236,
+     "exposed_ms_per_step": 0.43,
+     "launches_per_step": 120.0
+    },
+    {
+     "after": "nccl_allreduce",
+     "before": "hc_prenorm",
+     "kernels": [
+      "mhc_post_tilelang_kernel"
+     ],
+     "variants": 3,
+     "top_variant_share": 0.95,
+     "count_per_step": 83.0,
+     "kernel_ms_per_step": 0.418,
+     "span_ms_per_step": 0.42,
+     "exposed_ms_per_step": 0.386,
+     "launches_per_step": 89.0
+    },
+    {
+     "after": "hc_prenorm",
+     "before": "qkv_a",
+     "kernels": [
+      "mhc_pre_big_fuse_with_norm_tilelang_kernel",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 41.96,
+     "kernel_ms_per_step": 0.384,
+     "span_ms_per_step": 0.356,
+     "exposed_ms_per_step": 0.377,
+     "launches_per_step": 83.9
+    },
+    {
+     "after": "hc_prenorm",
+     "before": "router_gate",
+     "kernels": [
+      "mhc_pre_big_fuse_with_norm_tilelang_kernel"
+     ],
+     "variants": 2,
+     "top_variant_share": 0.97,
+     "count_per_step": 40.0,
+     "kernel_ms_per_step": 0.223,
+     "span_ms_per_step": 0.222,
+     "exposed_ms_per_step": 0.261,
+     "launches_per_step": 41.0
+    },
+    {
+     "after": "shared_down",
+     "before": "routed_moe_p2b",
+     "kernels": [
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "aten:vectorized_elementwise_kernel/float16_copy_kernel_cuda",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/FillFunctor"
+     ],
+     "variants": 13,
+     "top_variant_share": 0.45,
+     "count_per_step": 39.96,
+     "kernel_ms_per_step": 1.224,
+     "span_ms_per_step": 1.422,
+     "exposed_ms_per_step": 0.246,
+     "launches_per_step": 269.9
+    },
+    {
+     "after": "wq_b",
+     "before": "sparse_mla",
+     "kernels": [
+      "vllm::deepseek_v4_fused_ops::fusedDeepseekV4QNor",
+      "_compute_global_topk_indices_and_lens_kernel"
+     ],
+     "variants": 2,
+     "top_variant_share": 0.86,
+     "count_per_step": 35.0,
+     "kernel_ms_per_step": 0.177,
+     "span_ms_per_step": 0.192,
+     "exposed_ms_per_step": 0.212,
+     "launches_per_step": 65.0
+    },
+    {
+     "after": "router_gate_splitk_reduce",
+     "before": "shared_down",
+     "kernels": [
+      "_dsv4_topk_kernel",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "aten:vectorized_elementwise_kernel/where_kernel_impl",
+      "vllm::act_and_mul_kernel",
+      "aten:vectorized_elementwise_kernel/launch_clamp_scalar",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel"
+     ],
+     "variants": 59,
+     "top_variant_share": 0.23,
+     "count_per_step": 27.48,
+     "kernel_ms_per_step": 1.447,
+     "span_ms_per_step": 1.639,
+     "exposed_ms_per_step": 0.144,
+     "launches_per_step": 326.2
+    },
+    {
+     "after": "nccl_allgather",
+     "before": "main_proj",
+     "kernels": [
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast",
+      "aten:index_elementwise_kernel/gpu_index_kernel",
+      "aten:index_elementwise_kernel/gpu_index_kernel",
+      "aten:vectorized_elementwise_kernel/CUDAFunctorOnSelf_add",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "_bias_kernel",
+      "_temperature_kernel",
+      "_compute_local_logits_stats_kernel",
+      "_rejection_kernel",
+      "_resample_kernel",
+      "_insert_resampled_kernel",
+      "_get_num_sampled_and_rejected_kernel",
+      "_post_update_kernel",
+      "Memcpy DtoH ",
+      "aten:CatArrayBatchedCopy_vectorized/OpaqueType",
+      "Memcpy DtoH ",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz"
+     ],
+     "variants": 5,
+     "top_variant_share": 0.45,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.096,
+     "span_ms_per_step": 0.12,
+     "exposed_ms_per_step": 0.121,
+     "launches_per_step": 16.7
+    },
+    {
+     "after": "wo_a",
+     "before": "wo_b",
+     "kernels": [
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 43.0,
+     "kernel_ms_per_step": 0.082,
+     "span_ms_per_step": 0.082,
+     "exposed_ms_per_step": 0.102,
+     "launches_per_step": 43.0
+    },
+    {
+     "after": "nccl_allgather",
+     "before": "bf16_gemm_grid8x2x2",
+     "kernels": [
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast",
+      "aten:mbtopk",
+      "memset32",
+      "Memset ",
+      "aten:mbtopk",
+      "at::native::mbtopk::computeDigitCumSum",
+      "aten:mbtopk",
+      "aten:mbtopk",
+      "at::native::mbtopk::computeDigitCumSum",
+      "aten:mbtopk",
+      "aten:mbtopk",
+      "at_cuda_detail::cub::detail::scan_by_key::Device",
+      "at_cuda_detail::cub::detail::scan_by_key::Device",
+      "at_cuda_detail::cub::detail::scan_by_key::Device",
+      "at_cuda_detail::cub::detail::scan_by_key::Device",
+      "aten:mbtopk",
+      "aten:radixSortKVInPlace",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "aten:index_elementwise_kernel/gpu_index_kernel",
+      "aten:indexSelectSmallIndex",
+      "aten:index_elementwise_kernel/gpu_index_kernel"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.084,
+     "span_ms_per_step": 0.1,
+     "exposed_ms_per_step": 0.101,
+     "launches_per_step": 21.0
+    },
+    {
+     "after": "sparse_mla",
+     "before": "wo_a",
+     "kernels": [
+      "_fused_inv_rope_fp8_quant_per_head"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 43.0,
+     "kernel_ms_per_step": 0.088,
+     "span_ms_per_step": 0.088,
+     "exposed_ms_per_step": 0.078,
+     "launches_per_step": 43.0
+    },
+    {
+     "after": "bf16_gemm_grid8x2x2",
+     "before": "bf16_gemm_grid8x2x2",
+     "kernels": [
+      "aten:_scatter_gather_elementwise_kernel/_cuda_scatter_gather_internal_kernel",
+      "aten:reduce_kernel/ReduceOp",
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast",
+      "aten:indexSelectSmallIndex",
+      "aten:index_elementwise_kernel/gpu_index_kernel"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 2.0,
+     "kernel_ms_per_step": 0.072,
+     "span_ms_per_step": 0.076,
+     "exposed_ms_per_step": 0.078,
+     "launches_per_step": 10.0
+    },
+    {
+     "after": "shared_gate_up",
+     "before": "shared_down",
+     "kernels": [
+      "_dsv4_topk_kernel",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "aten:vectorized_elementwise_kernel/where_kernel_impl",
+      "aten:vectorized_elementwise_kernel/launch_clamp_scalar",
+      "vllm::act_and_mul_kernel",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel"
+     ],
+     "variants": 45,
+     "top_variant_share": 0.28,
+     "count_per_step": 13.78,
+     "kernel_ms_per_step": 0.713,
+     "span_ms_per_step": 0.86,
+     "exposed_ms_per_step": 0.072,
+     "launches_per_step": 175.0
+    },
+    {
+     "after": "qkv_a",
+     "before": "wq_b",
+     "kernels": [
+      "_q_kv_norm_quant_kernel"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 35.0,
+     "kernel_ms_per_step": 0.092,
+     "span_ms_per_step": 0.092,
+     "exposed_ms_per_step": 0.062,
+     "launches_per_step": 35.0
+    },
+    {
+     "after": "main_proj",
+     "before": "draft_ctx_kv",
+     "kernels": [
+      "vllm::rms_norm_kernel",
+      "Memcpy DtoD ",
+      "_prepare_dflash_inputs_kernel",
+      "_prepare_dflash_inputs_kernel",
+      "_prepare_dflash_inputs_kernel",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz"
+     ],
+     "variants": 2,
+     "top_variant_share": 0.74,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.049,
+     "span_ms_per_step": 0.163,
+     "exposed_ms_per_step": 0.06,
+     "launches_per_step": 6.3
+    },
+    {
+     "after": "nccl_allreduce",
+     "before": "lm_head",
+     "kernels": [
+      "mhc_post_tilelang_kernel",
+      "memcpy32_post",
+      "_hc_head_reduce_store_kernel",
+      "vllm::rms_norm_kernel",
+      "memcpy32_post",
+      "memcpy32_post",
+      "memcpy32_post",
+      "memcpy32_post",
+      "aten:vectorized_gather_kernel",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz"
+     ],
+     "variants": 2,
+     "top_variant_share": 0.5,
+     "count_per_step": 2.0,
+     "kernel_ms_per_step": 0.044,
+     "span_ms_per_step": 0.052,
+     "exposed_ms_per_step": 0.05,
+     "launches_per_step": 15.0
+    },
+    {
+     "after": "draft_moe_down",
+     "before": "nccl_allreduce",
+     "kernels": [
+      "_fwd_kernel_ep_gather",
+      "aten:vectorized_elementwise_kernel/CUDAFunctor_add"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 3.0,
+     "kernel_ms_per_step": 0.014,
+     "span_ms_per_step": 0.016,
+     "exposed_ms_per_step": 0.034,
+     "launches_per_step": 6.0
+    },
+    {
+     "after": "draft_ctx_kv",
+     "before": "draft_ctx_kv",
+     "kernels": [
+      "vllm::rms_norm_kernel",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "vllm::deepseek_v4_fused_ops::fusedDeepseekV4QNor",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 2.0,
+     "kernel_ms_per_step": 0.026,
+     "span_ms_per_step": 0.029,
+     "exposed_ms_per_step": 0.033,
+     "launches_per_step": 8.0
+    },
+    {
+     "after": "shared_down",
+     "before": "draft_moe_down",
+     "kernels": [
+      "_silu_mul_quant_fp8_packed_kernel"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 1.74,
+     "kernel_ms_per_step": 0.033,
+     "span_ms_per_step": 0.033,
+     "exposed_ms_per_step": 0.026,
+     "launches_per_step": 1.7
+    },
+    {
+     "after": "<start>",
+     "before": "hc_prenorm",
+     "kernels": [
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "aten:vectorized_elementwise_kernel/bitwise_not_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "_hash_ids_kernel",
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.017,
+     "span_ms_per_step": 0.022,
+     "exposed_ms_per_step": 0.022,
+     "launches_per_step": 9.0
+    },
+    {
+     "after": "draft_moe_gate_up",
+     "before": "draft_moe_down",
+     "kernels": [
+      "_silu_mul_quant_fp8_packed_kernel"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 1.26,
+     "kernel_ms_per_step": 0.021,
+     "span_ms_per_step": 0.021,
+     "exposed_ms_per_step": 0.022,
+     "launches_per_step": 1.3
+    }
+   ],
+   "glue_total": {
+    "span_ms_per_step": 20.434,
+    "kernel_ms_per_step": 7.759,
+    "exposed_ms_per_step": 16.917,
+    "launches_per_step": 1879.2
+   },
+   "graph_launch_host_us": {
+    "target": {
+     "median": 2913.77,
+     "p10": 2122.93,
+     "p90": 4553.55,
+     "mean": 3047.01
+    },
+    "draft": {
+     "median": 260.79,
+     "p10": 221.14,
+     "p90": 495.22,
+     "mean": 323.97
+    }
+   }
+  },
+  "620": {
+   "target_graph_id": 620,
+   "steps": 3,
+   "verify_rows_m": 4,
+   "step_wall_ms": {
+    "median": 91.41,
+    "p10": 90.63,
+    "p90": 94.56,
+    "mean": 92.2
+   },
+   "device_busy_ms": 86.944,
+   "device_idle_ms": 5.257,
+   "kernel_sum_ms": 92.114,
+   "phases_ms": {
+    "target_graph_ms": {
+     "median": 75.23,
+     "p10": 73.86,
+     "p90": 76.73,
+     "mean": 75.27
+    },
+    "draft_graph_ms": {
+     "median": 8.16,
+     "p10": 8.09,
+     "p90": 10.25,
+     "mean": 8.83
+    },
+    "eager_after_target_ms": {
+     "median": 3.12,
+     "p10": 2.64,
+     "p90": 3.6,
+     "mean": 3.12
+    },
+    "eager_before_next_target_ms": {
+     "median": 5.01,
+     "p10": 4.46,
+     "p90": 5.46,
+     "mean": 4.98
+    }
+   },
+   "categories": [
+    {
+     "category": "nccl_allreduce",
+     "ms_per_step": 30.9,
+     "launches_per_step": 88.0
+    },
+    {
+     "category": "p2b_moe",
+     "ms_per_step": 21.633,
+     "launches_per_step": 40.0
+    },
+    {
+     "category": "dense_b12x",
+     "ms_per_step": 20.31,
+     "launches_per_step": 231.0
+    },
+    {
+     "category": "woa_einsum",
+     "ms_per_step": 3.551,
+     "launches_per_step": 43.0
+    },
+    {
+     "category": "cutlass_bf16_gemm",
+     "ms_per_step": 2.801,
+     "launches_per_step": 106.0
+    },
+    {
+     "category": "torch_eltwise",
+     "ms_per_step": 2.688,
+     "launches_per_step": 972.0
+    },
+    {
+     "category": "nccl_allgather",
+     "ms_per_step": 2.148,
+     "launches_per_step": 4.0
+    },
+    {
+     "category": "mhc_prenorm_gemm",
+     "ms_per_step": 1.839,
+     "launches_per_step": 86.0
+    },
+    {
+     "category": "sparse_mla",
+     "ms_per_step": 1.19,
+     "launches_per_step": 86.0
+    },
+    {
+     "category": "router_topk",
+     "ms_per_step": 0.935,
+     "launches_per_step": 43.0
+    },
+    {
+     "category": "deepgemm_fp8fp4_other",
+     "ms_per_step": 0.83,
+     "launches_per_step": 6.0
+    },
+    {
+     "category": "triton",
+     "ms_per_step": 0.686,
+     "launches_per_step": 127.0
+    },
+    {
+     "category": "act_quant",
+     "ms_per_step": 0.538,
+     "launches_per_step": 226.0
+    },
+    {
+     "category": "mhc_pre_fuse",
+     "ms_per_step": 0.511,
+     "launches_per_step": 86.0
+    },
+    {
+     "category": "mhc_post",
+     "ms_per_step": 0.387,
+     "launches_per_step": 89.0
+    },
+    {
+     "category": "other",
+     "ms_per_step": 0.372,
+     "launches_per_step": 178.0
+    },
+    {
+     "category": "indexer",
+     "ms_per_step": 0.316,
+     "launches_per_step": 64.0
+    },
+    {
+     "category": "rope_kv_cache",
+     "ms_per_step": 0.276,
+     "launches_per_step": 9.0
+    },
+    {
+     "category": "sampler_argmax",
+     "ms_per_step": 0.096,
+     "launches_per_step": 9.0
+    },
+    {
+     "category": "memcpy",
+     "ms_per_step": 0.082,
+     "launches_per_step": 63.0
+    },
+    {
+     "category": "norm",
+     "ms_per_step": 0.018,
+     "launches_per_step": 6.0
+    },
+    {
+     "category": "woa_pack",
+     "ms_per_step": 0.005,
+     "launches_per_step": 3.0
+    },
+    {
+     "category": "memset",
+     "ms_per_step": 0.003,
+     "launches_per_step": 4.0
+    }
+   ],
+   "gemm_roles": [
+    {
+     "role": "routed_moe_p2b",
+     "calls_per_step": 40.0,
+     "us": {
+      "median": 532.16,
+      "p10": 524.54,
+      "p90": 545.7,
+      "mean": 540.82
+     },
+     "ms_per_step": 21.633,
+     "pairs": 24,
+     "weight_MB": 106.17,
+     "GBps_at_median": 199.5,
+     "pct_of_peak": 79.8,
+     "roofline_us": 424.7,
+     "recoverable_ms_per_step": 4.645
+    },
+    {
+     "role": "wq_b",
+     "calls_per_step": 43.0,
+     "us": {
+      "median": 111.2,
+      "p10": 105.5,
+      "p90": 114.02,
+      "mean": 110.43
+     },
+     "ms_per_step": 4.748,
+     "weight_MB": 21.63,
+     "GBps_at_median": 194.5,
+     "pct_of_peak": 77.8,
+     "roofline_us": 86.5,
+     "recoverable_ms_per_step": 1.029
+    },
+    {
+     "role": "wo_b",
+     "calls_per_step": 43.0,
+     "us": {
+      "median": 102.24,
+      "p10": 98.37,
+      "p90": 108.42,
+      "mean": 103.85
+     },
+     "ms_per_step": 4.466,
+     "weight_MB": 21.63,
+     "GBps_at_median": 211.5,
+     "pct_of_peak": 84.6,
+     "roofline_us": 86.5,
+     "recoverable_ms_per_step": 0.746
+    },
+    {
+     "role": "wo_a",
+     "calls_per_step": 43.0,
+     "us": {
+      "median": 78.88,
+      "p10": 74.78,
+      "p90": 97.92,
+      "mean": 82.57
+     },
+     "ms_per_step": 3.551,
+     "weight_MB": 17.3,
+     "GBps_at_median": 219.3,
+     "pct_of_peak": 87.7,
+     "roofline_us": 69.2,
+     "recoverable_ms_per_step": 0.575
+    },
+    {
+     "role": "lm_head",
+     "calls_per_step": 2.0,
+     "us": {
+      "median": 1506.48,
+      "p10": 1503.11,
+      "p90": 1509.54,
+      "mean": 1506.1
+     },
+     "ms_per_step": 3.012,
+     "weight_MB": 341.3,
+     "GBps_at_median": 226.6,
+     "pct_of_peak": 90.6,
+     "roofline_us": 1365.2,
+     "recoverable_ms_per_step": 0.282
+    },
+    {
+     "role": "shared_gate_up",
+     "calls_per_step": 43.0,
+     "us": {
+      "median": 57.31,
+      "p10": 54.59,
+      "p90": 60.96,
+      "mean": 57.81
+     },
+     "ms_per_step": 2.486,
+     "weight_MB": 12.17,
+     "GBps_at_median": 212.3,
+     "pct_of_peak": 84.9,
+     "roofline_us": 48.7,
+     "recoverable_ms_per_step": 0.392
+    },
+    {
+     "role": "qkv_a",
+     "calls_per_step": 43.0,
+     "us": {
+      "median": 46.4,
+      "p10": 43.58,
+      "p90": 55.04,
+      "mean": 48.89
+     },
+     "ms_per_step": 2.102,
+     "weight_MB": 9.46,
+     "GBps_at_median": 203.9,
+     "pct_of_peak": 81.6,
+     "roofline_us": 37.8,
+     "recoverable_ms_per_step": 0.477
+    },
+    {
+     "role": "hc_prenorm",
+     "calls_per_step": 86.0,
+     "us": {
+      "median": 20.8,
+      "p10": 18.85,
+      "p90": 23.78,
+      "mean": 21.39
+     },
+     "ms_per_step": 1.839,
+     "weight_MB": 1.97,
+     "GBps_at_median": 94.5,
+     "pct_of_peak": 37.8,
+     "roofline_us": 7.9,
+     "recoverable_ms_per_step": 1.16
+    },
+    {
+     "role": "engram_wkv",
+     "calls_per_step": 2.0,
+     "us": {
+      "median": 729.19,
+      "p10": 717.51,
+      "p90": 747.87,
+      "mean": 731.17
+     },
+     "ms_per_step": 1.462,
+     "weight_MB": 162.2,
+     "GBps_at_median": 222.4,
+     "pct_of_peak": 89.0,
+     "roofline_us": 648.8,
+     "recoverable_ms_per_step": 0.165
+    },
+    {
+     "role": "shared_down",
+     "calls_per_step": 43.0,
+     "us": {
+      "median": 29.89,
+      "p10": 28.67,
+      "p90": 31.14,
+      "mean": 30.09
+     },
+     "ms_per_step": 1.294,
+     "weight_MB": 6.08,
+     "GBps_at_median": 203.5,
+     "pct_of_peak": 81.4,
+     "roofline_us": 24.3,
+     "recoverable_ms_per_step": 0.249
+    },
+    {
+     "role": "router_gate",
+     "calls_per_step": 40.0,
+     "us": {
+      "median": 19.58,
+      "p10": 18.53,
+      "p90": 20.61,
+      "mean": 20.65
+     },
+     "ms_per_step": 0.826,
+     "weight_MB": 3.93,
+     "GBps_at_median": 200.8,
+     "pct_of_peak": 80.3,
+     "roofline_us": 15.7,
+     "recoverable_ms_per_step": 0.198
+    },
+    {
+     "role": "bf16_gemm_grid2x1x1",
+     "calls_per_step": 8.0,
+     "us": {
+      "median": 78.14,
+      "p10": 64.19,
+      "p90": 114.69,
+      "mean": 85.01
+     },
+     "ms_per_step": 0.68
+    },
+    {
+     "role": "router_gate_splitk_reduce",
+     "calls_per_step": 44.0,
+     "us": {
+      "median": 13.34,
+      "p10": 1.47,
+      "p90": 28.29,
+      "mean": 13.79
+     },
+     "ms_per_step": 0.607
+    },
+    {
+     "role": "draft_moe_gate_up",
+     "calls_per_step": 3.0,
+     "us": {
+      "median": 189.41,
+      "p10": 157.22,
+      "p90": 221.79,
+      "mean": 187.98
+     },
+     "ms_per_step": 0.564
+    },
+    {
+     "role": "main_proj",
+     "calls_per_step": 1.0,
+     "us": {
+      "median": 382.24,
+      "p10": 379.3,
+      "p90": 384.77,
+      "mean": 382.1
+     },
+     "ms_per_step": 0.382,
+     "weight_MB": 81.1,
+     "GBps_at_median": 212.2,
+     "pct_of_peak": 84.9,
+     "roofline_us": 324.4,
+     "recoverable_ms_per_step": 0.058
+    },
+    {
+     "role": "draft_router_gate",
+     "calls_per_step": 3.0,
+     "us": {
+      "median": 108.03,
+      "p10": 102.24,
+      "p90": 109.22,
+      "mean": 106.44
+     },
+     "ms_per_step": 0.319,
+     "weight_MB": 1.31,
+     "GBps_at_median": 12.1,
+     "pct_of_peak": 4.8,
+     "roofline_us": 5.2,
+     "recoverable_ms_per_step": 0.304
+    },
+    {
+     "role": "bf16_gemm_grid8x8x16",
+     "calls_per_step": 3.0,
+     "us": {
+      "median": 93.54,
+      "p10": 74.94,
+      "p90": 98.27,
+      "mean": 90.17
+     },
+     "ms_per_step": 0.271
+    },
+    {
+     "role": "draft_moe_down",
+     "calls_per_step": 3.0,
+     "us": {
+      "median": 88.35,
+      "p10": 76.55,
+      "p90": 104.96,
+      "mean": 88.54
+     },
+     "ms_per_step": 0.266
+    },
+    {
+     "role": "indexer_wq_b",
+     "calls_per_step": 8.0,
+     "us": {
+      "median": 26.98,
+      "p10": 25.18,
+      "p90": 28.42,
+      "mean": 27.39
+     },
+     "ms_per_step": 0.219,
+     "weight_MB": 5.41,
+     "GBps_at_median": 200.4,
+     "pct_of_peak": 80.2,
+     "roofline_us": 21.6,
+     "recoverable_ms_per_step": 0.046
+    },
+    {
+     "role": "draft_ctx_kv",
+     "calls_per_step": 3.0,
+     "us": {
+      "median": 45.92,
+      "p10": 45.57,
+      "p90": 47.39,
+      "mean": 46.23
+     },
+     "ms_per_step": 0.139,
+     "weight_MB": 9.46,
+     "GBps_at_median": 206.0,
+     "pct_of_peak": 82.4,
+     "roofline_us": 37.8,
+     "recoverable_ms_per_step": 0.025
+    },
+    {
+     "role": "bf16_gemm_grid8x4x16",
+     "calls_per_step": 1.0,
+     "us": {
+      "median": 71.78,
+      "p10": 69.6,
+      "p90": 72.48,
+      "mean": 71.29
+     },
+     "ms_per_step": 0.071
+    },
+    {
+     "role": "bf16_gemm_grid8x1x1",
+     "calls_per_step": 4.0,
+     "us": {
+      "median": 5.02,
+      "p10": 4.9,
+      "p90": 5.15,
+      "mean": 5.02
+     },
+     "ms_per_step": 0.02
+    },
+    {
+     "role": "bf16_gemm_grid64x1x1",
+     "calls_per_step": 3.0,
+     "us": {
+      "median": 2.24,
+      "p10": 2.24,
+      "p90": 2.59,
+      "mean": 2.36
+     },
+     "ms_per_step": 0.007
+    }
+   ],
+   "nccl": [
+    {
+     "op": "nccl_allreduce",
+     "where": "target",
+     "grid": [
+      5,
+      1,
+      1
+     ],
+     "calls_per_step": 80.0,
+     "us": {
+      "median": 63.81,
+      "p10": 27.26,
+      "p90": 1205.63,
+      "mean": 341.52
+     },
+     "ms_per_step": 27.322
+    },
+    {
+     "op": "nccl_allreduce",
+     "where": "draft",
+     "grid": [
+      3,
+      1,
+      1
+     ],
+     "calls_per_step": 7.0,
+     "us": {
+      "median": 73.09,
+      "p10": 38.14,
+      "p90": 1300.8,
+      "mean": 380.22
+     },
+     "ms_per_step": 2.662
+    },
+    {
+     "op": "nccl_allgather",
+     "where": "draft",
+     "grid": [
+      8,
+      1,
+      1
+     ],
+     "calls_per_step": 1.0,
+     "us": {
+      "median": 1488.93,
+      "p10": 1025.44,
+      "p90": 1607.27,
+      "mean": 1373.88
+     },
+     "ms_per_step": 1.374
+    },
+    {
+     "op": "nccl_allreduce",
+     "where": "eager",
+     "grid": [
+      5,
+      1,
+      1
+     ],
+     "calls_per_step": 1.0,
+     "us": {
+      "median": 1084.9,
+      "p10": 402.85,
+      "p90": 1260.99,
+      "mean": 916.25
+     },
+     "ms_per_step": 0.916
+    },
+    {
+     "op": "nccl_allgather",
+     "where": "eager",
+     "grid": [
+      8,
+      1,
+      1
+     ],
+     "calls_per_step": 1.0,
+     "us": {
+      "median": 718.69,
+      "p10": 255.1,
+      "p90": 1211.3,
+      "mean": 728.36
+     },
+     "ms_per_step": 0.728
+    },
+    {
+     "op": "nccl_allgather",
+     "where": "target",
+     "grid": [
+      6,
+      1,
+      1
+     ],
+     "calls_per_step": 2.0,
+     "us": {
+      "median": 21.98,
+      "p10": 19.9,
+      "p90": 30.56,
+      "mean": 22.98
+     },
+     "ms_per_step": 0.046
+    }
+   ],
+   "idle_gaps": [
+    {
+     "before": "eager:Memcpy DtoH ",
+     "after": "eager:Memcpy HtoD ",
+     "next_launched_by": "cudaMemcpyAsync",
+     "count_per_step": 1.0,
+     "ms_per_step": 2.882,
+     "us_mean": 2882.3,
+     "host_bound_frac": 1.0,
+     "host_frames_top": [
+      [
+       "torch/utils/_contextlib.py(120): decorate_context",
+       300.0
+      ],
+      [
+       "vllm/v1/executor/multiproc_executor.py(1035): _execute_worker_rpc",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/worker_base.py(370): execute_model",
+       100.0
+      ],
+      [
+       "prefill_empty_cache.py(63): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu_worker.py(1114): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu/model_runner.py(1533): execute_model",
+       100.0
+      ],
+      [
+       "vllm/models/deepseek_v4_1/nvidia/model_state.py(85): prepare_inputs",
+       100.0
+      ],
+      [
+       "vllm/models/deepseek_v4_1/common/engram.py(1747): stage",
+       100.0
+      ],
+      [
+       "concurrent/futures/_base.py(463): exception",
+       95.2
+      ],
+      [
+       "threading.py(323): wait",
+       94.9
+      ],
+      [
+       "<built-in method acquire of _thread.lock object at 0xe03e5c11c480>",
+       94.3
+      ],
+      [
+       "<built-in method copy_ of Tensor object at 0xe03dbcff6b20>",
+       1.3
+      ],
+      [
+       "aten::copy_",
+       1.2
+      ],
+      [
+       "concurrent/futures/thread.py(164): submit",
+       0.5
+      ],
+      [
+       "torch/cuda/streams.py(245): synchronize",
+       0.1
+      ],
+      [
+       "<built-in method synchronize of Event object at 0xe03dfc2ebd90>",
+       0.1
+      ]
+     ]
+    },
+    {
+     "before": "draft:vllm::vocab_embedding::vocab_parallel_embedding_",
+     "after": "draft:ncclDevKernel_AllReduce_Sum_bf16_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.527,
+     "us_mean": 527.2,
+     "host_bound_frac": 0.0,
+     "host_frames_top": [
+      [
+       "torch/utils/_contextlib.py(120): decorate_context",
+       300.0
+      ],
+      [
+       "vllm/v1/executor/multiproc_executor.py(1035): _execute_worker_rpc",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/worker_base.py(370): execute_model",
+       100.0
+      ],
+      [
+       "prefill_empty_cache.py(63): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu_worker.py(1114): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu/model_runner.py(1533): execute_model",
+       100.0
+      ],
+      [
+       "vllm/models/deepseek_v4_1/nvidia/model_state.py(85): prepare_inputs",
+       100.0
+      ],
+      [
+       "vllm/models/deepseek_v4_1/common/engram.py(1747): stage",
+       100.0
+      ],
+      [
+       "torch/cuda/streams.py(245): synchronize",
+       100.0
+      ],
+      [
+       "<built-in method synchronize of Event object at 0xe03dfc2ebd90>",
+       100.0
+      ]
+     ]
+    },
+    {
+     "before": "target:wo_b",
+     "after": "target:ncclDevKernel_AllReduce_Sum_bf16_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 33.33,
+     "ms_per_step": 0.141,
+     "us_mean": 4.2,
+     "host_bound_frac": 0.02
+    },
+    {
+     "before": "target:aten:vectorized_elementwise_kernel/CUDAFunctor_add",
+     "after": "target:ncclDevKernel_AllReduce_Sum_bf16_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 32.67,
+     "ms_per_step": 0.138,
+     "us_mean": 4.2,
+     "host_bound_frac": 0.01
+    },
+    {
+     "before": "eager:Memcpy HtoD ",
+     "after": "-:<end>",
+     "next_launched_by": "?",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.084,
+     "us_mean": 83.7,
+     "host_bound_frac": 0.0,
+     "host_frames_top": [
+      [
+       "torch/utils/_contextlib.py(120): decorate_context",
+       219.4
+      ],
+      [
+       "vllm/v1/executor/multiproc_executor.py(1035): _execute_worker_rpc",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/worker_base.py(370): execute_model",
+       100.0
+      ],
+      [
+       "prefill_empty_cache.py(63): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu_worker.py(1114): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu/model_runner.py(1533): execute_model",
+       100.0
+      ],
+      [
+       "vllm/v1/worker/gpu/cudagraph_utils.py(639): run_fullgraph",
+       60.4
+      ],
+      [
+       "vllm/v1/worker/gpu/cudagraph_utils.py(449): run_fullgraph",
+       58.8
+      ],
+      [
+       "torch/cuda/graphs.py(182): replay",
+       51.6
+      ],
+      [
+       "<built-in method replay of pybind11_builtins.pybind11_detail_function_record_v1_system_lib",
+       50.2
+      ],
+      [
+       "vllm/models/deepseek_v4_1/nvidia/model_state.py(85): prepare_inputs",
+       20.4
+      ]
+     ]
+    },
+    {
+     "before": "eager:at_cuda_detail::cub::detail::scan::DeviceScanIni",
+     "after": "eager:at_cuda_detail::cub::detail::scan::DeviceScanKer",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 19.33,
+     "ms_per_step": 0.062,
+     "us_mean": 3.2,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:",
+     "after": "eager:aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 18.0,
+     "ms_per_step": 0.057,
+     "us_mean": 3.2,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+     "after": "eager:",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 14.0,
+     "ms_per_step": 0.043,
+     "us_mean": 3.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:Memcpy DtoD ",
+     "after": "eager:aten:vectorized_elementwise_kernel/FillFunctor",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 9.33,
+     "ms_per_step": 0.029,
+     "us_mean": 3.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:Memcpy DtoD ",
+     "after": "eager:aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 6.67,
+     "ms_per_step": 0.021,
+     "us_mean": 3.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "draft:wo_b",
+     "after": "draft:ncclDevKernel_AllReduce_Sum_bf16_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 3.0,
+     "ms_per_step": 0.021,
+     "us_mean": 7.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:aten:vectorized_elementwise_kernel/FillFunctor",
+     "after": "eager:_compute_swa_indices_and_lens_kernel",
+     "next_launched_by": "cuLaunchKernelEx",
+     "count_per_step": 6.33,
+     "ms_per_step": 0.02,
+     "us_mean": 3.2,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:Memcpy HtoD ",
+     "after": "eager:Memcpy HtoD ",
+     "next_launched_by": "cudaMemcpyAsync",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.018,
+     "us_mean": 18.1,
+     "host_bound_frac": 1.0
+    },
+    {
+     "before": "draft:aten:vectorized_elementwise_kernel/CUDAFunctor_add",
+     "after": "draft:ncclDevKernel_AllReduce_Sum_bf16_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 3.0,
+     "ms_per_step": 0.016,
+     "us_mean": 5.4,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "target:mhc_post_tilelang_kernel",
+     "after": "target:ncclDevKernel_AllGather_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 2.0,
+     "ms_per_step": 0.01,
+     "us_mean": 5.0,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:vllm::rms_norm_kernel",
+     "after": "eager:aten:vectorized_elementwise_kernel/FillFunctor",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 2.0,
+     "ms_per_step": 0.007,
+     "us_mean": 3.3,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+     "after": "eager:Memcpy DtoD ",
+     "next_launched_by": "cudaMemcpyAsync",
+     "count_per_step": 2.0,
+     "ms_per_step": 0.006,
+     "us_mean": 3.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "draft:Memset ",
+     "after": "draft:aten:mbtopk",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.005,
+     "us_mean": 4.9,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "target:Memset ",
+     "after": "target:aten:mbtopk",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.004,
+     "us_mean": 4.2,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "target:aten:vectorized_elementwise_kernel/bfloat16_copy_kernel_cuda",
+     "after": "target:aten:vectorized_elementwise_kernel/CUDAFunctor_add",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 0.33,
+     "ms_per_step": 0.004,
+     "us_mean": 13.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:Memcpy DtoD ",
+     "after": "eager:aten:unrolled_elementwise_kernel/FillFunctor",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 1.33,
+     "ms_per_step": 0.004,
+     "us_mean": 3.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:aten:unrolled_elementwise_kernel/FillFunctor",
+     "after": "eager:Kernel",
+     "next_launched_by": "cuLaunchKernelEx",
+     "count_per_step": 1.33,
+     "ms_per_step": 0.004,
+     "us_mean": 3.3,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "draft:lm_head",
+     "after": "draft:ncclDevKernel_AllGather_RING_LL",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.004,
+     "us_mean": 4.5,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "draft:memcpy32_post",
+     "after": "eager:aten:index_elementwise_kernel/gpu_index_kernel",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.004,
+     "us_mean": 4.3,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:vllm::vocab_embedding::vocab_parallel_embedding_",
+     "after": "eager:ncclDevKernel_AllReduce_Sum_bf16_RING_LL",
+     "next_launched_by": "cuLaunchKernelEx",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.004,
+     "us_mean": 4.2,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:aten:index_elementwise_kernel/gpu_index_kernel",
+     "after": "eager:aten:vectorized_elementwise_kernel/FillFunctor",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.003,
+     "us_mean": 3.4,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:aten:vectorized_elementwise_kernel/FillFunctor",
+     "after": "eager:Kernel",
+     "next_launched_by": "cuLaunchKernelEx",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.003,
+     "us_mean": 3.3,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "eager:Memcpy DtoD ",
+     "after": "eager:aten:vectorized_elementwise_kernel/masked_fill_kernel",
+     "next_launched_by": "cudaLaunchKernel",
+     "count_per_step": 1.0,
+     "ms_per_step": 0.003,
+     "us_mean": 3.1,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "target:_compute_global_topk_indices_and_lens_kernel",
+     "after": "target:flashinfer::sparse_mla_sm120::sparse_mla_decode_",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 0.67,
+     "ms_per_step": 0.003,
+     "us_mean": 4.6,
+     "host_bound_frac": 0.0
+    },
+    {
+     "before": "target:vllm::act_and_mul_kernel",
+     "after": "target:fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz",
+     "next_launched_by": "cudaGraphLaunch",
+     "count_per_step": 0.33,
+     "ms_per_step": 0.003,
+     "us_mean": 9.8,
+     "host_bound_frac": 0.0
+    }
+   ],
+   "glue_chains": [
+    {
+     "after": "nccl_allreduce",
+     "before": "<end>",
+     "kernels": [
+      "Memcpy DtoD ",
+      "_gather_lookback_kernel",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "_hash_ids_kernel",
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast",
+      "Memcpy DtoH ",
+      "Memcpy HtoD ",
+      "Memcpy HtoD "
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.023,
+     "span_ms_per_step": 2.949,
+     "exposed_ms_per_step": 3.035,
+     "launches_per_step": 13.0
+    },
+    {
+     "after": "bf16_gemm_grid64x1x1",
+     "before": "nccl_allreduce",
+     "kernels": [
+      "aten:_scatter_gather_elementwise_kernel/_cuda_scatter_gather_internal_kernel",
+      "aten:reduce_kernel/ReduceOp",
+      "memcpy32_post",
+      "aten:index_elementwise_kernel/gpu_index_kernel",
+      "aten:index_elementwise_kernel/gpu_index_kernel",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "Memcpy DtoH ",
+      "Memcpy DtoH ",
+      "Memcpy HtoD ",
+      "Memcpy HtoD ",
+      "Memcpy HtoD ",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "_expand_idx_mapping_kernel",
+      "Memcpy DtoH ",
+      "Memcpy DtoH ",
+      "_prepare_pos_seq_lens_kernel",
+      "Memcpy DtoH ",
+      "_combine_sampled_and_draft_tokens_kernel",
+      "Memcpy DtoH ",
+      "_gather_block_tables_kernel",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "Memcpy DtoH ",
+      "_compute_slot_mappings_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_compute_swa_indices_and_lens_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/launch_clamp_scalar",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "Kernel",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "Kernel",
+      "aten:vectorized_elementwise_kernel/BUnaryFunctor",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/CUDAFunctorOnSelf_add",
+      "aten:vectorized_elementwise_kernel/CUDAFunctorOnSelf_add",
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast",
+      "aten:vectorized_elementwise_kernel/launch_clamp_scalar",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/BUnaryFunctor",
+      "deep_gemm::sched::sm120_paged_mqa_logits_metadat",
+      "Memcpy DtoD ",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "_ring_slot_mapping_kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/CUDAFunctorOnSelf_add",
+      "aten:vectorized_elementwise_kernel/CUDAFunctorOnSelf_add",
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast",
+      "aten:vectorized_elementwise_kernel/launch_clamp_scalar",
+      "Memcpy DtoD ",
+      "deep_gemm::sched::sm120_paged_mqa_logits_metadat",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/masked_fill_kernel",
+      "vllm::vocab_embedding::vocab_parallel_embedding_"
+     ],
+     "variants": 3,
+     "top_variant_share": 0.33,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.382,
+     "span_ms_per_step": 1.049,
+     "exposed_ms_per_step": 1.054,
+     "launches_per_step": 258.0
+    },
+    {
+     "after": "indexer_wq_b",
+     "before": "sparse_mla",
+     "kernels": [
+      "kernel_cutlass_kernel_vllmmodelsdeepseek_v4nvidi",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "deep_gemm::sm120_fp8_paged_mqa_logits",
+      "_candidate_flags_kernel",
+      "_mask_candidates_kernel",
+      "vllm::topKPerRowDecode",
+      "vllm::topKPerRowDecode",
+      "_compute_global_topk_indices_and_lens_kernel"
+     ],
+     "variants": 3,
+     "top_variant_share": 0.5,
+     "count_per_step": 8.0,
+     "kernel_ms_per_step": 0.652,
+     "span_ms_per_step": 0.699,
+     "exposed_ms_per_step": 0.709,
+     "launches_per_step": 80.0
+    },
+    {
+     "after": "draft_ctx_kv",
+     "before": "nccl_allreduce",
+     "kernels": [
+      "vllm::rms_norm_kernel",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "vllm::deepseek_v4_fused_ops::fusedDeepseekV4QNor",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:unrolled_elementwise_kernel/FillFunctor",
+      "Kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:unrolled_elementwise_kernel/FillFunctor",
+      "Kernel",
+      "aten:unrolled_elementwise_kernel/CUDAFunctor_add",
+      "",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "at_cuda_detail::cub::detail::scan::DeviceScanIni",
+      "at_cuda_detail::cub::detail::scan::DeviceScanKer",
+      "compute_cuda_kernel",
+      "aten:indexSelectSmallIndex",
+      "Memcpy DtoD ",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "Memcpy DtoD ",
+      "aten:unrolled_elementwise_kernel/FillFunctor",
+      "Kernel",
+      "vllm::vocab_embedding::vocab_parallel_embedding_"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.068,
+     "span_ms_per_step": 0.173,
+     "exposed_ms_per_step": 0.702,
+     "launches_per_step": 40.0
+    },
+    {
+     "after": "routed_moe_p2b",
+     "before": "nccl_allreduce",
+     "kernels": [
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/bfloat16_copy_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/CUDAFunctor_add"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 40.0,
+     "kernel_ms_per_step": 0.185,
+     "span_ms_per_step": 0.232,
+     "exposed_ms_per_step": 0.428,
+     "launches_per_step": 120.0
+    },
+    {
+     "after": "nccl_allreduce",
+     "before": "hc_prenorm",
+     "kernels": [
+      "mhc_post_tilelang_kernel"
+     ],
+     "variants": 3,
+     "top_variant_share": 0.95,
+     "count_per_step": 83.0,
+     "kernel_ms_per_step": 0.392,
+     "span_ms_per_step": 0.394,
+     "exposed_ms_per_step": 0.374,
+     "launches_per_step": 89.0
+    },
+    {
+     "after": "hc_prenorm",
+     "before": "qkv_a",
+     "kernels": [
+      "mhc_pre_big_fuse_with_norm_tilelang_kernel",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 41.67,
+     "kernel_ms_per_step": 0.355,
+     "span_ms_per_step": 0.334,
+     "exposed_ms_per_step": 0.354,
+     "launches_per_step": 83.3
+    },
+    {
+     "after": "shared_down",
+     "before": "routed_moe_p2b",
+     "kernels": [
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "aten:vectorized_elementwise_kernel/float16_copy_kernel_cuda",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/FillFunctor"
+     ],
+     "variants": 7,
+     "top_variant_share": 0.51,
+     "count_per_step": 40.0,
+     "kernel_ms_per_step": 1.197,
+     "span_ms_per_step": 1.394,
+     "exposed_ms_per_step": 0.256,
+     "launches_per_step": 270.0
+    },
+    {
+     "after": "hc_prenorm",
+     "before": "router_gate",
+     "kernels": [
+      "mhc_pre_big_fuse_with_norm_tilelang_kernel"
+     ],
+     "variants": 2,
+     "top_variant_share": 0.97,
+     "count_per_step": 40.0,
+     "kernel_ms_per_step": 0.211,
+     "span_ms_per_step": 0.211,
+     "exposed_ms_per_step": 0.25,
+     "launches_per_step": 41.0
+    },
+    {
+     "after": "wq_b",
+     "before": "sparse_mla",
+     "kernels": [
+      "vllm::deepseek_v4_fused_ops::fusedDeepseekV4QNor",
+      "_compute_global_topk_indices_and_lens_kernel"
+     ],
+     "variants": 2,
+     "top_variant_share": 0.86,
+     "count_per_step": 35.0,
+     "kernel_ms_per_step": 0.172,
+     "span_ms_per_step": 0.191,
+     "exposed_ms_per_step": 0.212,
+     "launches_per_step": 65.0
+    },
+    {
+     "after": "router_gate_splitk_reduce",
+     "before": "shared_down",
+     "kernels": [
+      "_dsv4_topk_kernel",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "aten:vectorized_elementwise_kernel/where_kernel_impl",
+      "vllm::act_and_mul_kernel",
+      "aten:vectorized_elementwise_kernel/launch_clamp_scalar",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel"
+     ],
+     "variants": 11,
+     "top_variant_share": 0.3,
+     "count_per_step": 24.67,
+     "kernel_ms_per_step": 1.271,
+     "span_ms_per_step": 1.477,
+     "exposed_ms_per_step": 0.127,
+     "launches_per_step": 291.3
+    },
+    {
+     "after": "wo_a",
+     "before": "wo_b",
+     "kernels": [
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 43.0,
+     "kernel_ms_per_step": 0.084,
+     "span_ms_per_step": 0.084,
+     "exposed_ms_per_step": 0.108,
+     "launches_per_step": 43.0
+    },
+    {
+     "after": "nccl_allgather",
+     "before": "main_proj",
+     "kernels": [
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast",
+      "aten:index_elementwise_kernel/gpu_index_kernel",
+      "aten:index_elementwise_kernel/gpu_index_kernel",
+      "aten:vectorized_elementwise_kernel/CUDAFunctorOnSelf_add",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "_bias_kernel",
+      "_temperature_kernel",
+      "_compute_local_logits_stats_kernel",
+      "_rejection_kernel",
+      "_resample_kernel",
+      "_insert_resampled_kernel",
+      "_get_num_sampled_and_rejected_kernel",
+      "_post_update_kernel",
+      "Memcpy DtoH ",
+      "Memcpy DtoH ",
+      "aten:CatArrayBatchedCopy_vectorized/OpaqueType",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz"
+     ],
+     "variants": 2,
+     "top_variant_share": 0.67,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.07,
+     "span_ms_per_step": 0.091,
+     "exposed_ms_per_step": 0.093,
+     "launches_per_step": 17.0
+    },
+    {
+     "after": "nccl_allgather",
+     "before": "bf16_gemm_grid64x1x1",
+     "kernels": [
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast",
+      "aten:mbtopk",
+      "Memset ",
+      "Memset ",
+      "aten:mbtopk",
+      "at::native::mbtopk::computeDigitCumSum",
+      "aten:mbtopk",
+      "aten:mbtopk",
+      "at::native::mbtopk::computeDigitCumSum",
+      "aten:mbtopk",
+      "aten:mbtopk",
+      "at_cuda_detail::cub::detail::scan_by_key::Device",
+      "at_cuda_detail::cub::detail::scan_by_key::Device",
+      "at_cuda_detail::cub::detail::scan_by_key::Device",
+      "at_cuda_detail::cub::detail::scan_by_key::Device",
+      "aten:mbtopk",
+      "aten:radixSortKVInPlace",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "aten:index_elementwise_kernel/gpu_index_kernel",
+      "aten:indexSelectSmallIndex",
+      "aten:vectorized_gather_kernel"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.064,
+     "span_ms_per_step": 0.08,
+     "exposed_ms_per_step": 0.081,
+     "launches_per_step": 21.0
+    },
+    {
+     "after": "shared_gate_up",
+     "before": "shared_down",
+     "kernels": [
+      "_dsv4_topk_kernel",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "aten:vectorized_elementwise_kernel/where_kernel_impl",
+      "aten:vectorized_elementwise_kernel/launch_clamp_scalar",
+      "vllm::act_and_mul_kernel",
+      "aten:unrolled_elementwise_kernel/direct_copy_kernel_cuda",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz",
+      "aten:vectorized_elementwise_kernel/compare_scalar_kernel"
+     ],
+     "variants": 11,
+     "top_variant_share": 0.27,
+     "count_per_step": 18.33,
+     "kernel_ms_per_step": 0.781,
+     "span_ms_per_step": 0.96,
+     "exposed_ms_per_step": 0.075,
+     "launches_per_step": 204.7
+    },
+    {
+     "after": "sparse_mla",
+     "before": "wo_a",
+     "kernels": [
+      "_fused_inv_rope_fp8_quant_per_head"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 43.0,
+     "kernel_ms_per_step": 0.074,
+     "span_ms_per_step": 0.074,
+     "exposed_ms_per_step": 0.07,
+     "launches_per_step": 43.0
+    },
+    {
+     "after": "bf16_gemm_grid64x1x1",
+     "before": "bf16_gemm_grid64x1x1",
+     "kernels": [
+      "aten:_scatter_gather_elementwise_kernel/_cuda_scatter_gather_internal_kernel",
+      "aten:reduce_kernel/ReduceOp",
+      "memcpy32_post",
+      "aten:indexSelectSmallIndex",
+      "aten:vectorized_gather_kernel"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 2.0,
+     "kernel_ms_per_step": 0.062,
+     "span_ms_per_step": 0.066,
+     "exposed_ms_per_step": 0.068,
+     "launches_per_step": 10.0
+    },
+    {
+     "after": "qkv_a",
+     "before": "wq_b",
+     "kernels": [
+      "_q_kv_norm_quant_kernel"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 35.33,
+     "kernel_ms_per_step": 0.086,
+     "span_ms_per_step": 0.086,
+     "exposed_ms_per_step": 0.063,
+     "launches_per_step": 35.3
+    },
+    {
+     "after": "shared_down",
+     "before": "draft_moe_gate_up",
+     "kernels": [
+      "vllm::moe::topkGatingSoftplusSqrt",
+      "per_token_group_quant_8bit_kernel",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "_count_expert_num_tokens",
+      "_fwd_kernel_ep_scatter_1",
+      "_fwd_kernel_ep_scatter_2",
+      "deep_gemm::transpose_and_pack_fp32_into_ue8m0"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 3.0,
+     "kernel_ms_per_step": 0.05,
+     "span_ms_per_step": 0.059,
+     "exposed_ms_per_step": 0.062,
+     "launches_per_step": 24.0
+    },
+    {
+     "after": "main_proj",
+     "before": "draft_ctx_kv",
+     "kernels": [
+      "vllm::rms_norm_kernel",
+      "Memcpy DtoD ",
+      "_prepare_dflash_inputs_kernel",
+      "_prepare_dflash_inputs_kernel",
+      "_prepare_dflash_inputs_kernel",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.048,
+     "span_ms_per_step": 0.055,
+     "exposed_ms_per_step": 0.057,
+     "launches_per_step": 6.0
+    },
+    {
+     "after": "nccl_allreduce",
+     "before": "lm_head",
+     "kernels": [
+      "mhc_post_tilelang_kernel",
+      "memcpy32_post",
+      "_hc_head_reduce_store_kernel",
+      "vllm::rms_norm_kernel",
+      "memcpy32_post",
+      "memcpy32_post",
+      "memcpy32_post",
+      "memcpy32_post",
+      "aten:vectorized_gather_kernel",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz"
+     ],
+     "variants": 2,
+     "top_variant_share": 0.5,
+     "count_per_step": 2.0,
+     "kernel_ms_per_step": 0.036,
+     "span_ms_per_step": 0.044,
+     "exposed_ms_per_step": 0.044,
+     "launches_per_step": 15.0
+    },
+    {
+     "after": "draft_moe_down",
+     "before": "nccl_allreduce",
+     "kernels": [
+      "_fwd_kernel_ep_gather",
+      "aten:vectorized_elementwise_kernel/CUDAFunctor_add"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 3.0,
+     "kernel_ms_per_step": 0.013,
+     "span_ms_per_step": 0.015,
+     "exposed_ms_per_step": 0.032,
+     "launches_per_step": 6.0
+    },
+    {
+     "after": "draft_ctx_kv",
+     "before": "draft_ctx_kv",
+     "kernels": [
+      "vllm::rms_norm_kernel",
+      "aten:vectorized_elementwise_kernel/FillFunctor",
+      "vllm::deepseek_v4_fused_ops::fusedDeepseekV4QNor",
+      "fi:quantizationkernelsmxfp8_quantizeMXFP8Quantiz"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 2.0,
+     "kernel_ms_per_step": 0.022,
+     "span_ms_per_step": 0.026,
+     "exposed_ms_per_step": 0.031,
+     "launches_per_step": 8.0
+    },
+    {
+     "after": "<start>",
+     "before": "hc_prenorm",
+     "kernels": [
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "aten:vectorized_elementwise_kernel/bitwise_not_kernel_cuda",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/AUnaryFunctor",
+      "aten:vectorized_elementwise_kernel/BinaryFunctor",
+      "_hash_ids_kernel",
+      "aten:elementwise_kernel/gpu_kernel_impl_nocast"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 1.0,
+     "kernel_ms_per_step": 0.016,
+     "span_ms_per_step": 0.021,
+     "exposed_ms_per_step": 0.021,
+     "launches_per_step": 9.0
+    },
+    {
+     "after": "draft_moe_gate_up",
+     "before": "draft_moe_down",
+     "kernels": [
+      "_silu_mul_quant_fp8_packed_kernel"
+     ],
+     "variants": 1,
+     "top_variant_share": 1.0,
+     "count_per_step": 3.0,
+     "kernel_ms_per_step": 0.019,
+     "span_ms_per_step": 0.019,
+     "exposed_ms_per_step": 0.021,
+     "launches_per_step": 3.0
+    }
+   ],
+   "glue_total": {
+    "span_ms_per_step": 11.518,
+    "kernel_ms_per_step": 6.913,
+    "exposed_ms_per_step": 8.466,
+    "launches_per_step": 1879.0
+   },
+   "graph_launch_host_us": {
+    "target": {
+     "median": 1774.53,
+     "p10": 1717.92,
+     "p90": 2526.09,
+     "mean": 2006.18
+    },
+    "draft": {
+     "median": 223.14,
+     "p10": 218.13,
+     "p90": 375.43,
+     "mean": 272.23
+    }
+   }
+  }
+ }
+}

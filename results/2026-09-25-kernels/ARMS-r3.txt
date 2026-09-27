@@ -1,0 +1,380 @@
+ARMS-r3: serve-arm plan for the round-3 kernel bundle (next GPU window, both nodes)
+==================================================================================
+Written 2026-09-25 by the k3 integration stage. Nothing here has run on a serve yet: every
+expected number below is a microbench projection from the workstreams, first order and
+serve-untested. The protocol is ARMS.md (arm loop, boot floors, step-6 promote rule, quality
+gate) with two additions: a three-arm interleave for the bundle and a GPU contamination rule for
+spark1.
+
+Code:  perf/kernels-r3, worktree /home/sfxnz/projects/ai-lab/recipes/.worktrees/kernels-r3.
+       Boot from a clean tree (git status --porcelain empty). run.sh mounts this worktree's
+       docker/patch on the head and copies it to spark2, so the patch code is whatever the tree
+       holds: record `git rev-parse HEAD` and `sha256sum docker/patch/*` in every boot dir.
+Image: dsv41-flash-exl3-sm121:review-e14 = sha256:3a002b55c9bc8086d6e63e3947cd0c6aaa092d415ec7d0305461078240eee675
+       on BOTH nodes (built on spark1 from 59bb3cc, docker save | ssh spark2 docker load; IDs equal).
+       Same image for every arm. With DSV41_P2B_COOP unset it runs canonical-e13's kernels: all
+       49 vllm_exl3_c kernels are byte-identical to canonical-e13's, and the python trees (vllm,
+       vllm_exl3, flashinfer, exllamav3; 10,784 files) are identical
+       (results/2026-09-25-kernels/integration/image-compare/compare.json).
+Pack:  SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8 (the serve pin) except in the Viterbi arm (section 7).
+Evidence dir per boot: O=$W/results/2026-09-2X-serve-r3/<arm>-<n> (X = the window's date; boot K#1
+is directory K-1). Name evidence files .txt/.json: the repo ignores *.log and build/ dirs.
+
+Shell names used below
+----------------------
+  W=/home/sfxnz/projects/ai-lab/recipes/.worktrees/kernels-r3
+  S=$W/results/2026-09-25-kernels/integration/scripts
+  IMG=dsv41-flash-exl3-sm121:review-e14
+  # K = the kernel bundle: every round-3 lever that is bit-exact against the stock path, or within
+  #     1 fp16 ulp for COOP. None of them changes drafting.
+  K_ENV="DSV41_P2B_COOP=2 DSV41_DENSE_GEMV=1 DSV41_MHC_DET_SPLITS=16 \
+         DSV41_ENGRAM_NATIVE_STAGE=1 DSV41_ENGRAM_EARLY_HASH=1 DSV41_ATTN_T2R_DEDUP=1 \
+         DSV41_SWA_META_FUSED=1 DSV41_MOE_PREP_FUSED=1 DSV41_CANDIDATE_MASK_BOUNDED=1 \
+         DSV41_INDEXER_WP_GEMV=1"
+  KC_ENV="${K_ENV/DSV41_P2B_COOP=2 /}"           # K without COOP (leave-one-out)
+  # KP = K + the levers with a new failure class (load-time collective, side stream in the AR
+  #      window, NCCL communicator, CPU idle policy, L2 prefetch in the AR window)
+  KP_ENV="$K_ENV DSV41_MHC_DET_OVERLAP=1 DSV41_ENGRAM_WKV_TP=1 DSV41_PM_QOS_US=20 \
+          DSV41_NCCL_EAGER_TWIN=1 DSV41_AR_L2_PREFETCH=1"
+  An unset lever means off. To turn off a default-on round-34 lever, set it to 0 (an empty
+  value keeps the default).
+
+0. Window order and time budget
+-------------------------------
+One boot plus the per-boot list in section 2 is about 55 min. Add about 10 min for a boot that
+also runs quality --full.
+  P0  preflight, both nodes                                         20 min   must
+  P1  NCCL twin device check, serve down (only needed for KP)       45 min   should (before P5)
+  P2  bundle interleave A, K, KC, A, K, KC (6 boots)                5.5 h    must
+  P3  profile boots A_p and K_p (attribution by mechanism)           1.5 h    must
+  P4  Viterbi pack arm CUR, VIT, CUR, VIT (promoted config)          4 h      must
+  P5  KP safety boot, then K, KP, K, KP (5 boots)                    4.5 h    should
+  P6  SPARSE_MARKOV: W, S, W, S, then S, S1024, S, S1024 (8 boots)  7.5 h    could
+If the window is short, run P2, then P4, then P3, and move the rest to the next window. After a
+promotion, the next pair's baseline carries the promoted envs (ARMS.md: "after a promotion the
+next pair's A carries the promoted lever").
+
+1. Preconditions (check before every boot; a failed check means do not boot)
+---------------------------------------------------------------------------
+- Requant finished and gone. `test -f /home/sfxnz/projects/data/dsv41-requant-viterbi/state/DONE`.
+  `docker ps` on spark1 and `ssh spark2 docker ps` show no dsv41-requant / dsv41-quant and no
+  other GPU container. For P4, the Viterbi snapshot must also be assembled on BOTH nodes
+  (requant PLAN.txt section 9).
+- No kernel microbench is running. Hold spark2's lock for the whole window, from a spare shell on
+  spark1:  ssh spark2 'flock /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock sleep 86400' &
+  Release it by killing that ssh.
+- GPUs clean. spark1: `results/2026-09-25-kernels/profile/scripts/gpu_free_wait.sh` prints
+  GPUFREE (2 min with no foreign GPU user). spark2: `ssh spark2 nvidia-smi pmon -c 1` lists only
+  Xorg / gnome-shell. The foreign headless Chromium on spark1 belongs to another session: ask the
+  user to close it, never kill it.
+- Memory. `free -h; ssh spark2 free -h`: MemAvailable >= 12 GiB before boot and >= 8 GiB after
+  the smokes (ARMS.md step 4).
+- Tree. `cd $W && git status --porcelain` is empty. `python3 -m unittest discover -s tests -q`
+  gives 0 failures / 0 errors, and `python3 kit/render.py --check` exits 0.
+- Image. `docker image inspect $IMG --format '{{.Id}}'` equals the ID above on both nodes.
+
+2. Per-boot procedure (identical on every boot, every arm; ARMS.md step 5 order)
+-------------------------------------------------------------------------------
+  L=<arm>-<n>; O=$W/results/2026-09-2X-serve-r3/$L; mkdir -p $O; cd $W
+  ./stop.sh                                          # both nodes; then the section 1 checks
+  git rev-parse HEAD > $O/commit.txt; sha256sum docker/patch/* > $O/patch.sha256 2>/dev/null
+  env AUDIT=strict IMAGE=$IMG <arm env> ./run.sh 2>&1 | tee $O/boot.txt
+      # AUDIT=strict fails the boot unless every armed lever's LOG_ENGAGED line appears on BOTH
+      # ranks with no LOG_DISARMED line (tools/engagement_audit.py). The lines are listed in
+      # section 3.
+  $S/gpu_guard.sh local  $O/gpu-spark1.txt 2  & G1=$!   # spark1 sampled every 2 s (Chromium)
+  $S/gpu_guard.sh spark2 $O/gpu-spark2.txt 10 & G2=$!
+  python3 smoke_chat.py  | tee $O/smoke_chat.txt       # non-empty content, 323
+  python3 smoke_vision.py | tee $O/smoke_vision.txt    # no HTTP 400
+  free -h > $O/mem-after-smoke.txt; ssh spark2 free -h >> $O/mem-after-smoke.txt   # >= 8 GiB
+  tests/correctness.sh | tee $O/correctness.txt        # 8/8
+  python3 tools/measure_lail_prose.py --runs 10 | tee $O/lail10.txt   # fresh L.A.I.L, before any c=2
+  python3 bench_decode.py --runs 9 | tee $O/bench_decode.txt           # prose/structured c=1, c=2
+  tools/four_numbers.sh --arm $L --out $O/four
+  python3 benches/e2e.py | tee $O/e2e.txt              # exit 0
+  <quality on the boots named in section 10, serialized, never during perf capture>
+  tools/disarm_scan.sh > $O/disarm_scan.txt; echo "rc=$?" >> $O/disarm_scan.txt   # rc=0: no lever turned itself off
+  kill $G1 $G2; $S/gpu_guard.sh --check $O/gpu-spark1.txt $O/gpu-spark2.txt > $O/gpu_guard.txt; \
+    echo "rc=$?" >> $O/gpu_guard.txt                    # rc=0: no foreign GPU process
+  ./stop.sh
+Contamination rule. If gpu_guard --check exits 1 (a FOREIGN process on either GPU at any sample
+between the smokes and the last bench), then touch $O/CONTAMINATED. That boot's numbers are void:
+do not pool them, do not quote them. Re-run the same arm at once to keep the interleave order.
+The profile stage showed why this matters: with Chromium on spark1's GPU, rank 0 straggles and
+the whole TP=2 step slows (profile section 5, item 10). A 2 s sample can miss a short burst, so a
+boot whose spread is out of family with its twins is suspect even when the guard is clean.
+
+3. Engagement lines (strict audit checks them; grep both ranks when debugging)
+-----------------------------------------------------------------------------
+  COOP=2         dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+  DENSE_GEMV     dense GEMV armed                          (disarm: "; b12x stays" / "; fp8_einsum stays")
+  MHC_DET        dsv41: mhc det engaged                    (target: 81 fn packed, draft: 6)
+  MHC_OVERLAP    dsv41: mhc det overlap engaged
+  NATIVE_STAGE   dsv41: engram native stage self-check bit-exact
+  EARLY_HASH     dsv41: engram early hash matches the stock hash
+  T2R_DEDUP      dsv41: attention t2r dedup reuse bit-exact (+ [t2r-census] ~9.5 reuses/compute)
+  MOE_PREP       dsv41: moe prep fused self-check bit-exact
+  CAND_MASK      dsv41: candidate mask bounded self-check bit-exact
+  WP_GEMV        dsv41: indexer weights_proj GEMV self-check bit-exact
+  SWA_META       dsv41: swa metadata fused self-check bit-exact
+  WKV_TP         dsv41: engram wkv column-parallel self-check bit-exact   (x2 per rank: layers 1, 14)
+  PM_QOS         dsv41: pm qos engaged                     (run.sh adds --device /dev/cpu_dma_latency)
+  EAGER_TWIN     dsv41: nccl eager twin engaged            (+ one "routing on tp:0" line; NCCL's
+                 "graphUsageMode is set to 0 but the user is capturing graphs", 434 per rank, is expected)
+  L2_PREFETCH    dsv41: ar l2 prefetch engaged: 37/40 layers
+  lm_head        dsv41: lm_head mxfp8 enabled              (default-on; must never self-disarm)
+CPU strict dry-run of the same image and envs (already passed; repeat after any docker/patch
+change): results/2026-09-25-kernels/integration/scripts/dryrun.py --image $IMG --role head --arm on|off
+(and --role worker --node spark2 --remote-repo <spark2 copy>). ON and OFF, on both nodes: 0 FAIL, 0 import errors, 16/16 lever
+wraps match the arm, 0 disarm lines.
+
+4. Phase P1: NCCL twin device check (serve down, both GPUs; from k3/comm's plan, phase A1)
+-----------------------------------------------------------------------------------------
+  cd $W
+  CHECK="--device-check --inject-fault 37" REPS=1 STEPS=60 ARMS=twin tools/nccl_twin_check.sh   # selftest: flags exactly step 37 on both ranks
+  CHECK=--device-check REPS=1 ARMS="keep twin keep_qos twin_qos" tools/nccl_twin_check.sh
+  CHECK=--device-check REPS=1 ARMS="keep twin" ROWS="--m 8 --md 6" tools/nccl_twin_check.sh
+  ARMS="keep twin keep_qos twin_qos" REPS=3 tools/nccl_twin_check.sh            # c=1 timing
+  ARMS="keep twin" REPS=2 ROWS="--m 8 --md 6" tools/nccl_twin_check.sh          # c=2 timing
+  python3 tools/nccl_twin_check.py compare <OUT>                                # each OUT
+Gate for EAGER_TWIN (in KP): every run exits 0 (no watchdog hang, 0 host mismatches), and every
+--device-check rep reports device_bad_steps 0 with device_checked_steps = steps + warmup on both
+ranks. On any failure, drop DSV41_NCCL_EAGER_TWIN=1 from KP_ENV.
+
+5. Phase P2: kernel bundle, three-arm interleave (6 boots)
+---------------------------------------------------------
+  A:  env AUDIT=strict IMAGE=$IMG ./run.sh                    (the round-34 defaults, round-3 levers off)
+  K:  env AUDIT=strict IMAGE=$IMG $K_ENV ./run.sh
+  KC: env AUDIT=strict IMAGE=$IMG $KC_ENV ./run.sh            (K without COOP)
+  Order: A#1, K#1, KC#1, A#2, K#2, KC#2. Each arm boots twice, interleaved (ARMS.md ABAB extended to a
+  cycle). The boots give three noise-gated comparisons:
+    K  vs A   the bundle (promotion decision)
+    K  vs KC  COOP alone. It is the largest lever, and the only one whose numerics are not
+              bit-exact (fp32 slot-sum order, <= 1 fp16 ulp), so acceptance and quality are
+              attributed separately for it.
+    KC vs A   the bit-exact rest (DENSE_GEMV + MHC_DET + the 7 fusion-host levers)
+Primary metric: prose_median_ms_per_step and prose_long c=1 median_ms_per_step, at matched
+acceptance. The per-boot median_run_acceptance_len must overlap between the compared arms. For
+KC vs A this is guaranteed by construction (bit-exact), so a gap means something is wrong: stop
+and diff. For K vs KC a small move is possible (COOP <= 1 ulp). If it does not overlap, gate on
+prose_long c=1 tok/s and L.A.I.L tok/s instead (ARMS.md step 6).
+Promote K (all 10 envs default-on) only when all of these hold:
+- The K-vs-A median improvement exceeds the noise (the larger boot-to-boot spread of A and K).
+- Every K boot beats the A median.
+- Non-inferiority on pp_warm / pp_novel 8k/32k, prose_long c=2 aggregate and warm-prefix.
+- Honest cells: natural_finish_reason length, serve_env_ranks_match true, lever_disarmed false.
+- disarm_scan is clean and gpu_guard is clean on every counted boot.
+- Quality quick passes on both K boots and quality --full passes on K#2 (section 10).
+If K vs KC is inside the noise, keep COOP in the bundle only if its mechanism shows in P3 (below).
+If K vs KC is worse beyond the noise, drop COOP from K.
+Expected, c=1 (reference: R34 s13 prose_long c=1 62.88 ms/step at 33.13 tok/s; k3 profile boot 1
+L.A.I.L 62.8 ms/step):
+    K vs A   -11.9 .. -13.1 ms/step  (to ~49.8-51.0 ms/step; ~+23-26% tok/s at matched acceptance)
+    K vs KC  -6.8 (6.76-6.81 +- 0.16)
+    KC vs A  -5.1 .. -6.3
+  c=2: K vs A about -21.5 .. -22.0 ms/step (COOP -15.2 .. -15.3 of it).
+
+6. Phase P3: attribution by mechanism (2 profile boots, not part of the counted numbers)
+--------------------------------------------------------------------------------------
+Each bit-exact lever alone is below the boot-to-boot noise (identical configs have measured
+27.40 / 26.13 / 28.01 tok/s). So each lever is attributed from per-kernel time in the serve, with
+the ABAB deciding only the bundle. Boot one A_p and one K_p (K_ENV, or the promoted envs):
+  env AUDIT=strict IMAGE=$IMG <A or K env> DSV41_ENGRAM_CENSUS=1 \
+      EXTRA_ARGS='--profiler-config {"profiler":"torch","torch_profiler_dir":"/tmp/dsv41-traces"}' ./run.sh
+  python3 smoke_chat.py && python3 tools/measure_lail_prose.py --runs 3     # warm the graphs, profiler idle
+  $S/gpu_guard.sh local $O/gpu-spark1.txt 1 & G1=$!                       # the window must be clean
+  CONCURRENCY=1 MAX_TOKENS=200 tools/profile_window.sh                      # traces from both ranks
+  kill $G1; $S/gpu_guard.sh --check $O/gpu-spark1.txt > $O/gpu_guard.txt; echo "rc=$?" >> $O/gpu_guard.txt; ./stop.sh
+Run tools/decode_timeline.py on both ranks' traces, on the host that wrote them (the k3 profile
+stage analyzer; compare with results/2026-09-25-kernels/profile/c1/). What each lever must show
+per decode step (K_p vs A_p, rank 0 and rank 1):
+  COOP=2        p2b_moe_batched_kernel<2,1,0> (~23.2 ms/step) -> p2b_coop_df_kernel<2,1> (grid 144)
+                at ~16.4 ms/step
+  DENSE_GEMV    the b12x GEMMs at M<=8 (qkv_a, wq_b, wo_b, shared gate_up/down, main_proj M<=4,
+                lm_head, engram wkv, o_proj wo_a) -> gemv_kernel / gemv_grouped, -1.6 ms/step in total
+  MHC_DET       mhc_prenorm_gemm + mhc_pre_fuse + mhc_post: 2.92 -> ~1.1-1.5 ms/step. Per step:
+                86 mhc_det_gemm_t8, 86 mhc_det_norm, ~89 mhc_det_post; no sm120_tf32_hc_prenorm_gemm,
+                mhc_pre_big_fuse_with_norm or mhc_post_tilelang in the decode graphs
+  NATIVE_STAGE  DtoH(hash) -> HtoD(rows) gap 3.06 -> ~0.2-0.35 ms; [native-census] us/call ~150-300
+    +EARLY_HASH the hash DtoH sits before the SWA/compressor metadata chain
+  T2R_DEDUP     DeviceScan / compute_cuda_kernel (token map) 21 -> 2 per step, 168 -> 35 GPU ops
+  SWA_META      _swa_decode_fused_kernel x15 instead of _compute_swa_indices_and_lens_kernel x15,
+                with no compare_scalar / DtoD / Fill<int> of the causal builds
+  MOE_PREP      one _moe_prep_kernel per MoE layer instead of ~14 single-block kernels; one fp16 ->
+                bf16 cast after p2b
+  CAND_MASK     _mask_candidates + _candidate_flags ~77.7 -> ~8-10 us per layer
+  WP_GEMV       _wp_gemv_kernel (8 per step, m 2..8) instead of cutlass_80_wmma ... bf16 16x16
+A lever whose kernel time does not move as expected leaves the bundle for its own profile check
+before any retry. Promote the bundle as a unit and record the per-lever table with it.
+
+7. Phase P4: Viterbi pack arm (4 boots, on the promoted config)
+--------------------------------------------------------------
+The pack is the 2.0 bpw MCG K=2 re-encode (tail-biting Viterbi + closed-form refit): relerr
+0.2616 vs 0.3775 stock, MSE 0.48x, same format and bytes. svh is no longer exactly +-1; every
+serving path multiplies by the fp16 svh (requant PLAN.txt section 2).
+Preconditions:
+- DONE marker. Assemble on both nodes (PLAN.txt section 9); the index weight_map check passes.
+- The snapshot exists on both nodes:
+    ls ~/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8/
+- Kernel pre-check on the new weights (spark2 GPU under the lock, < 10 min, before the window or
+  in P0). coop and p2b on Viterbi weights must pass the same gates as on the stock pack: one-hot
+  bitwise vs p2b, =2 bitwise vs =1, full-weight tolerance, fp64 reference.
+    kernel_study/p2b_coop/prebuild_r3.sh      # spark1, CPU, then rsync the worktree to spark2
+    ssh spark2 'R2=/home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/kernels-r3; \
+      hf=/home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3; nvidia-smi pmon -c 1; \
+      mkdir -p $R2/results/2026-09-25-kernels/integration/viterbi-precheck; \
+      flock -w 7200 /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock timeout 590 \
+      docker run --rm --gpus all --network none --memory 16g --user 1000:1000 -e HOME=/tmp \
+        -e TORCH_CUDA_ARCH_LIST=12.1a -e TORCH_EXTENSIONS_DIR=/repo/kernel_study/p2b_coop/build/torch_ext \
+        -v $R2:/repo -v $hf:/hf:ro \
+        -v $hf/snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8:/hf/snapshots/2.0bpw-mcg-lmhead-mxfp8:ro \
+        -w /repo --entrypoint python3 dsv41-flash-exl3-sm121:review-e14 kernel_study/p2b_coop/bench_r3.py \
+        --mode check,capture --variants 0,1,2 --ms 1,3,4,6,8 --check-routings 8 --ref \
+        --out results/2026-09-25-kernels/integration/viterbi-precheck/l20.json'
+    (then the same with --layer 33 --tp-rank 1 and without --ref; rsync the results back)
+Arms (all other envs = the promoted config):
+  CUR: env AUDIT=strict IMAGE=$IMG <promoted env> ./run.sh
+  VIT: env AUDIT=strict IMAGE=$IMG <promoted env> SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8 ./run.sh
+  Order: CUR#1, VIT#1, CUR#2, VIT#2.
+The decode kernels and bytes per step are unchanged, so any speed change comes through DSpark
+acceptance. Gate on prose_long c=1 tok/s and L.A.I.L tok/s with the noise rule; ms/step at
+matched acceptance should be equal within noise, and a ms/step change means something else moved.
+Quality: quick AND --full on both VIT boots (the pack changes numerics by design), plus
+`tests/correctness.sh --full`. Both gates must pass (no component outside its band); NLL is
+expected to go down. The strict audit must show COOP and lm_head mxfp8 engaged exactly as in CUR. The serve pin
+(recipe.yaml revision 2.0bpw-mcg-lmhead-mxfp8) stays until VIT passes all of this.
+Expected: 0 ms/step per verify step; tok/s and quality effects unproven (acceptance could rise,
+since the target is closer to the source model the DSpark draft was trained against).
+
+8. Phase P5: KP add-ons (1 safety boot, then K, KP, K, KP)
+----------------------------------------------------------
+Each add-on is bit-exact or numerics-neutral, but has a failure class the bundle does not:
+  MHC_OVERLAP  prenorm GEMM + sinkhorn on a side stream forked at the next TP all-reduce
+  WKV_TP       Engram wkv becomes ColumnParallelLinear + an all-gather. A mismatch between the
+               ranks hangs the boot after the "armed" lines and before the "self-check" lines.
+  PM_QOS       CPU wake-up latency request held for the process life (all 20 cores stay in WFI)
+  EAGER_TWIN   second NCCL communicator for eager collectives. Arms only on NCCL 2.30.7 and only
+               after P1 passed.
+  L2_PREFETCH  1-CTA Triton L2 warm-up of the next qkv_a, forked at each MoE all-reduce start
+Safety boot (not counted; ~25 min): env AUDIT=strict IMAGE=$IMG $KP_ENV ./run.sh, then the
+strict audit, smokes, correctness 8/8, and `python3 tools/measure_lail_prose.py --runs 3`.
+Every lever is bit-exact, so the greedy smoke content should equal the K boots' (a difference is a
+finding to chase, as in comm's plan). If it hangs or disarms, bisect by booting K + one add-on at a time, in the order PM_QOS, WKV_TP, MHC_OVERLAP,
+EAGER_TWIN, L2_PREFETCH, and drop the failing add-on from KP_ENV.
+Then K#3, KP#1, K#4, KP#2 (K = the promoted bundle), same gates as P2. Quality quick on both KP boots.
+Attribution: one KP_p profile boot (section 6 recipe) against K_p:
+  MHC_OVERLAP  86 mhc_det_gemm_t8 + 86 mhc_det_norm_coef on a second stream, each inside an
+               AllReduce; mhc_det_norm_li on the main stream. The ncclDevKernel_AllReduce median
+               per call must not rise by more than ~7 us: NCCL RING_LL polls host memory, which on
+               GB10 is the same LPDDR5x the side stream reads, 1.23 MB per all-reduce.
+  L2_PREFETCH  per prefetched layer (37): the late rank's MoE-AR kernel, the MoE-AR-start ->
+               qkv_a-end span (it must be shorter than K's by more than the spread), qkv_a
+               47.6 -> ~16-19 us, and one l2 prefetch kernel per MoE all-reduce. If the AR slows
+               by as much as qkv_a saves, retry once with DSV41_AR_L2_PREFETCH_MIB=5.5, else drop.
+  WKV_TP       engram_wkv 2 per step at ~375-445 us (was 758) + 2 target-graph nccl_allgather
+               ([4, 12800] bf16 per rank, ~20-30 us each). MemAvailable after load rises ~0.16
+               GiB per rank.
+  PM_QOS       draft AR0 idle-before 235 / 427 us -> tens of us on both ranks; target AR0
+               267 / 91 us -> near the steady 22 us. Watch SM clock and power against K.
+  EAGER_TWIN   gap before in-graph ARs 5.7 -> ~3 us; AR median 22.8 -> ~20-21 us; target
+               cudaGraphLaunch host time 3.4 ms drops; the eager logits AG / embed AR gaps.
+If KP fails the gate, split it: K+{PM_QOS, WKV_TP} against K first (the two highest-confidence
+add-ons), then the rest one at a time as in the comm and mhc plans
+(results/2026-09-25-kernels/comm/serve_arm_plan.txt, mhc-det/serve_validation_plan.txt).
+
+9. Phase P6: SPARSE_MARKOV (8 boots; greedy verify keeps the output exact, only acceptance moves)
+------------------------------------------------------------------------------------------------
+Round 34 promoted DSV41_DSPARK_SPARSE_MARKOV=1 together with WOA_PREPACK (s8, one boot, no
+WOA-only boot). Pooled over 4 L.A.I.L batches, S vs B acceptance is 2.129 vs 2.159 (-1.4%), and
+tok/s is 33.72 vs 33.95 (-0.7%). The acceptance cost is open (flags.md, SPARSE_MARKOV row).
+Base = the promoted config (the kernel levers are bit-exact, so they do not interact with
+drafting).
+  W:     env AUDIT=strict IMAGE=$IMG <promoted env> DSV41_WOA_PREPACK=1 DSV41_DSPARK_SPARSE_MARKOV=0 ./run.sh
+  S:     env AUDIT=strict IMAGE=$IMG <promoted env> ./run.sh          (default: SPARSE_MARKOV=1, TOPK 256)
+  S1024: env AUDIT=strict IMAGE=$IMG <promoted env> DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024 ./run.sh
+  Order: W#1, S#1, W#2, S#2, then S#3, S1024#1, S#4, S1024#2.
+Acceptance moves by design, so gate on prose_long c=1 tok/s and L.A.I.L tok/s with the noise rule,
+and report per boot median_run_acceptance_len and ms/step. Quality quick on one boot per arm.
+- W vs S: revert the default to SPARSE_MARKOV=0 only if W beats S beyond the noise (every W boot
+  beats the S median). Otherwise S stays and S1024 decides.
+- S1024 vs S: promote TOPK=1024 when every S1024 boot beats the S median by more than the noise.
+Expected: S vs W is -0.8 ms/step (s8: prose c=1 -0.825, structured -0.45, L.A.I.L -0.245; the
+3 x 66 MB Markov GEMM is dropped) at -1.4% acceptance, so about -0.7% tok/s net: a wash within
+noise. S1024 should recover part of the acceptance gap (a winner outside the top 1024 is rarer
+than outside the top 256), at a gather cost that has not been measured but should be far below
+the 0.8 ms GEMM.
+
+10. Quality gates (after the four numbers, serialized; never interleaved with perf capture)
+------------------------------------------------------------------------------------------
+  quick: python3 tests/quality_eval.py --quick \
+           --baseline results/2026-09-24-review/quality-baseline/quick.json --out $O/quality_quick.json
+  full:  python3 tests/quality_eval.py --full \
+           --baseline results/2026-09-24-review/quality-baseline/full.json --out $O/quality_full.json
+  Both must exit 0 (pass). A failed gate means no KEEP, even when the perf win is real.
+  quick on: both K boots and both KC boots (P2), both KP boots (P5), both VIT boots (P4), one boot
+            per SPARSE_MARKOV arm (P6)
+  full on:  K#2 (COOP changes the fp32 sum order: <= 1 fp16 ulp), both VIT boots (new pack), plus
+            tests/correctness.sh --full on the VIT boots
+  The bit-exact levers must read the same as A at A's own A/A level: decode NLL, the
+  decode-vs-prefill probe and the golden flip hazard. A larger hazard than the A/A control means
+  a kernel is not bit-exact in the serve context: stop and compare the kernels on captured
+  activations.
+
+11. Expected ms/step per lever (microbench projections, c=1 / c=2; first order, serve-untested)
+-----------------------------------------------------------------------------------------------
+  lever (env)                                     c=1                 c=2             basis
+  COOP        DSV41_P2B_COOP=2                    -6.8 (+-0.16)       -15.2..-15.3    coop-moe/summary.json (40 layers, 3 x 800 it)
+                (vs =1: -1.8..-1.9)
+  DENSE_GEMV  DSV41_DENSE_GEMV=1                  -1.60               -1.58           dense-gemv/projection-m4.json, -m8.json
+  MHC_DET     DSV41_MHC_DET_SPLITS=16             -1.0..-1.4          ~-1.0           mhc-det/path_time_final.json
+  FH B1       NATIVE_STAGE + EARLY_HASH           -1.43..-1.78        -2.33..-2.52    fusion-host/iterations.txt s10
+  FH B2       T2R_DEDUP + SWA_META_FUSED          -0.50..-0.59        -0.50..-0.59    fusion-host/fix/t2r_dedup_bench.json
+  FH B3       MOE_PREP + CAND_MASK + WP_GEMV      -0.56..-0.94        -1.0..-1.3      fusion-host/iterations.txt s10
+  FH ALL      B1 + B2 + B3                        -2.46..-3.28        -3.63..-4.20
+  = K (bundle)                                    -11.9..-13.1        ~-21.5..-22.0   sum, first order
+  MHC_OVERLAP DSV41_MHC_DET_OVERLAP=1 (on MHC_DET) -0.6..-0.75        ~same           mhc-det/overlap_probe_*.json
+  WKV_TP      DSV41_ENGRAM_WKV_TP=1               -0.66..-0.70        -0.64..-0.68    fusion-host/fix/engram_wkv_tp_check.json
+                with DENSE_GEMV on:               -0.55..-0.59        (see 12)
+  PM_QOS      DSV41_PM_QOS_US=20                  -0.7..-2.0          about the same  comm/iterations.txt (graph startup)
+  EAGER_TWIN  DSV41_NCCL_EAGER_TWIN=1             -0.5..-3.1          up to -3.06     comm/per-size, twin-devcheck
+  L2_PREFETCH DSV41_AR_L2_PREFETCH=1              -0.07..-0.63        +0.09..-0.16    comm/final (real-AR vs spin range)
+  = KP add-ons                                    -2.4..-7.1
+  = KP total                                      -14.3..-20.2        (ranges; interactions in 12)
+  SPARSE_MARKOV S vs W                            -0.8 ms/step at -1.4% acceptance (tok/s ~-0.7%)
+  Viterbi pack                                    0 per step; tok/s via acceptance only (unproven)
+Reference cells for the A boots (R34 s13): prose 40.37 tok/s at 63.03 ms/step, prose_long c=1
+33.13 at 62.88, prose_long c=2 45.94 aggregate, pp_novel 8k/32k 808.8 / 800.2, pp_warm 759.6 /
+766.8, L.A.I.L 3x 33.98. The counted A boots of the same sequence are the only reference that
+decides.
+
+12. Interactions and non-additivity (read before judging a bundle against the sum)
+---------------------------------------------------------------------------------
+- DENSE_GEMV x WKV_TP: dense-gemv tunes (K, N) = (6144, 25600) for Engram wkv. Under WKV_TP the
+  per-rank shape is (6144, 12800), which has no dense-gemv config, so that GEMM stays on b12x and
+  dense-gemv's wkv share (~57 us per call, ~0.11 ms/step) is lost. WKV_TP's own saving is larger.
+  Follow-up: tune a (6144, 12800) config.
+- MHC_OVERLAP x L2_PREFETCH: both fork a side stream at the MoE all-reduce and read DRAM inside the
+  window (1.23 MB of packed fn vs up to 10 MiB of qkv_a). Judge them together in KP_p. mhc-det's
+  plan predates comm's move to a 10 MiB default; if the AR median rises, try
+  DSV41_AR_L2_PREFETCH_MIB=5.5.
+- COOP x MOE_PREP_FUSED: the fused prep feeds p2b the same inputs, bit-exact against the stock
+  glue, and COOP reads them unchanged. MOE_PREP_FUSED already covers most of coop-moe's planned
+  "fold the wrapper glue" lever (input prep in one kernel, one output cast). Measure the remaining
+  gap in K_p before building that lever.
+- DENSE_GEMV x L2_PREFETCH: they stack. In the L2 regime the GEMV still wins +19-20% at qkv_a M<=4
+  and +9.1-9.7% at M 6/8 (dense-gemv/l2-regime-1.json).
+- EAGER_TWIN depends on PM_QOS: without it, the graph communicator's proxy thread can wake from
+  deep idle at each replay start (up to one more LPI-3 exit, ~0.43 ms). That is why both are in KP.
+- Rank skew: the k3 profile found rank 0 late on 72% of all-reduces (1.34 / 3.92 ms/step of wait),
+  in a window that may have had Chromium on spark1. With COOP shortening the MoE, the skew can move
+  either way. Re-read it in K_p with gpu_guard clean.
+
+13. Rollback
+------------
+All round-3 levers are env-gated and off by default, so rollback is ./stop.sh and a boot without
+the envs. The image can stay (review-e14 with the envs unset runs canonical-e13's kernels); or
+boot IMAGE=dsv41-flash-exl3-sm121:canonical-e13, the current IMAGE default. Promotion itself means:
+- the promoted envs become defaults in recipe.yaml, then kit/render.py;
+- recipe.yaml's image tag moves to the e14 content (docker tag review-e14 canonical-e14 on both
+  nodes, same ID);
+- verdicts go to flags.md and results/RESULTS.md (ARMS.md step 8).

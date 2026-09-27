@@ -1,0 +1,395 @@
+mhc-det iterations (k3/mhc-det, 2026-09-25). Every GPU number: spark2 GB10 (clean: pmon_before.txt
+per run under runs/<tag>/), image dsv41-flash-exl3-sm121:canonical-e13, SM clock 2190 MHz flat
+(runs/<tag>/smi.csv). Peak for % = 250 GB/s. Real weights: pack 2.0bpw-mcg-lmhead-mxfp8 (read-only).
+
+0. How the stock decode mHC split-K reduces (source + measurement)
+---------------------------------------------------------------------
+- GEMM: DeepGEMM sm120_tf32_hc_prenorm_gemm_impl<24, K, BLOCK_M=128, BLOCK_N=32, BLOCK_K=64,
+  kNumSplits=16, 4 stages, 256+128 thr> (stock_src/kernel.sm120_*.{cu,sass}). Grid 16 CTAs.
+  Split s writes its own slice mixes[s][m][n] / sqrsum[s][m] with PLAIN STORES (no atomics).
+  Within a split: TF32 mma.sync m16n8k8 chain over its 20 k-blocks x 8 k-steps, one accumulator
+  per 8-column n-tile. A = bf16 x widened to fp32; B = fn converted fp32 -> tf32 with
+  round-to-nearest-EVEN on load (probe_b_round.json: RNE 60/60 cases bitwise, truncation 0/60,
+  round-away 0/60; the mma itself truncates a raw fp32 B operand, probe.json raw_eq_trunc 1.0).
+  sqrsum per lane: acc = acc + fma(a_lo, a_lo, a_hi*a_hi) per k-step, then + shfl_xor 2, + xor 1.
+- Reduction: TileLang mhc_pre_big_fuse_with_norm (stock_src/pre_norm_s16_*.cu) sums the 16
+  partials SERIALLY in split order 0..15 with plain loads (rms, then each of the 24 mixes).
+- So the stock path is a fixed-order two-pass split-K and is deterministic at any fixed split
+  count. Measured (gemm_check.json determinism, 1000 runs each, bitwise vs run 0):
+    stock DeepGEMM 16 splits  T=4: 0 differing elements   T=8: 0
+    stock DeepGEMM 40 splits  T=4: 0                      T=8: 0
+    stock full pre (GEMM + TileLang fused norm) 16 splits T=4/8: 0;  40 splits T=4/8: 0
+  => the R34 rejection of DSV41_MHC_DECODE_SPLITS=40 was NOT caused by a nondeterministic
+  reduction. 40 splits is deterministic but numerically different from 16 (split order: maxabs
+  6e-6, s1) and was bundled with WOA prepack; the selfcons A/A metric measures serve-level
+  run-to-run divergence (baseline B boots are nonzero too). A plausible mechanism for more A/A
+  divergence with 40: split count 40 only for T <= 64 while prefill chunks of the same tokens
+  keep 16, so numerics then depend on how a token is batched (prefix-cache tail vs full prefill).
+- Design consequence: instead of a new split-K order, reproduce the stock 16-split numerics
+  BITWISE and make them fast. No numerics change => no quality A/B risk.
+
+1. det GEMM v1 (f32 fn, 1 warp per (split, n-tile) chain, 48 CTAs, bulk copies)   [runs/gemm-check-v1]
+- Bitwise vs stock: FAIL on mixes (sqr exact). Cause: fed raw fp32 fn (hardware truncation) while
+  DeepGEMM rounds fn RNE on load. Fixed (rne_tf32 in-kernel / at pack time) -> v2.
+2. v2: + RNE; + packed fn "pk" (exact 19-bit tf32: hi16 + 3-bit nibble, 1280 B per k-block
+   instead of 2048 B, per-lane MMA-fragment order)                                  [gemm-check-v2]
+- Bitwise: 9312/9312 comparisons equal (87 real fn = 86 decode + layer-0 broadcast K=5120,
+  T = 1..16, inputs emb/randn/heavy + big/tiny/sparse edge families), det f32 and det pk.
+  Determinism 1000 runs: 0. CUDA graph: 100 replays x T in {1,3,4,6,8}: 0 mismatches.
+- Timing (gemm-time-v2, dirty-L2 flush): no win cold (stock 22.5 / det_f32 22.5 / det_pk 16.5 us
+  at T=4); warm stock 17.4 / det_f32 13.1 / det_pk 9.2 us.
+- Diagnosis (prof_phases, globaltimer in-kernel, 32 ns resolution): one lane issued 40-60 bulk
+  copies through a slow generic->cluster address path (~100-140 ns each; SASS: waterfall loops +
+  a CgaCtaId check), and x (the activation) copies queued behind all fn copies: x landed at
+  7.9 us cold; the MMA chain then ran unoverlapped (0.77 us per 4 k-blocks).
+3. stream_probe (48 CTAs streaming a contiguous chunk each, cold):
+- Dirty-L2 flush (add_ over 64 MB) doubles DRAM traffic (write-backs): 48x25.6 KB 11.0 us. A
+  read-only 64 MB sweep leaves clean L2 (serve-like: weights are read-only): 7.0-7.4 us.
+  => all "cold" numbers below use the read-only sweep.
+- Method barely matters (bulk vs cp.async vs 4-warp cp.async); stage-major layout (each stage of
+  all CTAs contiguous) 6.6 vs 7.5 us for 48 x 25.6 KB (per-CTA completion more uniform).
+4. v3/v4: cp.async.bulk .shared::cta (cheap issue), x via 16 B cp.async from all lanes issued
+   right after griddepcontrol.wait and BEFORE the remaining fn stages, stage-major pk layout,
+   2 k-blocks per stage, fn stages 0..1 prefetched before griddepcontrol.wait.  [gemm-check-v4,
+   gemm-time-v4, prof-phases-v4]
+- Bitwise: 9312/9312 equal; determinism 0/1000; graph 0/100.
+- Phases pk T=4 cold: x in smem 1.66 us, stage pairs land 2.3/3.4/4.5/5.4/6.3 us (DRAM-paced,
+  ~1 us per 5 KB per CTA), loop end 6.6, done 6.7 us (max over CTAs 7.5).
+- Serve-like per-call (gemm_time.json sweep86: graph of [copy x_c; gemm_c] x 86 real fn, 169 MB >
+  L2 so every call is cold, minus the copies-only graph; 200 alternating replays; median (p10/p90)):
+      T   stock_dg16            det_f32               det_pk
+      1   15.57 (15.53/15.68)   12.57 (12.54/12.62)    7.99 (7.95/8.04)
+      3   16.06 (16.03/16.13)   13.26 (13.23/13.31)    8.74 (8.70/8.82)
+      4   16.05 (16.01/16.14)   13.29 (13.25/13.35)    8.78 (8.74/8.83)   det_pk 159 GB/s = 64% of 250
+      6   15.70 (15.66/15.77)   13.08 (13.05/13.14)    8.58 (8.54/8.64)
+      8   15.52 (15.48/15.58)   13.10 (13.06/13.14)    8.57 (8.53/8.62)   det_pk 183 GB/s = 73%
+     16   15.04 (14.98/15.14)   13.61 (13.29/13.69)    8.36 (8.30/8.43)   det_pk 229 GB/s = 91%
+  Single-call events (1.0 us resolution on GB10), T=4 cold: stock 18.43 (18.40/18.53), det_pk
+  11.30 (11.23/11.36); warm: stock 17.44, det_pk 9.22.  K=5120 (layer-0 broadcast) T=4 cold:
+  stock 8.45, det_pk 6.14 us.
+- Kept: pk (bitwise, 37.5% fewer weight bytes). f32 kept only as a bench reference.
+5. det post: bitwise replica of TileLang mhc_post (80-160 CTAs instead of T), triggers its
+   dependent on entry so the det GEMM launches and prefetches fn during the post.  [path-check-v1/2]
+- v1 FAIL: 75/96 cases differ by 1-2 bf16 elements: FMA contraction order. nvcc compiles
+  "x = c*d; x += a0*b0" as fma(c, d, a0*b0) (the left product is fused), not fma(a0, b0, c*d).
+- v2 (fma(c,d,a0*b0), then fma(a_i, b_i, .) i=1..3): 96/96 bitwise.
+6. Whole decode mHC path, 43-layer recurrence on real weights (target 40 + draft 3; layer 0 via
+   the K=5120 broadcast path, draft layer 0 without carried pre-mix; synthetic sublayer outputs):
+   det = det post + det GEMM + stock TileLang fused norm.                          [path-check-v2]
+- Bitwise: every output (residual, post_mix, comb_mix, layer_input, pre_mix) of all 86
+  sublayers equal for T in {1,3,4,6,8,16} (430/430 each).
+- Determinism: 1000 runs T=4 and 200 runs T=8 of the whole recurrence: 0 differing elements.
+- CUDA graph (whole recurrence, one graph): 100 replays x T in {1,3,4,6,8}: 0 mismatches.
+- Timing (path_time.json: graph of 86 sublayers each preceded by an AR-proxy copy, minus the
+  copies-only graph, 200 alternating reps, us per 86-sublayer pass, median (p10/p90)):
+      T   stock                     det                       saved
+      1   2001.2 (1998.8/2007.3)    1169.2 (1165.0/1174.9)    -832 us  (-41.6%)
+      3   2139.7 (2136.3/2145.4)    1299.3 (1294.6/1304.8)    -840 us
+      4   2144.7 (2141.7/2151.6)    1314.4 (1310.9/1320.2)    -830 us  (-38.7%)
+      6   2147.4 (2143.6/2153.0)    1328.4 (1323.5/1333.5)    -819 us
+      8   2150.6 (2147.6/2157.0)    1370.2 (1366.7/1373.7)    -780 us
+  Kernel breakdown (prof_path.json, T=4, per pass): stock GEMM 16.00 us x 85 + 6.5 (K=5120),
+  fused norm 4.80 x 86, post 2.88 x 84; det GEMM 7.74 x 86 (starts 0.74 us before the post ends:
+  PDL overlap), fused norm 4.80 x 86 (unchanged), det post 1.41 x 84.
+7. PREFETCH_STAGES (fn stages issued before griddepcontrol.wait) sweep, whole path pass, T=4:
+   1: 1294.5  2: 1275.2  4: 1271.6  6: 1276.5  10: 1285.2 us;  T=8: 1558.5 / 1530.7 / 1510.2 /
+   1510.1 / 1518.8 us (sweep_prefetch.json). Kept 4 (with more, x queues behind fn again).
+8. det fused norm (bitwise replica of TileLang mhc_pre_big_fuse_with_norm) + the GEMM's PDL
+   trigger moved to right after its own griddepcontrol.wait.                         [path-check-v3,
+   path-time-v3, prof-path-v2]
+- Replica: warp 0 = coefficients after griddepcontrol.wait (serial split sums; sigmoid as
+  1/(1+expf(0-fma(m,s,b))); sinkhorn with the TileLang AllReduce butterflies: max/sum xor 2,1
+  for rows, xor 8,4 for columns; IEEE divisions); warps 1..8 = layer_input with the TileLang
+  sumsq order (64 virtual threads, slot i of l at hb*1024 + (i>>3)*512 + l*8 + (i&7), fma chain
+  over hb, slots summed 0,8,1,9,..,7,15, then (p_l + p_l+32) and xor 16..1). The layer_input
+  half needs only the post output and the carried pre-mix, so it runs before the wait, during
+  the GEMM (safe: the GEMM triggers only after its own wait, reads use ld.global.cg).
+  TileLang compiles with /usr/local/cuda nvcc 13.0 and NVRTC is 13.0: same expf/rsqrtf.
+- Bitwise on the first try: 430/430 outputs per T for T in {1,3,4,6,8,16}; 1000-run det 0;
+  graph 0/100.
+- Time, us per 86-sublayer pass (median (p10/p90)):
+      T   stock                     det + TileLang norm       det + det norm
+      1   2000.9 (1997.2/2006.8)    1122.7 (1119.0/1127.7)    1106.3 (1102.1/1111.5)
+      3   2138.1 (2134.4/2144.4)    1188.0 (1184.3/1193.4)    1179.2 (1175.9/1182.9)
+      4   2142.3 (2138.7/2147.6)    1205.8 (1201.5/1210.6)    1194.4 (1190.9/1199.7)
+      6   2144.1 (2140.5/2150.5)    1215.5 (1210.8/1221.4)    1216.0 (1212.3/1222.7)
+      8   2009.8 (2005.4/2150.4)    1143.4 (1137.8/1243.5)    1131.9 (1126.7/1222.2)
+  The earlier trigger alone took det+TileLang-norm from 1314.4 to 1205.8 us at T=4 (the norm now
+  starts 2.5 us before the GEMM ends). The det norm adds only ~11 us per pass: both norms end
+  ~4.4 us after the GEMM because the coefficient warp (16 split loads + 20-step sinkhorn with 2
+  dependent IEEE divisions and 4 shuffles per step) is the tail; the layer_input half is hidden.
+  Kept (bitwise, a little faster, no TileLang JIT on the det path).
+- prepare() now self-tests the whole det pre per sublayer on the real layer parameters.
+9. Fused-norm tail (prof_tail.json: globaltimer in the GEMM CTAs and the norm, one sublayer in a
+   graph, T=4). Before: GEMM last CTA done 7.58 us, norm entry 5.12 (it launched only when the
+   slowest GEMM CTA had its x loaded), layer_input stored 9.07 (NOT hidden), wait returned 7.87,
+   split sums 8.38, first sinkhorn step 9.63 (dependent L2/DRAM loads of hc_scale/hc_base),
+   comb stored 12.03 -> tail 4.45 us.
+- GEMM trigger moved to right after its own griddepcontrol.wait (before x loads): norm entry 3.0.
+- Weights the norm needs (hc_scale, hc_base, norm weight) fetched before griddepcontrol.wait.
+- Result: layer_input stored 6.21 (< GEMM done 7.97, hidden), comb stored 11.58, tail 3.6 us;
+  path pass T=4 1194.4 -> 1137.0 us (path-time-v5). Bitwise re-checked (path-check-v6).
+- Tried and dropped: one sinkhorn ROW per lane (4 lanes per token, row sums in-register, 4
+  IEEE divisions per lane): bitwise equal but the 19-iteration loop took 5.16 us instead of
+  2.39 us (prof-tail-v2): the per-division check/branch sequence serializes. The TileLang layout
+  (one element per lane, 1 division per half-step) is kept.
+- Tried and dropped: a second warp per GEMM CTA that issues every fn stage at kernel start
+  (ISSUER_WARP): bitwise, T=4 1147.3 vs 1147.3 us, T=8 1194.4 vs 1179.7 us (sweep_variants,
+  sweep-issuer run): x requests queue behind fn in the memory system whoever issues them.
+- MMA latency on GB10 (probe_mma_latency.json): dependent mma.sync m16n8k8 TF32 chain 31.4
+  cycles per MMA (3 independent chains interleaved: 56.9 cycles per step of 3). The det GEMM
+  chain runs 52 cycles per k-step (0.19 us per k-block): 160 steps = 3.8 us vs a 2.3 us floor.
+10. Cleanup: the f32-fn GEMM variant (a bench reference since item 4) removed from the shipped
+    kernel and host; the GEMM is pk-only (mhc_det_gemm_t8 / _t16). probe_b_round ported to pk
+    with host pre-rounding: rne 60/60, trunc 0/60, rna 0/60 (runs/probe-bround-pk).
+    Re-checked: GEMM 4656/4656 bitwise (87 fn x T 1..16 x families), 1000-run det 0, graph
+    0/100 (gemm-check-v6); whole recurrence 430/430 x 6 T, 1000-run 0, graph 0/100
+    (path-check-v7); lever smoke PASS (lever-smoke-v4).
+11. Tried and dropped: coefficient half on a side stream (DSV41_MHC_DET_ASYNC prototype). The
+    prenorm GEMM + sinkhorn feed only the next post and the next pre's layer_input, so they
+    were forked onto a side stream after the post (event fork/join, joined at the next det post)
+    with the fused norm split into a layer_input-only kernel on the main stream. Measured with a
+    sublayer workload (each sublayer: post -> pre -> layer_input @ W1 @ W2, W 5120x2048 bf16,
+    42 MB per sublayer, the output feeding the next post; one graph per arm; run
+    bench-async-n2048): T=4 per 86-sublayer pass, work only 20851.7 us; mHC cost stock 1988.8,
+    det 950.3, det async 868.1 us; all bitwise equal. The side stream hides the GEMM latency but
+    its 1.23 MB per sublayer still competes for DRAM with the concurrent work, so it saved only
+    82 us per pass (~0.1 ms/step). The T=8 leg of the same run hit an illegal-address error in the
+    experimental path (graph capture with record_stream on the side stream). Not worth the
+    stream-ordering risk in the serve: reverted, the script removed (stdout kept in runs/).
+    => the fn stream (1.23 MB x 86 = 106 MB/step, 0.42 ms at 250 GB/s) is the floor that remains.
+12. Final numbers on the shipped code (gemm_time_final.json, path_time_final.json,
+    prof-path-final; summary.json):
+    GEMM serve-like per call (86 real fn, cold, median (p10/p90), GB/s = unique bytes / time):
+      T   stock DeepGEMM 16-split          det GEMM
+      1   15.56 (15.53/15.64) 129.1 GB/s     7.89 (7.85/7.94) 161.2 GB/s  64.5% of 250
+      3   15.64 (15.60/15.71) 133.9          8.65 (8.61/8.70) 156.9       62.7%
+      4   16.04 (16.00/16.10) 133.2          8.67 (8.29/8.77) 161.3       64.5%
+      6   15.36 (15.31/15.41) 144.7          8.16 (8.12/8.21) 181.8       72.7%
+      8   15.19 (15.14/15.26) 151.9          8.64 (8.60/8.71) 181.6       72.6%
+     16   15.03 (14.97/15.14) 176.1          8.79 (8.73/8.84) 217.4       87.0%
+    GEMM single call, CUDA events (1 us resolution), cold read-only flush / warm, T=4:
+      stock 18.46 (18.43/18.53) / 17.50 (17.34/17.63); det 11.26 (10.27/11.39) / 9.28 (7.55/9.41).
+      K=5120 broadcast T=4: stock 8.22 / 7.36; det 6.14 / 5.28.
+    Whole mHC path, 86 sublayers per pass (post + pre), median (p10/p90) us:
+      T   stock                     det                       saved
+      1   1999.3 (1996.8/2005.8)    1040.8 (1036.4/1045.1)    -958.5  (-47.9%)
+      3   2136.1 (2132.2/2141.2)    1130.8 (1126.4/1134.8)    -1005.3 (-47.1%)
+      4   2141.5 (2138.0/2147.4)    1145.9 (1142.1/1150.9)    -995.6  (-46.5%)
+      6   2142.5 (2139.5/2149.7)    1157.1 (1153.8/1161.1)    -985.4  (-46.0%)
+      8   2145.9 (2142.7/2151.8)    1168.4 (1165.5/1172.2)    -977.5  (-45.6%)
+    Kernel sums per pass, T=4 (prof-path-final): stock GEMM 16.00 x 85 + 6.77 (K=5120), fused
+    norm 4.80 x 86, post 2.88 x 84; det GEMM 7.65 x 86, det norm 8.03 x 86 (it starts 4.45 us
+    before the GEMM ends; its tail after the GEMM is ~3.6 us), det post 1.41 x 84.
+    Projection for the serve at c=1: -1.0 ms/step (isolated chain) to -1.4 ms/step (if the
+    det path keeps the stock path's 1.36x in-serve inflation: 2.92 vs 2.14 ms), i.e. ~1.6-2.2%
+    of a 63 ms step. c=2: about the same per pass.
+    Remaining floor: the fn stream, 106 MB/step = 0.42 ms at 250 GB/s. The det path takes
+    ~1.15 ms/pass; the rest is the sinkhorn chain (19 x 2 dependent IEEE divisions + 4 shuffles,
+    ~2.4 us per sublayer) and the post -> x -> GEMM start latency.
+13. The fused norm triggers its dependent once layer_input is written (the coefficient warp
+    finishes the sinkhorn after that). This matters only when the next kernel is PDL-launched.
+    The vLLM kernels launched with PDL wait first (gdc_wait / griddepcontrol.wait, e.g.
+    deepseek_v4_1 query_quant, fused_inv_rope_fp8_quant). The engram kernels after a post are
+    not PDL-launched. Measured with the AR proxy as a PDL-launched copy that waits
+    (sweep_variants --pdl-proxy, us per 86-sublayer pass, median (p10/p90)):
+      T=4: det, no early trigger 1057.2 (1052.7/1062.0); early trigger 1025.4 (1021.1/1031.4)
+      T=8: 1078.5 (1075.4/1084.6); 1044.0 (1040.0/1049.9)
+    The same proxy for both arms (sweep-pdlproxy-stock): T=4 stock 1954.3 (1951.2/1962.4) ->
+    det 1018.3 (1013.9/1022.9), -936 us (-47.9%); T=8 stock 1958.5 -> det 1034.6, -924 us.
+    Kept (unconditional). Bitwise re-checked (path-check-v8), lever smoke PASS (lever-smoke-v5).
+    Final whole-path numbers with the plain-copy (non-PDL) proxy (path_time_final.json,
+    path-time-final2): T=4 stock 2149.7 (2146.8/2155.8) -> det 1138.8 (1136.2/1143.1), -1010.9
+    us (-47.0%); T=1 2006.2 -> 1037.1; T=3 2142.8 -> 1122.8; T=6 2149.6 -> 1147.7; T=8 2013.1 ->
+    1053.8. The T=8 run-to-run spread is bimodal (p90 2147.4 / 1156.8); arms alternate within a run.
+14. Where it stops (sass/mhc_det.sass, shipped cubin; registers: gemm_t8 44, gemm_t16 58,
+    post 40, norm 72; no local memory).
+    - Sinkhorn: every half-step is SHFL.BFLY -> FADD -> SHFL.BFLY -> FADD -> FADD(eps) ->
+      MUFU.RCP -> FFMA refinement -> FCHK -> branch around the slow-path CALL. The fast path is
+      inline and the chain is strictly dependent (each normalisation needs the previous one), so
+      ~126 ns per step is the floor for a bitwise replica. 19 steps take 2.4 us of the 3.6 us
+      tail. [Superseded by item 15: the two dependent SHFL -> FADD steps of each sum can be three
+      independent shuffles with the same additions, -28..-34 us per pass, bitwise.]
+    - GEMM: DRAM-paced after its x lands; floor ~5.6 us (1.39 MB at 250 GB/s) vs 7.65 us per
+      call in the chain. The rest is the post -> x dependency and first-byte latency. Prefetching
+      more fn before the wait delays x (sweep_prefetch), and a separate issuer warp does not help
+      (item 9). The chain runs 52 vs 31.4 cycles per k-step (probe_mma_latency), but that only
+      matters on the last stage (~0.2 us).
+    - Remaining ideas, each <= ~0.1 ms/step with structural risk, not done: fold the post into
+      the GEMM prologue (the model calls post and pre separately, and engram layers modify the
+      residual in between); side stream (item 11: saved 82 us per pass, i.e. -0.08 ms/step).
+    Verdict: further kernel changes stop paying. Serve A/B next (serve_validation_plan.txt).
+
+--- Fix pass (review of 4f661a5; 2026-09-25 evening) ---------------------------------------------
+
+15. Sinkhorn sums with independent shuffles (the review's first missed opportunity; the edit was
+    left uncommitted by the interrupted fix attempt at 16:56 and is validated and committed here).
+    TileLang's AllReduce gives lane l, for a row sum, (v_l + v_l^2) + (v_l^1 + v_l^3) (xor 2
+    then xor 1) and, for a column sum, (v_l + v_l^8) + (v_l^4 + v_l^12) (xor 8 then xor 4).
+    rowsum4 / colsum4 fetch the three partner values with three independent SHFL.BFLY and do the
+    same three additions in the same grouping, so the expression tree is identical (IEEE add is
+    commutative; NaN results are the canonical NaN either way) and each sum loses one dependent
+    SHFL -> FADD step. SASS (sass/mhc_det.sass): three SHFL.BFLY back to back, then two
+    independent FADD and the combining FADD; norm 72 registers, no local memory; post and both
+    GEMM kernels byte-identical to 4f661a5 (per-function SASS md5 equal).
+    Checks on the edited source (sha256 b0bb537a...):
+      path-check (fp-path-check): post 96/96; whole recurrence 430/430 outputs at T 1/3/4/6/8/16;
+        1000-run (T=4) and 200-run (T=8) determinism 0; graph 100 replays x 5 T: 0 mismatches.
+      gemm-check (fp-gemm-check): 4656/4656 bitwise (87 fn, T 1..16, 6 input families);
+        determinism 0 (det and stock at 16/40 splits); graph 0/100 x 5 T.
+      lever smoke through the patched vLLM names (fp-lever-smoke): PASS.
+    Paired A/B in one process, shipped (new) vs 4f661a5 (ab/mhc_det_4f661a5.cu), both bitwise
+    equal to stock at every T, 200 reps, us per 86-sublayer pass, 4f661a5 minus new
+    (ab_shfl3_vs_4f661a5*.json; median (p10/p90)):
+      plain-copy AR proxy: T=1 30.3 (22.6/38.4)  T=3 27.7 (22.3/33.2)  T=4 29.5 (24.4/35.5)
+                           T=6 33.7 (27.4/41.2)  T=8 32.2 (20.2/43.6)
+      PDL-aware proxy:     T=1 30.0 (22.0/39.1)  T=3 31.2 (25.8/37.0)  T=4 27.7 (20.7/35.4)
+                           T=6 33.3 (25.8/38.6)  T=8 30.0 (19.7/39.8)
+    Final whole path on this source (path_time_final.json, fp-path-time; plain-copy proxy):
+      T=1 2004.6 -> 1001.9 (-50.0%)  T=3 2136.4 -> 1083.1  T=4 2142.4 (2138.6/2150.3) -> 1104.6
+      (1099.9/1110.5) (-48.4%)  T=6 2144.9 -> 1118.4  T=8 2152.9 -> 1133.7 (-47.3%).
+      PDL-aware proxy (sweep_variants.json, fp-pdlproxy): T=4 1948.2 -> 990.1 (-49.2%);
+      T=8 1956.2 -> 1014.7.
+    Harness: spark2.sh runs the container with --init (PID 1 forwards SIGTERM), timeout -k 15
+    (SIGKILL after 15 s) and a named container removed before the lock is released, so a hung
+    job cannot hold the shared GPU (review nit 3).
+
+16. The fn stream and the sinkhorn under the TP all-reduce (review missed opportunities 2 and 3).
+    In the serve every mHC post follows a TP all-reduce (attention wo_b, MoE final reduce:
+    NCCL RING_LL over RoCE, median 22.8 us, 80 per step, DRAM nearly idle). The reviewer measured
+    the fn stream as not a hard floor (every packed fn L2-hot: 1140.0 -> 960.7 us per pass at
+    T=4). Two ways to use the all-reduce window, measured with kernel_study/mhc_det/overlap_probe.py
+    (one GPU; per sublayer: AR stand-in = 5 CTAs spinning --ar-us on globaltimer with no memory
+    traffic, then x = bf16(src + y_prev); post; pre; work stand-in = 48x256 threads streaming 4 MB
+    of their own weight buffer with ld.global.cs, y = layer_input; one CUDA graph per arm, arms
+    round-robin with a rotating order, 200 reps, mHC us per pass = arm - (stand-ins only)):
+      pf   fork a side stream before the AR, 1-CTA cp.async.bulk.prefetch.L2 of the next
+           sublayer's packed fn (16 KiB requests), join before the post.
+      ovl  split the pre: layer_input right after the post (mhc_det_norm_li, main stream); the
+           prenorm GEMM + coefficient half (mhc_det_norm_coef) deferred and forked onto a side
+           stream right before the NEXT all-reduce (they feed only the next post and the next
+           pre's layer_input); join before that post.
+    Both bitwise equal to stock on every output of every sublayer (eager and 20 graph replays).
+    Paired median (p10/p90) vs det, us per 86-sublayer pass (overlap_probe_*.json):
+      AR 22.7 us, shipped source (ov-probe-final):
+        T=1 pf -164.0 (-173.8/-155.4)  ovl -724.7 (-734.0/-716.1)   mHC per pass: stock 2157.1,
+                                                                    det 1087.7, ovl 363.7
+        T=3 pf -142.3                  ovl -720.9 (-731.9/-709.9)
+        T=4 pf  -95.2                  ovl -601.1 (-616.6/-588.3)   stock 2039.4, det 1042.3, ovl 441.4
+        T=6 pf -100.7                  ovl -592.0 (-744.3/-578.0)
+        T=8 pf  -84.1                  ovl -725.1 (-750.5/-575.1)   stock 2159.6, det 1118.7, ovl 450.2
+      AR 22.7 us, earlier run (ovl-probe-v2): ovl T=1 -708.6, T=3 -592.4, T=4 -723.8, T=6 -731.6,
+        T=8 -743.5; pf -99 .. -180. The spread between runs is the known bimodality of the det and
+        stock arms (about 1040 vs 1120 us for det): ovl saves ~590-745 us per pass either way.
+      AR 12 us (ovl-probe-ar12): ovl T=4 -736.5, T=8 -755.9.
+      AR 6 us, shorter than the side work (ov-probe-final-ar6, ovl-probe-ar6): ovl T=4 -431.6 /
+        -561.8, T=8 -738.3 / -586.7.
+    ovl hides the GEMM (DRAM idle in the window, so the fn stream is free) and the whole sinkhorn
+    tail; pf only the fn's first-byte latency. pf is subsumed by ovl and not built. In the probe
+    the mHC path per pass goes stock ~2040-2180 -> det ~1040-1120 -> ovl ~360-460 us. (ovl-probe
+    v1/v2/ar12/ar6 used a variant file identical to the shipped mhc_det.cu minus one 4-line
+    comment, sha256 68d17b7d...; ov-probe-final* is the shipped source.)
+    Not measurable on one GPU: how NCCL RING_LL (5 CTAs polling host memory, which on GB10 is the
+    same LPDDR5x) behaves while the side stream reads 1.23 MB at up to ~250 GB/s; the stand-in
+    spins without memory traffic. The serve arm has to show it (serve_validation_plan.txt, C).
+    The builder's item-11 side-stream prototype (fork after the post, overlapping the sublayer's
+    own DRAM-bound work) saved 82 us per pass and faulted at T=8 (illegal address reported at a
+    tensor free, CUDACachingAllocator insert_events, i.e. record_stream on the side stream); the
+    script was removed, so the fault cannot be re-run. The design here removes that failure mode:
+    nothing is allocated on the side stream, there is no record_stream, and every tensor the
+    side stream touches is held by the pending record until the join. race_check (graph capture
+    and replay at T 1..16 with changing inputs) and compute-sanitizer memcheck on the split path
+    are clean (item 18).
+17. Lever DSV41_MHC_DET_OVERLAP=1 (needs DSV41_MHC_DET_SPLITS=16; default 0; run.sh FORWARD_ENVS;
+    docker/patch/mhc_det_overlap.py; audit markers "dsv41: mhc det overlap engaged" /
+    "dsv41: mhc det overlap is OFF", gated on both envs in tools/engagement_audit.py).
+    - Kernel: the fused norm's two halves are device functions (norm_coef, norm_li) behind three
+      entries: mhc_det_norm (fused, unchanged behaviour), mhc_det_norm_li (256 threads; weight
+      fetched, then griddepcontrol.wait, then the post output and the carried pre-mix; triggers
+      its dependent after layer_input), mhc_det_norm_coef (32 threads; weights, wait, partials).
+    - Host: det_pre_delayed(defer=...) launches norm_li and hands launch() (GEMM with no PDL
+      edge, being first after a fork, then norm_coef) plus every tensor it touches to
+      mhc_det_overlap.defer. GroupCoordinator.all_reduce is wrapped (both TP all-reduces before a
+      post go through it: tensor_model_parallel_all_reduce -> get_tp_group().all_reduce; anchors
+      checked at install and pinned in tests/fixtures/dsv41_ar_sites_e13.pin.txt): if a pre is
+      pending on this stream in this capture state, fork the side stream and launch it there.
+      _post and _pre settle first: join the side stream, or launch in place if no all-reduce
+      forked it (TP=1, an all-reduce on another stream: correct, but slower than the fused path).
+      A pending record that crossed a capture boundary raises (never expected: every forward in
+      the pinned model and draft ends with a post; tests pin it).
+    - Load: prepare() self-tests the split path (forked and in place, T 1/4/16, first layer's
+      real parameters) bitwise vs the stock pre before it engages; a mismatch keeps the fused path.
+    - Review hazard (packed fn is a copy): after any CUDA-graph capture has used a packed fn, an
+      in-place change of that fn is refused (no re-pack; the captured copy stays alive; the det
+      lever turns OFF loudly) instead of re-packing into a new buffer the graphs do not see.
+18. Checks committed to kernel_study (review missed opportunity 5) and their results on the
+    final source: race_check.py (reviewer's changing-input PDL race test + the overlap arms, run
+    through mhc_det_overlap itself; negative controls built from the shipped source by exact
+    one-occurrence edits), edge_check.py (reviewer's adversarial inputs + the split path),
+    sanitize.py/san.sh (compute-sanitizer memcheck/racecheck/synccheck on every entry incl. the
+    split kernels on a side stream; initcheck without a kernel filter and with the caching
+    allocator off, plus two canaries), lever_smoke.py --overlap (the lever through the real
+    patched vLLM names and the real wrapped GroupCoordinator.all_reduce).
+    Expectations fixed before the runs: 0 mismatches / 0 failures / 0 sanitizer errors on the
+    shipped code; each negative control detected in the arms it targets. Results (runs ov-*,
+    san-*; spark2, pmon clean before and after every run, SM 2190 MHz):
+    - lever smoke (ov-lever-smoke): the fused lever unchanged by the refactor, PASS.
+    - lever smoke --overlap (ov-lever-smoke-ovl): overlap armed and engaged after the self-test;
+      a 2-layer chain (4 pres, 4 all-reduces, final post) through the patched names bitwise equal
+      to the stock chain at T 1/3/4/6/8/16 with the all-reduce (4 forks, 4 joins) and without it
+      (4 in-place launches); T 17/64 stock (0 forks); captured in one CUDA graph (4 forks
+      captured, nothing pending after), 50 replays equal to eager. PASS.
+    - path check on the refactored fused norm (ov-path-check): 430/430 x 6 T, 1000/200-run
+      determinism 0, graph 0/100 x 5 T; post 96/96.
+    - race_check (ov-race, 20 reps x 430 outputs x T 1/3/4/6/8/16): 0 mismatches in det_graph,
+      det_eager, ovl_graph, ovl_eager and stock_graph. Negative controls (T 4/8, 5 reps):
+      gemm_nowait det_graph 2090/2088; coef_nowait det_graph 2130/2130 and ovl_graph 2130/2130;
+      li_nowait ovl_graph 2045/804; ovl_nojoin ovl_graph 2102/2111 -- each detected exactly in
+      its target arms (eager arms never see these races: launches are too far apart).
+    - edge_check (ov-edge): GEMM 448, fused pre 1680, split pre 3360 (1680 forked + 1680 in
+      place), post 64 cases: 0 failures, 0 NaN-payload-only differences (strictly bitwise).
+    - compute-sanitizer (san-*): memcheck 0 errors, racecheck 0 hazards, synccheck 0 errors on 128
+      det pre calls (fused, split forked, split in place; 48 forks, 32 in place) + 16 posts, T
+      1..16, K 20480 and 5120. initcheck (no kernel filter, caching allocator off): 0 reports on
+      the 40 real pre calls + posts at T 1/5/8/9/16 (the first report comes after their "ok:"
+      line); the canaries report exactly the 71,680 expected uninitialized loads (post 20,480;
+      GEMM cp.async 30,720; norm ld.cg 20,480).
+    - SASS (sass/mhc_det.sass): registers norm 72, norm_li 72, norm_coef 40, post 40, gemm_t8 44,
+      gemm_t16 58; no local memory; post and both GEMM kernels byte-identical to 850ee65.
+19. Final suite on 8d1afbd (the full microbench + correctness set re-run at the end; runs fin-*,
+    spark2 under the lock, pmon clean before and after every run, SM 2190 MHz flat when busy;
+    sass/mhc_det.sass re-disassembled from the fin-cubin build: identical).
+    Correctness: GEMM 4656/4656 bitwise, 1000-run determinism 0 (det, stock 16/40 splits, stock pre),
+    graph 0/100 x 5 T; path: post 96/96, recurrence 430/430 x T 1/3/4/6/8/16, 1000/200-run 0, graph
+    0/100 x 5 T; lever smoke PASS; lever smoke --overlap PASS (forks/joins 4/4 per chain at T<=16,
+    in place 4, T 17/64 stock, 4 forks captured, 50/50 replays equal); race_check 50 reps x 430
+    outputs x T 1/3/4/6/8/16: 0 mismatches in all five arms; negative controls detected in their
+    target arms at T 4 and 8; edge_check 448 + 1680 + 3360 + 64 cases: 0 failures; compute-sanitizer
+    memcheck / racecheck / synccheck 0, initcheck 0 on the real calls (canaries 71,680 as expected).
+    GEMM, serve-like per call (86 real fn, cold), stock -> det us (det GB/s, % of 250):
+      T=1 15.55->7.92 (160, 64.2%)  T=4 15.91->8.67 (161, 64.5%)  T=8 15.50->8.62 (182, 72.9%)
+      T=3 15.62->8.75 (155, 62.0%)  T=6 15.70->8.65 (172, 68.6%)  T=16 14.97->8.68 (220, 88.0%)
+    Single call T=4, CUDA events: cold 18.46 -> 11.26, warm 17.47 -> 9.22 us.
+    Whole path, us per 86-sublayer pass, plain-copy AR proxy (stock -> det):
+      T=1 2004.1->1012.7  T=3 2139.1->1097.6  T=4 2141.1->1110.5  T=6 2142.6->1119.8  T=8 2010.7->1034.4
+      PDL-aware proxy: T=4 1955.0 -> 997.1; T=8 1956.1 -> 1017.5.
+    Fused det path vs the reviewed 4f661a5 (paired, alt - final, us per pass): T1 +30.9
+      (+24.3/+38.3), T3 +33.6 (+27.8/+39.2), T4 +31.9 (+25.7/+37.4), T6 +30.3 (+19.8/+40.4), T8
+      +38.6 (+23.0/+51.4).
+    Norm refactor neutral (850ee65 - final): T1 +1.1 (-6.3/+7.0), T3 +2.2 (-4.7/+8.1), T4 -0.9
+      (-6.4/+5.2), T6 -8.8 (-18.3/+1.7), T8 +3.3 (-6.7/+13.4).
+    Overlap probe, AR stand-in 22.7 us (overlap_probe_fin.json), mHC us per pass stock / det / ovl,
+    ovl - det paired median (p10/p90):
+      T=1 2011.2 / 1007.9 / 300.0   -707.9 (-720.7/-695.4)
+      T=3 2036.5 / 1039.2 / 429.8   -602.5 (-724.9/-584.7)
+      T=4 2171.6 / 1113.2 / 402.4   -717.0 (-732.5/-590.7)
+      T=6 2176.2 / 1132.8 / 399.2   -734.0 (-746.7/-674.8)
+      T=8 2181.8 / 1143.9 / 400.0   -743.5 (-756.0/-730.9)
+      AR 12 us (overlap_probe_fin_ar12.json): T=4 -737.6, T=8 -751.6.
+    Not done (review missed opportunity 4): folding the post into the next kernel. With the overlap
+    the GEMM is off the critical path; what is left per sublayer is post + layer_input (~4-5 us in
+    the probe). Fusing them needs the post to be lazy across the model's post / engram / pre calls
+    (layers 1 and 14 rewrite the residual in between) for at most ~1 us per sublayer (~0.09
+    ms/step): structural risk for little. Harness: spark2.sh now rsyncs results back with -u; before
+    that a job that started before a local doc edit wrote its stale copy back over it (caught and
+    restored from the commit; nothing committed was affected).

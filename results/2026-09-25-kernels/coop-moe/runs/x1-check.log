@@ -1,0 +1,177 @@
+# 2026-09-25T17:34:41Z host spark2 tag x1-check
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.4Gi        86Gi       260Ki        31Gi       116Gi
+Swap:           15Gi       1.1Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode check,capture --variants 0,1,2,3,4,5,6,7,8,9 --ms 1,3,4,6,8 --sources census,dup0 --check-routings 4 --replays 16 --out results/2026-09-25-kernels/coop-moe/x1-check.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[17:34:54Z] loaded layer 20 rank 0 in 6.0 s
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[17:34:54Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v1": {"grid": 192, "blocks_per_sm": 4.0}, "v2": {"grid": 144, "blocks_per_sm": 3.0}, "v3": {"grid": 144, "blocks_per_sm": 3.0}, "v4": {"grid": 144, "blocks_per_sm": 3.0}, "v5": {"grid": 144, "blocks_per_sm": 3.0}, "v6": {"grid": 144, "blocks_per_sm": 3.0}, "v7": {"grid": 144, "blocks_per_sm": 3.0}, "v8": {"grid": 144, "blocks_per_sm": 3.0}, "v9": {"grid": 144, "blocks_per_sm": 3.0}}
+[17:34:55Z] [check] v1 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 3.6643996281782165e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v2 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 3.6643996281782165e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v3 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 3.6643996281782165e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v4 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 3.6643996281782165e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v5 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 3.6643996281782165e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v6 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 3.6643996281782165e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v7 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 3.6643996281782165e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v8 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 3.6643996281782165e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v9 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 3.6643996281782165e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v1 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002704164362512529, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v2 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002704164362512529, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v3 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002704164362512529, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v4 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002704164362512529, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v5 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002704164362512529, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v6 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002704164362512529, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v7 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002704164362512529, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v8 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002704164362512529, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v9 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002704164362512529, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v1 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.939793012046721e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v2 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.939793012046721e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v3 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.939793012046721e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v4 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.939793012046721e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v5 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.939793012046721e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v6 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.939793012046721e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v7 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.939793012046721e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v8 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.939793012046721e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v9 m=3 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.939793012046721e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v1 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0, "full_max_ulp": 0, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v2 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0, "full_max_ulp": 0, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v3 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0, "full_max_ulp": 0, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v4 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0, "full_max_ulp": 0, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v5 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0, "full_max_ulp": 0, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v6 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0, "full_max_ulp": 0, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v7 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0, "full_max_ulp": 0, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v8 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0, "full_max_ulp": 0, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v9 m=3 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0, "full_max_ulp": 0, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v1 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002796420594677329, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v2 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002796420594677329, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v3 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002796420594677329, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v4 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002796420594677329, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v5 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002796420594677329, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v6 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002796420594677329, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v7 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002796420594677329, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v8 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002796420594677329, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v9 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002796420594677329, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v1 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002394635957898572, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v2 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002394635957898572, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v3 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002394635957898572, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v4 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002394635957898572, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v5 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002394635957898572, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v6 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002394635957898572, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v7 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002394635957898572, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v8 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002394635957898572, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v9 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0002394635957898572, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v1 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.139489414636046e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v2 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.139489414636046e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v3 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.139489414636046e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v4 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.139489414636046e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v5 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.139489414636046e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v6 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.139489414636046e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v7 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.139489414636046e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v8 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.139489414636046e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:55Z] [check] v9 m=6 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.139489414636046e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v1 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.606765236938372e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v2 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.606765236938372e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v3 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.606765236938372e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v4 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.606765236938372e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v5 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.606765236938372e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v6 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.606765236938372e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v7 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.606765236938372e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v8 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.606765236938372e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v9 m=6 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.606765236938372e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v1 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00012212994624860585, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v2 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00012212994624860585, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v3 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00012212994624860585, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v4 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00012212994624860585, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v5 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00012212994624860585, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v6 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00012212994624860585, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v7 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00012212994624860585, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v8 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00012212994624860585, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v9 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00012212994624860585, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v1 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.000117481205961667, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v2 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.000117481205961667, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v3 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.000117481205961667, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v4 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.000117481205961667, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v5 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.000117481205961667, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v6 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.000117481205961667, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v7 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.000117481205961667, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v8 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.000117481205961667, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v9 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.000117481205961667, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v1 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011467889999039471, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v2 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011467889999039471, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v3 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011467889999039471, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v4 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011467889999039471, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v5 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011467889999039471, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v6 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011467889999039471, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v7 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011467889999039471, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v8 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011467889999039471, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:56Z] [check] v9 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.00011467889999039471, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:57Z] [check] v1 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.743634831858799e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:57Z] [check] v2 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.743634831858799e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:57Z] [check] v3 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.743634831858799e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:57Z] [check] v4 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.743634831858799e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:57Z] [check] v5 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.743634831858799e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:57Z] [check] v6 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.743634831858799e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:57Z] [check] v7 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.743634831858799e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:57Z] [check] v8 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.743634831858799e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:57Z] [check] v9 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 2.743634831858799e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[17:34:57Z] [capture] v1 m=1: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v1 m=3: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v1 m=4: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v1 m=6: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v1 m=8: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v2 m=1: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v2 m=3: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v2 m=4: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v2 m=6: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v2 m=8: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v3 m=1: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v3 m=3: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v3 m=4: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v3 m=6: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v3 m=8: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v4 m=1: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v4 m=3: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v4 m=4: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v4 m=6: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v4 m=8: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v5 m=1: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v5 m=3: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v5 m=4: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v5 m=6: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v5 m=8: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v6 m=1: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v6 m=3: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v6 m=4: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v6 m=6: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v6 m=8: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v7 m=1: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v7 m=3: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v7 m=4: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v7 m=6: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v7 m=8: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v8 m=1: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v8 m=3: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v8 m=4: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v8 m=6: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v8 m=8: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v9 m=1: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v9 m=3: replay_equals_eager=True (16 replays)
+[17:34:57Z] [capture] v9 m=4: replay_equals_eager=True (16 replays)
+[17:34:58Z] [capture] v9 m=6: replay_equals_eager=True (16 replays)
+[17:34:58Z] [capture] v9 m=8: replay_equals_eager=True (16 replays)
+[17:34:58Z] pass=True
+# 2026-09-25T17:34:59Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

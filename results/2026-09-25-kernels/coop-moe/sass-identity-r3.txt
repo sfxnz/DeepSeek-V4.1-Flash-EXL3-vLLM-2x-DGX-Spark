@@ -1,0 +1,32 @@
+# kernel_study/p2b_coop/sass_identity_r3.sh on dsv41-flash-exl3-sm121:canonical-e13, 2026-09-25T14:39:37Z, no-GPU container (--network none --memory 12g --cpus 6)
+# e14 TU = build/chain_coop.cu (pin + chain + widen_p2b_coop), e15 TU = build_r3/chain_r3.cu (+ widen_p2b_dataflow)
+Build cuda_13.0.r13.0/compiler.36424714_0
+BITS=2 CB=1 SORT=0: 78976 vs 78976 bytes IDENTICAL
+BITS=2 CB=1 SORT=1: 84864 vs 84864 bytes IDENTICAL
+BITS=2 CB=1 SORT=2: 86912 vs 86912 bytes IDENTICAL
+BITS=2 CB=2 SORT=0: 77952 vs 77952 bytes IDENTICAL
+BITS=2 CB=2 SORT=1: 83840 vs 83840 bytes IDENTICAL
+BITS=3 CB=1 SORT=0: 82944 vs 82944 bytes IDENTICAL
+BITS=3 CB=1 SORT=1: 88576 vs 88576 bytes IDENTICAL
+BITS=3 CB=2 SORT=0: 81792 vs 81792 bytes IDENTICAL
+BITS=3 CB=2 SORT=1: 87424 vs 87424 bytes IDENTICAL
+BITS=4 CB=1 SORT=0: 78208 vs 78208 bytes IDENTICAL
+BITS=4 CB=1 SORT=1: 83968 vs 83968 bytes IDENTICAL
+BITS=4 CB=2 SORT=0: 77440 vs 77440 bytes IDENTICAL
+BITS=4 CB=2 SORT=1: 83200 vs 83200 bytes IDENTICAL
+new p2b_moe_batched_kernel instantiations: []
+new dataflow kernels: ['_Z18p2b_coop_df_kernelILi2ELi1E']
+sass_identity_r3: OK
+# ptxas (e15 TU, K=2 MCG kernels):
+_Z18p2b_coop_df_kernelILi2ELi1E: 24 bytes stack frame, 24 bytes spill stores, 20 bytes spill loads
+_Z18p2b_coop_df_kernelILi2ELi1E: ptxas info    : Used 80 registers, used 1 barriers, 24 bytes cumulative stack size, 17676 bytes smem
+_Z22p2b_moe_batched_kernelILi2ELi1ELi2E: 40 bytes stack frame, 56 bytes spill stores, 140 bytes spill loads
+_Z22p2b_moe_batched_kernelILi2ELi1ELi2E: ptxas info    : Used 64 registers, used 1 barriers, 40 bytes cumulative stack size, 17668 bytes smem
+_Z22p2b_moe_batched_kernelILi2ELi1ELi0E: 40 bytes stack frame, 56 bytes spill stores, 140 bytes spill loads
+_Z22p2b_moe_batched_kernelILi2ELi1ELi0E: ptxas info    : Used 64 registers, used 1 barriers, 40 bytes cumulative stack size, 2048 bytes smem
+_Z18p2b_coop_df_kernelILi2ELi1E.sass: loop 0x5a60-0x8060 instr 609 HMMA 16 LDL 0 STL 0 LDG.E.EF 4
+_Z18p2b_coop_df_kernelILi2ELi1E.sass: loop 0xb910-0xdf50 instr 613 HMMA 16 LDL 0 STL 0 LDG.E.EF 4
+_Z22p2b_moe_batched_kernelILi2ELi1ELi0E.sass: loop 0x2780-0x4ac0 instr 565 HMMA 16 LDL 1 STL 0 LDG.E.EF 4
+_Z22p2b_moe_batched_kernelILi2ELi1ELi0E.sass: loop 0x89b0-0xadc0 instr 578 HMMA 16 LDL 1 STL 0 LDG.E.EF 4
+_Z22p2b_moe_batched_kernelILi2ELi1ELi2E.sass: loop 0x44f0-0x69d0 instr 591 HMMA 16 LDL 3 STL 0 LDG.E.EF 4
+_Z22p2b_moe_batched_kernelILi2ELi1ELi2E.sass: loop 0xad70-0xd1c0 instr 582 HMMA 16 LDL 0 STL 0 LDG.E.EF 4

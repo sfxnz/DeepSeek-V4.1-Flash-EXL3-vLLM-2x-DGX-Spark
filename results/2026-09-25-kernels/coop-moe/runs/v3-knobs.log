@@ -1,0 +1,185 @@
+# 2026-09-25T13:04:42Z host spark2 tag v3-knobs
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.1Gi       100Gi       260Ki        17Gi       116Gi
+Swap:           15Gi       1.2Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode all --variants 0,1,3,4,5,6,7 --ms 1,3,4,6,8 --check-routings 4 --out results/2026-09-25-kernels/coop-moe/v3-knobs.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[13:04:55Z] loaded layer 20 rank 0 in 6.2 s
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[13:04:55Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v1": {"grid": 192, "blocks_per_sm": 4.0}, "v3": {"grid": 144, "blocks_per_sm": 3.0}, "v4": {"grid": 144, "blocks_per_sm": 3.0}, "v5": {"grid": 144, "blocks_per_sm": 3.0}, "v6": {"grid": 144, "blocks_per_sm": 3.0}, "v7": {"grid": 144, "blocks_per_sm": 3.0}}
+[13:04:55Z] [check] v1 m=1 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 3.2912059396039695e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v3 m=1 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 3.2912059396039695e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v4 m=1 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 3.2912059396039695e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v5 m=1 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 3.2912059396039695e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v6 m=1 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 3.2912059396039695e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v7 m=1 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 3.2912059396039695e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v1 m=1 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.0386471886886284e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v3 m=1 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.0386471886886284e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v4 m=1 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.0386471886886284e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v5 m=1 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.0386471886886284e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v6 m=1 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.0386471886886284e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v7 m=1 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.0386471886886284e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v1 m=3 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00026413099840283394, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v3 m=3 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00026413099840283394, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v4 m=3 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00026413099840283394, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v5 m=3 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00026413099840283394, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v6 m=3 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00026413099840283394, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v7 m=3 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00026413099840283394, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v1 m=3 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 3.86948977393331e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v3 m=3 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 3.86948977393331e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v4 m=3 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 3.86948977393331e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v5 m=3 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 3.86948977393331e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v6 m=3 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 3.86948977393331e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:55Z] [check] v7 m=3 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 3.86948977393331e-06, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v1 m=4 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0001227294997079298, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v3 m=4 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0001227294997079298, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v4 m=4 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0001227294997079298, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v5 m=4 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0001227294997079298, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v6 m=4 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0001227294997079298, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v7 m=4 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0001227294997079298, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v1 m=4 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0004642525454983115, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v3 m=4 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0004642525454983115, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v4 m=4 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0004642525454983115, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v5 m=4 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0004642525454983115, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v6 m=4 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0004642525454983115, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v7 m=4 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0004642525454983115, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v1 m=6 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0005376344197429717, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v3 m=6 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0005376344197429717, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v4 m=6 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0005376344197429717, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v5 m=6 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0005376344197429717, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v6 m=6 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0005376344197429717, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v7 m=6 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.0005376344197429717, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v1 m=6 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024582105106674135, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v3 m=6 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024582105106674135, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v4 m=6 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024582105106674135, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v5 m=6 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024582105106674135, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v6 m=6 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024582105106674135, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v7 m=6 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00024582105106674135, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v1 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00013116473564878106, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v3 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00013116473564878106, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v4 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00013116473564878106, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v5 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00013116473564878106, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v6 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00013116473564878106, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v7 m=6 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00013116473564878106, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v1 m=8 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00012088975199731067, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v3 m=8 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00012088975199731067, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v4 m=8 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00012088975199731067, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v5 m=8 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00012088975199731067, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v6 m=8 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00012088975199731067, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:56Z] [check] v7 m=8 census: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00012088975199731067, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:57Z] [check] v1 m=8 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.154603761387989e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:57Z] [check] v3 m=8 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.154603761387989e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:57Z] [check] v4 m=8 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.154603761387989e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:57Z] [check] v5 m=8 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.154603761387989e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:57Z] [check] v6 m=8 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.154603761387989e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:57Z] [check] v7 m=8 dup0: {"pass": true, "onehot_bitexact": true, "full_max_rel": 6.154603761387989e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:57Z] [check] v1 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00023408239940181375, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:57Z] [check] v3 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00023408239940181375, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:57Z] [check] v4 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00023408239940181375, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:57Z] [check] v5 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00023408239940181375, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:57Z] [check] v6 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00023408239940181375, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:57Z] [check] v7 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "full_max_rel": 0.00023408239940181375, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[13:04:57Z] [capture] v1 m=1: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v1 m=3: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v1 m=4: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v1 m=6: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v1 m=8: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v3 m=1: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v3 m=3: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v3 m=4: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v3 m=6: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v3 m=8: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v4 m=1: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v4 m=3: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v4 m=4: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v4 m=6: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v4 m=8: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v5 m=1: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v5 m=3: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v5 m=4: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v5 m=6: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v5 m=8: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v6 m=1: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v6 m=3: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v6 m=4: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v6 m=6: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v6 m=8: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v7 m=1: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v7 m=3: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v7 m=4: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v7 m=6: replay_equals_eager=True (16 replays)
+[13:04:57Z] [capture] v7 m=8: replay_equals_eager=True (16 replays)
+[13:04:58Z] [time] m=1 census cold: v0 180.3us [180.2,184.3] 148GB/s 59%floor  v1 184.4us [184.3,188.4] 145GB/s 58%floor  v3 155.6us [151.6,159.7] 172GB/s 69%floor  v4 167.9us [163.9,174.2] 159GB/s 64%floor  v5 174.1us [170.0,181.3] 154GB/s 62%floor  v6 167.9us [164.8,175.1] 159GB/s 64%floor  v7 163.8us [161.8,169.0] 163GB/s 65%floor
+[13:04:59Z] [time] m=1 census warm: v0 176.1us [174.0,176.3] 152GB/s 61%floor  v1 180.2us [178.1,182.3] 149GB/s 59%floor  v3 147.5us [145.3,151.6] 182GB/s 73%floor  v4 159.7us [155.6,163.8] 168GB/s 67%floor  v5 167.0us [161.8,171.0] 160GB/s 64%floor  v6 161.8us [157.7,165.9] 165GB/s 66%floor  v7 153.6us [151.6,157.7] 174GB/s 70%floor
+[13:05:00Z] [time] m=1 dup0 cold: v0 180.2us [180.0,182.3] 149GB/s 59%floor  v1 184.3us [184.1,186.5] 145GB/s 58%floor  v3 153.6us [149.5,157.7] 174GB/s 70%floor  v4 167.9us [163.8,173.0] 159GB/s 64%floor  v5 173.2us [169.7,178.2] 155GB/s 62%floor  v6 167.9us [163.8,174.1] 159GB/s 64%floor  v7 162.9us [161.6,165.9] 164GB/s 66%floor
+[13:05:01Z] [time] m=1 dup0 warm: v0 176.1us [174.1,180.1] 152GB/s 61%floor  v1 180.2us [178.2,184.3] 149GB/s 59%floor  v3 147.5us [144.4,151.6] 182GB/s 73%floor  v4 158.8us [155.6,164.9] 169GB/s 67%floor  v5 166.9us [162.8,172.0] 160GB/s 64%floor  v6 160.8us [156.7,165.9] 166GB/s 67%floor  v7 153.8us [151.6,157.7] 174GB/s 70%floor
+[13:05:02Z] [time] m=3 census cold: v0 405.5us [398.3,409.6] 142GB/s 57%floor  v1 315.4us [262.1,372.7] 180GB/s 72%floor  v3 276.6us [219.1,317.5] 208GB/s 83%floor  v4 273.6us [221.2,315.4] 210GB/s 84%floor  v5 279.4us [227.4,321.5] 206GB/s 82%floor  v6 273.9us [223.1,315.6] 210GB/s 84%floor  v7 298.0us [252.8,341.0] 193GB/s 77%floor
+[13:05:03Z] [time] m=3 census warm: v0 391.2us [385.0,398.3] 147GB/s 59%floor  v1 311.2us [258.0,366.8] 183GB/s 73%floor  v3 272.4us [215.0,313.3] 213GB/s 85%floor  v4 269.3us [214.0,309.2] 215GB/s 86%floor  v5 273.0us [220.2,315.4] 211GB/s 84%floor  v6 268.3us [214.0,309.2] 215GB/s 86%floor  v7 288.8us [241.7,332.8] 199GB/s 80%floor
+[13:05:04Z] [time] m=3 dup0 cold: v0 409.6us [407.6,411.6] 196GB/s 78%floor  v1 417.3us [415.7,419.8] 192GB/s 77%floor  v3 374.8us [372.7,376.9] 214GB/s 86%floor  v4 369.9us [368.6,372.7] 217GB/s 87%floor  v5 376.8us [374.8,378.9] 213GB/s 85%floor  v6 369.6us [367.6,371.6] 217GB/s 87%floor  v7 393.2us [391.2,395.3] 204GB/s 82%floor
+[13:05:06Z] [time] m=3 dup0 warm: v0 403.5us [401.7,406.5] 199GB/s 80%floor  v1 411.6us [409.6,414.6] 195GB/s 78%floor  v3 368.6us [366.8,370.7] 218GB/s 87%floor  v4 363.5us [361.7,365.6] 221GB/s 88%floor  v5 369.6us [367.6,371.7] 217GB/s 87%floor  v6 362.5us [361.2,364.5] 222GB/s 89%floor  v7 383.2us [382.0,385.0] 210GB/s 84%floor
+[13:05:07Z] [time] m=4 census cold: v0 521.6us [514.0,525.3] 138GB/s 55%floor  v1 380.0us [317.4,450.6] 188GB/s 75%floor  v3 337.9us [278.6,395.3] 213GB/s 85%floor  v4 335.3us [275.5,392.2] 215GB/s 86%floor  v5 343.1us [281.6,398.3] 210GB/s 84%floor  v6 333.7us [275.5,390.2] 215GB/s 86%floor  v7 363.5us [302.1,416.7] 199GB/s 80%floor
+[13:05:08Z] [time] m=4 census warm: v0 503.8us [496.6,512.0] 142GB/s 57%floor  v1 376.8us [313.3,448.5] 190GB/s 76%floor  v3 333.8us [274.4,391.2] 215GB/s 86%floor  v4 328.2us [270.5,388.1] 218GB/s 87%floor  v5 336.9us [275.5,394.2] 213GB/s 85%floor  v6 328.1us [270.3,384.1] 218GB/s 87%floor  v7 352.3us [292.9,407.5] 204GB/s 82%floor
+[13:05:10Z] [time] m=4 dup0 cold: v0 526.3us [524.2,528.4] 203GB/s 81%floor  v1 536.6us [535.5,540.7] 200GB/s 80%floor  v3 491.5us [489.5,493.8] 218GB/s 87%floor  v4 484.4us [482.4,487.4] 221GB/s 88%floor  v5 491.5us [489.4,493.6] 218GB/s 87%floor  v6 483.4us [482.1,485.4] 222GB/s 89%floor  v7 507.9us [505.9,510.0] 211GB/s 84%floor
+[13:05:12Z] [time] m=4 dup0 warm: v0 522.2us [518.2,530.4] 205GB/s 82%floor  v1 532.5us [530.4,537.7] 201GB/s 80%floor  v3 487.4us [483.5,492.6] 220GB/s 88%floor  v4 479.2us [476.4,485.4] 223GB/s 89%floor  v5 486.4us [483.5,492.6] 220GB/s 88%floor  v6 478.0us [475.2,485.4] 224GB/s 90%floor  v7 499.7us [497.7,506.9] 214GB/s 86%floor
+[13:05:13Z] [time] m=6 census cold: v0 757.8us [749.6,765.0] 145GB/s 58%floor  v1 559.1us [487.4,647.1] 195GB/s 78%floor  v3 512.0us [434.3,596.0] 217GB/s 87%floor  v4 504.2us [428.3,580.6] 220GB/s 88%floor  v5 510.0us [435.2,587.8] 217GB/s 87%floor  v6 502.8us [428.9,580.6] 221GB/s 88%floor  v7 527.4us [451.6,605.3] 211GB/s 84%floor
+[13:05:15Z] [time] m=6 census warm: v0 730.7us [719.1,743.5] 151GB/s 60%floor  v1 553.0us [482.3,639.8] 197GB/s 79%floor  v3 505.8us [428.0,583.8] 220GB/s 88%floor  v4 497.7us [422.8,573.6] 223GB/s 89%floor  v5 503.8us [430.1,579.6] 220GB/s 88%floor  v6 497.7us [422.9,572.4] 223GB/s 89%floor  v7 519.2us [443.4,594.2] 214GB/s 86%floor
+[13:05:17Z] [time] m=6 dup0 cold: v0 766.0us [762.9,770.1] 210GB/s 84%floor  v1 780.3us [778.2,784.4] 206GB/s 82%floor  v3 725.2us [723.0,728.1] 221GB/s 89%floor  v4 714.8us [713.7,717.8] 225GB/s 90%floor  v5 721.0us [718.8,724.0] 223GB/s 89%floor  v6 713.7us [711.7,716.7] 225GB/s 90%floor  v7 740.4us [738.3,742.4] 217GB/s 87%floor
+[13:05:19Z] [time] m=6 dup0 warm: v0 760.8us [757.8,766.0] 211GB/s 84%floor  v1 775.2us [772.9,778.2] 207GB/s 83%floor  v3 718.8us [716.7,720.9] 223GB/s 89%floor  v4 707.6us [705.4,710.7] 227GB/s 91%floor  v5 714.7us [711.7,717.8] 225GB/s 90%floor  v6 706.5us [704.5,710.7] 227GB/s 91%floor  v7 731.1us [729.1,733.2] 220GB/s 88%floor
+[13:05:21Z] [time] m=8 census cold: v0 1009.7us [1001.5,1020.9] 132GB/s 53%floor  v1 667.6us [544.8,784.4] 198GB/s 79%floor  v3 610.4us [495.6,708.6] 219GB/s 88%floor  v4 601.5us [488.5,697.3] 222GB/s 89%floor  v5 608.3us [491.5,704.5] 220GB/s 88%floor  v6 600.1us [487.4,697.4] 223GB/s 89%floor  v7 627.2us [512.0,726.0] 213GB/s 85%floor
+[13:05:23Z] [time] m=8 census warm: v0 981.0us [964.6,995.3] 136GB/s 54%floor  v1 664.0us [540.7,770.1] 200GB/s 80%floor  v3 606.2us [489.4,703.5] 221GB/s 88%floor  v4 597.6us [483.3,691.2] 224GB/s 89%floor  v5 606.2us [492.5,699.4] 221GB/s 89%floor  v6 596.5us [481.6,689.2] 225GB/s 90%floor  v7 621.1us [503.8,714.9] 216GB/s 86%floor
+[13:05:26Z] [time] m=8 dup0 cold: v0 1024.1us [1021.9,1028.2] 209GB/s 84%floor  v1 1050.6us [1048.5,1055.7] 204GB/s 82%floor  v3 960.5us [958.5,964.7] 223GB/s 89%floor  v4 945.2us [943.1,948.2] 227GB/s 91%floor  v5 952.3us [949.2,955.4] 225GB/s 90%floor  v6 944.1us [941.1,947.2] 227GB/s 91%floor  v7 972.8us [970.8,976.8] 220GB/s 88%floor
+[13:05:29Z] [time] m=8 dup0 warm: v0 1017.8us [1013.8,1022.1] 210GB/s 84%floor  v1 1044.3us [1040.4,1047.6] 205GB/s 82%floor  v3 951.9us [950.2,955.4] 225GB/s 90%floor  v4 936.0us [934.0,939.1] 229GB/s 92%floor  v5 944.2us [942.1,947.2] 227GB/s 91%floor  v6 935.8us [933.8,939.0] 229GB/s 92%floor  v7 963.6us [961.4,968.7] 222GB/s 89%floor
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[13:05:29Z] [phases] v0 m=1 grid 192: total 167.6 us, skew 0.1, s1 work 2.9 imb 2.7 bar 0.7 | s2 work 102.6 imb 29.2 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.7 | s4 work 0.6 imb 0.3 bar 0.7 | s5 work 1.8 imb 1.6 bar 0.7 | s6 work 48.1 imb 3.4 bar 0.7 | s7 work 2.0 imb 1.7 bar 0.7 | s8 work 0.8 imb 0.1 bar 0.9 | tail 0.5
+[13:05:29Z] [phases] v0 m=3 grid 192: total 387.4 us, skew 0.1, s1 work 3.2 imb 2.8 bar 0.7 | s2 work 241.2 imb 18.0 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.7 | s4 work 0.6 imb 0.3 bar 0.8 | s5 work 1.8 imb 1.5 bar 0.7 | s6 work 127.8 imb 14.4 bar 0.7 | s7 work 2.4 imb 2.0 bar 0.7 | s8 work 1.5 imb 0.3 bar 0.8 | tail 0.5
+[13:05:29Z] [phases] v0 m=4 grid 192: total 502.0 us, skew 0.1, s1 work 3.5 imb 0.7 bar 0.7 | s2 work 314.5 imb 10.1 bar 0.7 | s3 work 2.5 imb 2.3 bar 0.7 | s4 work 0.6 imb 0.3 bar 0.8 | s5 work 1.8 imb 1.5 bar 0.7 | s6 work 167.6 imb 25.9 bar 0.7 | s7 work 2.4 imb 0.5 bar 0.7 | s8 work 1.8 imb 0.4 bar 0.7 | tail 0.6
+[13:05:29Z] [phases] v0 m=6 grid 192: total 735.5 us, skew 0.1, s1 work 4.3 imb 0.9 bar 0.6 | s2 work 466.8 imb 15.7 bar 0.7 | s3 work 2.6 imb 2.3 bar 0.8 | s4 work 0.7 imb 0.2 bar 0.8 | s5 work 1.9 imb 1.6 bar 0.7 | s6 work 248.0 imb 37.4 bar 0.7 | s7 work 2.9 imb 0.6 bar 0.6 | s8 work 2.3 imb 0.4 bar 0.7 | tail 0.6
+[13:05:29Z] [phases] v0 m=8 grid 192: total 978.0 us, skew 0.1, s1 work 5.4 imb 1.6 bar 0.7 | s2 work 627.2 imb 48.3 bar 0.7 | s3 work 2.6 imb 2.3 bar 0.8 | s4 work 0.8 imb 0.3 bar 0.7 | s5 work 1.9 imb 1.6 bar 0.8 | s6 work 327.4 imb 50.8 bar 0.7 | s7 work 3.6 imb 1.1 bar 0.6 | s8 work 2.9 imb 0.7 bar 0.6 | tail 0.6
+[13:05:29Z] [phases] v1 m=1 grid 192: total 160.1 us, skew 0.1, s1 work 4.0 imb 2.3 bar 0.7 | s2 work 97.3 imb 26.9 bar 0.7 | s3 work 2.4 imb 2.2 bar 0.7 | s4 work 0.5 imb 0.3 bar 0.7 | s5 work 1.9 imb 1.6 bar 0.7 | s6 work 45.5 imb 2.7 bar 0.7 | s7 work 2.0 imb 1.7 bar 0.7 | tail 1.6
+[13:05:29Z] [phases] v1 m=3 grid 192: total 289.5 us, skew 0.1, s1 work 5.5 imb 2.7 bar 0.7 | s2 work 175.2 imb 18.4 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.7 | s4 work 0.6 imb 0.3 bar 0.7 | s5 work 1.8 imb 1.5 bar 0.7 | s6 work 95.4 imb 10.6 bar 0.7 | s7 work 2.3 imb 1.9 bar 0.7 | tail 1.6
+[13:05:29Z] [phases] v1 m=4 grid 192: total 347.2 us, skew 0.1, s1 work 5.8 imb 0.7 bar 0.7 | s2 work 213.9 imb 17.3 bar 0.7 | s3 work 2.5 imb 2.3 bar 0.7 | s4 work 0.6 imb 0.2 bar 0.7 | s5 work 1.9 imb 1.6 bar 0.7 | s6 work 113.8 imb 12.4 bar 0.7 | s7 work 2.5 imb 0.6 bar 0.7 | tail 1.5
+[13:05:29Z] [phases] v1 m=6 grid 192: total 526.5 us, skew 0.1, s1 work 7.5 imb 0.7 bar 0.7 | s2 work 327.0 imb 20.6 bar 0.7 | s3 work 2.6 imb 2.3 bar 0.7 | s4 work 0.6 imb 0.2 bar 0.7 | s5 work 1.9 imb 1.6 bar 0.7 | s6 work 177.1 imb 23.4 bar 0.7 | s7 work 2.9 imb 0.6 bar 0.6 | tail 1.8
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[13:05:29Z] [phases] v1 m=8 grid 192: total 632.6 us, skew 0.1, s1 work 9.4 imb 1.5 bar 0.6 | s2 work 395.2 imb 26.1 bar 0.7 | s3 work 2.7 imb 2.4 bar 0.7 | s4 work 0.8 imb 0.3 bar 0.7 | s5 work 1.9 imb 1.6 bar 0.7 | s6 work 212.9 imb 26.2 bar 0.7 | s7 work 3.5 imb 1.1 bar 0.6 | tail 1.9
+[13:05:29Z] [phases] v3 m=1 grid 144: total 152.9 us, skew 0.1, s1 work 3.9 imb 2.3 bar 0.6 | s2 work 141.5 imb 9.3 bar 0.7 | tail 6.4
+[13:05:29Z] [phases] v3 m=3 grid 144: total 277.2 us, skew 0.1, s1 work 5.4 imb 0.6 bar 0.7 | s2 work 264.7 imb 6.7 bar 0.7 | tail 5.9
+[13:05:29Z] [phases] v3 m=4 grid 144: total 323.4 us, skew 0.1, s1 work 5.7 imb 0.5 bar 0.7 | s2 work 310.9 imb 6.8 bar 0.7 | tail 5.6
+[13:05:29Z] [phases] v3 m=6 grid 144: total 507.5 us, skew 0.1, s1 work 8.2 imb 1.4 bar 0.6 | s2 work 492.1 imb 7.2 bar 0.7 | tail 5.7
+[13:05:29Z] [phases] v3 m=8 grid 144: total 607.2 us, skew 0.1, s1 work 9.3 imb 1.0 bar 0.6 | s2 work 585.8 imb 7.4 bar 0.7 | tail 5.6
+[13:05:29Z] [phases] v4 m=1 grid 144: total 163.1 us, skew 0.1, s1 work 3.9 imb 2.3 bar 0.6 | s2 work 152.1 imb 6.4 bar 0.7 | tail 5.9
+[13:05:30Z] [phases] v4 m=3 grid 144: total 290.1 us, skew 0.1, s1 work 5.5 imb 0.6 bar 0.7 | s2 work 277.5 imb 7.9 bar 0.7 | tail 5.6
+[13:05:30Z] [phases] v4 m=4 grid 144: total 320.8 us, skew 0.1, s1 work 5.7 imb 0.6 bar 0.7 | s2 work 308.3 imb 8.2 bar 0.7 | tail 5.5
+[13:05:30Z] [phases] v4 m=6 grid 144: total 531.4 us, skew 0.1, s1 work 8.3 imb 1.5 bar 0.6 | s2 work 516.5 imb 8.3 bar 0.7 | tail 5.3
+[13:05:30Z] [phases] v4 m=8 grid 144: total 596.9 us, skew 0.1, s1 work 9.2 imb 1.1 bar 0.7 | s2 work 580.8 imb 8.3 bar 0.7 | tail 5.4
+[13:05:30Z] [phases] v5 m=1 grid 144: total 170.9 us, skew 0.1, s1 work 3.9 imb 2.3 bar 0.7 | s2 work 157.5 imb 7.2 bar 0.7 | tail 8.1
+[13:05:30Z] [phases] v5 m=3 grid 144: total 278.7 us, skew 0.1, s1 work 5.5 imb 0.6 bar 0.7 | s2 work 264.8 imb 8.0 bar 0.7 | tail 6.8
+[13:05:30Z] [phases] v5 m=4 grid 144: total 336.8 us, skew 0.1, s1 work 5.7 imb 0.5 bar 0.7 | s2 work 323.1 imb 8.4 bar 0.7 | tail 6.6
+[13:05:30Z] [phases] v5 m=6 grid 144: total 489.6 us, skew 0.1, s1 work 8.1 imb 1.5 bar 0.6 | s2 work 473.6 imb 8.7 bar 0.7 | tail 6.7
+[13:05:30Z] [phases] v5 m=8 grid 144: total 612.0 us, skew 0.1, s1 work 9.3 imb 1.1 bar 0.6 | s2 work 592.6 imb 8.4 bar 0.7 | tail 6.6
+[13:05:30Z] [phases] v6 m=1 grid 144: total 165.9 us, skew 0.1, s1 work 4.0 imb 2.3 bar 0.7 | s2 work 154.3 imb 6.7 bar 0.7 | tail 6.5
+[13:05:30Z] [phases] v6 m=3 grid 144: total 286.3 us, skew 0.1, s1 work 5.5 imb 0.6 bar 0.7 | s2 work 273.5 imb 7.9 bar 0.7 | tail 5.9
+[13:05:30Z] [phases] v6 m=4 grid 144: total 328.4 us, skew 0.1, s1 work 5.7 imb 0.5 bar 0.7 | s2 work 316.0 imb 7.7 bar 0.7 | tail 5.6
+[13:05:30Z] [phases] v6 m=6 grid 144: total 502.2 us, skew 0.1, s1 work 8.2 imb 1.5 bar 0.6 | s2 work 486.9 imb 8.1 bar 0.7 | tail 5.5
+[13:05:30Z] [phases] v6 m=8 grid 144: total 601.9 us, skew 0.1, s1 work 9.3 imb 1.0 bar 0.6 | s2 work 585.3 imb 8.3 bar 0.7 | tail 5.3
+[13:05:30Z] [phases] v7 m=1 grid 144: total 147.3 us, skew 0.1, s1 work 8.1 imb 5.6 bar 0.7 | s2 work 131.6 imb 10.9 bar 0.7 | tail 6.5
+[13:05:30Z] [phases] v7 m=3 grid 144: total 287.6 us, skew 0.1, s1 work 9.7 imb 0.7 bar 0.7 | s2 work 269.2 imb 9.9 bar 0.7 | tail 6.3
+[13:05:30Z] [phases] v7 m=4 grid 144: total 324.4 us, skew 0.1, s1 work 9.7 imb 0.6 bar 0.7 | s2 work 307.6 imb 9.6 bar 0.7 | tail 6.0
+[13:05:30Z] [phases] v7 m=6 grid 144: total 530.5 us, skew 0.1, s1 work 12.5 imb 1.8 bar 0.6 | s2 work 510.7 imb 11.3 bar 0.7 | tail 5.9
+[13:05:30Z] [phases] v7 m=8 grid 144: total 640.1 us, skew 0.1, s1 work 13.3 imb 1.0 bar 0.6 | s2 work 615.7 imb 12.0 bar 0.7 | tail 5.8
+[13:05:30Z] pass=True
+# 2026-09-25T13:05:32Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

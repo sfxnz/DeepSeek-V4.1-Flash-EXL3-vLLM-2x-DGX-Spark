@@ -1,0 +1,45 @@
+NCCL-in-CUDA-graph diagnostics (2026-09-25, ~06:55-07:10 UTC, serve down, spark1 GPU exclusive:
+before the Playwright chromium from another session started using it at 07:27 UTC).
+Script: scripts/nccl_graph_diag.py via scripts/nccl_graph_diag_run.sh; KEEP env + optional extra env.
+all_reduce 40 KiB (m=4 decode size), PyNcclCommunicator, image canonical-e13, NCCL 2.30.7.
+These passes use torch.profiler (CUPTI), which itself changes NCCL-in-graph timing; the sweep's
+in-graph CUDA-event method (profiler off) is the primary measurement. Diagnostics explain the mechanism.
+
+[b2b] graph of 20 back-to-back ARs (profiled): kernel med 24.2 us, gap between kernels 2.5 us;
+      but CUDA-event replay time / 20 = 66.6 us and host wall 72.0 us per call: a replay's fixed cost
+      (inter-replay gaps 100-950 us) dominates; cudaGraphLaunch host time ~50 us per replay (profiled).
+      rank0: dur med 24.2 p10 22.3 p90 31.2, gap med 2.5 p90 3.5; rank1 identical within 0.1 us.
+
+[d2] graph of 20 x [48 MiB memset ; AR] vs 20 x [memset] (100 replays):
+      rank0 events-1: with 7333 us/replay, flush-only 5145; host enqueue 3434 us/replay (!) vs 11 us
+      rank0 prof-1:   with span 7104, flush-only 5143; nccl kernel med 23.9 us
+      rank1: see lines below. With-calls replay costs +1960..2190 us for 20 ARs = 98..109 us per AR on
+      the critical path while the NCCL kernel itself is 24-26 us.
+
+[d3 / d3mix0] same gapped graph, profiled, flush kernel durations by slot position:
+      KEEP (mixing on):  flush med 291.6 us (flush-only graph 256.8), by slot [338, 320, 306, 294, 283, 286],
+                         gap flush->AR 6.1 us, NCCL kernel 25.2 us, span 7133 us, single-replay host launch 334 us
+      +NCCL_GRAPH_MIXING_SUPPORT=0: flush med 255.0 us (flush-only 256.8), by slot [256, 255, 255, 255, 255, 255],
+                         gap flush->AR 3.1 us, NCCL kernel 22.4 us, span 6202 us, single-replay host launch 184 us
+      => with mixing on, a captured network collective slows the neighbouring bandwidth-bound kernel
+         (+13.5% median, +32% in slot 0) and adds 3 us of launch gap; mixing off removes both.
+
+rank 1 logs (verbatim):
+b2b rank 1 n 600 dur med 24.2 p10 22.3 p90 30.2 gap med 2.6 p90 3.5 names ['ncclDevKernel_AllReduce_Sum_bf16_RING_LL(ncclDevKernelArgsSt']
+spin100us rank 1 n 600 dur med 22.9 p10 21.0 p90 27.4 gap med 107.2 p90 108.9 names ['at::cuda::(anonymous namespace)::spin_kernel(long)', 'ncclDevKernel_AllReduce_Sum_bf16_RING_LL(ncclDevKernelArgsSt']
+d2 r1 events-1 with: replay med 7332 p10 6939 p90 7926 us; start-to-start med 7335; host enqueue 3413 us/replay; wall 7377 us/replay
+d2 r1 events-1 flushonly: replay med 5142 p10 5138 p90 5149 us; start-to-start med 5142; host enqueue 11 us/replay; wall 5160 us/replay
+d2 r1 prof-1 with: kernels/replay 40; span med 7102; inter-replay gap med 7.4 p90 9.0; nccl kern med 24.8; wall 7579 us/replay
+d2 r1 prof-1 flushonly: kernels/replay 20; span med 5141; inter-replay gap med 4.8 p90 5.5; nccl kern med 0.0; wall 5305 us/replay
+d2 r1 events-2 with: replay med 7273 p10 6951 p90 7636 us; start-to-start med 7276; host enqueue 3306 us/replay; wall 7271 us/replay
+d2 r1 prof-2 with: kernels/replay 40; span med 6979; inter-replay gap med 7.4 p90 8.9; nccl kern med 25.6; wall 7305 us/replay
+d3 r1 prof-1 with: flush kern med 288.4 p10 268.1 p90 332.5; by position [339, 321, 305, 293, 281, 284]; gap flush->ar 6.6; gap ar->flush 0.6
+d3 r1 prof-1 with: kernels/replay 40; span med 7133; inter-replay gap med 7.2 p90 7.5; nccl kern med 25.6; wall 7565 us/replay
+d3 r1 prof-1 flushonly: flush kern med 256.9 p10 256.0 p90 258.0; by position [257, 257, 257, 257, 257, 257]; gap flush->ar 0.0; gap ar->flush 0.0
+d3 r1 prof-1 flushonly: kernels/replay 20; span med 5142; inter-replay gap med 4.6 p90 5.4; nccl kern med 0.0; wall 5313 us/replay
+d3 r1 single replay: host launch 253 us, wall 6408 us
+d3mix0 r1 prof-1 with: flush kern med 254.9 p10 254.0 p90 256.3; by position [256, 255, 255, 255, 255, 255]; gap flush->ar 3.0; gap ar->flush 0.6
+d3mix0 r1 prof-1 with: kernels/replay 40; span med 6200; inter-replay gap med 3.3 p90 4.3; nccl kern med 22.4; wall 6634 us/replay
+d3mix0 r1 prof-1 flushonly: flush kern med 257.1 p10 256.1 p90 263.1; by position [257, 257, 257, 257, 257, 257]; gap flush->ar 0.0; gap ar->flush 0.0
+d3mix0 r1 prof-1 flushonly: kernels/replay 20; span med 5147; inter-replay gap med 4.8 p90 5.5; nccl kern med 0.0; wall 5354 us/replay
+d3mix0 r1 single replay: host launch 179 us, wall 6971 us

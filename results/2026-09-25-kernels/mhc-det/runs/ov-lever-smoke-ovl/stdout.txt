@@ -1,0 +1,97 @@
+dsv41-indexer-workspace: already applied
+dsv41: mhc det armed (DSV41_MHC_DET_SPLITS=16): packs and self-tests mHC weights after load
+dsv41: mhc det overlap armed (DSV41_MHC_DET_OVERLAP=1): the next all-reduce runs the det prenorm GEMM + sinkhorn of each decode pre on a side stream
+INFO 09-25 17:54:56 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 17:54:56 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+2026-09-25 17:54:58  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-25 17:55:03  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-25 17:55:03  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-25 17:55:08  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-25 17:55:09  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-25 17:55:14  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-25 17:55:14  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_post_tilelang` with `out_idx=None`
+2026-09-25 17:55:15  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_post_tilelang`
+dsv41: mhc det engaged: smoke: 5 fn packed (5.0 MiB); det GEMM, fused norm and post bitwise equal to stock on 6 pre self-tests (DeepGEMM 16-split, TileLang); T <= 16
+dsv41: mhc det overlap engaged: smoke: layer_input right after the post; prenorm GEMM + sinkhorn forked under the next all-reduce; split path bitwise equal to stock (fork and in place, T 1/4/16)
+{
+ "patched": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "det_on": true,
+ "overlap_on": true,
+ "chain": [
+  {
+   "T": 1,
+   "bitwise_with_all_reduce": true,
+   "bitwise_without": true,
+   "forks": 4,
+   "in_place": 4,
+   "pending_after": false
+  },
+  {
+   "T": 3,
+   "bitwise_with_all_reduce": true,
+   "bitwise_without": true,
+   "forks": 4,
+   "in_place": 4,
+   "pending_after": false
+  },
+  {
+   "T": 4,
+   "bitwise_with_all_reduce": true,
+   "bitwise_without": true,
+   "forks": 4,
+   "in_place": 4,
+   "pending_after": false
+  },
+  {
+   "T": 6,
+   "bitwise_with_all_reduce": true,
+   "bitwise_without": true,
+   "forks": 4,
+   "in_place": 4,
+   "pending_after": false
+  },
+  {
+   "T": 8,
+   "bitwise_with_all_reduce": true,
+   "bitwise_without": true,
+   "forks": 4,
+   "in_place": 4,
+   "pending_after": false
+  },
+  {
+   "T": 16,
+   "bitwise_with_all_reduce": true,
+   "bitwise_without": true,
+   "forks": 4,
+   "in_place": 4,
+   "pending_after": false
+  },
+  {
+   "T": 17,
+   "bitwise_with_all_reduce": true,
+   "bitwise_without": true,
+   "forks": 0,
+   "in_place": 0,
+   "pending_after": false
+  },
+  {
+   "T": 64,
+   "bitwise_with_all_reduce": true,
+   "bitwise_without": true,
+   "forks": 0,
+   "in_place": 0,
+   "pending_after": false
+  }
+ ],
+ "capture": {
+  "forks_captured": 4,
+  "pending_after": false,
+  "mismatching_replays_of_50": 0
+ }
+}
+PASS

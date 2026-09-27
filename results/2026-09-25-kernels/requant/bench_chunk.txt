@@ -1,0 +1,23 @@
+# bench_chunk.py on spark1 GB10, dsv41-quant151 (exllamav3 1.5.1), 2026-09-25T10:1x Z
+# GPU at start: no foreign process in pmon (Chromium not active at that moment)
+# quantize_tiles_scratch(K=2, mcg) -> (optimized=True, wave=48); 48 SMs
+# One tensor each, 46,080 tiles (320x144 / 144x320), same regularized input for every chunk size.
+scratch (True, 48) SMs 48
+layers.0.ffn.experts.5.w1 (5120, 2304) read 0.001s cpu_dequant 0.028s gpu_dequant 0.126s equal True
+  regularize 0.377s   (first call, includes warmup)
+  chunk    256 1.884s  bitwise_eq_256 True
+  chunk   1024 1.817s  bitwise_eq_256 True
+  chunk   4608 1.798s  bitwise_eq_256 True
+  chunk  46080 1.800s  bitwise_eq_256 True
+  chunk    256 1.874s  bitwise_eq_256 True
+  pack 0.011s (320, 144, 32) torch.int16
+layers.0.ffn.experts.5.w2 (2304, 5120) read 0.000s cpu_dequant 0.032s gpu_dequant 0.012s equal True
+  regularize 0.006s
+  chunk    256 1.876s  bitwise_eq_256 True
+  chunk   1024 1.817s  bitwise_eq_256 True
+  chunk   4608 1.798s  bitwise_eq_256 True
+  chunk  46080 1.799s  bitwise_eq_256 True
+  chunk    256 1.875s  bitwise_eq_256 True
+  pack 0.000s (144, 320, 32) torch.int16
+# Verdict: tile_chunk 4608 = 256 bitwise (indices), 1.798 vs 1.88 s (-4.2%). Chosen for the full run;
+# also re-checked end-to-end (trellis+suh+svh) on the first 8 tensors of unit 00003 (unit-00003.json rows, chunk256_bitwise).

@@ -239,6 +239,11 @@ def install() -> bool:
     # wrapper — flashinfer.mm_mxfp8 is imported directly (present, verified).
     import flashinfer as _flashinfer
     vllm_flashinfer = _flashinfer
+    try:  # dsv41 dense_gemv (DSV41_DENSE_GEMV=1): bit-exact small-M decode GEMV
+        from dense_gemv import maybe_apply as _gemv_apply
+        from dense_gemv import prepare_lmhead as _gemv_prepare
+    except ImportError:
+        _gemv_apply = _gemv_prepare = None
 
     class Mxfp8LMHeadMethod(QuantizeMethodBase):
         """ParallelLMHead quant method riding the b12x mm_mxfp8 kernel.
@@ -262,8 +267,14 @@ def install() -> bool:
                 swizzle_mxfp8_scale(scale_2d, M=N, K=K).contiguous(),
                 requires_grad=False,
             )
+            if _gemv_prepare is not None:
+                _gemv_prepare(self, layer, scale_2d)
 
         def apply(self, layer, x, bias=None):
+            if _gemv_apply is not None:
+                out = _gemv_apply(layer, x, bias)
+                if out is not None:
+                    return out
             weight = layer.weight
             N, K = weight.shape
             assert K >= 128 and K % MXFP8_BLOCK_SIZE == 0 and N >= 128

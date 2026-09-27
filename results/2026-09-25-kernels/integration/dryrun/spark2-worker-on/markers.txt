@@ -1,0 +1,19 @@
+== vllm/model_executor/kernels/linear/mxfp8/flashinfer.py (+9 lines)
++try:  # dsv41 dense_gemv (DSV41_DENSE_GEMV)
++    from dense_gemv import maybe_apply as _dsv41_gemv_apply
++    from dense_gemv import prepare as _dsv41_gemv_prepare
++    _dsv41_gemv_apply = _dsv41_gemv_prepare = lambda *a, **k: None
++        _dsv41_gemv_prepare(self, layer, weight_scale_2d)
++        _dsv41_gemv_out = _dsv41_gemv_apply(layer, x, bias)
++        if _dsv41_gemv_out is not None:
++            return _dsv41_gemv_out
+== vllm/models/deepseek_v4/nvidia/ops/o_proj.py (+12 lines)
++try:  # dsv41 dense_gemv (DSV41_DENSE_GEMV): grouped wo_a GEMV
++    from dense_gemv import woa_apply as _dsv41_gemv_woa
++    _dsv41_gemv_woa = lambda *a, **k: False
++        if not _dsv41_gemv_woa(wo_a, o_proj_input, o_scale, weight_scale, z, einsum_recipe):
+== vllm/models/deepseek_v4_1/nvidia/vl_model.py (+24 lines)
++        # # --- g8-stream-feed --- drain-in-place: H2D copies pin each source
++        # Gate: DSV41_LOAD_PF_G8=1 or DSV41_STREAM_FEED=1.
++            _os.environ.get("DSV41_LOAD_PF_G8", "0") == "1"
++            or _os.environ.get("DSV41_STREAM_FEED", "0") == "1"

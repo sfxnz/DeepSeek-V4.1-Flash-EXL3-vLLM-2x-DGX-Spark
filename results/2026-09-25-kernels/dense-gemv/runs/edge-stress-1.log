@@ -1,0 +1,40 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T18:36:13Z
+lock acquired 2026-09-25T18:38:53Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/mxfp8/flashinfer.py
+dsv41: dense GEMV hooks patched into /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py
+dsv41-indexer-workspace: already applied
+[dense-gemv] rank? K5120xN1792 (qkv_a) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid28, M<=8 W3 S2 MR8 grid38; self-test M=1..8 x 3 dist bitwise, graph replay ok
+edge qkv_a          : 96/96 bitwise
+race qkv_a          : M1 0/3000, M3 0/3000, M4 0/3000, M6 0/3000, M8 0/3000
+[dense-gemv] rank? K1280xN16384 (wq_b) dense GEMV armed: KC640 M<=8 W2 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+edge wq_b           : 96/96 bitwise
+race wq_b           : M1 0/3000, M3 0/3000, M4 0/3000, M6 0/3000, M8 0/3000
+[dense-gemv] rank? K4096xN5120 (wo_b) dense GEMV armed: KC512 M<=4 W4 S2 MR4 grid48, M<=8 W4 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+edge wo_b           : 96/96 bitwise
+race wo_b           : M1 0/3000, M3 0/3000, M4 0/3000, M6 0/3000, M8 0/3000
+[dense-gemv] rank? K5120xN2304 (shared_gate_up) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48, M<=8 W2 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+edge shared_gate_up : 96/96 bitwise
+race shared_gate_up : M1 0/3000, M3 0/3000, M4 0/3000, M6 0/3000, M8 0/3000
+[dense-gemv] rank? K1152xN5120 (shared_down) dense GEMV armed: KC384 M<=8 W4 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+edge shared_down    : 96/96 bitwise
+race shared_down    : M1 0/3000, M3 0/3000, M4 0/3000, M6 0/3000, M8 0/3000
+[dense-gemv] rank? K6144xN25600 (engram_wkv) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48, M<=8 W2 S2 MR8 grid48; self-test M=1..8 x 3 dist bitwise, graph replay ok
+edge engram_wkv     : 96/96 bitwise
+race engram_wkv     : M1 0/300, M3 0/300, M4 0/300, M6 0/300, M8 0/300
+[dense-gemv] rank? K15360xN5120 (main_proj) dense GEMV armed: KC512 M<=4 W2 S2 MR4 grid48; self-test M=1..4 x 3 dist bitwise, graph replay ok
+edge main_proj      : 48/48 bitwise
+race main_proj      : M1 0/300, M3 0/300, M4 0/300
+TOTAL problems: 0
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 244 busy 204 sm_median 2190 sm_min_busy 2190 mem ['[N/A]'] power_median 18.5 W
+rc=0

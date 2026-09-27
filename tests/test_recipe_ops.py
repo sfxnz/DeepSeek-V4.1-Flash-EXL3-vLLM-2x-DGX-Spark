@@ -143,6 +143,7 @@ def _worker_config() -> list[str]:
 # Env names read under docker/patch/ that are deliberately NOT forwarded.
 PATCH_ENV_NOT_FORWARDED = {
     "DSV41_VL_MODEL_PATH": "g8_stream_feed install-time path override (offline tests), not a serve knob",
+    "NCCL_GRAPH_MIXING_SUPPORT": "written by nccl_eager_twin only when its twin is armed; alone it is unsafe here",
 }
 # Forwarded names nothing under docker/patch/ reads: vLLM, vllm_exl3 or NCCL read them.
 FORWARDED_ENGINE_ENVS = {

@@ -1,0 +1,12 @@
+Interrupted first attempt of the fix pass (2026-09-25 ~16:47 BST, spark2). Kept for the record:
+- engine_selftest.* is valid (9.46 MB buffer, 2x-L2 flush). ring:8x16 needs 128 KiB of dynamic
+  shared memory, which is above GB10's 101376 B opt-in limit, so it fails with "invalid argument".
+  l2pf_variants.k_ring now checks the limit up front.
+- rank0.txt / rank1.txt: rank 0 died on that launch error in the middle of the arm list, and rank 1
+  then waited forever inside an NCCL all-reduce. That hang is why ar_window_nccl.py pre-validates
+  every engine before any collective exists, why it has a progress watchdog and an init timeout, and
+  why two_rank_mps.sh and gpu_run.sh now have hard wall-clock limits.
+- p2b_probe.* is SUPERSEDED by ../../p2b-window-v2/ for two reasons. It recorded e0 after the
+  prefetch launch, so the prefetch kernel's own run time (~40 us) was left out of 'total'. And it
+  compared p2b outputs under normalized routing weights, where p2b's fp32 atomicAdd slot order
+  varies from run to run, so "eq False" there does not mean a wrong result.

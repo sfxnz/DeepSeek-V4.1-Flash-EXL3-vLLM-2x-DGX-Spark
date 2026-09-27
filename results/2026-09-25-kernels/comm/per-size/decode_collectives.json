@@ -1,0 +1,686 @@
+{
+ "what": "per-size decode collective cost, clean k3 sweep cells (keep = phase1 rep1, graph_mixing0 = smoke rep0), vs a wire floor from ib_write_lat (AR ring LL: 2 hops x RDMA write of the full per-rank size; AG: 1 hop)",
+ "modes": {
+  "eager": "one launch per call, device time",
+  "graph": "30 calls back to back in one graph, steady slots",
+  "gapped": "30 x [2x-L2 memset ; call] in one graph: call cost incl. the slowed neighbour"
+ },
+ "note": "clean mixing-off cells come from one rep (smoke); the two contaminated phase-1 reps agree within 1.3 us at AR m=4",
+ "rows": [
+  {
+   "op": "all_reduce",
+   "m": 1,
+   "mode": "eager",
+   "bytes_per_rank": 10240,
+   "keep": {
+    "median": 20.64,
+    "p10": 20.0,
+    "p90": 22.08
+   },
+   "mix0": {
+    "median": 21.63,
+    "p10": 19.62,
+    "p90": 22.69
+   },
+   "wire_floor_us": 7.1,
+   "keep_pct_of_floor": 34.4,
+   "mix0_pct_of_floor": 32.8,
+   "keep_payload_gbps": 0.5,
+   "mix0_payload_gbps": 0.47,
+   "startup_us": {
+    "keep": null,
+    "mix0": null
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 1,
+   "mode": "graph",
+   "bytes_per_rank": 10240,
+   "keep": {
+    "median": 24.32,
+    "p10": 20.2,
+    "p90": 28.75
+   },
+   "mix0": {
+    "median": 16.77,
+    "p10": 14.78,
+    "p90": 19.17
+   },
+   "wire_floor_us": 7.1,
+   "keep_pct_of_floor": 29.2,
+   "mix0_pct_of_floor": 42.3,
+   "keep_payload_gbps": 0.42,
+   "mix0_payload_gbps": 0.61,
+   "startup_us": {
+    "keep": 509.64,
+    "mix0": 572.9
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 1,
+   "mode": "gapped",
+   "bytes_per_rank": 10240,
+   "keep": {
+    "median": 52.48,
+    "p10": 32.03,
+    "p90": 98.96
+   },
+   "mix0": {
+    "median": 17.7,
+    "p10": 16.34,
+    "p90": 21.28
+   },
+   "wire_floor_us": 7.1,
+   "keep_pct_of_floor": 13.5,
+   "mix0_pct_of_floor": 40.1,
+   "keep_payload_gbps": 0.2,
+   "mix0_payload_gbps": 0.58,
+   "startup_us": {
+    "keep": 849.68,
+    "mix0": 729.31
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 3,
+   "mode": "eager",
+   "bytes_per_rank": 30720,
+   "keep": {
+    "median": 24.57,
+    "p10": 22.62,
+    "p90": 33.83
+   },
+   "mix0": {
+    "median": 23.36,
+    "p10": 22.62,
+    "p90": 24.8
+   },
+   "wire_floor_us": 11.28,
+   "keep_pct_of_floor": 45.9,
+   "mix0_pct_of_floor": 48.3,
+   "keep_payload_gbps": 1.25,
+   "mix0_payload_gbps": 1.32,
+   "startup_us": {
+    "keep": null,
+    "mix0": null
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 3,
+   "mode": "graph",
+   "bytes_per_rank": 30720,
+   "keep": {
+    "median": 28.16,
+    "p10": 23.18,
+    "p90": 36.32
+   },
+   "mix0": {
+    "median": 20.83,
+    "p10": 18.78,
+    "p90": 23.26
+   },
+   "wire_floor_us": 11.28,
+   "keep_pct_of_floor": 40.1,
+   "mix0_pct_of_floor": 54.2,
+   "keep_payload_gbps": 1.09,
+   "mix0_payload_gbps": 1.47,
+   "startup_us": {
+    "keep": 592.12,
+    "mix0": 597.55
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 3,
+   "mode": "gapped",
+   "bytes_per_rank": 30720,
+   "keep": {
+    "median": 58.76,
+    "p10": 29.34,
+    "p90": 107.22
+   },
+   "mix0": {
+    "median": 21.47,
+    "p10": 19.46,
+    "p90": 24.64
+   },
+   "wire_floor_us": 11.28,
+   "keep_pct_of_floor": 19.2,
+   "mix0_pct_of_floor": 52.5,
+   "keep_payload_gbps": 0.52,
+   "mix0_payload_gbps": 1.43,
+   "startup_us": {
+    "keep": 558.36,
+    "mix0": 688.45
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 4,
+   "mode": "eager",
+   "bytes_per_rank": 40960,
+   "keep": {
+    "median": 27.66,
+    "p10": 25.62,
+    "p90": 37.12
+   },
+   "mix0": {
+    "median": 25.7,
+    "p10": 24.58,
+    "p90": 26.88
+   },
+   "wire_floor_us": 13.14,
+   "keep_pct_of_floor": 47.5,
+   "mix0_pct_of_floor": 51.1,
+   "keep_payload_gbps": 1.48,
+   "mix0_payload_gbps": 1.59,
+   "startup_us": {
+    "keep": null,
+    "mix0": null
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 4,
+   "mode": "graph",
+   "bytes_per_rank": 40960,
+   "keep": {
+    "median": 31.6,
+    "p10": 25.68,
+    "p90": 42.32
+   },
+   "mix0": {
+    "median": 21.6,
+    "p10": 20.83,
+    "p90": 25.06
+   },
+   "wire_floor_us": 13.14,
+   "keep_pct_of_floor": 41.6,
+   "mix0_pct_of_floor": 60.8,
+   "keep_payload_gbps": 1.3,
+   "mix0_payload_gbps": 1.9,
+   "startup_us": {
+    "keep": 678.92,
+    "mix0": 523.46
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 4,
+   "mode": "gapped",
+   "bytes_per_rank": 40960,
+   "keep": {
+    "median": 57.56,
+    "p10": 34.96,
+    "p90": 104.85
+   },
+   "mix0": {
+    "median": 22.53,
+    "p10": 20.89,
+    "p90": 25.6
+   },
+   "wire_floor_us": 13.14,
+   "keep_pct_of_floor": 22.8,
+   "mix0_pct_of_floor": 58.3,
+   "keep_payload_gbps": 0.71,
+   "mix0_payload_gbps": 1.82,
+   "startup_us": {
+    "keep": 424.73,
+    "mix0": 319.22
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 6,
+   "mode": "eager",
+   "bytes_per_rank": 61440,
+   "keep": {
+    "median": 28.25,
+    "p10": 26.64,
+    "p90": 30.74
+   },
+   "mix0": {
+    "median": 28.67,
+    "p10": 26.62,
+    "p90": 30.69
+   },
+   "wire_floor_us": 16.94,
+   "keep_pct_of_floor": 60.0,
+   "mix0_pct_of_floor": 59.1,
+   "keep_payload_gbps": 2.17,
+   "mix0_payload_gbps": 2.14,
+   "startup_us": {
+    "keep": null,
+    "mix0": null
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 6,
+   "mode": "graph",
+   "bytes_per_rank": 61440,
+   "keep": {
+    "median": 33.1,
+    "p10": 28.06,
+    "p90": 45.17
+   },
+   "mix0": {
+    "median": 25.28,
+    "p10": 22.88,
+    "p90": 28.67
+   },
+   "wire_floor_us": 16.94,
+   "keep_pct_of_floor": 51.2,
+   "mix0_pct_of_floor": 67.0,
+   "keep_payload_gbps": 1.86,
+   "mix0_payload_gbps": 2.43,
+   "startup_us": {
+    "keep": 482.79,
+    "mix0": 522.56
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 6,
+   "mode": "gapped",
+   "bytes_per_rank": 61440,
+   "keep": {
+    "median": 59.27,
+    "p10": 31.12,
+    "p90": 105.38
+   },
+   "mix0": {
+    "median": 24.8,
+    "p10": 22.66,
+    "p90": 28.67
+   },
+   "wire_floor_us": 16.94,
+   "keep_pct_of_floor": 28.6,
+   "mix0_pct_of_floor": 68.3,
+   "keep_payload_gbps": 1.04,
+   "mix0_payload_gbps": 2.48,
+   "startup_us": {
+    "keep": 281.65,
+    "mix0": 315.49
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 8,
+   "mode": "eager",
+   "bytes_per_rank": 81920,
+   "keep": {
+    "median": 32.26,
+    "p10": 30.59,
+    "p90": 34.8
+   },
+   "mix0": {
+    "median": 32.58,
+    "p10": 30.68,
+    "p90": 34.82
+   },
+   "wire_floor_us": 20.74,
+   "keep_pct_of_floor": 64.3,
+   "mix0_pct_of_floor": 63.7,
+   "keep_payload_gbps": 2.54,
+   "mix0_payload_gbps": 2.51,
+   "startup_us": {
+    "keep": null,
+    "mix0": null
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 8,
+   "mode": "graph",
+   "bytes_per_rank": 81920,
+   "keep": {
+    "median": 35.36,
+    "p10": 30.9,
+    "p90": 40.14
+   },
+   "mix0": {
+    "median": 28.9,
+    "p10": 25.38,
+    "p90": 31.52
+   },
+   "wire_floor_us": 20.74,
+   "keep_pct_of_floor": 58.7,
+   "mix0_pct_of_floor": 71.8,
+   "keep_payload_gbps": 2.32,
+   "mix0_payload_gbps": 2.83,
+   "startup_us": {
+    "keep": 421.26,
+    "mix0": 541.62
+   }
+  },
+  {
+   "op": "all_reduce",
+   "m": 8,
+   "mode": "gapped",
+   "bytes_per_rank": 81920,
+   "keep": {
+    "median": 63.2,
+    "p10": 41.46,
+    "p90": 105.59
+   },
+   "mix0": {
+    "median": 29.12,
+    "p10": 26.62,
+    "p90": 33.73
+   },
+   "wire_floor_us": 20.74,
+   "keep_pct_of_floor": 32.8,
+   "mix0_pct_of_floor": 71.2,
+   "keep_payload_gbps": 1.3,
+   "mix0_payload_gbps": 2.81,
+   "startup_us": {
+    "keep": 413.62,
+    "mix0": 328.91
+   }
+  },
+  {
+   "op": "all_gather",
+   "m": 3,
+   "mode": "eager",
+   "bytes_per_rank": 387840,
+   "keep": {
+    "median": 54.45,
+    "p10": 46.13,
+    "p90": 62.61
+   },
+   "mix0": {
+    "median": 53.47,
+    "p10": 49.53,
+    "p90": 57.54
+   },
+   "wire_floor_us": 32.06,
+   "keep_pct_of_floor": 58.9,
+   "mix0_pct_of_floor": 60.0,
+   "keep_payload_gbps": 7.12,
+   "mix0_payload_gbps": 7.25,
+   "startup_us": {
+    "keep": null,
+    "mix0": null
+   }
+  },
+  {
+   "op": "all_gather",
+   "m": 3,
+   "mode": "graph",
+   "bytes_per_rank": 387840,
+   "keep": {
+    "median": 56.27,
+    "p10": 48.67,
+    "p90": 66.9
+   },
+   "mix0": {
+    "median": 49.5,
+    "p10": 45.7,
+    "p90": 53.98
+   },
+   "wire_floor_us": 32.06,
+   "keep_pct_of_floor": 57.0,
+   "mix0_pct_of_floor": 64.8,
+   "keep_payload_gbps": 6.89,
+   "mix0_payload_gbps": 7.84,
+   "startup_us": {
+    "keep": 358.47,
+    "mix0": 520.0
+   }
+  },
+  {
+   "op": "all_gather",
+   "m": 3,
+   "mode": "gapped",
+   "bytes_per_rank": 387840,
+   "keep": {
+    "median": 92.42,
+    "p10": 58.67,
+    "p90": 138.58
+   },
+   "mix0": {
+    "median": 52.14,
+    "p10": 42.05,
+    "p90": 65.18
+   },
+   "wire_floor_us": 32.06,
+   "keep_pct_of_floor": 34.7,
+   "mix0_pct_of_floor": 61.5,
+   "keep_payload_gbps": 4.2,
+   "mix0_payload_gbps": 7.44,
+   "startup_us": {
+    "keep": 263.24,
+    "mix0": 394.93
+   }
+  },
+  {
+   "op": "all_gather",
+   "m": 4,
+   "mode": "eager",
+   "bytes_per_rank": 517120,
+   "keep": {
+    "median": 69.76,
+    "p10": 51.38,
+    "p90": 92.34
+   },
+   "mix0": {
+    "median": 65.76,
+    "p10": 59.68,
+    "p90": 73.82
+   },
+   "wire_floor_us": 41.39,
+   "keep_pct_of_floor": 59.3,
+   "mix0_pct_of_floor": 62.9,
+   "keep_payload_gbps": 7.41,
+   "mix0_payload_gbps": 7.86,
+   "startup_us": {
+    "keep": null,
+    "mix0": null
+   }
+  },
+  {
+   "op": "all_gather",
+   "m": 4,
+   "mode": "graph",
+   "bytes_per_rank": 517120,
+   "keep": {
+    "median": 68.51,
+    "p10": 59.04,
+    "p90": 80.74
+   },
+   "mix0": {
+    "median": 60.1,
+    "p10": 55.97,
+    "p90": 66.21
+   },
+   "wire_floor_us": 41.39,
+   "keep_pct_of_floor": 60.4,
+   "mix0_pct_of_floor": 68.9,
+   "keep_payload_gbps": 7.55,
+   "mix0_payload_gbps": 8.6,
+   "startup_us": {
+    "keep": 578.03,
+    "mix0": 707.97
+   }
+  },
+  {
+   "op": "all_gather",
+   "m": 4,
+   "mode": "gapped",
+   "bytes_per_rank": 517120,
+   "keep": {
+    "median": 100.94,
+    "p10": 68.57,
+    "p90": 146.36
+   },
+   "mix0": {
+    "median": 61.41,
+    "p10": 44.03,
+    "p90": 83.26
+   },
+   "wire_floor_us": 41.39,
+   "keep_pct_of_floor": 41.0,
+   "mix0_pct_of_floor": 67.4,
+   "keep_payload_gbps": 5.12,
+   "mix0_payload_gbps": 8.42,
+   "startup_us": {
+    "keep": 728.99,
+    "mix0": 605.15
+   }
+  },
+  {
+   "op": "all_gather",
+   "m": 6,
+   "mode": "eager",
+   "bytes_per_rank": 775680,
+   "keep": {
+    "median": 86.01,
+    "p10": 82.05,
+    "p90": 88.33
+   },
+   "mix0": {
+    "median": 84.82,
+    "p10": 82.08,
+    "p90": 88.19
+   },
+   "wire_floor_us": 60.06,
+   "keep_pct_of_floor": 69.8,
+   "mix0_pct_of_floor": 70.8,
+   "keep_payload_gbps": 9.02,
+   "mix0_payload_gbps": 9.15,
+   "startup_us": {
+    "keep": null,
+    "mix0": null
+   }
+  },
+  {
+   "op": "all_gather",
+   "m": 6,
+   "mode": "graph",
+   "bytes_per_rank": 775680,
+   "keep": {
+    "median": 87.39,
+    "p10": 80.82,
+    "p90": 96.29
+   },
+   "mix0": {
+    "median": 80.22,
+    "p10": 76.42,
+    "p90": 84.67
+   },
+   "wire_floor_us": 60.06,
+   "keep_pct_of_floor": 68.7,
+   "mix0_pct_of_floor": 74.9,
+   "keep_payload_gbps": 8.88,
+   "mix0_payload_gbps": 9.67,
+   "startup_us": {
+    "keep": 622.31,
+    "mix0": 519.81
+   }
+  },
+  {
+   "op": "all_gather",
+   "m": 6,
+   "mode": "gapped",
+   "bytes_per_rank": 775680,
+   "keep": {
+    "median": 127.54,
+    "p10": 88.61,
+    "p90": 171.81
+   },
+   "mix0": {
+    "median": 83.1,
+    "p10": 73.28,
+    "p90": 100.59
+   },
+   "wire_floor_us": 60.06,
+   "keep_pct_of_floor": 47.1,
+   "mix0_pct_of_floor": 72.3,
+   "keep_payload_gbps": 6.08,
+   "mix0_payload_gbps": 9.33,
+   "startup_us": {
+    "keep": 521.61,
+    "mix0": 592.26
+   }
+  },
+  {
+   "op": "all_gather",
+   "m": 8,
+   "mode": "eager",
+   "bytes_per_rank": 1034240,
+   "keep": {
+    "median": 105.53,
+    "p10": 98.3,
+    "p90": 119.15
+   },
+   "mix0": {
+    "median": 104.7,
+    "p10": 99.38,
+    "p90": 112.68
+   },
+   "wire_floor_us": 78.73,
+   "keep_pct_of_floor": 74.6,
+   "mix0_pct_of_floor": 75.2,
+   "keep_payload_gbps": 9.8,
+   "mix0_payload_gbps": 9.88,
+   "startup_us": {
+    "keep": null,
+    "mix0": null
+   }
+  },
+  {
+   "op": "all_gather",
+   "m": 8,
+   "mode": "graph",
+   "bytes_per_rank": 1034240,
+   "keep": {
+    "median": 109.36,
+    "p10": 102.41,
+    "p90": 117.56
+   },
+   "mix0": {
+    "median": 101.06,
+    "p10": 96.96,
+    "p90": 106.78
+   },
+   "wire_floor_us": 78.73,
+   "keep_pct_of_floor": 72.0,
+   "mix0_pct_of_floor": 77.9,
+   "keep_payload_gbps": 9.46,
+   "mix0_payload_gbps": 10.23,
+   "startup_us": {
+    "keep": 611.39,
+    "mix0": 670.46
+   }
+  },
+  {
+   "op": "all_gather",
+   "m": 8,
+   "mode": "gapped",
+   "bytes_per_rank": 1034240,
+   "keep": {
+    "median": 142.28,
+    "p10": 108.94,
+    "p90": 187.97
+   },
+   "mix0": {
+    "median": 104.45,
+    "p10": 89.07,
+    "p90": 131.04
+   },
+   "wire_floor_us": 78.73,
+   "keep_pct_of_floor": 55.3,
+   "mix0_pct_of_floor": 75.4,
+   "keep_payload_gbps": 7.27,
+   "mix0_payload_gbps": 9.9,
+   "startup_us": {
+    "keep": 749.57,
+    "mix0": 566.9
+   }
+  }
+ ]
+}

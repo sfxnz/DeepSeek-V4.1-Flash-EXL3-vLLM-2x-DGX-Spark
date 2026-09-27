@@ -1,0 +1,23 @@
+== 2026-09-25T17:59:30Z wkvtp3 (committed tree 1f29e69, image dsv41-flash-exl3-sm121:canonical-e13)
+-- containers before: 
+-- pmon immediately before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+2190 MHz, [N/A], 9.06 W, 53
+---- 2026-09-25T17:59:30Z wkv_tp_check: -e VLLM_EXL3_MOE_KERNEL=native -e DSV41_PATCH_STRICT=1 -e DSV41_ENGRAM_DISK=1 -e DSV41_ENGRAM_FAST_STAGE=1 -e DSV41_ENGRAM_PREFETCH=1 -e DSV41_ENGRAM_CENSUS=1 -e DSV41_ENGRAM_GATHER_V2=1 -e DSV41_ENGRAM_WILLNEED=1 -- /repo/kernel_study/fusion_host/engram_wkv_tp_check.py --snapshot /hf/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-lmhead-mx
+dsv41: engram wkv column-parallel self-check bit-exact (model.layers.1.engram.wkv: 12800 of 25600 rows per rank, M 1/4/8/64)
+dsv41: engram wkv column-parallel DISABLED -> stock replicated GEMM on the gathered weight (model.layers.1.engram.wkv; 2 rank(s) failed; here: sharded + all-gather != replicated GEMM (M=1))
+dsv41: engram wkv column-parallel self-check bit-exact (model.layers.14.engram.wkv: 12800 of 25600 rows per rank, M 1/4/8/64)
+dsv41: engram wkv column-parallel DISABLED -> stock replicated GEMM on the gathered weight (model.layers.14.engram.wkv; 2 rank(s) failed; here: sharded + all-gather != replicated GEMM (M=1))
+{"torch": "2.13.0+cu130", "bitwise": {"layer1": {"cases": 64, "differ": 0, "shards_equal_stock_weight": true, "shards_equal_stock_scale": true}, "layer14": {"cases": 64, "differ": 0, "shards_equal_stock_weight": true, "shards_equal_stock_scale": true}}, "self_check": {"layer1": {"engaged": true, "wkv_kept": true, "sabotage_disarmed": true, "fallback_installed": true, "fallback_equals_stock_cases_d
+rc=0
+== end 2026-09-25T17:59:51Z rc=0
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+-- sm clock samples during run (MHz: count): 208:5 2190:14 
+-- busy samples (util>0) sm MHz: 2190:11 
+-- own GPU process samples: 12; FOREIGN GPU process samples: 0

@@ -27,11 +27,26 @@ PATCHES = {
     "lmhead_mxfp8.py": {"DSV41_LMHEAD_MXFP8": "1"},
     "engram_prefetch_v3.py": {"DSV41_ENGRAM_PREFETCH": "1"},
     "engram_gather_v2.py": {"DSV41_ENGRAM_GATHER_V2": "1"},
+    "engram_native_stage.py": {"DSV41_ENGRAM_NATIVE_STAGE": "1"},
+    "engram_early_hash.py": {"DSV41_ENGRAM_NATIVE_STAGE": "1", "DSV41_ENGRAM_EARLY_HASH": "1"},
+    "moe_prep_fused.py": {"DSV41_MOE_PREP_FUSED": "1"},
+    "candidate_mask_bounded.py": {"DSV41_CANDIDATE_MASK_BOUNDED": "1"},
+    "indexer_wp_gemv.py": {"DSV41_INDEXER_WP_GEMV": "1"},
+    "swa_meta_fused.py": {"DSV41_SWA_META_FUSED": "1"},
+    "attn_t2r_dedup.py": {"DSV41_ATTN_T2R_DEDUP": "1"},
+    "engram_wkv_tp.py": {"DSV41_ENGRAM_WKV_TP": "1"},
     "fix_o_proj_woa_fp8.py": {},  # baked into the image at build time
     "drop_page_cache.py": {"DSV41_DROP_PAGE_CACHE": "1"},
+    "nccl_eager_twin.py": {"DSV41_NCCL_EAGER_TWIN": "1"},
+    "pm_qos.py": {"DSV41_PM_QOS_US": "20"},  # any other value: disarm markers only
+    "ar_l2_prefetch.py": {"DSV41_AR_L2_PREFETCH": "1"},
     "sitecustomize.py": None,  # disarm markers only
     "decode_levers.py": None,  # disarm markers only
     "dense_mxfp8_deepgemm.py": None,  # disarm markers only (opt-in lever)
+    "widen_p2b_dataflow.py": {"DSV41_P2B_COOP": "2"},  # printed by the patched vllm_exl3_c
+    "dense_gemv.py": {"DSV41_DENSE_GEMV": "1"},  # opt-in lever; armed line expected when on
+    "mhc_det.py": {"DSV41_MHC_DET_SPLITS": "16"},
+    "mhc_det_overlap.py": {"DSV41_MHC_DET_SPLITS": "16", "DSV41_MHC_DET_OVERLAP": "1"},
 }
 # vLLM's own line (vllm/compilation/breakable_cudagraph.py:290 in the pinned image).
 BREAKABLE_CUDAGRAPH = "Breakable CUDA graph enabled"

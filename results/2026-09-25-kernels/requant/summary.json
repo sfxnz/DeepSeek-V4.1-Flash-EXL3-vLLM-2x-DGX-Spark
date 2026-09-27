@@ -1,0 +1,122 @@
+{
+ "stage": "k3 requant launch",
+ "date": "2026-09-25",
+ "driver": "tools/requant_full.py (733a2ba, fc1b084, 371f9a1); frozen run copy 371f9a1 in /home/sfxnz/projects/data/dsv41-requant-viterbi/code",
+ "image": "dsv41-quant151 sha256:ba0ac163ef95dcdce2b403293956f6dc08e2df8d80a4dbadae39d37736c27d6f (exllamav3 1.5.1 @958ec93), same ID on spark1 and spark2",
+ "encoder": "Viterbi quantize_tiles via _quantize_fast (meta-H fallback, skip_g_scale) 2.0bpw MCG K=2 tile_chunk 4608 + refit_scales(H=I) closed form kept if relerr does not rise; seed crc32(tensor)",
+ "units": 40,
+ "tensors": 46080,
+ "gate_fixed_before_run": "finite; unit mean relerr <= 0.97x stock; layout == 2.0bpw-mcg shard; non-expert + .mcg bytes equal; reload equal",
+ "smoke_first12": "relerr 0.26156 vs stock 0.37740; chunk256 bitwise 6/6; upstream refit max diff 1.1e-8",
+ "unit_00003_check": {
+  "sha256": "c4eea513fcc85aeed4e4811b90d0bc5fe01cbd1c2439defe2ead26dacaefa28c",
+  "size": 3585021280,
+  "relerr_final": {
+   "n": 1152,
+   "mean": 0.26155809649363554,
+   "min": 0.2612274761004574,
+   "p50": 0.26156778222525306,
+   "p90": 0.2616212024049186,
+   "p99": 0.26164238554390024,
+   "max": 0.2616628439515745
+  },
+  "relerr_stock_mean": 0.37753948108536506,
+  "relerr_viterbi_mean": 0.2617100079521043,
+  "mse_ratio": 0.4799672303824553,
+  "gate_ok": true,
+  "header_bytes_equal_ref": true,
+  "sec_per_tensor": 2.505405446100566,
+  "wall_s": 2889.4100408554077,
+  "t_enc_mean": null,
+  "t_all_mean": null,
+  "code": null,
+  "chunk256_bitwise": "8/8",
+  "max_abs_final_minus_upstream_refit": 1.1734105631600045e-08,
+  "per_tensor_final_over_stock": [
+   0.691418422365769,
+   0.6939683090659645
+  ]
+ },
+ "unit_00004_worker": {
+  "sha256": "1725b5ce0f5ff45c188b3379faa91f550c84f9ee91f84e280aed12439d3158f6",
+  "size": 3585021280,
+  "relerr_final": {
+   "n": 1152,
+   "mean": 0.26157698474795027,
+   "min": 0.26092357891896123,
+   "p50": 0.2615900867941424,
+   "p90": 0.2616302475415153,
+   "p99": 0.26165142717159484,
+   "max": 0.26166389870044016
+  },
+  "relerr_stock_mean": 0.377526515265362,
+  "relerr_viterbi_mean": 0.26170843880410166,
+  "mse_ratio": 0.48006952739458225,
+  "gate_ok": true,
+  "header_bytes_equal_ref": true,
+  "sec_per_tensor": 2.5725682537174888,
+  "wall_s": 2968.098870277405,
+  "t_enc_mean": 2.465001999710997,
+  "t_all_mean": 2.572533941310313,
+  "code": "371f9a1"
+ },
+ "shard_sanity_00003": {
+  "header_bytes_equal": true,
+  "header_len": [
+   470400,
+   470400
+  ],
+  "tensors": 4638,
+  "experts": {
+   "mcg": {
+    "n": 1152,
+    "equal_ref": 1152
+   },
+   "suh": {
+    "finite": true,
+    "absmax_new": 0.028472900390625,
+    "absmax_ref": 0.028778076171875,
+    "absmin_new": 0.003993988037109375,
+    "absmin_ref": 0.003997802734375,
+    "sign_flip_frac_sum": 0.0,
+    "n": 1152
+   },
+   "svh": {
+    "finite": true,
+    "absmax_new": 1.072265625,
+    "absmax_ref": 1.0,
+    "absmin_new": 0.92529296875,
+    "absmin_ref": 1.0,
+    "sign_flip_frac_sum": 0.0,
+    "n": 1152
+   },
+   "trellis": {
+    "n": 1152,
+    "all_zero": 0,
+    "identical_to_ref": 0
+   }
+  }
+ },
+ "container": "dsv41-requant (spark1, started 2026-09-25T11:24:19Z)",
+ "throughput": {
+  "quiet_gpu_s_per_tensor": "1.90-1.92 (quantize_tiles 1.81-1.83)",
+  "chromium_active_window_s_per_tensor": "2.2-4.2",
+  "unit_avg_spark1": [
+   2.505405446100566,
+   2.5725682537174888
+  ]
+ },
+ "eta_utc": {
+  "spark1_alone_planning_2.55s": "2026-09-26T19:14Z",
+  "spark1_alone_range": [
+   "2026-09-26T11:56Z (1.95 s/t)",
+   "2026-09-27T12:52Z (4.0 s/t, heaviest Chromium load seen)"
+  ],
+  "spark2_joins_2026-09-25T20:00Z": "2026-09-26T05:58Z",
+  "spark2_joins_2026-09-26T00:00Z": "2026-09-26T08:15Z"
+ },
+ "done_marker": "spark1:/home/sfxnz/projects/data/dsv41-requant-viterbi/state/DONE",
+ "check_cmd": "python3 /home/sfxnz/projects/data/dsv41-requant-viterbi/code/tools/requant_full.py status",
+ "plan": "/home/sfxnz/projects/data/dsv41-requant-viterbi/PLAN.txt (copy: PLAN.txt here)",
+ "format_note": "refit makes svh a real per-column scale (0.925-1.072; stock exactly +-1); p2b/coop/reconstruct multiply by fp16 svh; kernels must not assume |svh|==1"
+}

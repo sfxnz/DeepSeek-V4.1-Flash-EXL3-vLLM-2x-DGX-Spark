@@ -23,6 +23,38 @@
   code (built before the patch), where the env would silently do nothing.
 - DSV41_P2B_COOP=1 is read by the compiled vllm_exl3_c (widen_p2b_coop in
   docker/Dockerfile.e14). Same warning when that .so has no coop code.
+- DSV41_P2B_COOP=2 selects the dataflow coop kernel (widen_p2b_dataflow, also
+  in docker/Dockerfile.e14). Same warning when that .so has no dataflow code.
+- DSV41_MHC_DET_SPLITS=16 lives in mhc_det.py: bitwise-stock decode mHC (post
+  + prenorm GEMM) on faster kernels. Here: its install step (it also installs
+  DSV41_MHC_DET_OVERLAP=1, mhc_det_overlap.py).
+- DSV41_ENGRAM_NATIVE_STAGE=1: the decode-step Engram disk gather + dequant in
+  C with the GIL released (engram_native_stage.py, engram_native.c). Hooked
+  here rather than in sitecustomize so the mounted patch dir arms it on an
+  image whose baked sitecustomize predates it.
+- DSV41_INDEXER_WP_GEMV=1: the indexer's bf16 weights_proj [32, 5120] as a
+  Triton GEMV with cuBLAS's MMA chain order (bit-identical, indexer_wp_gemv.py).
+- DSV41_CANDIDATE_MASK_BOUNDED=1: the V4.1 decode candidate mask stops at each
+  row's end instead of rewriting the whole max_model_len-wide logits row
+  (candidate_mask_bounded.py; top_k_per_row_decode never reads past the end).
+- DSV41_MOE_PREP_FUSED=1: the native p2b MoE's input prep (~14 single-block
+  torch kernels per MoE layer on the routing path) as one Triton kernel,
+  bit-exact (moe_prep_fused.py).
+- DSV41_ATTN_T2R_DEDUP=1: build_attn_metadata makes one CommonAttentionMetadata
+  per KV-cache group, so the token -> request map (arange + repeat_interleave +
+  copy, ~8 small kernels) is rebuilt for every group: ~21 times a decode step.
+  With the lever, a group whose metadata shares the previous group's
+  query_start_loc tensors (same objects, same token counts) copies the previous
+  result into its own buffer (one kernel); the first reuses are verified
+  against the stock method (attn_t2r_dedup.py).
+- DSV41_SWA_META_FUSED=1: a causal pure-decode SWA metadata build writes
+  is_valid_token, the lens tail and the SWA indices/lens in one Triton kernel
+  instead of compare + copy + fill + the stock kernel (15 builds a target
+  step; integer math, bit-exact; swa_meta_fused.py).
+- DSV41_ENGRAM_WKV_TP=1: the Engram wkv (ReplicatedLinear [25600, 6144]
+  MXFP8, read whole on every rank) becomes a ColumnParallelLinear with the
+  output gathered: each rank reads half the weight, bit-identical output,
+  checked against the replicated GEMM after loading (engram_wkv_tp.py).
 
 Top-level imports are stdlib only, so importing this module cannot fail.
 """
@@ -138,8 +170,9 @@ def _check_woa_prepack(env) -> None:
         )
 
 
-def _check_p2b_env(env, name: str, lever: str, code: str, dockerfile: str) -> None:
-    if (env.get(name, "0") or "0") != "1":
+def _check_p2b_env(env, name: str, lever: str, code: str, dockerfile: str, value: str = "1",
+                   needle: str | None = None) -> None:
+    if (env.get(name, "0") or "0") != value:
         return
     import importlib.util
     import mmap
@@ -147,9 +180,9 @@ def _check_p2b_env(env, name: str, lever: str, code: str, dockerfile: str) -> No
     spec = importlib.util.find_spec("vllm_exl3_c")
     if spec is None or not spec.origin:
         raise RuntimeError("vllm_exl3_c extension not found")
-    # The patched host code reads the env by name; the literal is in .rodata.
+    # The patched host code reads the env by name (or prints `needle`); the literal is in .rodata.
     with open(spec.origin, "rb") as fh, mmap.mmap(fh.fileno(), 0, access=mmap.ACCESS_READ) as so:
-        if so.find(name.encode()) < 0:
+        if so.find((needle or name).encode()) < 0:
             print(
                 f"dsv41: decode lever {lever}: {spec.origin} has no {code} code; "
                 f"the lever is OFF. Rebuild {dockerfile}.",
@@ -161,18 +194,94 @@ def _check_p2b_src_sort(env) -> None:
     _check_p2b_env(env, "DSV41_P2B_SRC_SORT", "p2b_src_sort", "srcsort", "docker/Dockerfile")
 
 
+# widen_p2b_dataflow.LOG_ENGAGED: printed by the dataflow launch path, so it is in that .so only.
+P2B_DATAFLOW_NEEDLE = "p2b coop dataflow kernel engaged"
+
+
 def _check_p2b_coop(env) -> None:
     _check_p2b_env(env, "DSV41_P2B_COOP", "p2b_coop", "coop", "docker/Dockerfile.e14")
+    _check_p2b_env(env, "DSV41_P2B_COOP", "p2b_coop_dataflow", "dataflow", "docker/Dockerfile.e14",
+                   value="2", needle=P2B_DATAFLOW_NEEDLE)
+
+
+def _install_mhc_det(env) -> None:
+    import mhc_det
+
+    mhc_det.install(env)
+
+
+def _install_t2r_dedup(env) -> None:
+    if (env.get("DSV41_ATTN_T2R_DEDUP", "0") or "0") != "1":
+        return
+    import attn_t2r_dedup
+
+    print(f"dsv41: attention t2r dedup: {attn_t2r_dedup.install(env)}", flush=True)
+
+
+def _install_indexer_wp_gemv(env) -> None:
+    if (env.get("DSV41_INDEXER_WP_GEMV", "0") or "0") != "1":
+        return
+    import indexer_wp_gemv
+
+    print(f"dsv41: indexer weights_proj: {indexer_wp_gemv.install()}", flush=True)
+
+
+def _install_candidate_mask_bounded(env) -> None:
+    if (env.get("DSV41_CANDIDATE_MASK_BOUNDED", "0") or "0") != "1":
+        return
+    import candidate_mask_bounded
+
+    print(f"dsv41: candidate mask bounded: {candidate_mask_bounded.install()}", flush=True)
+
+
+def _install_swa_meta_fused(env) -> None:
+    if (env.get("DSV41_SWA_META_FUSED", "0") or "0") != "1":
+        return
+    import swa_meta_fused
+
+    print(f"dsv41: swa metadata fused: {swa_meta_fused.install()}", flush=True)
+
+
+def _install_moe_prep_fused(env) -> None:
+    if (env.get("DSV41_MOE_PREP_FUSED", "0") or "0") != "1":
+        return
+    import moe_prep_fused
+
+    print(f"dsv41: moe prep fused: {moe_prep_fused.install()}", flush=True)
+
+
+def _install_engram_wkv_tp(env) -> None:
+    if (env.get("DSV41_ENGRAM_WKV_TP", "0") or "0") != "1":
+        return
+    import engram_wkv_tp
+
+    print(f"dsv41: engram wkv column-parallel: {engram_wkv_tp.install()}", flush=True)
+
+
+def _install_engram_native_stage(env) -> None:
+    if (env.get("DSV41_ENGRAM_NATIVE_STAGE", "0") or "0") != "1":
+        return
+    import engram_native_stage
+
+    print(f"dsv41: engram native stage: {engram_native_stage.install()}", flush=True)
 
 
 def install(env=None) -> None:
     env = os.environ if env is None else env
     for name, step in (
         ("mhc-prenorm-splits", _install_mhc_splits),
+        ("mhc-det", _install_mhc_det),
         ("sparse-markov", _install_sparse_markov),
         ("woa-prepack", _check_woa_prepack),
         ("p2b_src_sort", _check_p2b_src_sort),
         ("p2b_coop", _check_p2b_coop),
+        ("engram-native-stage", _install_engram_native_stage),
+        ("attn-t2r-dedup", _install_t2r_dedup),
+        ("moe-prep-fused", _install_moe_prep_fused),
+        ("candidate-mask-bounded", _install_candidate_mask_bounded),
+        ("indexer-wp-gemv", _install_indexer_wp_gemv),
+        ("swa-meta-fused", _install_swa_meta_fused),
+        ("engram-wkv-tp", _install_engram_wkv_tp),
     ):
         try:
             step(env)

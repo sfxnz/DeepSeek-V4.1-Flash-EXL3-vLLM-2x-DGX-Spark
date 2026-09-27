@@ -1,0 +1,94 @@
+dsv41-indexer-workspace: already applied
+dsv41: mhc det armed (DSV41_MHC_DET_SPLITS=16): packs and self-tests mHC weights after load
+INFO 09-25 14:33:15 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 14:33:15 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+2026-09-25 14:33:17  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-25 14:33:22  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-25 14:33:23  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-25 14:33:27  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-25 14:33:29  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`
+2026-09-25 14:33:34  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`
+2026-09-25 14:33:34  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_post_tilelang` with `out_idx=None`
+2026-09-25 14:33:35  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_post_tilelang`
+dsv41: mhc det engaged: smoke: 5 fn packed (5.0 MiB); det GEMM, fused norm and post bitwise equal to stock on 6 pre self-tests (DeepGEMM 16-split, TileLang); T <= 16
+dsv41: mhc det lever is OFF for an unpacked fn (24, 20480) during graph capture (stock path used)
+{
+ "patched": [
+  true,
+  true,
+  true
+ ],
+ "on": true,
+ "dispatch": [
+  {
+   "T": 1,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 2,
+   "det_post_calls": 1
+  },
+  {
+   "T": 3,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 2,
+   "det_post_calls": 1
+  },
+  {
+   "T": 4,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 2,
+   "det_post_calls": 1
+  },
+  {
+   "T": 6,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 2,
+   "det_post_calls": 1
+  },
+  {
+   "T": 8,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 2,
+   "det_post_calls": 1
+  },
+  {
+   "T": 16,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 2,
+   "det_post_calls": 1
+  },
+  {
+   "T": 17,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 0,
+   "det_post_calls": 0
+  },
+  {
+   "T": 64,
+   "post_bitwise": true,
+   "pre_bitwise": true,
+   "broadcast_bitwise": true,
+   "det_gemm_calls": 0,
+   "det_post_calls": 0
+  }
+ ],
+ "capture": {
+  "det_gemm_calls_captured": 1,
+  "misses_logged": 1,
+  "mismatching_replays_of_50": 0
+ }
+}
+PASS

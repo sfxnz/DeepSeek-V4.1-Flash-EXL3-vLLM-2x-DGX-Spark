@@ -1,0 +1,25 @@
+waiting for /home/sfxnz/projects/ai-lab/recipes/.worktrees-spark2/.gpu.lock at 2026-09-25T15:05:34Z
+lock acquired 2026-09-25T15:06:09Z
+== pmon before
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+dsv41-indexer-workspace: already applied
+INFO 09-25 15:06:55 [deep_gemm.py:191] deep_gemm not found in site-packages, trying vendored vllm.third_party.deep_gemm
+INFO 09-25 15:06:55 [deep_gemm.py:218] DeepGEMM PDL enabled on vllm.third_party.deep_gemm.
+INFO 09-25 15:06:55 [deep_gemm.py:136] DeepGEMM E8M0 enabled on current platform.
+M=1 cold med (p10 p90) us: dg_einsum 81.81 (79.97 87.90) | gemv_stacked 75.90 (74.88 79.94) | read 73.81 (73.54 79.71)
+M=3 cold med (p10 p90) us: dg_einsum 82.94 (80.96 86.02) | gemv_stacked 76.91 (75.78 79.90) | read 75.62 (73.73 77.89)
+producer: torch.Size([4, 4, 4096]) (4096, 16384, 1) torch.float8_e4m3fn torch.Size([4, 4, 32]) (1, 128, 4) torch.int32
+M=4 cold med (p10 p90) us: dg_einsum 81.89 (80.16 83.97) | gemv_stacked 75.84 (74.85 77.82) | read 73.79 (73.54 75.81)
+M=6 cold med (p10 p90) us: dg_einsum 81.94 (80.86 83.97) | gemv_stacked 75.84 (74.82 77.86) | read 73.79 (73.54 75.78)
+M=8 cold med (p10 p90) us: dg_einsum 82.02 (80.93 85.02) | gemv_stacked 76.83 (74.91 79.87) | read 73.79 (73.63 75.84)
+== pmon after
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+== clocks (sm MHz, mem, W): samples, median sm, min sm, median W
+samples 239 busy 32 sm_median 2190 sm_min_busy 1774 mem ['[N/A]'] power_median 4.2 W
+rc=0

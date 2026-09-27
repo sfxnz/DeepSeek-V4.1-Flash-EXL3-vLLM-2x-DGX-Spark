@@ -1,0 +1,99 @@
+{
+ "hooks_in_vllm_file": true,
+ "shapes": {
+  "qkv_a": {
+   "armed": true,
+   "cases": 18,
+   "bitwise": 18,
+   "gemv_calls": 16,
+   "graph_replay_eq_eager": true
+  },
+  "wq_b": {
+   "armed": true,
+   "cases": 18,
+   "bitwise": 18,
+   "gemv_calls": 16,
+   "graph_replay_eq_eager": true
+  },
+  "wo_b": {
+   "armed": true,
+   "cases": 18,
+   "bitwise": 18,
+   "gemv_calls": 16,
+   "graph_replay_eq_eager": true
+  },
+  "shared_gate_up": {
+   "armed": true,
+   "cases": 18,
+   "bitwise": 18,
+   "gemv_calls": 16,
+   "graph_replay_eq_eager": true
+  },
+  "shared_down": {
+   "armed": true,
+   "cases": 18,
+   "bitwise": 18,
+   "gemv_calls": 16,
+   "graph_replay_eq_eager": true
+  },
+  "engram_wkv": {
+   "armed": true,
+   "cases": 18,
+   "bitwise": 18,
+   "gemv_calls": 16,
+   "graph_replay_eq_eager": true
+  },
+  "main_proj": {
+   "armed": true,
+   "cases": 18,
+   "bitwise": 18,
+   "gemv_calls": 8,
+   "graph_replay_eq_eager": true
+  },
+  "lm_head": {
+   "armed": true,
+   "cases": 5,
+   "bitwise": 5
+  },
+  "wo_a": {
+   "cases": 18,
+   "bitwise": 18,
+   "armed": true,
+   "graph_replay_eq_eager": true
+  }
+ },
+ "hooks_in_o_proj": true,
+ "serve_order": {
+  "order": [
+   "engram_wkv@L1",
+   "qkv_a@L1",
+   "wq_b@L1",
+   "wo_a@L1",
+   "wo_b@L1",
+   "shared_gate_up@L1",
+   "shared_down@L1",
+   "qkv_a@L39",
+   "wq_b@L39",
+   "wo_a@L39",
+   "wo_b@L39",
+   "shared_gate_up@L39",
+   "shared_down@L39",
+   "lm_head@L0",
+   "main_proj@L0",
+   "qkv_a@L38",
+   "wq_b@L38",
+   "wo_a@L38",
+   "wo_b@L38",
+   "shared_gate_up@L38",
+   "shared_down@L38"
+  ],
+  "not_armed": [],
+  "cases": 325,
+  "bitwise": 325,
+  "used_as_expected": 325,
+  "failures": [],
+  "graph_replay_eq_eager": true,
+  "ok": true
+ },
+ "all_ok": true
+}

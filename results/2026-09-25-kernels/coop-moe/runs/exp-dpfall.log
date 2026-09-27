@@ -1,0 +1,63 @@
+# 2026-09-25T14:47:19Z host spark2 tag exp-dpfall
+# pmon before:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    
+# free -h:
+               total        used        free      shared  buff/cache   available
+Mem:           121Gi       5.2Gi        92Gi       252Ki        25Gi       116Gi
+Swap:           15Gi       1.2Gi        14Gi
+# cmd: kernel_study/p2b_coop/bench_r3.py --mode check,time,phases --variants 0,2,3 --ms 1,4,8 --check-routings 4 --sources census,dup0 --iters 400 --out results/2026-09-25-kernels/coop-moe/exp-dpfall.json
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[14:47:32Z] loaded layer 20 rank 0 in 5.9 s
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[14:47:32Z] [setup] {"name": "NVIDIA GB10", "sms": 48, "l2_bytes": 25165824, "flush_bytes": 134217728} launch {"v0": {"grid": 192, "blocks_per_sm": 4.0}, "v2": {"grid": 144, "blocks_per_sm": 3.0}, "v3": {"grid": 144, "blocks_per_sm": 3.0}}
+[14:47:32Z] [check] v2 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 5.175211867936014e-07, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:32Z] [check] v3 m=1 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 5.175211867936014e-07, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:32Z] [check] v2 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0003032140666618943, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:32Z] [check] v3 m=1 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0003032140666618943, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:32Z] [check] v2 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 3.0517578125e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:32Z] [check] v3 m=4 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 3.0517578125e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:32Z] [check] v2 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0001328374055447057, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:32Z] [check] v3 m=4 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 0.0001328374055447057, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:32Z] [check] v2 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.316321378108114e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:32Z] [check] v3 m=8 census: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.316321378108114e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:32Z] [check] v2 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.10948191024363e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:32Z] [check] v3 m=8 dup0: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 6.10948191024363e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:32Z] [check] v2 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 5.918560782447457e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:32Z] [check] v3 m=8 census_seq: {"pass": true, "onehot_bitexact": true, "v1_full_bitexact": true, "full_max_rel": 5.918560782447457e-05, "full_max_ulp": 1, "repeat_bitexact": true, "ref_max_rel": 0.0, "p2b_ref_max_rel": 0.0, "ref_rms_rel": null, "p2b_ref_rms_rel": null}
+[14:47:33Z] [time] m=1 census cold: v0 182.3us [180.2,184.3] 147GB/s 59%floor  v2 157.7us [154.7,162.8] 170GB/s 68%floor  v3 161.8us [158.7,167.7] 165GB/s 66%floor
+[14:47:34Z] [time] m=1 census warm: v0 176.2us [176.1,179.2] 152GB/s 61%floor  v2 150.5us [147.5,155.6] 178GB/s 71%floor  v3 156.7us [152.6,161.8] 171GB/s 68%floor
+[14:47:35Z] [time] m=1 dup0 cold: v0 182.3us [180.2,184.4] 147GB/s 59%floor  v2 157.7us [154.7,163.8] 170GB/s 68%floor  v3 161.8us [158.8,166.9] 165GB/s 66%floor
+[14:47:35Z] [time] m=1 dup0 warm: v0 178.2us [176.1,182.3] 150GB/s 60%floor  v2 151.7us [148.5,157.7] 176GB/s 71%floor  v3 157.7us [153.6,162.8] 170GB/s 68%floor
+[14:47:37Z] [time] m=4 census cold: v0 524.1us [514.1,540.6] 134GB/s 54%floor  v2 338.0us [267.3,404.5] 208GB/s 83%floor  v3 336.8us [265.2,407.6] 209GB/s 83%floor
+[14:47:37Z] [time] m=4 census warm: v0 507.9us [501.7,516.1] 139GB/s 56%floor  v2 331.7us [257.1,388.1] 214GB/s 86%floor  v3 330.8us [257.0,388.2] 215GB/s 86%floor
+[14:47:39Z] [time] m=4 dup0 cold: v0 525.3us [523.3,528.4] 204GB/s 82%floor  v2 487.6us [486.3,489.6] 220GB/s 88%floor  v3 486.4us [485.3,489.2] 220GB/s 88%floor
+[14:47:40Z] [time] m=4 dup0 warm: v0 522.2us [518.2,532.5] 205GB/s 82%floor  v2 483.4us [480.4,494.6] 222GB/s 89%floor  v3 483.3us [480.2,495.6] 222GB/s 89%floor
+[14:47:42Z] [time] m=8 census cold: v0 1011.7us [1001.5,1028.1] 131GB/s 52%floor  v2 604.1us [492.5,716.7] 220GB/s 88%floor  v3 602.7us [491.5,707.8] 220GB/s 88%floor
+[14:47:44Z] [time] m=8 census warm: v0 987.1us [974.8,1001.5] 135GB/s 54%floor  v2 597.0us [486.2,692.2] 224GB/s 89%floor  v3 596.0us [486.4,691.4] 224GB/s 90%floor
+[14:47:46Z] [time] m=8 dup0 cold: v0 1023.0us [1019.9,1027.1] 209GB/s 84%floor  v2 945.2us [943.1,949.2] 227GB/s 91%floor  v3 944.1us [941.2,948.2] 227GB/s 91%floor
+[14:47:48Z] [time] m=8 dup0 warm: v0 1015.8us [1012.7,1019.9] 211GB/s 84%floor  v2 938.0us [934.9,941.1] 228GB/s 91%floor  v3 936.2us [933.9,940.0] 229GB/s 91%floor
+unchanged /repo/kernel_study/p2b_coop/build_r3/chain_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3.cu
+unchanged /repo/kernel_study/p2b_coop/build_r3/bench_r3_ts.cu
+[14:47:48Z] [phases] v0 m=1 grid 192: total 168.8 us, skew 0.1, s1 work 3.0 imb 2.7 bar 0.7 | s2 work 102.2 imb 29.0 bar 0.7 | s3 work 2.5 imb 2.2 bar 0.8 | s4 work 0.6 imb 0.4 bar 0.7 | s5 work 1.8 imb 1.6 bar 0.8 | s6 work 47.8 imb 3.3 bar 0.7 | s7 work 2.0 imb 1.7 bar 0.7 | s8 work 0.9 imb 0.1 bar 0.9 | tail 0.5 | uniq 6.0
+[14:47:48Z] [phases] v0 m=4 grid 192: total 501.3 us, skew 0.1, s1 work 3.5 imb 0.8 bar 0.7 | s2 work 314.4 imb 10.1 bar 0.7 | s3 work 2.6 imb 2.3 bar 0.8 | s4 work 0.6 imb 0.3 bar 0.8 | s5 work 1.8 imb 1.5 bar 0.8 | s6 work 168.5 imb 25.8 bar 0.7 | s7 work 2.5 imb 0.6 bar 0.7 | s8 work 1.8 imb 0.4 bar 0.7 | tail 0.5 | uniq 16.0
+[14:47:48Z] [phases] v0 m=8 grid 192: total 978.9 us, skew 0.1, s1 work 5.5 imb 1.6 bar 0.7 | s2 work 627.1 imb 45.0 bar 0.7 | s3 work 2.7 imb 2.4 bar 0.8 | s4 work 0.8 imb 0.3 bar 0.8 | s5 work 1.9 imb 1.6 bar 0.8 | s6 work 327.9 imb 49.7 bar 0.7 | s7 work 3.5 imb 1.1 bar 0.7 | s8 work 3.0 imb 0.7 bar 0.7 | tail 0.6 | uniq 30.4
+dsv41: p2b coop dataflow kernel engaged (DSV41_P2B_COOP=2)
+[14:47:48Z] [phases] v2 m=1 grid 144: total 149.3 us, skew 0.1, s1 work 7.7 imb 5.2 bar 0.7 | s2 work 137.2 imb 9.2 bar 0.7 | tail 2.8 | uniq 6.0 | df tiles_per_warp 4.8 fill_us 9.2 loop_us 84.9 reduce_us 7.9 span_us 125.3 between_tiles_us 23.5
+[14:47:48Z] [phases] v2 m=4 grid 144: total 325.8 us, skew 0.1, s1 work 9.5 imb 0.7 bar 0.7 | s2 work 312.2 imb 8.8 bar 0.7 | tail 2.7 | uniq 15.2 | df tiles_per_warp 12.1 fill_us 23.8 loop_us 219.0 reduce_us 26.7 span_us 302.3 between_tiles_us 26.0
+[14:47:48Z] [phases] v2 m=8 grid 144: total 594.1 us, skew 0.1, s1 work 13.1 imb 1.1 bar 0.7 | s2 work 576.6 imb 8.8 bar 0.7 | tail 2.6 | uniq 29.5 | df tiles_per_warp 23.8 fill_us 45.4 loop_us 418.6 reduce_us 51.7 span_us 566.2 between_tiles_us 49.6
+[14:47:48Z] [phases] v3 m=1 grid 144: total 151.4 us, skew 0.1, s1 work 7.7 imb 5.2 bar 0.7 | s2 work 139.7 imb 8.4 bar 0.7 | tail 2.7 | uniq 6.0 | df tiles_per_warp 4.8 fill_us 10.1 loop_us 84.6 reduce_us 9.3 span_us 126.1 between_tiles_us 22.7
+[14:47:48Z] [phases] v3 m=4 grid 144: total 317.8 us, skew 0.1, s1 work 9.5 imb 0.8 bar 0.7 | s2 work 303.4 imb 7.0 bar 0.7 | tail 3.0 | uniq 15.1 | df tiles_per_warp 12.1 fill_us 29.7 loop_us 214.3 reduce_us 26.5 span_us 294.4 between_tiles_us 25.8
+[14:47:49Z] [phases] v3 m=8 grid 144: total 561.6 us, skew 0.1, s1 work 12.9 imb 1.1 bar 0.7 | s2 work 544.9 imb 7.4 bar 0.7 | tail 2.8 | uniq 28.0 | df tiles_per_warp 22.6 fill_us 54.7 loop_us 387.2 reduce_us 50.3 span_us 536.2 between_tiles_us 47.0
+[14:47:49Z] pass=True
+# 2026-09-25T14:47:50Z rc 0
+# pmon after:
+# gpu         pid   type     sm    mem    enc    dec    jpg    ofa    command 
+# Idx           #    C/G      %      %      %      %      %      %    name 
+    0      81524     G      -      -      -      -      -      -    Xorg           
+    0      81681     G      -      -      -      -      -      -    gnome-shell    

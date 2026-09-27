@@ -1,0 +1,622 @@
+fusion-host (k3 round 3): glue kernels, small bf16 GEMMs, host idle. Iteration log.
+==================================================================================
+Branch k3/fusion-host (from perf/kernels-r3). Every number below names its machine,
+run and file. Timed runs: spark2 (clean GPU; pmon shows only Xorg/gnome-shell type G)
+under .worktrees-spark2/.gpu.lock, SM clock 2190 MHz before/after each run.
+
+0. Re-reading the r3 profile (profile/c1/c1-rank0.pkl, the c=1 L.A.I.L window)
+-----------------------------------------------------------------------------
+- The host is NOT the bottleneck of the eager chain: cudaLaunch/cudaGraphLaunch
+  timestamps vs kernel start show the main thread launches every eager kernel of the
+  next step 40-49 ms before the GPU runs it (kernel_study/fusion_host notes; step 120:
+  draft graph launched at -48.7 ms, run at -6.3 ms). The "258 launches at ~4 us host
+  cadence" are GPU-side back-to-back small-kernel costs (queued work), not host latency.
+- The only host-bound GPU idle per step is the Engram stage: the main thread blocks in
+  EngramDiskStager.stage -> hashes_ready.synchronize() until the GPU drains everything
+  queued (the whole previous step), then runs the gather while the GPU has nothing
+  queued. Step 120: DtoH ends at 0, sync returns +55 us, 2 pool futures start +190/+290
+  us, finish +1.8/+2.4 ms, main wakes +2.57 ms, H2D +2.65 ms, graph starts +2.81 ms.
+- 260 gaps > 1 ms in 250 steps: 251 are DtoH(hash) -> HtoD(rows), median 3.06 ms
+  (p10 2.21, p90 3.94) profiled. Unprofiled estimate from the [gv2-census] read time
+  before vs inside the profile window: 0.83 vs 1.39 ms/call median -> the profiler
+  inflates this host span ~1.7x; unprofiled gap ~1.5-2.0 ms.
+
+1. ITERATION 1: native Engram stage gather (KEEP, env DSV41_ENGRAM_NATIVE_STAGE=1)
+-------------------------------------------------------------------------------
+What: docker/patch/engram_native.c + engram_native_stage.py. After the stock hash +
+sync, one ctypes call per table (GIL released): owned ids -> preadv2(RWF_NOWAIT) of
+the 256 B fp8 row + 8 B ue8m0 row (misses: WILLNEED all, then blocking pread) ->
+fp8 LUT x 2^(e-127) -> bf16 RNE straight into the pinned rows_host. Prefill (> 64
+tokens) and every error take the stock stage. First 8 calls verified bit-exact
+against the stock per-table gather; mismatch/error -> one DISABLED line, stock.
+
+Numerics (engram_native_check.json, image canonical-e13, CPU): all 65536
+(fp8 byte, ue8m0 byte) pairs bit-exact vs the stock torch chain (first cut had 512
+NaN mismatches: torch's CPU bf16 conversion keeps NaN sign/payload -> 0x7FF0/0xFFF0,
+not c10's scalar 0x7FC0; fixed), synthetic-table gathers both row orders and mixed
+scales, ownership/padding 21/21, real tables 108/108 calls (2 layers x 2 TP ranks x
+n in 1..8,64 x hot/dead-id/dropped-cache) bit-exact.
+
+CPU critical path, spark2, rank 0, 2 tables, 300 iters after 30 warmup, arms
+alternating, fresh ids every call (engram_stage_cpu_bench_spark2.json), us median
+(p10/p90):
+  scenario  n  stock                   native              native on the pool
+  hot       4  1461.7 (1056.5/1895.3)  274.1 (202.9/292.8) 307.8
+  hot       8  2213.5 (1842.0/3023.2)  492.6 (438.5/627.8) 564.3
+  pf        4  1702.9 (1145.5/2226.0)  141.7 (136.8/174.2) 380.5
+  pf        8  2339.6 (1682.0/2975.0)  283.0 (271.5/308.3) 533.8
+  cold      4  37738.6                 849.3               1087.1
+  cold      8  62798.8                 1644.1              1518.7
+  (pf = rows dropped, WILLNEED 500 us before, as prefetch v3 does; cold = a prefetch
+  miss: the stock serial preadv chain waits ~0.4 ms per row, the native path puts all
+  misses in flight together.) Dispatching the native calls to the pool loses: the
+  future hop costs more than the second table.
+
+End to end on a GPU, spark2 (engram_stage_gpu_bench_{pf,hot}_spark2.json): the
+image's real EngramDiskStager.stage() (stock) vs the native stage, real
+DiskEngramTables, a stand-in hash module returning precomputed ids from a device
+tensor; GPU work queued first so the host blocks in the sync as in the serve; CUDA
+events around stage() = hash + DtoH + host gather + H2D = the GPU idle it causes.
+300 iters, arms alternating, staged device rows compared bitwise every 25 iters:
+0 mismatches, native engaged.
+  pf  n=4: stock 1370.9 us (1217.1/1532.5)  native 205.3 (198.6/212.8)  -1165.6 us
+  pf  n=8: stock 2139.6 (1615.3/2907.6)     native 357.6 (343.6/378.2)  -1782.0 us
+  hot n=4: stock 1488.0 (1086.7/1943.4)     native 197.9 (182.0/215.6)  -1290.1 us
+  hot n=8: stock 2382.4 (1610.8/3004.1)     native 332.0 (304.2/369.1)  -2050.4 us
+Projected: -1.17..-1.29 ms/step at c=1 (n=4), -1.8..-2.05 ms/step at c=2 (n=8),
+unprofiled (the bench has no profiler). ~1.9% of the 62.8 ms c=1 step.
+[Fix pass, section 10.3: re-measured from the committed tree on both ranks' head spans
+and with cold L2: n=4 1438 -> 215 us (rank 0), 1768 -> 197 (rank 1); -1.2..-1.6 ms/step.]
+Remaining native gap ~200 us = hash + DtoH + sync wakeup + ~130 us of page-cache
+lookups (192 random-page syscalls; 1.2-1.8 us each measured on spark1) + H2D.
+
+2. ITERATION 2: token -> request map dedup across KV-cache groups (KEEP, env
+   DSV41_ATTN_T2R_DEDUP=1)
+--------------------------------------------------------------------------
+Trace (c1-rank0.pkl, eager ops per step): DeviceScanInit/DeviceScan/compute_cuda_kernel
+(repeat_interleave) 21.08/step each, arange 21.41, indexSelectSmallIndex 21.01, plus the
+sub/copy/DtoD around them: build_attn_metadata makes one CommonAttentionMetadata per
+KV-cache group and every group's builder (SWA, compressor, sparse MLA) rebuilds
+token_to_req_indices (8 kernels) into its own buffer. 21 builds/step, all on the
+critical path (3 before the draft graph, 18 before the target graph), each small kernel
+~4.1 us of back-to-back GPU time.
+What: decode_levers wraps CommonAttentionMetadata.token_to_req_indices. When a group's
+metadata carries the same query_start_loc (GPU) and query_start_loc_cpu tensor OBJECTS
+(weakref identity; every build_attn_metadata call slices fresh ones) and the same token
+counts as the previous build, it copies the previous result (the [:max(mapped, tokens)]
+view, tail zeros included) into its own buffer: 1 kernel instead of 8. Buffers,
+addresses and values are the stock ones (graph-safe by construction).
+Microbench (t2r_dedup_bench_spark2.json, spark2, image's real CommonAttentionMetadata,
+21 groups per prep, GPU work queued first, 300 iters, arms alternating, every buffer
+checked against repeat_interleave each iteration: 0 mismatches). GPU ops per prep
+168 -> 28. GPU time per prep, us median (p10/p90):
+  c=1 m=4            stock 684.4 (670.2/701.0)  dedup 141.0 (137.4/146.9)  -543.4
+  c=2 m=8            stock 785.5 (681.2/836.8)  dedup 167.1 (144.5/284.5)  -618.4
+  c=2 padded + tail  stock 881.9 (772.4/928.9)  dedup 255.3 (154.7/291.4)  -626.6
+  c=1 m=1            stock 669.9 (663.9/686.4)  dedup 138.8 (135.8/142.9)  -531.1
+Projected in the serve: 2 preps per step (draft 3 groups, target 18) -> 2 computations +
+19 copies instead of 21 computations: -133 kernels, ~-0.52 ms/step (c=1), on the
+critical path. Bit-exact by construction.
+[Fix pass: this bench was host-bound (one matmul of busy work, n_mm=1, while the host
+needs ~0.8 ms to enqueue a stock step), so the times above are host launch speed.
+GPU-bound (section 10.3): 510.8 -> 83.8 us warm, 518.9 -> 104.3 cold per step (3 + 18
+groups), 168 -> 35 ops: -0.41..-0.43 ms/step, not -0.52. The lever also moved to
+attn_t2r_dedup.py with a verify / disarm path and audit markers (section 10.1).]
+
+3. ITERATION 3: early Engram hash (KEEP, env DSV41_ENGRAM_EARLY_HASH=1, needs the
+   native stage)
+------------------------------------------------------------------------------
+Why: with the native gather, the stage still starts only after the LAST eager launch of
+the step (the hash is queued behind the block tables, slot mappings and ~18 groups of
+attention metadata), so the gather (~0.15-0.3 ms) runs while the GPU has nothing queued.
+Every input of the hash is final when GPUModelRunner.prepare_inputs returns
+(input_ids, positions, query_start_loc; the lookback window reads num_computed_tokens /
+all_token_ids, written only by the previous step's post_update).
+What: docker/patch/engram_early_hash.py wraps GPUModelRunner.prepare_attn to launch the
+model state's lookback kernel + the stage's hash + DtoH + event first; stage() consumes
+them only for the same InputBatch object and token count (marked by a
+DeepseekV41ModelState.prepare_inputs wrapper, consumed once), waits for that DtoH and
+gathers while the GPU runs the queued metadata chain. Prefill sizes never go early. The
+first 8 steps also run the stock late hash and compare int32 for int32 (mismatch ->
+DISABLED line, late hashes kept, stock order after).
+First bench attempt was invalid: 1 matmul of busy work left the host launching the
+120-op chain AFTER the GPU was already idle, so the chain ran at host cadence and hid
+nothing (native_early 499.0 vs native 471.9 us). Fixed with a calibrated 4 ms GPU spin
+(torch.cuda._sleep, 2194 cycles/us) so the host runs ahead as in the serve.
+Result (engram_stage_gpu_bench_early_spark2.json, spark2, 300 iters, 3 arms rotating,
+120 small kernels queued between the early point and stage(), 0 mismatches, native and
+early engaged): GPU span chain + stage, us median (p10/p90):
+  n=4: stock 1933.7 (1536.0/2374.6)  native 496.5 (483.3/522.3)  native+early 322.9 (313.8/334.2)
+  n=8: stock 2559.9 (2216.6/2995.9)  native 631.1 (619.7/642.1)  native+early 347.1 (338.0/358.6)
+The early arm is chain + H2D: the gather is fully hidden. Beyond iteration 1:
+-173.6 us (n=4), -284.0 us (n=8). Together vs stock: -1.61 ms (n=4), -2.21 ms (n=8).
+[Fix pass: the chain between the early-hash point and stage() is 241 ops stock, 122
+with DSV41_ATTN_T2R_DEDUP=1 and 77 with it and DSV41_SWA_META_FUSED=1, not the 120
+modeled here; section 10.3 measures all three.]
+
+4. ITERATION 4: p2b input prep as one kernel (KEEP, env DSV41_MOE_PREP_FUSED=1)
+------------------------------------------------------------------------------
+Trace (c1-rank0.pkl, one layer of the FFN prologue, times vs p2b start): routing stream =
+router gate 18.9 us (-122.8) -> splitK reduce -> _dsv4_topk 30.1 us -> 14 single-block
+glue kernels from -68.8 to -0.5 us (compare_scalar alone 7.1 and 20.5 us: tiny kernels
+queued behind the shared expert's bandwidth-saturating b12x GEMMs) -> p2b at 0; shared
+expert stream ends at -7.7. The glue is vllm_exl3 _apply_native_fused_moe:
+map_topk_to_local (2 compares, or, fill, where), clamp + int32, valid (2 compares, and),
+weights -> fp16, valid -> fp16, mul, x -> fp16 (+ the int64 ids copy). The routing path
+ends after the shared expert in ~98% of layers (audit: p2b starts 7.4 us after it).
+What: docker/patch/moe_prep_fused.py. install() takes the image's own
+_apply_native_fused_moe source, swaps ONLY the glue block (verbatim anchor; drift ->
+DISABLED line, stock function stays) for one call into a Triton kernel that writes the
+same int32 ids / fp16 weights / fp16 x (x via float, weight*valid in float then one
+round, like torch's half opmath), and execs it in the module namespace. expert_map
+(EP), non-contiguous or other dtypes -> the stock ops. First 16 eager calls re-run the
+stock ops and compare bits (never during capture).
+Checks (moe_prep_check_spark2.json, spark2): 576 sweep cases (m 1..8, 64; random and
+adversarial: ids -1/384/1000/+-2^40, weights NaN/+-inf/-0/65520/1e-8/6e-5, x NaN/inf/-0/
+7e4/subnormals; int64/int32 ids, fp32/bf16 weights) bit-exact; 100 CUDA-graph replays
+with new inputs bit-exact vs eager stock; the rewritten function vs the stock function
+with a stand-in p2b op: recorded p2b inputs and outputs bit-exact (first harness cut
+compared fp32 outputs with torch.equal, which is False on identical NaN bits; fixed to
+compare raw bits). GPU ops per call 14 -> 1.
+Timing, each arm captured in a CUDA graph, 400 replays after 30 warmup, arms
+alternating, us median (p10/p90):
+  m  alone: stock           fused          beside a 512 MiB DtoD copy: stock   fused
+  1  18.7 (17.0/19.2)   6.4 (6.2/6.6)      26.6 (26.3/26.6)   4.1 (3.8/4.1)
+  3  19.4 (18.7/21.0)   6.3 (6.1/6.6)      26.6 (26.4/26.8)   4.1 (3.9/4.1)
+  4  20.3 (18.8/21.1)   6.3 (6.1/6.6)      26.6 (26.4/26.7)   4.3 (4.2/5.9)
+  6  19.5 (18.8/21.0)   6.3 (6.1/6.6)      26.6 (26.5/26.9)   4.1 (4.0/4.2)
+  8  20.6 (18.8/21.0)   6.4 (6.1/6.6)      26.6 (26.3/26.6)   4.3 (4.2/5.8)
+Projected: the routing path loses >= 22 us per MoE layer (in the serve's contention it
+spans ~68 us), so it stops trailing the shared expert: ~-0.3 ms/step now (the 7.4 us per
+layer p2b waits, x40), and up to ~50 us per layer of slack for any shared-expert speedup
+(dense-gemv), which today would be capped by this path. 560 fewer launches per step.
+[Fix pass: the 'alone' column includes the graph launch; with the launch hidden (section
+10.3) m=4 is 20.35 -> 3.97 us warm, 26.56 -> 4.22 cold. The r3 timeline puts the routing
+glue's exposed cost at 0.15 ms of a 1.8 ms span, so the projection is -0.15..-0.30.]
+
+5. ITERATION 5: decode candidate mask bounded by the row end (KEEP, env
+   DSV41_CANDIDATE_MASK_BOUNDED=1)
+---------------------------------------------------------------------------
+Trace (c1-rank0.pkl, the 8 indexer layers): _mask_candidates_kernel grid (4, 1024, 1)
+70.4 us median x 4/step (0.305 ms/step) and _candidate_flags_kernel 7.3 us x 4/step, in
+the target graph's critical path. The decode logits are [rows, max_model_len = 1M]
+(paged_mqa_logits(max_model_len=..., clean_logits=False) writes only [0, seq_len)), and
+the stock kernels zero 131073 flag slots per row and write -inf into all 1M columns:
+16 MB of stores per call for ~2-20k live columns.
+Probe first: does top_k_per_row_decode read past seq_len? Garbage (NaN / +inf / 1e30)
+past each row's end vs -inf: the same index SETS every time, but the RAW order differs
+even between two stock runs on identical logits (38 of 40 cases): the stock top-k is not
+order-deterministic, so set equality is the criterion (the first check compared raw
+order and failed on that, not on the lever).
+What: docker/patch/candidate_mask_bounded.py wraps sparse_attn_indexer's
+_apply_candidate_mask. Decode calls (no row starts) run two variants with the stock
+grids: the flags kernel zeroes only the slots the mask reads (blocks below the row end
++ the edge slot), and mask programs whose 1024-column tile starts at or past the row end
+return at once. Columns below each row end get exactly the stock values; prefill keeps
+the stock function. First 4 eager decode calls also run the stock mask on a copy and
+compare below the ends (disarm on mismatch).
+Checks (candidate_mask_check_spark2.json, spark2): 54 mask cases (widths 1M / 64k / 4k,
+rows 1/4/8, ends odd / < one block / = width, candidates valid / -1 / past the width)
+bit-exact below every row end; 40 decode top-k cases (B x next_n in 1x4, 2x4, 1x1, 2x3,
+seq_len below the top-k, garbage past the end) same index sets; verify path ran 4x,
+stayed armed. Timing, CUDA graph replay (flags + mask), 300 replays alternating, us
+median (p10/p90):
+  width 1M,  rows 4: stock 96.9 (95.9/98.1)   bounded 7.1 (6.9/7.8)
+  width 1M,  rows 8: stock 186.9 (185.2/189.0) bounded 12.9 (11.5/13.1)
+  width 64k, rows 4: stock 12.9 (11.5/13.2)   bounded 6.9 (6.8/7.2)
+  width 64k, rows 8: stock 15.1 (14.5/15.4)   bounded 6.8 (6.7/7.0)
+Projected: 4 calls/step -> ~-0.28..-0.36 ms/step at c=1 (trace-based 77.7 us/call in
+the serve), ~-0.70 ms/step at c=2 (rows 8). Numerics: the top-k input below the end is
+bit-identical; the selected sets are identical.
+[Fix pass: with the launch hidden (section 10.3), 1M rows 4: 98.1 -> 8.1 us warm, 116.7 ->
+10.2 cold; the 7.1 us above had the launch inside the events. The bounded cost grows
+with the row end: cold at end 128k, 32.8 us (rows 4) and 48.1 (rows 8).]
+Capture (added after iteration 8, candidate_mask_check_graph_spark2.json): the serve
+wrapper captured in a CUDA graph at width 1M, rows 4, replayed 20 times with new logits /
+row ends (incl. one below a block) / candidates: bit-exact below every end vs the eager
+stock mask. The same run repeats the rest: 54 + 40 cases clean, timing 1M rows 4 97.7
+(96.8/99.1) -> 8.9 (8.7/9.0) us, rows 8 187.0 (185.2/193.5) -> 11.4 (10.9/13.5).
+
+6. ITERATION 6: one cast after p2b (KEEP, folded into DSV41_MOE_PREP_FUSED)
+--------------------------------------------------------------------------
+Trace: after every p2b, direct_copy (fp16 -> fp32, 2.4 us, grid 40) then
+bfloat16_copy (fp32 -> bf16, 1.2 us) before the add and the MoE all-reduce: the
+native path returns fp32 (_apply_native_fused_moe) and apply_exl3_experts casts to the
+model dtype. fp16 -> fp32 is exact, so fp16 -> bf16 in one cast is the same bits.
+What: the same rewrite gives _apply_native_fused_moe an out_dtype parameter (default
+fp32: apply_exl3_fused_moe's native attempt and its fp32 chunk buffer keep the stock
+contract) and makes apply_exl3_experts pass x.dtype (its own final cast is then a no-op).
+Checks (moe_prep_check_spark2.json): all 65536 fp16 bit patterns, one cast == through
+fp32; the rewritten apply_exl3_experts vs stock with a stand-in p2b, bf16 routed output
+and recorded p2b inputs bit-exact (m 1/4/8, random and adversarial).
+Timing: a graph of 40 epilogues (one per routed layer; a single-epilogue graph is
+dominated by the ~5 us graph launch and showed 7.0 vs 7.1 us, no signal), 400 replays
+alternating: m=4 stock 123.6 us (123.4/124.0) -> 86.6 (85.3/86.8) per step; m=8 125.7 ->
+86.8. ~-0.04 ms/step on the p2b -> all-reduce critical path (more under contention).
+
+7. ITERATION 7: indexer weights_proj as a Triton GEMV with cuBLAS's MMA order (KEEP,
+   env DSV41_INDEXER_WP_GEMV=1)
+------------------------------------------------------------------------------------
+Trace join analysis (c1-rank0/1.pkl, the qkv_a || compressor || weights_proj fan-out,
+joined at _q_kv_norm_quant_kernel): plain layers join 0.5 us after qkv_a; the 4
+"+wp" layers join 23.8 us after qkv_a (wp 70.2 us vs qkv_a 47.8); the 4 "comp+wp"
+layers 29.3 us after (wp 113.7, comp 94.7, qkv_a slowed to 76.4). weights_proj is bf16
+[32, 5120]; cuBLAS runs it as cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_16x16_128x1
+on 2 one-warp CTAs. (The draft router gate, same kernel family, is hidden behind the
+shared expert in the draft graph; the compressor and router gates are in the
+dense-gemv workstream's shape list, weights_proj is not.)
+Probe: a Triton kernel with 16x16 tiles accumulating tl.dot over k in order equals
+cuBLAS bit for bit at M 2..8 on all 8 layers' real weights, any k block. At M = 1 cuBLAS
+picks another kernel (10 us); nine configs matched it only by chance (1-3 of 16 cases
+off each), so M = 1 stays stock.
+What: docker/patch/indexer_wp_gemv.py wraps each DeepseekV4Indexer.weights_proj forward:
+2 <= M <= 8, bf16, contiguous -> the GEMV (k block 512, 2 warps, 3 stages); else stock.
+The first eager call of any size (the profile run's) self-tests M 2..8 on random rows
+against the stock forward; the first 8 eager served calls also verify.
+Checks (wp_gemv_bench_spark2.json): 3 fastest configs bitwise on 8 layers x M 2..8 x 2
+input scales; the wrapper at M 1/2/3/4/6/8/9/16 bitwise vs F.linear (M 1, 9, 16 via the
+stock path), engaged and armed; 20 CUDA-graph replays with new rows bitwise.
+Timing, CUDA graph replay (includes ~5 us of graph launch), 300 replays, arms rotating,
+us median (p10/p90):
+  m  cold: cuBLAS        GEMV            warm: cuBLAS    GEMV          beside copy: cuBLAS  GEMV
+  3  40.8 (39.1/41.0)  12.3 (12.0/12.3)  25.6          9.4            39.2               11.9
+  4  39.0 (38.8/41.0)  12.3 (12.0/12.3)  27.2          10.9           38.7               10.7
+  6  38.9 (38.9/40.7)  12.3 (12.0/12.3)  27.2          10.9           38.8               11.4
+  8  39.1 (38.9/41.0)  12.3 (12.0/12.3)  27.3          10.9           38.9               12.0
+Projected: the +wp layers stop waiting at the join (~-24 us x 4), the comp+wp layers are
+left with the compressor as the last branch (~-10..-17 us x 4): ~-0.14 ms/step at c=1.
+Bit-identical, so no quality risk.
+[Fix pass: cold / warm with the launch hidden (section 10.3): m=4 38.94 -> 10.69 us cold,
+26.46 -> 10.08 warm.]
+
+8. ITERATION 8: SWA decode metadata as one kernel per KV-cache group (KEEP, env
+   DSV41_SWA_META_FUSED=1)
+------------------------------------------------------------------------------
+Trace (eager ops of step 120, c1-rank0.pkl): 15 causal SWA metadata builds per target
+step, each = the token map (8 ops; see iteration 2) + compare_scalar (slot_mapping >= 0)
+1.2 us + DtoD (copy_ into is_valid_token) 1.0 + Fill<int> (decode_swa_lens[n:] = 0)
+0.9-1.2 + _compute_swa_indices_and_lens_kernel 2.2-2.6, op starts 4.1 us apart (queued).
+The 3 non-causal DSpark draft builds (DSpark kernel) stay stock.
+What: docker/patch/swa_meta_fused.py re-compiles DeepseekSparseSWAMetadataBuilder.build
+from the image's own source with two verbatim blocks rewritten (the validity copy, the
+decode branch head), in a copy of the module namespace (sources that need the class
+scope -- super(), __class__, mangled names -- are refused). A causal pure-decode build
+(armed, prefill tokens 0, causal is the bool True, decode tokens <= slot_mapping rows,
+int32 buffers) launches one Triton kernel: programs < n compute validity from
+slot_mapping and then the stock kernel's causal no-image integer arithmetic; programs
+>= n write validity for the rest of slot_mapping and zero the lens tail to the buffer
+end. Everything else (prefill, mixed, non-causal, update_draft_decode_metadata) is the
+stock code. The first 8 fused builds run the stock ops into the real buffers, snapshot,
+run the fused kernel over poisoned buffers and compare every written element; a mismatch
+or launch error -> one DISABLED line, stock values restored, stock from then on.
+Checks (swa_meta_check_spark2.json, spark2, canonical-e13, pmon clean, 2190 MHz):
+- 48 builds, the rewritten build vs the image's build on the same batches (12 random
+  block-table draws x c=1 m=1, c=1 m=4, c=2 m=8 with a request shorter than the window,
+  3 requests incl. a padded request and 2 padded tokens): index rows, the whole lens
+  buffer, validity, token map and the returned metadata equal; verify path ran 8x, armed;
+- fallbacks: prefill, mixed, non-causal, a tensor-valued causal flag, fewer slot rows
+  than decode tokens -> stock;
+- 20 CUDA-graph replays of the fused launch with new seq_lens / slot mappings (0-2
+  invalid tokens) / block tables == the stock ops each time;
+- sabotage (fused launch + one wrong lens element): disarmed, stock values kept, next
+  build stock; install() on the image class: patched, equal to stock, second install
+  "already installed".
+Timing: 15 builds per step (each with its own token map, as stock) queued behind ~4 ms of
+matmuls so the device runs them back to back, CUDA events around the 15 builds, 300 iters
+after 20 warmup, arms alternating, every iteration each fused builder's buffers compared
+with its stock twin's (0 mismatches). us median (p10/p90):
+  c=1 m=4: stock 568.1 (557.9/576.3)  fused 441.1 (430.9/445.2)  -127.0
+  c=2 m=8: stock 566.0 (557.9/576.3)  fused 439.1 (430.8/443.1)  -126.9
+  (run 1, before the sabotage/install sections: 562.0 -> 430.9 c=1, 564.0 -> 430.9 c=2)
+GPU ops per build 12 -> 9; with DSV41_ATTN_T2R_DEDUP=1 groups 2..15 go 5 -> 2.
+Projected: 45 fewer queued ops per target step: -0.13 ms/step at this bench's ~2.9 us/op,
+-0.18 ms/step at the serve trace's 4.1 us/op; c=2 the same (op count does not depend on
+the batch). Latency-bound (a few KB per build), so GB/s is not the measure here.
+Bit-exact (integer math, same values in the same buffers).
+[Fix pass: that timing queued matmuls as busy work; with a calibrated GPU sleep and the
+host enqueue checked (section 10.3): 521.1 -> 426.8 us warm, 617.1 -> 461.6 cold:
+-0.09..-0.16 ms/step.]
+
+9. STOP: what is left does not pay (and the cumulative projection)
+------------------------------------------------------------------
+All levers together (levers_dryrun_spark2.txt, canonical-e13, all 7 envs = 1): every
+install line printed, no FAILED / "lever is OFF" / DISABLED line; the image classes carry
+the patched methods. Unit gate 615 tests OK (10 skipped), render --check 0.
+
+Cumulative projection (c=1 step 62.8 ms; c=2 clean step ~86 ms; paths are distinct, so
+the sums hold to first order; all serve-untested):
+[SUPERSEDED by section 10.4: this table carries the host-bound t2r number and the
+matmul-busy SWA number.]
+  lever                              c=1 ms/step       c=2 ms/step
+  1 native Engram stage              -1.17..-1.29      -1.8..-2.05
+  3 early Engram hash                -0.17             -0.28
+  2 token map dedup                  -0.52             ~-0.6
+  8 SWA metadata fused               -0.13..-0.18      -0.13..-0.18
+  4 MoE prep fused (+ cast)          ~-0.3 (-0.04)     ~-0.3 (-0.04)
+  5 candidate mask bounded           -0.28..-0.36      ~-0.70
+  7 indexer weights_proj GEMV        ~-0.14            ~-0.14
+  total                              -2.75..-3.00      ~-4.0..-4.3
+  = 4.4-4.8% of the c=1 step (L.A.I.L 33.98 -> ~35.5 tok/s at equal acceptance).
+
+Remaining candidates from the step-120 eager census (profile c1-rank0) and the r3
+ranking, each estimated at the serve's ~4.1 us per queued op:
+  - compressor / indexer metadata builds before the target graph (2 groups x ~10 ops:
+    add, DtoD, add, add, elementwise, clamp, DtoD, BUnary, paged_mqa_logits_metadata,
+    DtoD): one kernel per group ~-0.065 ms/step;
+  - DSpark draft Markov argmax (3 single-CTA full-vocab argmax reduces, 23 us each, in
+    the draft graph): an exact argmax over the 256 gathered candidates plus the best
+    base logit outside them ~-0.064 ms/step, touches drafting;
+  - draft rejection/sampling chain after the target graph (14 ops, ~57 us span, v2
+    sampler kernels with host-visible outputs) ~-0.03..-0.04 ms/step;
+  - v2 runner prepare_inputs chain (~20 ops incl. 3 HtoD / 6 DtoH) ~-0.04 ms/step;
+  - Engram hash-prep masks (4 AUnary + 2 Binary before _hash_ids), fold into the hash
+    ~-0.025 ms/step (with the early hash they are already off the idle path);
+  - 3 x _prepare_dflash_inputs_kernel (13.4-14.2 us each): the cost is the work per
+    launch, not the gaps; merging saves ~-0.02..-0.03 ms/step.
+Each is <= 0.07 ms/step (<= 0.1% of the step), below anything a serve ABAB can resolve
+(identical configs spread 27.40 / 26.13 / 28.01 tok/s), and most sit in vLLM's sampler,
+speculator or runner core, where a rewrite carries real risk for no measurable gain.
+Stopped here.
+Not mine, handed on: the engram wkv TP shard (profile #3: ReplicatedLinear [25600, 6144]
+fp8, each rank reads all 162 MB per engram layer, 2 layers, 1.47 ms/step; column-parallel
+halves the per-rank read for a ~205 KB all_gather per layer: 0.78 ms/step in the profile's
+model, ~0.66 by my estimate after the two gathers at ~60 us) belongs to the dense-GEMM
+workstream; the p2b -> all-reduce combine fold (profile #8, 0.50) to coop-moe;
+the draft router gate (profile #9) is hidden behind the shared expert in the draft graph
+(iteration 7 trace), so a GEMV there does not shorten the step.
+
+10. FIX PASS (two reviews, needs-fix): blocking items, the re-run suite, one new lever
+--------------------------------------------------------------------------------------
+Every number in this section is from a `git archive` export of a committed tree
+(runlog_<tag>.txt names the commit), run on spark2 under .worktrees-spark2/.gpu.lock,
+image canonical-e13, the serve's baseline Engram envs (DISK, FAST_STAGE, PREFETCH,
+CENSUS, GATHER_V2, WILLNEED). Clocks and GPU processes were sampled every second during
+each run (clk_<tag>.txt): the SM clock read 2190 MHz in the busy samples except single
+samples at a container's start or stop (435-2197 MHz), and no sample in any run showed a
+GPU process outside the run's own container. Evidence: fix/<script>.json (the result
+line), fix/<script>.log (lever lines: engaged / disarmed / census), fix/runlog_*.txt,
+fix/clk_*.txt.
+
+Runs: glue1 and egpu1 at 9682eab (t2r, SWA, MoE prep, mask, GEMV, Engram GPU stage); the 7
+levers' modules and those check scripts are unchanged from there to the last commit, which
+only adds the wkv lever, the dry-run field and the CPU bench's noise fix. wkvtp3 at 1f29e69
+(wkv lever, TP=2 emulated), rest3 at 9ab95cb (wkv probe with prefill cells, the early hash
+on the stock chain, the 8-lever dry runs, Engram CPU checks), noise2 at d2cfabb (the
+reduced --noise run; the full-length one, noise1, was killed at 6.6 min, see 10.5).
+
+10.1 Blocking items
+- t2r had no self-check, no self-disarm, no audit markers. Now docker/patch/
+  attn_t2r_dedup.py (1726b51): the first DSV41_ATTN_T2R_VERIFY reuses outside capture
+  (default 8) also run the stock method into a scratch tensor and compare; a mismatch puts
+  the stock values in the group's buffer, prints LOG_DISARMED once and every later call is
+  stock. LOG_ENGAGED at the first verified reuse; a [t2r-census] line (computes, reuses,
+  reuses/compute) when the window closes and at every power-of-two compute count from
+  1024 (the bench's steady state: 9.48-9.50, i.e. 19 reuses per 2 computes a step).
+  engagement_audit gates the module on DSV41_ATTN_T2R_DEDUP=1, run.sh forwards
+  DSV41_ATTN_T2R_VERIFY, unit tests cover the verify, disarm, capture and census paths,
+  and t2r_dedup_bench.json "sabotage" shows the disarm on the image's real
+  CommonAttentionMetadata (the first group's map overwritten before the next group copies
+  it: that group gets the stock map back, the lever disarms, the later groups compute).
+- DSV41_ENGRAM_NATIVE_STAGE=1 broke stage() when DSV41_ENGRAM_CPU_HASH=1 or
+  DSV41_ENGRAM_DEFER=1 had rewritten it (TypeError every step). install() now refuses
+  first (4adf6c3): the cpu-hash/defer methods on EngramDiskStager, or any stage()
+  signature but the stock one, give one LOG_DISARMED line and nothing is patched; the
+  early-hash hooks are installed before the stager is touched. levers_dryrun_defer.json
+and levers_dryrun_cpuhash.json show
+  it in the interpreter a spawned worker is (after the sitecustomize text patches): with
+  DEFER=1 or CPU_HASH=1, "worker": native_stage false, one "engram native stage
+  DISABLED" line, stage() accepts input_batch.
+- The t2r bench was host-bound (one matmul of busy work, n_mm=1). t2r_dedup_bench now
+  queues a calibrated 6 ms torch.cuda._sleep, fails if any timed iteration's host enqueue
+  reaches it (max seen 0.89 ms), and builds the serve's split (a draft prep of 3 groups,
+  a target prep of 18, each with its own query_start_loc objects). swa_meta_check got the
+  same harness.
+- The worktree held unreviewed WIP. It was reviewed, finished and committed (1726b51,
+  4adf6c3, 9682eab); nothing uncommitted remains, and the evidence comes from exports of
+  the commits, not the worktree.
+
+10.2 Also from the reviews (non-blocking), done
+- Sabotage runs for every disarm path that had none: native stage, MoE prep, candidate
+  mask, weights_proj GEMV, t2r (SWA and the early hash already had one). Each corrupts one
+  bit of the lever's output: the verify returns or restores the stock result, the lever
+  disarms, the next call is stock; the first-call self-tests disarm too.
+- Launch latency: the warm and cold arms put a ~90 us GPU sleep before the start event,
+  so a graph replay's launch is hidden as inside the serve's target graph (MoE prep keeps
+  the old launch-inclusive "alone" arm for comparison: 6.4 us fused alone vs 4.0 warm).
+- Cold L2 (a 128 MiB write, GB10 L2 is 24 MiB) in every timing script.
+- candidate_mask_check also times row ends near 32k and 128k (the reviewer's cold
+  numbers reproduce: 128k rows 4 119.0 -> 32.8 us, rows 8 207.8 -> 48.1).
+- engram_stage_gpu_bench: --chain-ops defaults to the stock chain (241 ops in r3),
+  records the chain alone (the early hash's hide window) and checks host enqueue < busy.
+
+10.3 The re-run suite, stock -> lever, median us (p10/p90)
+t2r dedup, one decode step = a 3-group draft prep + an 18-group target prep, GPU-bound
+behind a 6 ms sleep (host enqueue max 0.89 ms), 300 iterations per arm, arms alternating,
+every buffer checked every iteration (t2r_dedup_bench.json):
+  warm c=1 m4       510.8 (508.8/512.9) -> 83.8 (83.8/83.8)     c=2 m8  510.8 -> 83.8
+  warm c=2 padded   553.8 (549.7/555.9) -> 90.0 (87.9/90.0)     c=1 m1  510.8 -> 83.8
+  cold c=1 m4       518.9 (515.0/523.2) -> 104.3 (102.1/106.4)  c=2 m8  519.1 -> 102.2
+  cold c=2 padded   560.1 (557.8/566.1) -> 106.3 (104.1/108.4)  c=1 m1  518.9 -> 104.1
+  GPU ops per step 168 -> 35 (3.04 -> 2.40 us per op warm); census steady 9.48-9.50
+  reuses per compute; 0 mismatches; sabotage: disarmed, groups 1-5 hold the stock map.
+SWA metadata fused, 15 causal decode builds a step, GPU-bound behind an 8 ms sleep
+(host enqueue max ~1.2 ms), 300 iterations (swa_meta_check.json):
+  warm c=1 m4       521.1 (519.0/529.2) -> 426.8 (426.8/428.9)   c=2 m8  521.1 -> 426.8
+  cold c=1 m4       617.1 (613.2/621.4) -> 461.6 (459.5/465.8)   c=2 m8  617.2 -> 461.7
+  48 builds equal, 20 graph replays, 5 fallbacks stock, sabotage disarms.
+MoE prep fused, CUDA graph per arm, 400 replays (moe_prep_check.json); m=4 (m 1-8 alike):
+  warm, launch hidden   20.35 (20.32/20.48) -> 3.97 (3.94/4.06)
+  cold, launch hidden   26.56 (26.40/26.94) -> 4.22 (4.06/5.82)
+  beside a 512 MiB copy 26.43 (26.30/26.88) -> 4.13 (4.03/5.79)
+  launch inside         19.78 (18.78/21.06) -> 6.38 (6.14/6.72)
+  p2b epilogue x40      m4 122.72 -> 85.86, m8 124.77 -> 85.89 per step
+  576 sweep cases, 100 graph replays, 65536 cast patterns; 14 -> 1 ops; sabotage: verify
+  returns stock and disarms, next call stock, self-test disarms.
+Candidate mask bounded, CUDA graph per arm (flags + mask), launch hidden, 300 replays
+(candidate_mask_check.json):
+  width, rows, row ends       warm                                  cold
+  1M, 4, 1.5k-20k             98.14 (97.09/99.17) -> 8.06 (8.00/8.29)  116.74 -> 10.24
+  1M, 8, 1.5k-20k             186.62 (185.18/188.29) -> 12.13          205.79 -> 12.29
+  64k, 4 / 8, 1.5k-20k        12.10 -> 6.37 / 14.37 -> 7.33            19.42 -> 8.19 / 29.66 -> 8.67
+  1M, 4 / 8, ~32k             96.10 -> 10.34 / 187.17 -> 14.21         118.78 -> 14.34 / 206.35 -> 19.68
+  1M, 4 / 8, ~128k            99.14 -> 19.54 / 188.61 -> 30.29         119.04 -> 32.80 / 207.84 -> 48.10
+  The stock mask writes 16.8 MB (rows 4) at 171 GB/s warm, 68% of 250; the bounded mask
+  is latency-bound. 54 mask + 40 top-k cases, 20 graph replays; sabotage as MoE prep.
+weights_proj GEMV (Triton 512:2:3 vs cuBLAS), CUDA graph, launch hidden, 300 replays
+(wp_gemv_bench.json): m=4 cold 38.94 (38.94/39.30) -> 10.69 (10.50/12.32), warm 26.46 ->
+  10.08, beside copy 38.94 -> 10.43; m 3/6/8 alike; m=1 stays cuBLAS (10.27 cold both).
+  Bitwise on all 8 layers x m 2..8 x 3 configs, 20 replays; sabotage as MoE prep.
+Engram native stage, GPU idle the stage causes (CUDA events around stage() behind a 4 ms
+sleep), real stage() and tables, 300 iterations x 3 arms rotating
+(engram_stage_gpu_bench_*.json):
+  n=4  pf rank 0     1438.4 (907.3/1924.9) -> 214.8 (199.2/231.5)
+       pf rank 1     1768.2 (1071.6/2272.2) -> 196.7 (187.8/222.6)
+       hot rank 0    2116.5 (1598.3/2778.4) -> 224.4 (193.2/259.4)
+       pf cold L2    1966.7 (1100.1/2191.1) -> 222.1 (207.9/238.1)
+  n=8  pf rank 0     2493.7 (1618.2/3299.5) -> 360.9 (350.7/374.3)
+       pf rank 1     2321.6 (2052.7/2871.5) -> 384.3 (366.1/407.2)
+       hot rank 0    2899.9 (2558.0/3508.8) -> 350.1 (331.9/379.3)
+       pf cold L2    2695.5 (2149.6/2897.0) -> 366.8 (356.6/382.6)
+  0 mismatches in every run; sabotage: the step is refilled from the stock gather (staged
+  rows equal the stock stage's), the lever disarms, the next call is stock.
+Early hash: chain + stage GPU span; the chain alone is the hide window
+(engram_stage_gpu_bench_early_c*.json), rank 0, prefetched rows:
+  chain  77 ops (ALL: t2r + SWA fused), alone 178.0 us:
+       n=4 native 404.6 (389.1/427.7) -> early 223.5 (216.4/230.8)   -181.1
+       n=8 native 567.7 (543.2/610.0) -> early 369.2 (352.2/411.1)   -198.5
+  chain 122 ops (t2r only), alone 252.8 us:
+       n=4 native 502.5 (478.4/529.8) -> early 296.5 (289.1/306.6)   -206.0
+       n=8 native 628.5 (607.6/647.9) -> early 352.5 (342.1/374.5)   -276.0
+  chain 241 ops (stock chain, what B1 runs), alone 529.2 us; 8 ms sleep (the 4 ms run had
+  one host-bound sample in 900 and is void by the bench's own rule, not used):
+       n=4 native 817.0 (787.5/868.4) -> early 603.0 (580.0/626.2)   -214.0
+       n=8 native 968.8 (942.3/1013.4) -> early 582.0 (570.8/596.4)   -386.8
+  Every early run: 0 mismatches, native and early engaged and armed, sabotage as above.
+Engram native gather, CPU critical path (engram_stage_cpu_bench.json, rank 0, 2 tables,
+300 iterations, arms alternating; native2 = the same C gather dispatched to the pool):
+  pf n=4   1535.7 (1243.8/1770.2) -> 254.0 (231.8/273.9)   (native2 355.6)
+  pf n=8   2414.2 (1904.0/2994.6) -> 313.0 (300.8/332.3)   (native2 558.2)
+  hot n=4  1457.8 (1153.0/1894.9) -> 257.4 (243.1/269.4)   (native2 272.4)
+  cold n=4 38019.8 -> 715.7; cold n=8 62575.3 -> 1342.9 (a prefetch miss: every row read)
+  engram_native_check.json: all 65536 (fp8, ue8m0) byte pairs, ownership / padding
+  cases, 108 of 108 real-table calls bit-exact.
+Engram wkv column-parallel (new lever, 10.5), per rank, CUDA graph, launch hidden, 300
+replays (engram_wkv_shard_check.json, the production GEMM on the pack's layer-1 weight):
+  m=1  cold 813.7 (806.6/843.4) -> 444.1 (442.0/459.4)   warm 749.4 -> 379.7
+  m=4  cold 803.5 (796.3/831.9) -> 443.2 (440.0/456.4)   warm 743.4 -> 379.0
+  m=8  cold 816.8 (793.3/846.5) -> 447.9 (437.9/464.7)   warm 727.9 -> 371.5
+  full 199-202 GB/s cold (80-81% of 250), half 181-183 (72-73%); warm 216-223 / 214-218.
+  prefill (compute-bound): m=512 1173.4 -> 612.5, m=2048 4588.4 -> 2393.9 us (140 / 135
+  TFLOP/s). With the lever's own classes (engram_wkv_tp_check.json): m=4 cold 805.6 ->
+  444.4, warm 754.5 -> 384.9.
+
+10.4 Corrected projection (first order, sums over distinct paths; nothing here is
+serve-tested; c=1 step 62.8 ms, c=2 step ~86 ms)
+  lever                            c=1 ms/step    c=2 ms/step    basis
+  native Engram stage              -1.22..-1.57   -1.94..-2.13   pf medians, rank 0 / 1
+  early hash, ALL chain (77 ops)   -0.18          -0.20          c77 run
+  t2r dedup                        -0.41..-0.43   -0.41..-0.43   cold .. warm
+  SWA metadata fused               -0.09..-0.16   -0.09..-0.16   warm .. cold
+  MoE prep fused                   -0.15..-0.30   -0.15..-0.30   r3: 0.15 exposed .. 7.4 us x40
+   + one p2b output cast           -0.04          -0.04          40 epilogues
+  candidate mask bounded           -0.27..-0.43   -0.70..-0.77   r3 77.7 us/call .. bench, x4
+  weights_proj GEMV                -0.10..-0.17   -0.10..-0.17   r3 join waits
+  ALL (the 7 above)                -2.46..-3.28   -3.63..-4.20   3.9-5.2% / 4.2-4.9%
+  Engram wkv column-parallel (B4)  -0.66..-0.70   -0.64..-0.68   2 x 361..370 us, minus two
+                                                                 gathers, ~20-30 us (c=1) /
+                                                                 ~30-40 us (c=2), modeled
+  ALLW (ALL + B4)                  -3.12..-3.98   -4.27..-4.88   5.0-6.3% / 5.0-5.7%
+  B1 alone runs the stock chain (241 ops): native + early = -1.43..-1.78 (c=1),
+  -2.33..-2.52 (c=2); the early hash alone is -0.21 / -0.39 there (B1a comparison).
+The earlier table (section 9) summed to -2.75..-3.00 (c=1) with the host-bound t2r number.
+At equal acceptance: prose_long c=1 62.88 -> ~59.6-60.4 ms/step with ALL (33.13 -> ~34.5-
+34.9 tok/s), ~58.9-59.8 with ALLW (~34.8-35.4); L.A.I.L 33.98 -> ~35.3-35.9 (ALL),
+~35.7-36.3 (ALLW); prose_long c=2 45.94 -> ~48.0 (ALL), ~48.5 (ALLW).
+
+10.5 The reviewers' missed opportunities
+- Engram wkv tensor-parallel shard (review 2, the largest item): DONE as a new lever,
+  DSV41_ENGRAM_WKV_TP (177d4cb). Probe first (engram_wkv_shard_check.py): on the pack's
+  real wkv weights the production GEMM gives the full [25600, 6144] weight and each
+  12800-row half the same bits in every column: 128 cases (layers 1 and 14 x M 1..8,
+  16..2048 x four activation distributions), 0 bits differ (two runs: at 4283da4 and,
+  with the prefill cells, at 9ab95cb). Then the lever with the image's own classes, TP=2
+  emulated in one process (engram_wkv_tp_check.py): 64 cases per layer bit-exact against
+  a stock ReplicatedLinear loaded and processed by the image's own code; the two
+  processed shards concatenated equal the stock processed weight and swizzled scale byte
+  for byte (layers 1 and 14); the serve's self_check engaged on both layers; sabotage
+  (one flipped bit in rank 0's GEMM output) disarmed and installed the fallback, equal
+  to stock at M 1/3/4/6/8/64/2048; 20 graph replays of the rank-0 GEMM + the emulated
+  gather equal to stock. The first two runs of that check failed in the harness before
+  any check ran (no vLLM config context, then the context object collected); fixed in
+  f8f530c and 1f29e69; only the third run is evidence. What one GPU cannot show: the
+  real 2-rank all-gather (modeled above) and a 2-rank boot; the plan boots B4 alone
+  first.
+- t2r dedup down to one launch per prep (review 2): not done. The dedup arm is 35 ops,
+  83.8 us warm per step. A one-kernel map in place of the 8-op stock compute cuts 14 ops
+  (~34 us); one kernel writing every buffer of a prep cuts 33 (~80 us) but needs a
+  per-prep registry of the builders' buffers, state the lever does not keep today.
+  0.05-0.13% of the step, below what a serve ABAB resolves, like the items section 9
+  stopped on. Left, with these numbers.
+- Candidate mask and top-k bounded by the candidates (review 2): not done. At typical
+  decode ends the bounded mask costs 8-12 us a call; it grows with the row end (cold,
+  128k: 32.8 / 48.1 us for rows 4 / 8), and top_k_per_row_decode reads [0, end) too. A
+  top-512 over the <= 16,384 gathered candidate columns would bound both, but it is a new
+  top-k kernel whose tie behaviour must match a stock kernel that is not
+  order-deterministic, and only long-context decode gains; no bench cell has one. Left.
+- MoE: topk ids int32 straight into the fused prep (review 2): not done. With
+  DSV41_MOE_PREP_FUSED the routing path ends ahead of the shared expert (it lost 16-22 us
+  per layer), so the one remaining int32 -> int64 cast (~1-2 us in the graph, 40 a step)
+  is off the critical path until the shared expert gets faster (dense-gemv: gate_up -5,
+  down -3 us per layer); then <= 0.04-0.08 ms/step. It belongs to the integration branch
+  where both levers meet.
+- The <= 0.07 ms items together (~0.25-0.28 ms, review 2): not done; each is its own
+  rewrite in the runner, speculator or sampler. The compressor/indexer metadata builds are
+  the one shaped like the SWA fusion, but their paged_mqa_logits_metadata kernel (DeepGEMM
+  scheduling) stays, so a fused build removes ~8 of ~10 ops per group: ~0.05 ms/step.
+- Capture the decode metadata prep as one CUDA graph (review 1, ~0.25-0.4 ms/step): not
+  done; the builders branch on host values (max_seq_len, query_start_loc_cpu) and keep
+  persistent-buffer contracts; a runner change outside this workstream.
+- Early hash vs the prefetch-v3 worker (review 1): the CPU bench's --noise mode (a Python
+  thread spinning under the GIL, a still-running prefetch worker's pressure) had never
+  run. Its first full-length run was killed at 6.6 min: the spinner ran through the
+  untimed setup too, and under a pure-Python spinner every GIL hand-off waits out the
+  5 ms switch interval, which the stock gather (pool threads, a preadv per row) pays
+  hundreds of times per call. d2cfabb spins only during timed calls; a reduced run (pf,
+  n=4, 60 iterations per arm, engram_stage_cpu_bench_noise.json) keeps the locked
+  session short. Under this worst case (a spinner that never releases the GIL on its
+  own) the stock stage takes 274.9 ms per call (p10 102.3, p90 668.4) against 1.54 ms
+  quiet, and the native stage 18.7 ms (p10 0.27, p90 19.2) against 0.25 ms quiet: 15x
+  better than stock, not immune (every return from a ctypes call waits out the switch
+  interval), and 27.2 rows per call missed the page cache under noise against 0 quiet
+  (cause not established). The real prefetch worker spends most of its time in
+  syscalls and event waits, far below this pressure, so this bounds rather than
+  predicts; the serve check stays in the plan: B1 against B1a, with [native-census]
+  miss/call and the stage wall time.
+- Fold the candidate mask into top_k_per_row_decode or the paged_mqa_logits epilogue
+  (review 1): not done (CUDA kernels inside the image; ~8-10 us x 4 a step remain).
+- MoE prep into _dsv4_topk's epilogue, p2b taking bf16 x (review 1): not done; the routing
+  path is no longer the late branch (see above).
+
+10.6 The Engram projection against Round 24 (review 2, note c)
+Round 24 put the stage gather on a persistent Python worker (predict, numpy hash, gather,
+side-stream H2D: 4.6-7.7 ms of mostly GIL-holding work per step) and L.A.I.L stayed flat
+(30.28 vs 31.37, n=5, inside a 29.5-33.7 band). The native stage differs in two ways: it
+holds the GIL for none of the gather (one ctypes call per table) and takes ~0.2 ms where
+DEFER's worker competed with the launch thread for most of a step; and Round 24's n=5
+resolves ~+-3% at best, while this lever is ~2%. The r3 trace (this round's baseline)
+still shows the DtoH(hash) -> HtoD(rows) gap as device idle: 3.2 ms/step profiled, ~1.5-2.0
+unprofiled. So the projection stands as a microbench number whose serve value is not
+shown: B1 needs >= 3 ABAB pairs, and the profile window (plan section 3) must show the gap
+shrink. If the gap shrinks and tok/s does not move, the idle was not on the step's
+critical path and B1 comes out of the bundle.
+
+10.7 Dry runs and gates
+levers_dryrun_all.json (committed tree 9ab95cb, the serve's baseline envs + all 8 lever
+envs): in the first interpreter and in a second one (what a spawned worker sees after
+the sitecustomize text patches) every lever installs and its module loads, no FAILED /
+"lever is OFF" line. With DSV41_ENGRAM_DEFER=1 (levers_dryrun_defer.json) or
+DSV41_ENGRAM_CPU_HASH=1 (levers_dryrun_cpuhash.json) the worker view shows
+EngramDiskStager carrying _ch_try_stage / _defer_try_stage, stage() taking input_batch,
+the native stage not installed (one "engram native stage DISABLED" line), no early-hash
+hooks, and the other 6 levers installed.
+Unit gate: 642 tests OK (10 skipped); kit/render.py --check exit 0.

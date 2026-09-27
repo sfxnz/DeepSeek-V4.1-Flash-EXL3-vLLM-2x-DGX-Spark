@@ -1,0 +1,117 @@
+DSV41_MHC_DET_SPLITS=16: serve-arm validation plan (ARMS.md loop, one lever, ABAB)
+===================================================================================
+
+What changes in the serve. Decode mHC for T <= 16 tokens per call: the target verify rows
+(T = 4 at c=1, 8 at c=2) and the draft rows (T = 3 / 6). Per sublayer, mhc_post, the DeepGEMM
+TF32 prenorm GEMM and the TileLang fused norm become mhc_det_post, mhc_det_gemm_t8/_t16 and
+mhc_det_norm. Every output is bitwise the stock one, so greedy token streams are unchanged by
+construction. Prefill (T > 16) keeps the stock kernels.
+Cost: about 101 MiB of GPU memory per rank (packed fn: 86 x 1,228,800 B + 307,200 B for the
+broadcast = 105,984,000 B), plus one NVRTC compile (~1-2 s) and a bitwise self-test at weight load. No image
+rebuild: canonical-e13 as is. The kernels come from docker/patch (NVRTC through cuda.bindings).
+
+Preconditions
+- The requant is finished or paused, and spark1's GPU has no foreign process
+  (`nvidia-smi pmon -c 1` on both nodes: only Xorg / gnome-shell). Contaminated boots are
+  void (profile stage, section 0).
+- The serve is down on both nodes. Run from the worktree that carries the lever
+  (k3/mhc-det, or its merge). `python3 -m unittest discover -s tests -q` and
+  `python3 kit/render.py --check` pass.
+- The worktree is clean (`git status --short` empty): run.sh bind-mounts docker/patch into the
+  container and copies it to the worker, so the serve NVRTC-compiles whatever the worktree holds.
+  Record in each boot's run log `git rev-parse HEAD` and
+  `sha256sum docker/patch/mhc_det.cu docker/patch/mhc_det.py docker/patch/mhc_det_overlap.py`.
+
+Boots (A = baseline, B = lever; order A B A B, `./stop.sh` between boots)
+  A:  ./stop.sh && AUDIT=strict ./run.sh
+  B:  ./stop.sh && AUDIT=strict DSV41_MHC_DET_SPLITS=16 ./run.sh
+Nothing else differs. run.sh forwards DSV41_MHC_DET_SPLITS to both ranks via FORWARD_ENVS.
+
+Engagement (B boots, both ranks, before any measurement)
+- The AUDIT=strict post-ready audit must pass. It expects "dsv41: mhc det engaged" in the head
+  and worker logs, and fails on any "dsv41: mhc det lever is OFF" line
+  (tools/engagement_audit.py PATCHES).
+- `docker logs dsv41-flash-exl3 2>&1 | grep 'mhc det'` on each node shows:
+    dsv41: mhc det armed (DSV41_MHC_DET_SPLITS=16) ...           (once per process)
+    dsv41: mhc det engaged: target: 81 fn packed ...              (40 layers x 2 + broadcast)
+    dsv41: mhc det engaged: draft: 6 fn packed ...                (3 draft layers x 2)
+  A second "engaged: target: 1 fn packed" line may appear: if the load hooks run twice, the
+  broadcast fn is rewritten in place (copy_) and is re-packed and re-tested. It must show no
+  "lever is OFF" line (disarm = self-test mismatch, image drift, or an unpacked fn met during
+  graph capture).
+- After the benches, check the logs again (`tools/disarm_scan.sh`). No "lever is OFF" line may
+  have appeared at runtime.
+- JIT: no "TileLang begins to compile" and no NVRTC/DeepGEMM compile after
+  "Application startup complete" beyond what the A boot shows (03-jit-check style grep). The
+  det path adds no TileLang variant; its NVRTC module compiles once, in prepare().
+
+Per boot, in this order (ARMS.md step 5; identical on A and B)
+  1. python3 smoke_chat.py && python3 smoke_vision.py      ('323', 'red')
+  2. tests/correctness.sh                                   (8/8)
+  3. python3 tools/measure_lail_prose.py --runs 10          (L.A.I.L n=10: tok/s, acceptance, ms/step)
+  4. python3 bench_decode.py --runs 9                       (prose/structured, c=1 and c=2)
+  5. tools/four_numbers.sh --arm mhcdet-<A|B><n>
+  6. python3 tests/quality_eval.py --quick \
+       --baseline results/2026-09-24-review/quality-baseline/quick.json \
+       --out results/2026-09-25-kernels/mhc-det/serve/<boot>/quality_quick.json   (exit 0)
+
+Keep rule (ARMS.md step 6)
+- Primary: prose_median_ms_per_step and prose_long c=1 median_ms_per_step, B vs A over the
+  A,B,A,B sequence at matched acceptance. The bitwise kernels do not change drafting, so
+  per-boot median_run_acceptance_len of A and B must overlap. If they do not, something else
+  changed: stop and investigate. Promote when the median improvement exceeds the larger A/B
+  boot spread AND every B boot beats the A median.
+- Expected: -1.0 to -1.4 ms/step at c=1, from -1.04 ms per 86-sublayer pass in the
+  serve-like graph (path_time_final.json, T=4: 2142.4 -> 1104.6 us). The in-serve stock mHC costs
+  2.92 ms/step vs 2.14 in the isolated chain, so the serve saving may be larger. c=2 (T=8
+  target, 6 draft): about -1.02 ms/pass.
+- Non-inferiority: pp_warm / pp_novel 8k/32k within spread (prefill path untouched),
+  prose_long c=2 aggregate, warm-prefix hit fraction, boot floors (MemAvailable: +101 MiB of
+  GPU memory per rank), benches/e2e.py exit 0.
+- Quality: quick eval must pass. Numerics are bitwise, so decode NLL and the decode-vs-prefill
+  probe should read the same as A, and the golden hazard should sit at A's own A/A level. A
+  larger golden hazard than the A/A control would point to a kernel that is not bitwise in the
+  serve context. Stop and compare kernels on captured activations.
+
+Optional profile boot (separate from the measured boots; profile stage section 7 recipe)
+  ./stop.sh && AUDIT=strict DSV41_MHC_DET_SPLITS=16 \
+    EXTRA_ARGS='--profiler-config {"profiler":"torch","torch_profiler_dir":"/tmp/dsv41-traces"}' ./run.sh
+  then tools/profile_window.sh (c=1 L.A.I.L window) and the round-3 analyzer. Expect per step:
+  mhc_det_gemm_t8 86 calls (~8-9 us), mhc_det_norm 86, mhc_det_post ~89. Expect no
+  sm120_tf32_hc_prenorm_gemm, mhc_pre_big_fuse_with_norm or mhc_post_tilelang in decode graphs.
+  The categories mhc_prenorm_gemm + mhc_pre_fuse + mhc_post should drop from 2.92 ms/step to about 1.1-1.5.
+
+Rollback: unset DSV41_MHC_DET_SPLITS (the default, 0). The lever only rebinds Python names and
+adds packed buffers, and a self-test mismatch keeps the stock path.
+
+Arm C: DSV41_MHC_DET_OVERLAP=1 on top of B (mhc_det_overlap.py; iterations.txt items 16-19)
+------------------------------------------------------------------------------------------
+Run after the B-vs-A decision, as its own ABAB with B as the baseline:
+  B:  ./stop.sh && AUDIT=strict DSV41_MHC_DET_SPLITS=16 ./run.sh
+  C:  ./stop.sh && AUDIT=strict DSV41_MHC_DET_SPLITS=16 DSV41_MHC_DET_OVERLAP=1 ./run.sh
+What changes: each decode pre launches only layer_input (mhc_det_norm_li) right after the post.
+Its prenorm GEMM + sinkhorn (mhc_det_gemm_t8/_t16 + mhc_det_norm_coef) go to a side stream
+forked at the next TP all-reduce (wo_b's, or the MoE final reduce), and the next post joins
+that stream first. The kernels and arithmetic are the same, so outputs are bitwise equal:
+lever_smoke --overlap through the real hooks, race_check, edge_check.
+Engagement (both ranks): "dsv41: mhc det overlap armed", then "dsv41: mhc det overlap engaged:
+target: ..." and "...: draft: ..." (the split path is self-tested at load). There must be no
+"dsv41: mhc det overlap is OFF" line. The strict audit gates both markers on DSV41_MHC_DET_SPLITS=16
+together with DSV41_MHC_DET_OVERLAP=1.
+Per boot: the same list as A/B (smokes, correctness 8/8, L.A.I.L n=10, bench_decode, four
+numbers, quick quality). Keep rule: as for B (C vs B, matched acceptance).
+Expected: -0.6 to -0.75 ms/step at c=1 (overlap_probe: -592..-756 us per 86-sublayer pass,
+12-22.7 us window; -432..-738 with a 6 us window). c=2 is about the same per pass.
+Watch in a profile boot: ncclDevKernel_AllReduce_* median time per call vs B. The side stream
+reads 1.23 MB during each all-reduce, and NCCL RING_LL polls host memory, which on GB10 is the
+same LPDDR5x. If the AR median rises by more than ~7 us, C gives most of its gain back; the
+one-GPU probe cannot see this. Expected trace: per step 86 mhc_det_gemm_t8 and 86
+mhc_det_norm_coef on a second stream, each inside an AllReduce; 86 mhc_det_norm_li and no
+mhc_det_norm on the main stream.
+Interaction: k3/comm's DSV41_AR_L2_PREFETCH=1 also forks at the MoE all-reduce and fills the
+window with up to 5.5 MiB of qkv_a prefetch. Measure C with it off first. If both are on,
+re-measure; a smaller DSV41_AR_L2_PREFETCH_MIB may be needed so the 1.23 MB fn read and the GEMM
+still finish inside the window.
+Needs TP >= 2: without an all-reduce between two pres the deferred work launches in place (the
+same bits, but slower than the fused path).
+Rollback: DSV41_MHC_DET_OVERLAP=0 (the default).

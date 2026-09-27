@@ -1,0 +1,59 @@
+{
+ "first": {
+  "swa_meta_fused": true,
+  "t2r_dedup": true,
+  "wp_gemv": true,
+  "native_stage": true,
+  "wkv_tp": true,
+  "cpu_hash_defer_text": [],
+  "stage_params": [
+   "self",
+   "input_ids",
+   "positions",
+   "query_start_loc",
+   "lookback_token_ids",
+   "num_tokens"
+  ],
+  "stage_accepts_input_batch": "TypeError(\"got an unexpected keyword argument 'input_batch'\")",
+  "modules": [
+   "attn_t2r_dedup",
+   "candidate_mask_bounded",
+   "engram_early_hash",
+   "engram_native_stage",
+   "engram_wkv_tp",
+   "indexer_wp_gemv",
+   "moe_prep_fused",
+   "swa_meta_fused"
+  ]
+ },
+ "worker": {
+  "swa_meta_fused": true,
+  "t2r_dedup": true,
+  "wp_gemv": true,
+  "native_stage": false,
+  "wkv_tp": true,
+  "cpu_hash_defer_text": [
+   "_ch_try_stage",
+   "_defer_try_stage"
+  ],
+  "stage_params": [
+   "self",
+   "input_ids",
+   "positions",
+   "query_start_loc",
+   "lookback_token_ids",
+   "num_tokens",
+   "input_batch"
+  ],
+  "stage_accepts_input_batch": true,
+  "modules": [
+   "attn_t2r_dedup",
+   "candidate_mask_bounded",
+   "engram_native_stage",
+   "engram_wkv_tp",
+   "indexer_wp_gemv",
+   "moe_prep_fused",
+   "swa_meta_fused"
+  ]
+ }
+}

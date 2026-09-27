@@ -1,0 +1,76 @@
+{
+ "geometry": {
+  "hidden": 5120,
+  "inter_local": 1152,
+  "experts": 384,
+  "top_k": 6,
+  "k_bits": 2,
+  "mcg": true,
+  "swiglu_limit": 10.0,
+  "layer": 20,
+  "tp_rank": 0,
+  "expert_bytes": 4461312
+ },
+ "device": {
+  "name": "NVIDIA GB10",
+  "sms": 48,
+  "l2_bytes": 25165824,
+  "flush_bytes": 134217728
+ },
+ "variants": [
+  0
+ ],
+ "census_captures": 6,
+ "args": {
+  "mode": "gemm",
+  "variants": "0",
+  "ms": "4",
+  "time_ms": null,
+  "sources": "census,dup0",
+  "layer": 20,
+  "tp_rank": 0,
+  "check_routings": 6,
+  "ref": false,
+  "replays": 16,
+  "iters": 200,
+  "warmup": 20,
+  "phase_calls": 30,
+  "seed": 7,
+  "out": "results/2026-09-25-kernels/coop-moe/v4-gemm.json"
+ },
+ "tolerance": {
+  "onehot": "bitwise",
+  "full_max_rel": 0.001,
+  "repeat": "bitwise",
+  "capture": "bitwise"
+ },
+ "launch": {
+  "v0": {
+   "grid": 192,
+   "blocks_per_sm": 4.0
+  }
+ },
+ "gemm": {
+  "n64640_m4": {
+   "mb": 661.9136,
+   "gbps_median": 226.17341028021167,
+   "gbps_max": 227.68830991423306
+  },
+  "n64640_m8": {
+   "mb": 661.9136,
+   "gbps_median": 229.5454527526105,
+   "gbps_max": 230.68978174360615
+  },
+  "n16384_m4": {
+   "mb": 167.77216,
+   "gbps_median": 227.8720434602001,
+   "gbps_max": 229.78961621939374
+  },
+  "n16384_m8": {
+   "mb": 167.77216,
+   "gbps_median": 226.30811828585504,
+   "gbps_max": 227.5555521058448
+  }
+ },
+ "pass": true
+}
