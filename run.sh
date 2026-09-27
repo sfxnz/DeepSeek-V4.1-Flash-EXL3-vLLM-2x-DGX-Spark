@@ -221,7 +221,9 @@ fi
 if [[ -z "${SPEC_CONFIG:-}" ]]; then
   case "$SPEC" in
     dspark)
-      SPEC_CONFIG='{"method":"dspark","num_speculative_tokens":'"$NUM_SPECULATIVE_TOKENS"',"draft_sample_method":"greedy"}'
+      # disable_eagle_block_drop: with it off (vLLM's default) the first follow-up after a
+      # short reply can reuse 0 cached tokens and re-prefill the whole conversation (#19).
+      SPEC_CONFIG='{"method":"dspark","num_speculative_tokens":'"$NUM_SPECULATIVE_TOKENS"',"draft_sample_method":"greedy","disable_eagle_block_drop":true}'
       ;;
     none)
       SPEC_CONFIG=""
