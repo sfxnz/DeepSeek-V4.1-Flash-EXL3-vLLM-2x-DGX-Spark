@@ -104,6 +104,12 @@ One boot = one lever. Every arm produces the four numbers via
    at 63.03 ms/step, prose_long c=1 33.13 at 62.88 ms/step, prose_long c=2
    45.94 aggregate, pp_novel 8k/32k 808.8/800.2, pp_warm 759.6/766.8,
    L.A.I.L 3x 33.98 (`results/2026-09-24-review/campaign/s13-promote-final/`).
+   Round 35 reference (the round-35 defaults; medians of the per-boot medians of
+   S1024-1, S1024-2 and final-1, `results/2026-09-26-serve-r3/round35-headline.json`):
+   fresh L.A.I.L 43.17 at 49.00 ms/step, four prose c=1 52.52 at 48.07 ms/step,
+   prose_long c=1 43.73 at 48.98 ms/step, prose_long c=2 65.62 aggregate,
+   pp_novel 8k/32k 821.4/806.3, pp_warm 757.6/768.0. After a change to the
+   defaults, a new ABAB still needs its own A boots.
    Warm-prefix hits depend on the prompt length: a repeat of N tokens
    missed entirely when N ran only 10-58 tokens past the last 128-token
    boundary, and hit at 68-127 (results/RESULTS.md round 34).
@@ -113,7 +119,44 @@ One boot = one lever. Every arm produces the four numbers via
 
 ## Exact restore sequence
 
-Current serve (round 34) = `dsv41-flash-exl3-sm121:canonical-e13` on both
+Current serve (round 35) = `dsv41-flash-exl3-sm121:canonical-e14` on both
+nodes with the round-35 defaults: the round-34 set below plus the round-3
+kernel bundle (`DSV41_P2B_COOP=2`, `DSV41_DENSE_GEMV=1`,
+`DSV41_MHC_DET_SPLITS=16`, `DSV41_ENGRAM_NATIVE_STAGE=1`,
+`DSV41_ENGRAM_EARLY_HASH=1`, `DSV41_ATTN_T2R_DEDUP=1`,
+`DSV41_SWA_META_FUSED=1`, `DSV41_MOE_PREP_FUSED=1`,
+`DSV41_CANDIDATE_MASK_BOUNDED=1`, `DSV41_INDEXER_WP_GEMV=1`) and
+`DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024`, launched with `AUDIT=strict ./run.sh`
+from the kernels-r3 worktree (`results/2026-09-26-serve-r3/final-1/`). Until
+perf/kernels-r3 merges, the main checkout keeps older defaults. The round-35
+kernel levers need `canonical-e14` for COOP; every other line below that
+boots an older image must set the ten round-3 levers to `0` (list under
+"Round-34 config" below), or COOP logs `the lever is OFF` and a strict audit
+fails.
+
+- Round-34 config on the round-35 code (the arm A of `ARMS-r3.txt` section 5):
+  ```bash
+  DSV41_P2B_COOP=0 DSV41_DENSE_GEMV=0 DSV41_MHC_DET_SPLITS=0 \
+    DSV41_ENGRAM_NATIVE_STAGE=0 DSV41_ENGRAM_EARLY_HASH=0 DSV41_ATTN_T2R_DEDUP=0 \
+    DSV41_SWA_META_FUSED=0 DSV41_MOE_PREP_FUSED=0 DSV41_CANDIDATE_MASK_BOUNDED=0 \
+    DSV41_INDEXER_WP_GEMV=0 DSV41_DSPARK_SPARSE_MARKOV_TOPK=256 AUDIT=strict ./run.sh
+  ```
+  In a run.sh dry run (tests/run_sh_harness.py) this gives A-2's recorded
+  DSV41/NCCL/VLLM container env except `DSV41_P2B_COOP=0` and
+  `DSV41_DSPARK_SPARSE_MARKOV_TOPK=256`, which A left unset (off, and the
+  in-code 256). On `canonical-e14` with COOP off the p2b kernels are
+  canonical-e13's; add `IMAGE=dsv41-flash-exl3-sm121:canonical-e13` to boot the
+  round-34 image itself.
+- The Viterbi pack (round 35 P4, rejected as written: golden-hazard gate and
+  L.A.I.L tok/s; local only, not on the Hub) runs on the same code with
+  `SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8 AUDIT=strict ./run.sh`, once
+  the snapshot is assembled on BOTH nodes
+  (`/home/sfxnz/projects/data/dsv41-requant-viterbi/PLAN.txt` section 9:
+  `python3 .../code/tools/requant_full.py assemble --node spark1`, and on
+  spark2 `... assemble --node spark2 --state-host spark1`). `run.sh`
+  resolves `snapshots/<rev>/` when no `refs/<rev>` exists.
+
+Round 34 (before round 35) = `dsv41-flash-exl3-sm121:canonical-e13` on both
 nodes with the round-34 defaults (`DSV41_ENGRAM_WILLNEED=1`,
 `DSV41_STREAM_FEED=1`, `DSV41_WOA_PREPACK=1`,
 `DSV41_DSPARK_SPARSE_MARKOV=1`), launched with `AUDIT=strict ./run.sh` from
@@ -137,12 +180,15 @@ bash results/2026-09-22-endgame2/boot-lm.sh   # R33 config (canonical-e12, lmhea
   forwarded), sleeps 25s for NCCL, then starts head rank 0 and `wait_ready`
   (`/health` + `/v1/models`; allow up to 60 min, plan ≥20).
 - Kernel arms rollback: `IMAGE=dsv41-flash-exl3-sm121:canonical-e12 DSV41_WOA_PREPACK=0 ./serve.sh`
-  (on e12 the WOA lever logs `the lever is OFF` and a strict audit fails).
+  plus the ten round-35 kernel levers at `0` (on e12 the WOA and COOP levers
+  log `the lever is OFF` and a strict audit fails).
 - Round-34 levers off on the new code (the s3 B1 config):
-  `IMAGE=dsv41-flash-exl3-sm121:canonical-e12 DSV41_ENGRAM_WILLNEED=0 DSV41_STREAM_FEED=0 DSV41_WOA_PREPACK=0 DSV41_DSPARK_SPARSE_MARKOV=0 ./run.sh`.
+  `IMAGE=dsv41-flash-exl3-sm121:canonical-e12 DSV41_ENGRAM_WILLNEED=0 DSV41_STREAM_FEED=0 DSV41_WOA_PREPACK=0 DSV41_DSPARK_SPARSE_MARKOV=0 ./run.sh`,
+  plus the ten round-35 kernel levers at `0` on round-35 code.
   An empty value keeps the default, so use `0`.
 - R33 reproduction after the merge. boot-lm.sh stays as recorded evidence and
-  is not edited. Run it with the four round-34 levers off, plus `WARMUP=0`
+  is not edited. Run it with the four round-34 levers off (on round-35 code
+  also the ten round-35 kernel levers, as above), plus `WARMUP=0`
   because the R33 run.sh sent no post-ready warmup:
   ```bash
   DSV41_ENGRAM_WILLNEED=0 DSV41_STREAM_FEED=0 DSV41_WOA_PREPACK=0 \

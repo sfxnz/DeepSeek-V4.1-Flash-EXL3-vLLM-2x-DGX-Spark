@@ -814,3 +814,28 @@ S=249 steps (SSE chunks; acc 2.056 in-window). Results/2026-09-21-trace3/.
   reconstruct already multiply by the fp16 values. Do not add a kernel shortcut that assumes |svh| == 1.
 - Serve pin unchanged. The pack goes to an ARMS step-6 ABAB after assembly: smoke 323, correctness --full,
   quality quick+full. Any speed effect comes through acceptance only.
+
+## Round 35 — 2026-09-26/27 k3 serve campaign: kernel bundle + TOPK=1024 promoted, canonical-e14, Viterbi pack rejected, serve UP
+- Plan `results/2026-09-25-kernels/ARMS-r3.txt`; evidence `results/2026-09-26-serve-r3/`; full account in
+  results/RESULTS.md round 35. Every counted boot: gpu_guard 0 FOREIGN, disarm_scan rc 0, honest cells, quick
+  quality PASS except the Viterbi boots (golden hazard) and the A-1 A/A control rep1 (aa hazard, no lever armed).
+- Promoted to defaults (rows above; 5da6f21): the round-3 kernel bundle as one unit (`DSV41_P2B_COOP=2`,
+  `DSV41_DENSE_GEMV=1`, `DSV41_MHC_DET_SPLITS=16`, `DSV41_ENGRAM_NATIVE_STAGE=1`, `DSV41_ENGRAM_EARLY_HASH=1`,
+  `DSV41_ATTN_T2R_DEDUP=1`, `DSV41_SWA_META_FUSED=1`, `DSV41_MOE_PREP_FUSED=1`, `DSV41_CANDIDATE_MASK_BOUNDED=1`,
+  `DSV41_INDEXER_WP_GEMV=1`) and `DSV41_DSPARK_SPARSE_MARKOV_TOPK=1024`. The IMAGE default is `canonical-e14`
+  (review-e14, sha256:3a002b55c9bc, tagged on both nodes), which carries the coop/dataflow p2b build.
+- Not promoted, still off: the five KP add-ons (ms/step −1.3..−1.9 beyond noise, but acceptance unmatched and the
+  tok/s fallback not met); the revert to `DSV41_DSPARK_SPARSE_MARKOV=0` (W does not beat S beyond noise).
+- Rejected: the Viterbi pack `2.0bpw-mcg-viterbi-lmhead-mxfp8` (golden hazard 0.094-0.102 vs limits 0.032/0.043 on
+  both boots; L.A.I.L −1.024 tok/s vs noise 0.345; NLL −42.1% and prose_long c=1 +3.108 tok/s in its favour). Serve
+  pin unchanged; the pack is local only (publish command and local run: results/RESULTS.md round 35, ARMS.md).
+- Before (A-1, A-2, round-34 defaults) → after (S1024-1, S1024-2, final-1, the final config), arm medians:
+  - L.A.I.L 33.95 → 43.17 tok/s (+27.1%), 62.79 → 49.00 ms/step; acceptance 2.138 → 2.133
+  - four prose c=1 39.16 → 52.52 (+34.1%); prose_long c=1 33.00 → 43.73 (+32.5%), 63.34 → 48.98 ms/step
+  - structured c=1 62.19 → 83.81 (+34.8%); c=2 aggregates: prose 56.70 → 81.69, structured 89.04 → 138.34,
+    prose_long 47.40 → 65.62
+  - prefill within noise (pp_novel 8k/32k 819.2/813.0 → 821.4/806.3)
+  - final-1 quality full PASS (NLL 0.242247, GSM8K 94/100, thinking 39/40, MMLU 199/228, needle 9/9)
+  - Evidence: `results/2026-09-26-serve-r3/round35-headline.json`
+- Serve left UP on final-1 (canonical-e14, round-35 defaults, `AUDIT=strict ./run.sh` from the kernels-r3 worktree,
+  started 2026-09-27T02:35:28Z).
