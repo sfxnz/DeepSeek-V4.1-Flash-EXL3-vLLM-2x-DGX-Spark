@@ -1,0 +1,20 @@
+# run.sh snapshot resolution with the new default (no SNAPSHOT_SHA override), 2026-09-27T05:45:00Z
+# run.sh default line: 39:SNAPSHOT_SHA="${SNAPSHOT_SHA:-2.0bpw-mcg-viterbi-lmhead-mxfp8}"
+# run.sh sha256: aff3c35a32e64b8f
+## spark1: env -u SNAPSHOT_SHA RESOLVE_SNAPSHOT_ONLY=1 ./run.sh
+/home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8
+rc=0
+## spark2: ssh spark2 'env -u SNAPSHOT_SHA RESOLVE_SNAPSHOT_ONLY=1 bash -s' < run.sh   (this tree's run.sh, nothing written on spark2)
+/home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8
+rc=0
+## refs dir (none expected before the Hub publish)
+spark1: ls: cannot access '/home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/refs': No such file or directory
+spark2: ls: cannot access '/home/sfxnz/.cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/refs': No such file or directory
+## assembled snapshot entry counts and config.json sha256
+spark1: entries=60 config=6469adab394edead index=91731e4af38696bd
+spark2: entries=60 config=6469adab394edead index=91731e4af38696bd
+## VALIDATE_ONLY=1 ./run.sh (config guards pass with the new defaults)
+==> validate-only spec=dspark seqs=2 spec_tokens=3 quant=exl3 engram_disk=1 eager=0 lm_only=0 image=dsv41-flash-exl3-sm121:canonical-e14 compilation_config={"cudagraph_mode":"FULL_AND_PIECEWISE","cudagraph_capture_sizes":[1,3,4,6,8],"custom_ops":["all"]}
+rc=0
+## tests/run_sh_harness.py (docker/ssh stubbed): model path in the head and worker vllm argv
+      2 /cache/huggingface/hub/models--sfxnz--DeepSeek-V4.1-Flash-EXL3/snapshots/2.0bpw-mcg-viterbi-lmhead-mxfp8

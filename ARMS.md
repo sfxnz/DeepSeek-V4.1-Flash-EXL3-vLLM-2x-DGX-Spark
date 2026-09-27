@@ -171,7 +171,8 @@ fails.
   DSV41_P2B_COOP=0 DSV41_DENSE_GEMV=0 DSV41_MHC_DET_SPLITS=0 \
     DSV41_ENGRAM_NATIVE_STAGE=0 DSV41_ENGRAM_EARLY_HASH=0 DSV41_ATTN_T2R_DEDUP=0 \
     DSV41_SWA_META_FUSED=0 DSV41_MOE_PREP_FUSED=0 DSV41_CANDIDATE_MASK_BOUNDED=0 \
-    DSV41_INDEXER_WP_GEMV=0 DSV41_DSPARK_SPARSE_MARKOV_TOPK=256 AUDIT=strict ./run.sh
+    DSV41_INDEXER_WP_GEMV=0 DSV41_DSPARK_SPARSE_MARKOV_TOPK=256 \
+    SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8 AUDIT=strict ./run.sh
   ```
   In a run.sh dry run (tests/run_sh_harness.py) this gives A-2's recorded
   DSV41/NCCL/VLLM container env except `DSV41_P2B_COOP=0` and
@@ -179,10 +180,15 @@ fails.
   in-code 256). On `canonical-e14` with COOP off the p2b kernels are
   canonical-e13's; add `IMAGE=dsv41-flash-exl3-sm121:canonical-e13` to boot the
   round-34 image itself.
-- The Viterbi pack (round 35 P4, rejected as written: golden-hazard gate and
-  L.A.I.L tok/s; local only, not on the Hub) runs on the same code with
-  `SNAPSHOT_SHA=2.0bpw-mcg-viterbi-lmhead-mxfp8 AUDIT=strict ./run.sh`, once
-  the snapshot is assembled on BOTH nodes
+- Round 36 made the Viterbi pack `2.0bpw-mcg-viterbi-lmhead-mxfp8` the
+  default `SNAPSHOT_SHA`. It was rejected as written in round 35 P4 and
+  adopted by the protocol owner (step 6, pack changes). Every line in this
+  section that reproduces a round-35-or-earlier config must also set
+  `SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8`, the round-33..35 pin (the Round-34
+  line above does, and boot-lm.sh exports it). The round-35
+  serve itself is `SNAPSHOT_SHA=2.0bpw-mcg-lmhead-mxfp8 AUDIT=strict ./run.sh`
+  on round-36 code. Until the Hub revision exists, the Viterbi snapshot must
+  be assembled on BOTH nodes
   (`/home/sfxnz/projects/data/dsv41-requant-viterbi/PLAN.txt` section 9:
   `python3 .../code/tools/requant_full.py assemble --node spark1`, and on
   spark2 `... assemble --node spark2 --state-host spark1`). `run.sh`

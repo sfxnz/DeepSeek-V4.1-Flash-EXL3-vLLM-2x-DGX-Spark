@@ -69,7 +69,8 @@ def _load_tool(rel: str, name: str):
 
 
 HUB_MODEL = "sfxnz/DeepSeek-V4.1-Flash-EXL3"
-HUB_REV = "2.0bpw-mcg-lmhead-mxfp8"
+HUB_REV = "2.0bpw-mcg-viterbi-lmhead-mxfp8"
+PREV_REV = "2.0bpw-mcg-lmhead-mxfp8"  # serve pin in rounds 33-35
 STOCK_REV = "2.0bpw-mcg"
 IMAGE_TAG = "dsv41-flash-exl3-sm121:canonical-e14"
 PROMOTED_BOOT = "results/2026-09-22-endgame2/boot-lm.sh"
@@ -748,11 +749,13 @@ class RecipeOpsTests(unittest.TestCase):
         %5 spec guard; the default stays 0 (ARMS.md: never commit it). IMAGE: round 34 promotes
         canonical-e13 (the woa-prepack o_proj stage DSV41_WOA_PREPACK needs). The other round-34
         defaults (WILLNEED, STREAM_FEED, WOA_PREPACK, SPARSE_MARKOV) are not in boot-lm.sh.
+        SNAPSHOT_SHA: round 36 moves the pin from boot-lm.sh's 2.0bpw-mcg-lmhead-mxfp8 to the
+        Viterbi re-encode 2.0bpw-mcg-viterbi-lmhead-mxfp8 (same format, same lm_head shard).
         """
         import json
         import shlex
 
-        allowed = {"FORCE_UNSAFE_CTX", "IMAGE"}
+        allowed = {"FORCE_UNSAFE_CTX", "IMAGE", "SNAPSHOT_SHA"}
         boot = {}
         for line in _read(PROMOTED_BOOT).splitlines():
             if line.startswith("export "):
@@ -869,6 +872,7 @@ class RecipeOpsTests(unittest.TestCase):
         self.assertIn("27.98", readme)
         self.assertIn(f"hf download {HUB_MODEL} --revision {HUB_REV}", readme)
         self.assertIn(f"--revision {STOCK_REV}", readme)
+        self.assertIn(f"--revision {PREV_REV}", readme)
 
     def test_locator_prefers_refs_commit_over_named_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as d:

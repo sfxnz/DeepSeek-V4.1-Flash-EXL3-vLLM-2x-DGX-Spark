@@ -1,7 +1,7 @@
 # Source of truth. Edit here, then `python3 kit/render.py`.
 model:
   id: &model sfxnz/DeepSeek-V4.1-Flash-EXL3
-  revision: &revision 2.0bpw-mcg-lmhead-mxfp8
+  revision: &revision 2.0bpw-mcg-viterbi-lmhead-mxfp8
   served_name: &served_name deepseek-ai/DeepSeek-V4.1-Flash
   family: DeepSeek-V4.1-Flash
   params: 552B backbone / 8B prefill / 16B decode, plus 196B Engram
@@ -109,7 +109,7 @@ readme:
     - CUDA graphs: "`FULL_AND_PIECEWISE`, capture sizes {1} ∪ {s·k, s·(k+1)} for s ≤ `--max-num-seqs` (`[1,3,4,6,8]` at k=3) (`ENFORCE_EAGER={ENFORCE_EAGER}`, `DSV41_ALLOW_CUDA_GRAPHS={DSV41_ALLOW_CUDA_GRAPHS}`)"
     - Engram prefetch / census / gather: "`DSV41_ENGRAM_PREFETCH={DSV41_ENGRAM_PREFETCH}` `DSV41_ENGRAM_CENSUS={DSV41_ENGRAM_CENSUS}` `DSV41_ENGRAM_GATHER_V2={DSV41_ENGRAM_GATHER_V2}`"
     - Engram prefill read-ahead: "`DSV41_ENGRAM_WILLNEED={DSV41_ENGRAM_WILLNEED}` (gv2 calls with >= 512 rows fadvise their pages before the preadv loop)"
-    - lm_head: "MXFP8 (`DSV41_LMHEAD_MXFP8={DSV41_LMHEAD_MXFP8}`), needs the `{SNAPSHOT_SHA}` pack; self-disarms on stock `2.0bpw-mcg`"
+    - lm_head: "MXFP8 (`DSV41_LMHEAD_MXFP8={DSV41_LMHEAD_MXFP8}`), needs an lm_head-MXFP8 pack (`{SNAPSHOT_SHA}` or `2.0bpw-mcg-lmhead-mxfp8`); self-disarms on stock `2.0bpw-mcg`"
     - Weight-load stream feed: "`DSV41_STREAM_FEED={DSV41_STREAM_FEED}`"
     - Decode levers: "`DSV41_WOA_PREPACK={DSV41_WOA_PREPACK}` (needs the `{IMAGE}` o_proj stage) `DSV41_DSPARK_SPARSE_MARKOV={DSV41_DSPARK_SPARSE_MARKOV}` `DSV41_DSPARK_SPARSE_MARKOV_TOPK={DSV41_DSPARK_SPARSE_MARKOV_TOPK}`"
     - Round-3 kernel bundle: "`DSV41_P2B_COOP={DSV41_P2B_COOP}` (coop dataflow MoE kernel, needs the `{IMAGE}` build) `DSV41_DENSE_GEMV={DSV41_DENSE_GEMV}` `DSV41_MHC_DET_SPLITS={DSV41_MHC_DET_SPLITS}` `DSV41_ENGRAM_NATIVE_STAGE={DSV41_ENGRAM_NATIVE_STAGE}` `DSV41_ENGRAM_EARLY_HASH={DSV41_ENGRAM_EARLY_HASH}` `DSV41_ATTN_T2R_DEDUP={DSV41_ATTN_T2R_DEDUP}` `DSV41_SWA_META_FUSED={DSV41_SWA_META_FUSED}` `DSV41_MOE_PREP_FUSED={DSV41_MOE_PREP_FUSED}` `DSV41_CANDIDATE_MASK_BOUNDED={DSV41_CANDIDATE_MASK_BOUNDED}` `DSV41_INDEXER_WP_GEMV={DSV41_INDEXER_WP_GEMV}` (set one to `0` to turn it off)"
